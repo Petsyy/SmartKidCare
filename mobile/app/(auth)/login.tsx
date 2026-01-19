@@ -13,7 +13,6 @@ import { Baby, Eye, EyeOff } from "lucide-react-native";
 import { useAuth } from "@/src/hooks/useAuth";
 import type { User } from "@/src/context/AuthContext";
 
-
 export default function Login() {
   const { login } = useAuth();
   const [email, setEmail] = useState("");
@@ -26,7 +25,7 @@ export default function Login() {
     const fakeUser: User = {
       id: "123",
       email,
-      role: "parent", // or "worker" based on API response
+      role: "parent",
     };
 
     login(fakeUser);
@@ -85,12 +84,12 @@ export default function Login() {
                   onChangeText={setPassword}
                 />
                 <TouchableOpacity
-                  className="absolute right-4" // Removed top-3.5 to let flex handle it
+                  className="absolute right-4"
                   onPress={() => setShowPassword(!showPassword)}
-                  style={{ height: '100%', justifyContent: 'center' }} // Centers the icon vertically
+                  style={{ height: '100%', justifyContent: 'center' }}
                 >
                   {showPassword ? (
-                    <EyeOff size={20} color="#16a34a" /> // Using hex for green-600
+                    <EyeOff size={20} color="#16a34a" />
                   ) : (
                     <Eye size={20} color="#16a34a" />
                   )}
@@ -112,7 +111,7 @@ export default function Login() {
           {/* Sign Up */}
           <View className="flex-row justify-center mt-8">
             <Text className="text-gray-500">Don't have an account? </Text>
-            <Link href="/(auth)/role-selection" asChild>
+            <Link href="/role-selection" asChild>
               <TouchableOpacity>
                 <Text className="text-green-600 font-semibold">
                   Sign Up
