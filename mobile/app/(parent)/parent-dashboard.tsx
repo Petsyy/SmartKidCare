@@ -1,8 +1,8 @@
 import { View, Text, TouchableOpacity } from "react-native";
-import { useAuth } from "@/src/hooks/useAuth"; // Import your hook
+import { useAuth } from "@/src/hooks/useAuth";
 
 export default function ParentDashboard() {
-    const { logout } = useAuth(); // Destructure logout from your hook
+    const { logout } = useAuth();
 
     return (
         <View className="flex-1 items-center justify-center">
@@ -10,7 +10,7 @@ export default function ParentDashboard() {
 
             <TouchableOpacity
                 className="mt-4 rounded bg-green-500 px-4 py-2"
-                onPress={logout} // Just call the logout function here
+                onPress={logout}
             >
                 <Text className="text-white">Log out</Text>
             </TouchableOpacity>

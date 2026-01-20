@@ -23,7 +23,7 @@ export default function ParentRegistration() {
     <View className="mb-5">
       <View className="flex-row items-center mb-2">
         {Icon && <Icon size={14} color="#6b7280" style={{ marginRight: 6 }} />}
-        <Text className="text-sm font-semibold text-gray-700">{label}</Text>
+        <Text className="text-base font-semibold text-gray-700">{label}</Text>
         {required && <Text className="ml-0.5 text-red-500">*</Text>}
       </View>
       {children}
@@ -101,7 +101,7 @@ export default function ParentRegistration() {
                 <View className="flex-1">
                   <FormField label="First Name" required icon={User}>
                     <TextInput
-                      className='px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:border-green-500 focus:bg-white'
+                      className='px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-base text-gray-900 focus:border-green-500 focus:bg-white'
                       placeholder='First Name'
                       placeholderTextColor='#9CA3AF'
                       value={formData.firstName}
@@ -112,7 +112,7 @@ export default function ParentRegistration() {
                 <View className="flex-1">
                   <FormField label="Last Name" required icon={User}>
                     <TextInput
-                      className='px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:border-green-500 focus:bg-white'
+                      className='px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-base text-gray-900 focus:border-green-500 focus:bg-white'
                       placeholder='Last Name'
                       placeholderTextColor='#9CA3AF'
                       value={formData.lastName}
@@ -124,7 +124,7 @@ export default function ParentRegistration() {
 
               <FormField label="Email Address" required icon={Mail}>
                 <TextInput
-                  className='px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:border-green-500 focus:bg-white'
+                  className='px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-base text-gray-900 focus:border-green-500 focus:bg-white'
                   placeholder='email@example.com'
                   placeholderTextColor='#9CA3AF'
                   value={formData.email}
@@ -137,7 +137,7 @@ export default function ParentRegistration() {
 
               <FormField label="Contact Number" required icon={Phone}>
                 <TextInput
-                  className='px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:border-green-500 focus:bg-white'
+                  className='px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-base text-gray-900 focus:border-green-500 focus:bg-white'
                   placeholder='09XX XXX XXXX'
                   placeholderTextColor='#9CA3AF'
                   value={formData.phone}
@@ -150,7 +150,7 @@ export default function ParentRegistration() {
               <FormField label="Password" required icon={Lock}>
                 <View className="relative">
                   <TextInput
-                    className='px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 pr-12 focus:border-green-500 focus:bg-white'
+                    className='px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-base text-gray-900 pr-12 focus:border-green-500 focus:bg-white'
                     placeholder='Enter your password'
                     placeholderTextColor='#9CA3AF'
                     value={formData.password}
@@ -176,7 +176,7 @@ export default function ParentRegistration() {
               <FormField label="Confirm Password" required icon={Lock}>
                 <View className="relative">
                   <TextInput
-                    className='px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 pr-12 focus:border-green-500 focus:bg-white'
+                    className='px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-base text-gray-900 pr-12 focus:border-green-500 focus:bg-white'
                     placeholder='Confirm your password'
                     placeholderTextColor='#9CA3AF'
                     value={formData.confirmPassword}

@@ -4,6 +4,13 @@ import { ActivityIndicator, View } from "react-native";
 import { AuthProvider } from "@/src/context/AuthContext";
 import { useAuth } from "@/src/hooks/useAuth";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { configureReanimatedLogger, ReanimatedLogLevel } from "react-native-reanimated";
+
+// Disable Reanimated strict mode warnings
+configureReanimatedLogger({
+  level: ReanimatedLogLevel.warn,
+  strict: false,
+});
 
 function LayoutContent() {
   const { user, role, loading } = useAuth();
@@ -18,10 +25,9 @@ function LayoutContent() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      {!user && <Stack.Screen name="(auth)" />}
-      {user && role === "parent" && <Stack.Screen name="(parent)" />}
-      {user && role === "worker" && <Stack.Screen name="(worker)" />}
-      
+      <Stack.Screen name="(auth)" />
+      <Stack.Screen name="(parent)" />
+      <Stack.Screen name="(worker)" />
     </Stack>
   );
 }

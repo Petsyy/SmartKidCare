@@ -10,5 +10,16 @@ export default function AuthLayout() {
     return <Redirect href="/" />;
   }
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <Stack
+      screenOptions={{ headerShown: false }}
+      initialRouteName="splash-screen/onboarding"
+    >
+      <Stack.Screen name="splash-screen/onboarding" />
+      <Stack.Screen name="login" />
+      <Stack.Screen name="parent-registration" />
+      <Stack.Screen name="worker-registration" />
+      <Stack.Screen name="role-selection" />
+    </Stack>
+  );
 }

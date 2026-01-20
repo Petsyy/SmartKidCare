@@ -4,8 +4,10 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  Pressable,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link } from "expo-router";
@@ -18,7 +20,8 @@ const FormField = ({ label, children, icon: Icon }: { label: string; children: R
   <View className="mb-5">
     <View className="flex-row items-center mb-2">
       {Icon && <Icon size={14} color="#6b7280" style={{ marginRight: 6 }} />}
-      <Text className="text-sm font-semibold text-gray-700">{label}</Text>
+      <Text className="text-base font-semibold text-gray-700">{label}</Text>
+      <Text className="ml-1 text-red-500">*</Text>
     </View>
     {children}
   </View>
@@ -91,7 +94,7 @@ export default function Login() {
               <View className="bg-white rounded-3xl p-6 shadow-lg shadow-gray-200">
                 <FormField label="Email Address" icon={Mail}>
                   <TextInput
-                    className="px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:border-green-500 focus:bg-white"
+                    className="px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-base text-gray-900 focus:border-green-500 focus:bg-white"
                     placeholder="email@example.com"
                     placeholderTextColor="#9CA3AF"
                     value={email}
@@ -105,9 +108,9 @@ export default function Login() {
                 <FormField label="Password" icon={Lock}>
                   <View className="relative">
                     <TextInput
-                      className="px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 pr-12 focus:border-green-500 focus:bg-white"
+                      className="px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-base text-gray-900 pr-12 focus:border-green-500 focus:bg-white"
                       secureTextEntry={!showPassword}
-                      placeholder="••••••••"
+                      placeholder="Enter your password"
                       placeholderTextColor="#9CA3AF"
                       value={password}
                       onChangeText={setPassword}
@@ -134,34 +137,38 @@ export default function Login() {
                 </TouchableOpacity>
 
                 {/* Login Button */}
-                <TouchableOpacity
-                  className="w-full rounded-xl shadow-lg shadow-green-200 active:opacity-90 overflow-hidden"
+                <Pressable
                   onPress={handleLogin}
                   disabled={isLoading}
-                  activeOpacity={0.9}
+                  className="rounded-xl overflow-hidden"
+                  style={({ pressed }) => [{ opacity: isLoading ? 0.7 : pressed ? 0.85 : 1 }]}
                 >
                   <LinearGradient
                     colors={['#10b981', '#059669']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
-                    className="w-full py-4 items-center justify-center"
+                    className="w-full py-4 items-center justify-center rounded-xl shadow-lg shadow-green-200"
+                    style={{ opacity: isLoading ? 0.7 : 1 }}
                   >
                     {isLoading ? (
-                      <Text className="text-white text-center text-lg font-bold">
-                        Signing In...
-                      </Text>
+                      <View className="flex-row items-center justify-center gap-3">
+                        <ActivityIndicator size="small" color="#fff" />
+                        <Text className="text-white text-center text-lg font-bold">
+                          Signing In...
+                        </Text>
+                      </View>
                     ) : (
                       <Text className="text-white text-center text-lg font-bold">
                         Sign In
                       </Text>
                     )}
                   </LinearGradient>
-                </TouchableOpacity>
+                </Pressable>
               </View>
 
               {/* Sign Up Link */}
               <View className="mt-8 flex-row justify-center items-center">
-                <Text className="text-gray-700">Don't have an account? </Text>
+                <Text className=" text-gray-700">Don't have an account? </Text>
                 <Link href="/role-selection" asChild>
                   <TouchableOpacity activeOpacity={0.7}>
                     <Text className="text-green-600 font-bold text-base">
