@@ -3,6 +3,7 @@ import { Stack } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
 import { AuthProvider } from "@/src/context/AuthContext";
 import { useAuth } from "@/src/hooks/useAuth";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 function LayoutContent() {
   const { user, role, loading } = useAuth();
@@ -27,8 +28,10 @@ function LayoutContent() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <LayoutContent />
-    </AuthProvider>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <LayoutContent />
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }
