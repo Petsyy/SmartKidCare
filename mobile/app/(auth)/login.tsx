@@ -49,7 +49,7 @@ export default function Login() {
       const fakeUser: User = {
         id: "123",
         email,
-        role: "parent",
+        role: "worker",
       };
 
       login(fakeUser);
