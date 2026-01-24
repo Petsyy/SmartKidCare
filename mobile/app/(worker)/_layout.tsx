@@ -10,5 +10,5 @@ export default function WorkerLayout() {
     return <Redirect href="/(auth)/login" />;
   }
 
-  return <Stack />;
+  return <Stack screenOptions={{ headerShown: false }} />;
 }
