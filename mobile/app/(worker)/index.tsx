@@ -1,21 +1,27 @@
 import { Users, UserCheck, UserX, Utensils, Calendar, MapPin, ReceiptText } from "lucide-react-native";
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
-import { StatRow, ProgressBar } from "@/helpers/dashboard-helpers";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { StatRow, ProgressBar } from "../../src/components/helpers/dashboard-helpers";
 
 export default function ParentDashboard() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
 
     const handleRecordFeeding = () => {
-        router.push('./worker-record-feeding/record-feeding');
+        router.push('./record/feeding');
     }
 
     const handleRecordAttendance = () => {
-        router.push('./worker-record-attendance/record-attendance');
+        router.push('./record/attendance');
     }
 
     return (
-        <ScrollView className="flex-1 bg-gray-50 pt-16 pb-6 px-6">
+        <ScrollView 
+            className="flex-1 bg-gray-50 px-6" 
+            contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: insets.bottom + 20 }}
+            scrollEnabled={true}
+            showsVerticalScrollIndicator={true}>
             {/* Greeting Section */}
             <View className="mb-6">
                 <Text className="text-3xl font-bold text-gray-800">Good Morning, Petsyy!</Text>
@@ -138,10 +144,12 @@ export default function ParentDashboard() {
                     <StatRow color="#9CA3AF" label="Meals Missed" value="4 days" />
 
                     <View className="mt-4">
-                        <Text className="text-sm text-gray-600">Completion Rate</Text>
-                        <View className="flex-row items-center justify-between mt-1">
+                        <View className="flex-row items-center justify-between">
+                            <Text className="text-sm text-gray-600">Completion Rate</Text>
+                            <Text className="text-teal-600 font-semibold">89%</Text>
+                        </View>
+                        <View className="mt-2">
                             <ProgressBar percent={89} />
-                            <Text className="text-teal-600 font-semibold ml-3">89%</Text>
                         </View>
                     </View>
                 </View>
