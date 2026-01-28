@@ -15,7 +15,7 @@ export default function Index() {
   }
 
   if (role === "worker") {
-    return <Redirect href="/(worker)/worker-dashboard" />;
+    return <Redirect href="/(worker)" />;
   }
 
   return null;

@@ -6,7 +6,6 @@ import { useAuth } from "@/src/hooks/useAuth";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { configureReanimatedLogger, ReanimatedLogLevel } from "react-native-reanimated";
 
-// Disable Reanimated strict mode warnings
 configureReanimatedLogger({
   level: ReanimatedLogLevel.warn,
   strict: false,

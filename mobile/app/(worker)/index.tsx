@@ -4,29 +4,22 @@ import {
   UserX,
   Utensils,
   Calendar,
-  MapPin,
-  ReceiptText,
-  MapPinIcon,
-  CalendarIcon,
+  Bell,
 } from "lucide-react-native";
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import {
-  StatRow,
-  ProgressBar,
-} from "../../src/components/helpers/dashboard-helpers";
 
-export default function ParentDashboard() {
+export default function WorkerDashboard() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const handleRecordFeeding = () => {
-    router.push("./worker-record/feeding");
+  const handleRecordAttendance = () => {
+    router.push("./worker-record-data/attendance");
   };
 
-  const handleRecordAttendance = () => {
-    router.push("./worker-record/attendance");
+  const handleRecordFeeding = () => {
+    router.push("./worker-record-data/feeding");
   };
 
   return (
@@ -36,116 +29,101 @@ export default function ParentDashboard() {
         paddingTop: insets.top + 16,
         paddingBottom: insets.bottom + 20,
       }}
-      scrollEnabled={true}
-      showsVerticalScrollIndicator={true}
+      showsVerticalScrollIndicator={false}
     >
-      {/* Greeting Section */}
+      {/* Header */}
       <View className="mb-6">
-        <Text className="text-3xl font-bold text-gray-800">Dashboard</Text>
+        <Text className="text-3xl font-bold text-gray-800">
+          Worker Dashboard
+        </Text>
         <Text className="text-base text-gray-500 mt-1">
-          Welcome back! Here's an overview of your child's activity.
+          Today’s overview and quick actions
         </Text>
       </View>
 
-      <View className="flex-row bg-teal-500 rounded-2xl p-4 mb-6 items-center">
-        <View className="w-20 h-20 bg-teal-300 rounded-full items-center justify-center mr-4">
-          <Text className="text-white text-2xl font-bold">VC</Text>
-        </View>
+      {/* Today Summary Card */}
+      <View className="bg-teal-500 rounded-2xl p-5 mb-6">
+        <Text className="text-white text-lg font-semibold">
+          Today • {new Date().toDateString()}
+        </Text>
 
-        <View className="flex-1">
-
-          <Text className="text-white text-2xl font-bold">
-            Vash Catangongan
-          </Text>
-
-          <Text className="text-teal-200 text-lg">5 years old • Male</Text>
-
-          <View className="flex-row items-center mt-2">
-            <MapPinIcon size={20} color="white" />
-            <Text className="text-teal-200 text-lg ml-2">
-              Bonuan Child Developement Center
-            </Text>
+        <View className="flex-row justify-between mt-4">
+          <View className="items-center">
+            <Users size={26} color="white" />
+            <Text className="text-white text-lg font-bold mt-1">38</Text>
+            <Text className="text-teal-200 text-sm">Total</Text>
           </View>
 
-          <View className="flex-row items-center mt-2">
-            <CalendarIcon size={20} color="white" />
-            <Text className="text-teal-200 text-lg mt-1 ml-2">
-              Enrolled: January 2026
-            </Text>
+          <View className="items-center">
+            <UserCheck size={26} color="white" />
+            <Text className="text-white text-lg font-bold mt-1">35</Text>
+            <Text className="text-teal-200 text-sm">Present</Text>
+          </View>
+
+          <View className="items-center">
+            <UserX size={26} color="white" />
+            <Text className="text-white text-lg font-bold mt-1">3</Text>
+            <Text className="text-teal-200 text-sm">Absent</Text>
+          </View>
+
+          <View className="items-center">
+            <Utensils size={26} color="white" />
+            <Text className="text-white text-lg font-bold mt-1">32</Text>
+            <Text className="text-teal-200 text-sm">Fed</Text>
           </View>
         </View>
       </View>
 
       {/* Quick Actions */}
-      {/* Record Feeding Button */}
       <View>
-        <Text className="text-xl font-bold text-gray-800 mt-1">
+        <Text className="text-xl font-bold text-gray-800">
           Quick Actions
         </Text>
-        <View className="flex-row mt-4 space-x-4 gap-4">
-          <Pressable
-            className="flex-1 flex-row bg-teal-500 rounded-2xl py-5 px-4 items-center"
-            onPress={handleRecordFeeding}
-          >
-            <View className="bg-teal-300 w-12 h-12 rounded-lg items-center justify-center r mr-2 flex-shrink-0">
-              <ReceiptText size={24} color="white" />
-            </View>
-            <Text className="text-white text-base font-semibold mt-1">
-              Record Feeding
-            </Text>
-          </Pressable>
-          {/* Record Attendance Button */}
+
+        <View className="flex-row mt-4 gap-4">
+          {/* Record Attendance */}
           <Pressable
             className="flex-1 flex-row bg-teal-500 rounded-2xl py-5 px-4 items-center"
             onPress={handleRecordAttendance}
           >
-            <View className="bg-teal-300 w-12 h-12 rounded-lg items-center justify-center mr-2 flex-shrink-0">
+            <View className="bg-teal-300 w-12 h-12 rounded-lg items-center justify-center mr-3">
+              <Calendar size={24} color="white" />
+            </View>
+            <Text className="text-white text-base font-semibold">
+              Record Attendance
+            </Text>
+          </Pressable>
+
+          {/* Record Feeding */}
+          <Pressable
+            className="flex-1 flex-row bg-teal-500 rounded-2xl py-5 px-4 items-center"
+            onPress={handleRecordFeeding}
+          >
+            <View className="bg-teal-300 w-12 h-12 rounded-lg items-center justify-center mr-3">
               <Utensils size={24} color="white" />
             </View>
-            <Text className="text-white text-base font-semibold mt-1">
-              Record Attendance
+            <Text className="text-white text-base font-semibold">
+              Record Lunch
             </Text>
           </Pressable>
         </View>
       </View>
 
-      {/* Insights Cards */}
-      <View className="mt-6">
-        {/* Attendance Breakdown Card */}
-        <View className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-4">
-          <View className="flex-row items-center mb-3">
-            <Calendar size={18} color="#10B981" />
-            <Text className="text-base font-semibold text-gray-900 ml-2">
-              Attendance Breakdown
-            </Text>
-          </View>
-          <StatRow color="#22C55E" label="Present" value="33 days" />
-          <StatRow color="#F59E0B" label="Late" value="1 days" />
-          <StatRow color="#3B82F6" label="Excused" value="2 days" />
-          <StatRow color="#9CA3AF" label="Absent" value="0 days" />
+      {/* Notifications Preview */}
+      <View className="mt-6 bg-white rounded-2xl p-5 border border-gray-100">
+        <View className="flex-row items-center mb-3">
+          <Bell size={18} color="#10B981" />
+          <Text className="text-base font-semibold text-gray-900 ml-2">
+            Reminders
+          </Text>
         </View>
 
-        {/* Feeding Overview Card */}
-        <View className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <View className="flex-row items-center mb-3">
-            <Utensils size={18} color="#10B981" />
-            <Text className="text-base font-semibold text-gray-900 ml-2">
-              Feeding Overview
-            </Text>
-          </View>
-          <StatRow color="#22C55E" label="Meals Completed" value="32 days" />
-          <StatRow color="#9CA3AF" label="Meals Missed" value="4 days" />
-
-          <View className="mt-4">
-            <View className="flex-row items-center justify-between">
-              <Text className="text-sm text-gray-600">Completion Rate</Text>
-              <Text className="text-teal-600 font-semibold">89%</Text>
-            </View>
-            <View className="mt-2">
-              <ProgressBar percent={89} />
-            </View>
-          </View>
-        </View>
+        <Text className="text-gray-600 text-sm">
+          • Attendance not yet completed for today
+        </Text>
+        <Text className="text-gray-600 text-sm mt-1">
+          • Lunch feeding starts at 11:30 AM
+        </Text>
       </View>
     </ScrollView>
   );

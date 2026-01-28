@@ -55,7 +55,7 @@ export default function WorkerLayout() {
         }}
       />
       <Tabs.Screen
-        name="worker-record"
+        name="worker-record-data"
         options={{
           href: null,
         }}
