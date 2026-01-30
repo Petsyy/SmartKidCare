@@ -15,6 +15,7 @@ import { Baby, Eye, EyeOff, Mail, Lock } from "lucide-react-native";
 import { useAuth } from "@/src/hooks/useAuth";
 import type { User } from "@/src/context/AuthContext";
 import { LinearGradient } from 'expo-linear-gradient';
+import { login as apiLogin } from "@/src/api/api";
 
 const FormField = ({ label, children, icon: Icon }: { label: string; children: React.ReactNode; icon?: React.ComponentType<{ size?: number; color?: string; style?: object }> }) => (
   <View className="mb-5">
@@ -35,7 +36,8 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (!email || !password) {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !password) {
       alert("Please enter both email and password");
       return;
     }
@@ -43,18 +45,17 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      // TODO: Replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const { token: authToken, user: apiUser } = await apiLogin({ email: trimmedEmail, password });
 
-      const fakeUser: User = {
-        id: "123",
-        email,
-        role: "worker",
+      const appUser: User = {
+        id: apiUser._id,
+        email: apiUser.email,
+        role: apiUser.role === "parent" || apiUser.role === "worker" ? apiUser.role : "worker",
       };
 
-      login(fakeUser);
-    } catch (error) {
-      alert("Login failed. Please check your credentials.");
+      login(appUser, authToken);
+    } catch (error: any) {
+      alert(error.message || "Login failed. Please check your credentials.");
     } finally {
       setIsLoading(false);
     }

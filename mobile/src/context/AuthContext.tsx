@@ -10,9 +10,10 @@ export type User = {
 
 type AuthContextType = {
   user: User | null;
+  token: string | null;
   role: Role;
   loading: boolean;
-  login: (user: User) => void;
+  login: (user: User, token: string) => void;
   logout: () => void;
 };
 
@@ -20,16 +21,13 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Simulate restoring session (AsyncStorage / SecureStore)
   useEffect(() => {
     const restoreSession = async () => {
       try {
-        // TODO: load user from storage or API
-        // const storedUser = await AsyncStorage.getItem("user")
-        // if (storedUser) setUser(JSON.parse(storedUser))
-
+        // TODO: restore from AsyncStorage / SecureStore for persistence
       } finally {
         setLoading(false);
       }
@@ -38,22 +36,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     restoreSession();
   }, []);
 
-  const login = (userData: User) => {
+  const login = (userData: User, authToken: string) => {
     setUser(userData);
-    // AsyncStorage.setItem("user", JSON.stringify(userData))
+    setToken(authToken);
   };
-
-  
 
   const logout = () => {
     setUser(null);
-    // AsyncStorage.removeItem("user")
+    setToken(null);
   };
 
   return (
     <AuthContext.Provider
       value={{
         user,
+        token,
         role: user?.role ?? null,
         loading,
         login,
