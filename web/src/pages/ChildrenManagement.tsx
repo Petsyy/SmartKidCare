@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Plus, } from "lucide-react";
+import Swal from "sweetalert2";
 import Layout from "../components/Layout";
 import AddChildModal, { type ChildFormData } from "../components/AddChildModal";
 
@@ -73,9 +74,26 @@ export default function ChildrenManagement() {
         throw new Error(errorData.message || "Failed to save child");
       }
 
-      const saveChild = await res.json();
+      const responseData = await res.json();
+      const { child, parentCredentials } = responseData;
 
-      setChildren((prev) => [...prev, saveChild]);
+      setChildren((prev) => [...prev, child]);
+
+      // Show parent credentials with SweetAlert
+      if (parentCredentials) {
+        Swal.fire({
+          title: "Parent Account Created",
+          html: `<div style="text-align: left; padding: 20px;">
+            <p><strong>Email:</strong> ${parentCredentials.email}</p>
+            <p><strong>Password:</strong> ${parentCredentials.password}</p>
+            <p style="color: #666; margin-top: 15px; font-size: 14px;">Share these credentials with the parent so they can log in to the mobile app.</p>
+          </div>`,
+          icon: "success",
+          confirmButtonText: "Done",
+          confirmButtonColor: "#0D9488",
+        });
+      }
+
       setIsModalOpen(false);
     } catch (error) {
       console.error("Failed to save child:", error);
