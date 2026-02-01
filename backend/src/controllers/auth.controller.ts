@@ -2,76 +2,7 @@ import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/Worker";
-
-
-export const workerRegister = async (req: Request, res: Response) => {
-  try {
-    console.log('Worker registration request received:', req.body);
-    
-    const { firstName, lastName, email, phone, password, documents } = req.body;
-
-    // Validate required fields
-    if (!firstName || !lastName || !email || !phone || !password) {
-      console.log('Missing required fields:', { firstName, lastName, email, phone, password });
-      return res.status(400).json({ error: "All fields are required" });
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      console.log('Invalid email format:', email);
-      return res.status(400).json({ error: "Invalid email format" });
-    }
-
-    // Validate password strength
-    if (password.length < 8) {
-      console.log('Password too short');
-      return res.status(400).json({ error: "Password must be at least 8 characters" });
-    }
-
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      console.log('User already exists with email:', email);
-      return res.status(400).json({ error: "Email already registered" });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const fullName = `${firstName} ${lastName}`;
-
-    console.log('Creating new worker:', { firstName, lastName, email, phone, role: 'worker' });
-
-    const newWorker = await User.create({
-      firstName,
-      lastName,
-      name: fullName,
-      email,
-      phone,
-      password: hashedPassword,
-      role: "worker",
-      documents: documents || [],
-      verificationStatus: "pending",
-    });
-
-    console.log('Worker created successfully:', newWorker._id);
-
-    res.status(201).json({
-      message: "Worker registered successfully. Your account is pending admin verification.",
-      user: {
-        id: newWorker._id,
-        firstName: newWorker.firstName,
-        lastName: newWorker.lastName,
-        email: newWorker.email,
-        phone: newWorker.phone,
-        role: newWorker.role,
-        verificationStatus: newWorker.verificationStatus,
-      },
-    });
-  } catch (error: any) {
-    console.error('Worker registration error:', error);
-    res.status(400).json({ error: error.message });
-  }
-};
+import Admin from "../models/Admin";
 
 export const login = async (req: Request, res: Response) => {
   try {
@@ -113,6 +44,40 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * Admin login - for the web admin portal
+ * Creates a JWT token with admin role
+ */
+export const adminLogin = async (req: Request, res: Response) => {
+  try {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({ message: "Username and password are required" });
+    }
+
+    const admin = await Admin.findOne({ username });
+    if (!admin)
+      return res.status(401).json({ message: "Invalid credentials" });
+
+    const isMatch = await bcrypt.compare(password, admin.password);
+    if (!isMatch)
+      return res.status(401).json({ message: "Invalid credentials" });
+
+    const token = jwt.sign(
+      { id: admin._id, role: admin.role },
+      process.env.JWT_SECRET as string,
+      { expiresIn: "1d" }
+    );
+
+    const adminResponse = admin.toObject();
+    delete (adminResponse as any).password;
+    res.json({ token, user: adminResponse });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 /** Returns the current user from the JWT (for mobile protected routes). */
 export const getMe = async (req: Request, res: Response) => {
   try {
@@ -137,7 +102,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
     if (role) filter.role = role;
     if (status) filter.verificationStatus = status;
 
-    const users = await User.find(filter).select('-password');
+    const users = await User.find(filter).select('-password').lean();
     
     res.json({ users });
   } catch (error: any) {

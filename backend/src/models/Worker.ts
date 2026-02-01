@@ -3,11 +3,11 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface IWorker extends Document {
   firstName: string;
   lastName: string;
-  name: string;
+  username: string;
   email: string;
   phone: string;
   password: string;
-  role: "admin" | "worker" | "parent";
+  role: "worker" | "parent";
   documents: string[];
   verificationStatus: "pending" | "approved" | "rejected";
 }
@@ -16,13 +16,13 @@ const UserSchema: Schema = new Schema(
   {
     firstName: { type: String },
     lastName: { type: String },
-    name: { type: String, required: true },
+    username: { type: String, unique: true, sparse: true },
     email: { type: String, required: true, unique: true },
     phone: { type: String },
     password: { type: String, required: true },
     role: {
       type: String,
-      enum: ["admin", "worker", "parent"],
+      enum: ["worker", "parent"],
       required: true,
     },
     documents: [{ type: String }],

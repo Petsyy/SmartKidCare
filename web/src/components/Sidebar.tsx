@@ -31,16 +31,16 @@ type SidebarProps = {
 
 export default function Sidebar({ activeItem = "users", onNavigate }: SidebarProps) {
   return (
-    <aside className="w-60 bg-linear-to-b from-blue-600 to-blue-700 text-white flex flex-col h-screen fixed left-0 top-0">
+    <aside className="w-60 bg-linear-to-b from-teal-600 to-teal-700 text-white flex flex-col h-screen fixed left-0 top-0">
       {/* Logo Section */}
-      <div className="p-6 border-b border-blue-500/30">
+      <div className="p-6 border-b border-teal-500/30">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-            <Shield className="text-blue-600" size={24} />
+            <Shield className="text-teal-600" size={24} />
           </div>
           <div>
             <h1 className="text-lg font-bold">Smart KidCare</h1>
-            <p className="text-xs text-blue-200">Admin Panel</p>
+            <p className="text-xs text-teal-200">Admin Panel</p>
           </div>
         </div>
       </div>
@@ -58,7 +58,7 @@ export default function Sidebar({ activeItem = "users", onNavigate }: SidebarPro
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                 isActive
                   ? "bg-white/20 text-white font-medium shadow-sm"
-                  : "text-blue-100 hover:bg-white/10 hover:text-white"
+                  : "text-teal-100 hover:bg-white/10 hover:text-white"
               }`}
             >
               <Icon size={20} />

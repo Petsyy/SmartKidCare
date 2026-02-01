@@ -166,18 +166,6 @@ export default function Login() {
                   </LinearGradient>
                 </Pressable>
               </View>
-
-              {/* Sign Up Link */}
-              <View className="mt-8 flex-row justify-center items-center">
-                <Text className=" text-gray-700">Don't have an account? </Text>
-                <Link href="/role-selection" asChild>
-                  <TouchableOpacity activeOpacity={0.7}>
-                    <Text className="text-green-600 font-bold text-base">
-                      Sign Up
-                    </Text>
-                  </TouchableOpacity>
-                </Link>
-              </View>
             </View>
           </View>
         </KeyboardAvoidingView>

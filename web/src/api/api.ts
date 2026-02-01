@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://192.168.100.15:5000';
+const API_BASE_URL = 'http://localhost:5000';
 
 export interface User {
   _id: string;
@@ -36,6 +36,7 @@ export const getUsers = async (params?: GetUsersParams): Promise<User[]> => {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
       },
     });
 
@@ -57,6 +58,7 @@ export const updateUserStatus = async ({ userId, verificationStatus }: UpdateSta
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
       },
       body: JSON.stringify({ verificationStatus }),
     });

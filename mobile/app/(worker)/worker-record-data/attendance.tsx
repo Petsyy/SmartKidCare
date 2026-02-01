@@ -13,8 +13,8 @@ export default function RecordAttendance() {
                 </Pressable>
                 <Text className="text-2xl font-bold text-gray-800 ml-4">Record Attendance</Text>
             </View>
-            <View className="items-center justify-center flex-1">
-                <Text className="text-lg text-gray-600">Attendance record form coming soon</Text>
+            <View className=' bg-gray-50 w-15 rounded-lg p-4 shadow'>
+
             </View>
         </View>
     )

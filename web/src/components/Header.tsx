@@ -1,10 +1,29 @@
-import { Search, Bell, ChevronRight } from "lucide-react";
+import { Search, Bell, ChevronRight, LogOut } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 type HeaderProps = {
   breadcrumbs?: string[];
 };
 
 export default function Header({ breadcrumbs = ["Admin", "User Management"] }: HeaderProps) {
+  const navigate = useNavigate();
+  const [showDropdown, setShowDropdown] = useState(false);
+  const adminEmail = localStorage.getItem("adminEmail") || "admin@smartkidcare.com";
+
+  const handleLogout = () => {
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("adminEmail");
+    navigate("/login");
+  };
+
+  const getInitials = (email: string) => {
+    return email
+      .split("@")[0]
+      .split(".")
+      .map((part) => part[0].toUpperCase())
+      .join("");
+  };
   return (
     <header className="bg-white border-b border-gray-200 px-8 py-4">
       <div className="flex items-center justify-between">
@@ -28,7 +47,7 @@ export default function Header({ breadcrumbs = ["Admin", "User Management"] }: H
             <input
               type="text"
               placeholder="Search..."
-              className="pl-10 pr-4 py-2 w-64 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="pl-10 pr-4 py-2 w-64 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
             />
           </div>
 
@@ -40,15 +59,35 @@ export default function Header({ breadcrumbs = ["Admin", "User Management"] }: H
             </span>
           </button>
 
-          {/* User Profile */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-              <span className="text-white font-semibold text-sm">SA</span>
-            </div>
-            <div className="text-sm">
-              <div className="font-semibold text-gray-900">System Administrator</div>
-              <div className="text-gray-500 text-xs">admin@bcdc.edu.ph</div>
-            </div>
+          {/* User Profile with Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowDropdown(!showDropdown)}
+              className="flex items-center gap-3 hover:bg-gray-100 rounded-lg px-2 py-1 transition"
+            >
+              <div className="w-10 h-10 bg-teal-600 rounded-full flex items-center justify-center">
+                <span className="text-white font-semibold text-sm">
+                  {getInitials(adminEmail)}
+                </span>
+              </div>
+              <div className="text-sm text-left">
+                <div className="font-semibold text-gray-900">Admin</div>
+                <div className="text-gray-500 text-xs">{adminEmail}</div>
+              </div>
+            </button>
+
+            {/* Dropdown Menu */}
+            {showDropdown && (
+              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 transition text-sm font-medium"
+                >
+                  <LogOut size={16} />
+                  Logout
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
