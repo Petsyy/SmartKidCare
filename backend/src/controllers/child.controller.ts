@@ -41,7 +41,6 @@ export const createChild = async (req: Request, res: Response) => {
     const parentPassword = Math.random().toString(36).substring(2, 10);
     const hashedPassword = await bcrypt.hash(parentPassword, 10);
 
-    // Create parent account
     const parent = await User.create({
       firstName: firstName,
       lastName: lastName,
@@ -51,7 +50,6 @@ export const createChild = async (req: Request, res: Response) => {
       verificationStatus: "approved",
     });
 
-    // Create child with parent reference
     const child = await Child.create({
       firstName,
       middleName,

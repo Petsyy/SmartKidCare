@@ -34,7 +34,6 @@ type NoticeItemProps = {
 
 export default function WorkerDashboard() {
   const router = useRouter();
-  // Demo data (replace with real API/state)
   const workerName = "Elena";
   const dateLabel = "Friday, January 30, 2026";
   const centerName = "Bonuan Child Development Center";
@@ -50,7 +49,6 @@ export default function WorkerDashboard() {
           contentContainerClassName="px-5 pb-28 pt-4"
           showsVerticalScrollIndicator={false}
         >
-          {/* Header */}
           <View className="mb-4">
             <Text className="text-4xl font-extrabold text-gray-900">
               Good Morning, {workerName}!
@@ -60,7 +58,6 @@ export default function WorkerDashboard() {
             </Text>
           </View>
 
-          {/* Date / Center Card */}
           <View className="mb-5 rounded-3xl border border-teal-500 bg-teal-500 p-4">
             <View className="flex-row items-start">
               <View className="h-11 w-11 items-center justify-center rounded-full bg-teal-100">
@@ -91,7 +88,6 @@ export default function WorkerDashboard() {
             </View>
           </View>
 
-          {/* Stats Grid (2x2) */}
           <View className="mb-6 flex-row gap-4">
             <View className="flex-1">
               <StatCard
@@ -166,7 +162,6 @@ export default function WorkerDashboard() {
             </View>
           </View>
 
-          {/* Recent Notifications */}
           <View className="rounded-3xl bg-white p-5 shadow-sm">
             <View className="mb-4 flex-row items-center justify-between">
               <Text className="text-xl font-bold text-gray-900">

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Shield, Mail, Lock, AlertCircle } from "lucide-react";
+import { Shield, UserIcon, Lock, AlertCircle } from "lucide-react";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -19,7 +19,6 @@ export default function AdminLogin() {
         throw new Error("Please fill in all fields");
       }
 
-      // Call the backend admin login endpoint
       const response = await fetch("http://localhost:5000/api/auth/admin/login", {
         method: "POST",
         headers: {
@@ -34,11 +33,9 @@ export default function AdminLogin() {
         throw new Error(data.message || "Login failed");
       }
 
-      // Store the JWT token from the backend
       localStorage.setItem("authToken", data.token);
       localStorage.setItem("adminUsername", username);
 
-      // Redirect to dashboard
       navigate("/users");
     } catch (err: any) {
       setError(err.message || "Login failed. Please try again.");
@@ -50,7 +47,6 @@ export default function AdminLogin() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 py-8">
       <div className="w-full max-w-md my-auto">
-        {/* Card */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden max-h-[95vh] overflow-y-auto">
           {/* Header */}
           <div className="px-8 py-6 text-center border-b border-gray-100">
@@ -63,15 +59,13 @@ export default function AdminLogin() {
             <p className="text-gray-500 text-sm mt-1">Admin Portal</p>
           </div>
 
-          {/* Form Content */}
+
           <div className="px-8 py-8">
-            {/* Welcome Text */}
             <div className="mb-4">
               <h2 className="text-xl font-semibold text-gray-900">Welcome Back</h2>
               <p className="text-sm text-gray-500 mt-1">Sign in to your account to continue</p>
             </div>
 
-            {/* Error Message */}
             {error && (
               <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex gap-3">
                 <AlertCircle className="text-red-600 shrink-0" size={20} />
@@ -79,15 +73,13 @@ export default function AdminLogin() {
               </div>
             )}
 
-            {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Username */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Username
                 </label>
                 <div className="relative">
-                  <Mail
+                  <UserIcon
                     size={18}
                     className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
                   />
@@ -102,7 +94,6 @@ export default function AdminLogin() {
                 </div>
               </div>
 
-              {/* Password */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Password
@@ -123,7 +114,6 @@ export default function AdminLogin() {
                 </div>
               </div>
 
-              {/* Login Button */}
               <button
                 type="submit"
                 disabled={isLoading}
@@ -141,7 +131,6 @@ export default function AdminLogin() {
             </form>
           </div>
 
-          {/* Footer */}
           <div className="px-8 py-5 bg-gray-50 border-t border-gray-100">
             <p className="text-xs text-gray-500 text-center">
               © 2026 Smart KidCare. All rights reserved.

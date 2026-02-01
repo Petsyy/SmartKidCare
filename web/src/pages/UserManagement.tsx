@@ -74,7 +74,6 @@ export default function UserManagement() {
       onNavigate={(path) => navigate(`/${path}`)}
     >
       <div className="p-8 space-y-6">
-        {/* Page Header — MATCHED */}
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">
             User Management
@@ -84,7 +83,6 @@ export default function UserManagement() {
           </p>
         </div>
 
-        {/* Tabs — tightened */}
         <div className="flex gap-2">
           {(["worker", "parent"] as const).map((tab) => (
             <button
@@ -101,16 +99,13 @@ export default function UserManagement() {
           ))}
         </div>
 
-        {/* Error */}
         {error && (
           <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
             {error}
           </div>
         )}
 
-        {/* Table Card — MATCHED TO CHILDREN */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          {/* Card Header */}
           <div className="p-6 border-b flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900">
               {activeTab === "worker"
@@ -119,7 +114,6 @@ export default function UserManagement() {
             </h2>
           </div>
 
-          {/* Table */}
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -195,7 +189,6 @@ export default function UserManagement() {
           </div>
         </div>
 
-        {/* Modal */}
         <DocumentReviewModal
           user={selectedUser}
           isOpen={isModalOpen}

@@ -39,7 +39,6 @@ export default function ParentDashboard() {
       scrollEnabled={true}
       showsVerticalScrollIndicator={true}
     >
-      {/* Greeting Section */}
       <View className="mb-6">
         <Text className="text-3xl font-bold text-gray-800">Dashboard</Text>
         <Text className="text-base text-gray-500 mt-1">
@@ -76,8 +75,6 @@ export default function ParentDashboard() {
         </View>
       </View>
 
-      {/* Quick Actions */}
-      {/* Record Feeding Button */}
       <View>
         <Text className="text-xl font-bold text-gray-800 mt-1">
           Quick Actions
@@ -94,7 +91,6 @@ export default function ParentDashboard() {
               Attendance Details
             </Text>
           </Pressable>
-          {/* Record Attendance Button */}
           <Pressable
             className="flex-1 flex-row bg-teal-500 rounded-2xl py-5 px-4 items-center"
             onPress={handleViewAttendance}
@@ -109,9 +105,7 @@ export default function ParentDashboard() {
         </View>
       </View>
 
-      {/* Insights Cards */}
       <View className="mt-6">
-        {/* Attendance Breakdown Card */}
         <View className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-4">
           <View className="flex-row items-center mb-3">
             <Calendar size={18} color="#10B981" />
@@ -125,7 +119,6 @@ export default function ParentDashboard() {
           <StatRow color="#9CA3AF" label="Absent" value="0 days" />
         </View>
 
-        {/* Feeding Overview Card */}
         <View className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <View className="flex-row items-center mb-3">
             <Utensils size={18} color="#10B981" />

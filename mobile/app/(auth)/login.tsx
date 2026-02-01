@@ -10,7 +10,6 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Link } from "expo-router";
 import { Baby, Eye, EyeOff, Mail, Lock } from "lucide-react-native";
 import { useAuth } from "@/src/hooks/useAuth";
 import type { User } from "@/src/context/AuthContext";
@@ -72,7 +71,6 @@ export default function Login() {
           className='flex-1'
         >
           <View className="flex-1 justify-center">
-            {/* Header with Gradient */}
             <View className="mx-5 rounded-3xl overflow-hidden shadow-lg shadow-green-300">
               <LinearGradient
                 colors={['#10b981', '#059669']}
@@ -90,7 +88,6 @@ export default function Login() {
               </LinearGradient>
             </View>
 
-            {/* Form */}
             <View className="px-5 -mt-10 pb-6">
               <View className="bg-white rounded-3xl p-6 shadow-lg shadow-gray-200">
                 <FormField label="Email Address" icon={Mail}>
@@ -130,14 +127,12 @@ export default function Login() {
                   </View>
                 </FormField>
 
-                {/* Forgot Password */}
                 <TouchableOpacity className="self-end mb-4">
                   <Text className="text-green-600 text-sm font-medium">
                     Forgot Password?
                   </Text>
                 </TouchableOpacity>
 
-                {/* Login Button */}
                 <Pressable
                   onPress={handleLogin}
                   disabled={isLoading}

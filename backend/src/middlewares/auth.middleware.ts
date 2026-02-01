@@ -14,10 +14,6 @@ declare global {
   }
 }
 
-/**
- * Middleware to verify JWT token from Authorization: Bearer <token>.
- * Attaches decoded payload to req.user for use in protected routes (e.g. mobile).
- */
 export const authenticateToken = (req: Request, res: Response, next: NextFunction): void => {
   const authHeader = req.headers.authorization;
   const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;

@@ -95,7 +95,6 @@ export default function Onboarding() {
               {item.description}
             </Text>
 
-            {/* Pagination under description */}
             <View className="flex-row justify-center mt-6 mb-10 gap-2">
               {slides.map((_, index) => (
                 <View
@@ -113,7 +112,6 @@ export default function Onboarding() {
       />
 
       <View className="absolute bottom-14 w-full items-center px-6">
-        {/* Get Started Button - Fixed height space */}
         <View className="w-full h-16 justify-center">
           {currentIndex === slides.length - 1 && (
             <TouchableOpacity

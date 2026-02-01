@@ -58,7 +58,6 @@ export const login = async (
   return data;
 };
 
-/** Get current user (protected route – send token in Authorization header). */
 export const getMe = async (token: string) => {
   const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
     method: "GET",

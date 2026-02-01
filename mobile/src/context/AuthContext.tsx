@@ -27,7 +27,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const restoreSession = async () => {
       try {
-        // TODO: restore from AsyncStorage / SecureStore for persistence
       } finally {
         setLoading(false);
       }

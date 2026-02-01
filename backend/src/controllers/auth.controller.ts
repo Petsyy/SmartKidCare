@@ -44,10 +44,6 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Admin login - for the web admin portal
- * Creates a JWT token with admin role
- */
 export const adminLogin = async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body;
@@ -78,7 +74,6 @@ export const adminLogin = async (req: Request, res: Response) => {
   }
 };
 
-/** Returns the current user from the JWT (for mobile protected routes). */
 export const getMe = async (req: Request, res: Response) => {
   try {
     if (!req.user?.id) {
