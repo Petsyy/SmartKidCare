@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Plus, } from "lucide-react";
-import Layout from "../components/Layout";
-import AddChildModal, { type ChildFormData } from "../components/AddChildModal";
+import Layout from "../components/layout/Layout";
+import AddChildModal, { type ChildFormData } from "../components/modals/AddChildModal";
 import { showParentCredentialsModal, showErrorModal } from "../utils/sweetalert.modal";
 
 export type Child = {

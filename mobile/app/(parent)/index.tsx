@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   StatRow,
   ProgressBar,
-} from "../../src/components/helpers/dashboard-helpers";
+} from "@/src/utils/dashboard-overview";
 
 export default function ParentDashboard() {
   const router = useRouter();

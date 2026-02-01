@@ -139,7 +139,7 @@ export default function AddChildModal({
       childLinkCode,
     });
 
-    // Reset form after submission (will be called before async completes, but that's expected)
+    // Reset after submission (will be called before async completes, but that's expected)
   };
 
   if (!isOpen) return null;
@@ -390,4 +390,3 @@ export default function AddChildModal({
     </div>
   );
 }
-

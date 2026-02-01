@@ -1,6 +1,6 @@
 import { X, CheckCircle, AlertCircle } from "lucide-react";
 import { useState } from "react";
-import { type User } from "../api/api";
+import { type User } from "../../api/api";
 
 type DocumentReviewModalProps = {
   user: User | null;

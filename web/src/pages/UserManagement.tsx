@@ -4,8 +4,8 @@ import {
   FileText,
 } from "lucide-react";
 import { getUsers, updateUserStatus, type User } from "../api/api";
-import DocumentReviewModal from "../components/DocumentReviewModal";
-import Layout from "../components/Layout";
+import DocumentReviewModal from "../components/modals/DocumentReviewModal";
+import Layout from "../components/layout/Layout";
 
 type UserStatus = "pending" | "approved" | "rejected";
 
