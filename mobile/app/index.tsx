@@ -11,7 +11,7 @@ export default function Index() {
   }
 
   if (role === "parent") {
-    return <Redirect href="/(parent)/parent-dashboard" />;
+    return <Redirect href="/(parent)" />;
   }
 
   if (role === "worker") {

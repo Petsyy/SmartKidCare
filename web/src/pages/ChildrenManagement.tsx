@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Plus, } from "lucide-react";
+import { Search, Plus, Copy } from "lucide-react";
 import Layout from "../components/layout/Layout";
 import AddChildModal, { type ChildFormData } from "../components/modals/AddChildModal";
 import { showParentCredentialsModal, showErrorModal } from "../utils/sweetalert.modal";
@@ -17,7 +17,6 @@ export type Child = {
   enrollmentDate: string;
   childLinkCode?: string;
 };
-
 
 export default function ChildrenManagement() {
   const navigate = useNavigate();
@@ -69,22 +68,26 @@ export default function ChildrenManagement() {
         body: JSON.stringify(childData),
       });
 
+      const data = await res.json().catch(() => ({}));
+
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Failed to save child");
+        throw new Error((data as { message?: string }).message || "Failed to save child");
       }
 
-      const responseData = await res.json();
-      const { child, parentCredentials } = responseData;
+      const { child, parentCredentials } = data;
 
       setChildren((prev) => [...prev, child]);
-
-      // Show parent credentials modal
-      if (parentCredentials) {
-        showParentCredentialsModal(parentCredentials);
-      }
-
       setIsModalOpen(false);
+
+      // Show parent credentials modal after Add Child modal closes (so it appears on top)
+      if (parentCredentials) {
+        const creds = {
+          email: parentCredentials.email ?? "",
+          password: parentCredentials.tempPassword ?? "",
+          childLinkCode: parentCredentials.childLinkCode ?? child?.childLinkCode ?? null,
+        };
+        setTimeout(() => showParentCredentialsModal(creds), 350);
+      }
     } catch (error) {
       console.error("Failed to save child:", error);
       const errorMessage = error instanceof Error ? error.message : "Failed to save child";
@@ -224,8 +227,26 @@ export default function ChildrenManagement() {
                           {child.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 font-mono text-xs text-gray-800">
-                        {child.childLinkCode}
+                      <td className="px-6 py-4">
+                        {child.childLinkCode ? (
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-sm text-gray-900">
+                              {child.childLinkCode}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(child.childLinkCode ?? "");
+                              }}
+                              className="p-1 rounded hover:bg-gray-200 text-gray-500 hover:text-gray-700"
+                              title="Copy link code"
+                            >
+                              <Copy size={14} />
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
                       </td>
                     </tr>
                   ))

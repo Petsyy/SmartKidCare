@@ -19,7 +19,7 @@ const ChildSchema = new mongoose.Schema(
     },
 
     studentId: { type: String, unique: true },
-    childLinkCode: { type: String, unique: true },
+    childLinkCode: { type: String, unique: true, sparse: true },
 
     parent: {
       type: mongoose.Schema.Types.ObjectId,

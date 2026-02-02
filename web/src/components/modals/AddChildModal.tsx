@@ -12,6 +12,10 @@ export type ChildFormData = {
   schoolYear: string;
   status: string;
 
+  parentFirstName: string;
+  parentLastName: string;
+  parentEmail: string;
+
   studentId?: string;
   childLinkCode?: string;
 };
@@ -41,6 +45,10 @@ const initialFormData: ChildFormData = {
   enrollmentDate: "",
   schoolYear: "2024-2025",
   status: "Active",
+
+  parentFirstName: "",
+  parentLastName: "",
+  parentEmail: "",
 };
 
 export default function AddChildModal({
@@ -345,6 +353,66 @@ export default function AddChildModal({
               </div>
             </div>
           </div>
+
+          {/* Parent Information Section */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900 mb-4">
+              Parent / Guardian Information
+            </h3>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Parent First Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="parentFirstName"
+                    value={formData.parentFirstName}
+                    onChange={handleInputChange}
+                    placeholder="Enter parent first name"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg
+                     focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Parent Last Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="parentLastName"
+                    value={formData.parentLastName}
+                    onChange={handleInputChange}
+                    placeholder="Enter parent last name"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg
+                     focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Parent Email (Login Credential) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  name="parentEmail"
+                  value={formData.parentEmail}
+                  onChange={handleInputChange}
+                  placeholder="parent@email.com"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg
+                   focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
 
           {/* Info Box */}
           <div className="bg-teal-50 border border-teal-200 rounded-lg p-4 flex gap-3">

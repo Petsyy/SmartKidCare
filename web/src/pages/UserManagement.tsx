@@ -1,23 +1,76 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  FileText,
-} from "lucide-react";
-import { getUsers, updateUserStatus, type User } from "../api/api";
-import DocumentReviewModal from "../components/modals/DocumentReviewModal";
+import { Plus } from "lucide-react";
+import { getUsers, type User } from "../api/authentication.api";
+import AddTeacherModal from "../components/modals/AddTeacherModal";
 import Layout from "../components/layout/Layout";
+import { handleViewUser, showErrorModal, showTeacherCredentialsModal } from "../utils/sweetalert.modal";
+import { getParentChildren, toggleUserStatus, resetUserPassword } from "../api/admin.api";
+import EditUserModal from "../components/modals/EditUserModal";
+import Swal from "sweetalert2";
 
-type UserStatus = "pending" | "approved" | "rejected";
 
 export default function UserManagement() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<"worker" | "parent">("worker");
+  const [activeTab, setActiveTab] = useState<"teacher" | "parent">("teacher");
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
+  const [showAddTeacherModal, setShowAddTeacherModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+
+
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+  };
+
+
+  const handleResetPassword = async (userId: string) => {
+    try {
+      const res = await resetUserPassword(userId);
+
+      await showTeacherCredentialsModal(res.credentials);
+    } catch (err: any) {
+      showErrorModal(err.message || "Failed to reset password");
+    }
+  };
+
+  const handleToggleStatus = async (userId: string) => {
+    try {
+      await toggleUserStatus(userId);
+      fetchUsers(); // refresh table
+    } catch (err: any) {
+      showErrorModal(err.message || "Failed to update account status");
+    }
+  };
+
+  const handleViewChildren = async (parentId: string) => {
+    try {
+      const children = await getParentChildren(parentId);
+
+      if (!children.length) {
+        Swal.fire({
+          title: "Linked Children",
+          text: "No children linked to this parent.",
+          confirmButtonColor: "#0D9488",
+        });
+        return;
+      }
+
+      Swal.fire({
+        title: "Linked Children",
+        html: children
+          .map(
+            (c: any) =>
+              `<p>${c.firstName} ${c.lastName} <span style="color:#6b7280">(${c.studentId || "—"})</span></p>`
+          )
+          .join(""),
+        confirmButtonColor: "#0D9488",
+      });
+    } catch (err: any) {
+      showErrorModal(err.message || "Failed to load children");
+    }
+  };
 
   useEffect(() => {
     fetchUsers();
@@ -36,37 +89,6 @@ export default function UserManagement() {
     }
   };
 
-  const handleOpenReview = (user: User) => {
-    setSelectedUser(user);
-    setIsModalOpen(true);
-  };
-
-  const handleUpdateStatus = async (status: UserStatus) => {
-    if (!selectedUser) return;
-    setIsUpdating(true);
-    try {
-      await updateUserStatus({ userId: selectedUser._id, verificationStatus: status });
-      setIsModalOpen(false);
-      setSelectedUser(null);
-      fetchUsers();
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  const statusBadge = (status: UserStatus) => {
-    switch (status) {
-      case "approved":
-        return "bg-green-100 text-green-700";
-      case "pending":
-        return "bg-yellow-100 text-yellow-700";
-      case "rejected":
-        return "bg-red-100 text-red-700";
-    }
-  };
-
   return (
     <Layout
       activeItem="users"
@@ -74,29 +96,49 @@ export default function UserManagement() {
       onNavigate={(path) => navigate(`/${path}`)}
     >
       <div className="p-8 space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">
-            User Management
-          </h1>
-          <p className="text-sm text-gray-500">
-            Manage teacher and parent accounts
-          </p>
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">
+              User Management
+            </h1>
+            <p className="text-sm text-gray-500">
+              Manage teacher and parent accounts
+            </p>
+          </div>
+
+          {activeTab === "teacher" && (
+            <button
+              onClick={() => setShowAddTeacherModal(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition"
+            >
+              <Plus size={16} />
+              Add Teacher
+            </button>
+          )}
         </div>
 
+        {/* Tabs */}
         <div className="flex gap-2">
-          {(["worker", "parent"] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                activeTab === tab
-                  ? "bg-teal-50 text-teal-700 border border-teal-200"
-                  : "text-gray-600 hover:bg-gray-100"
+          <button
+            onClick={() => setActiveTab("teacher")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${activeTab === "teacher"
+              ? "bg-teal-50 text-teal-700 border border-teal-200"
+              : "text-gray-600 hover:bg-gray-100"
               }`}
-            >
-              {tab === "worker" ? "Teacher Accounts" : "Parent Accounts"}
-            </button>
-          ))}
+          >
+            Teachers
+          </button>
+
+          <button
+            onClick={() => setActiveTab("parent")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${activeTab === "parent"
+              ? "bg-teal-50 text-teal-700 border border-teal-200"
+              : "text-gray-600 hover:bg-gray-100"
+              }`}
+          >
+            Parents
+          </button>
         </div>
 
         {error && (
@@ -105,12 +147,11 @@ export default function UserManagement() {
           </div>
         )}
 
+        {/* Table */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="p-6 border-b flex items-center justify-between">
+          <div className="p-6 border-b">
             <h2 className="text-lg font-semibold text-gray-900">
-              {activeTab === "worker"
-                ? "Teacher Account Verification"
-                : "Parent Account Verification"}
+              {activeTab === "teacher" ? "Teacher Accounts" : "Parent Accounts"}
             </h2>
           </div>
 
@@ -118,18 +159,22 @@ export default function UserManagement() {
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
+                  {activeTab === "teacher" && (
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                      Employee ID
+                    </th>
+                  )}
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
                     Name
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
                     Email
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
-                    Phone
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
-                    Status
-                  </th>
+                  {activeTab === "teacher" && (
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                      Status
+                    </th>
+                  )}
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
                     Actions
                   </th>
@@ -139,7 +184,10 @@ export default function UserManagement() {
               <tbody>
                 {isLoading && (
                   <tr>
-                    <td colSpan={5} className="px-6 py-10 text-center text-gray-500">
+                    <td
+                      colSpan={activeTab === "teacher" ? 5 : 3}
+                      className="px-6 py-10 text-center text-gray-500"
+                    >
                       Loading users...
                     </td>
                   </tr>
@@ -147,60 +195,107 @@ export default function UserManagement() {
 
                 {!isLoading && users.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                      No {activeTab === "worker" ? "teacher" : "parent"} accounts found.
+                    <td
+                      colSpan={activeTab === "teacher" ? 5 : 3}
+                      className="px-6 py-12 text-center text-gray-500"
+                    >
+                      No {activeTab === "teacher" ? "teachers" : "parents"} found.
                     </td>
                   </tr>
                 )}
 
                 {users.map((user) => (
                   <tr key={user._id} className="hover:bg-gray-50">
+                    {activeTab === "teacher" && (
+                      <td className="px-6 py-4 font-mono text-sm text-gray-900">
+                        {user.employeeId || "—"}
+                      </td>
+                    )}
                     <td className="px-6 py-4 font-medium text-gray-900">
-                      {user.name}
+                      {user.firstName} {user.lastName}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
                       {user.email}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {user.phone || "N/A"}
+                    {activeTab === "teacher" && (
+                      <td className="px-6 py-4 text-sm">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${(user as any).status === "Active"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-red-100 text-red-800"
+                          }`}>
+                          {(user as any).status || "Active"}
+                        </span>
+                      </td>
+                    )}
+                    <td className="px-6 py-4 text-sm">
+                      <div className="flex items-center gap-2">
+                        {/* View */}
+                        <button
+                          onClick={() => handleViewUser(user)}
+                          className="text-teal-600 hover:underline"
+                        >
+                          View
+                        </button>
+                        {/* Edit */}
+                        <button
+                          onClick={() => handleEditUser(user)}
+                          className="text-blue-600 hover:underline"
+                        >
+                          Edit
+                        </button>
+
+                        {/* Reset Password */}
+                        <button
+                          onClick={() => handleResetPassword(user._id)}
+                          className="text-orange-600 hover:underline"
+                        >
+                          Reset
+                        </button>
+
+                        {/* Activate / Deactivate */}
+                        <button
+                          onClick={() => handleToggleStatus(user._id)}
+                          className="text-gray-600 hover:underline"
+                        >
+                          {(user as any).isActive === false ? "Activate" : "Deactivate"}
+                        </button>
+
+                        {/* Parent-only */}
+                        {activeTab !== "teacher" && (
+                          <button
+                            onClick={() => handleViewChildren(user._id)}
+                            className="text-blue-600 hover:underline"
+                          >
+                            Children
+                          </button>
+                        )}
+                      </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`inline-flex px-3 py-1 rounded-md text-xs font-medium capitalize ${statusBadge(
-                          user.verificationStatus
-                        )}`}
-                      >
-                        {user.verificationStatus}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <button
-                        onClick={() => handleOpenReview(user)}
-                        className="inline-flex items-center gap-2 px-3 py-2 text-sm border rounded-lg hover:bg-gray-50"
-                      >
-                        <FileText size={16} />
-                        Review Documents
-                      </button>
-                    </td>
+
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         </div>
-
-        <DocumentReviewModal
-          user={selectedUser}
-          isOpen={isModalOpen}
-          onClose={() => {
-            setIsModalOpen(false);
-            setSelectedUser(null);
-          }}
-          onApprove={() => handleUpdateStatus("approved")}
-          onReject={() => handleUpdateStatus("rejected")}
-          isLoading={isUpdating}
-        />
       </div>
+
+      {editingUser && (
+        <EditUserModal
+          user={editingUser}
+          onClose={() => setEditingUser(null)}
+          onUpdated={fetchUsers}
+          onDeleted={fetchUsers}
+        />
+      )}
+
+      {/* Add Teacher Modal */}
+      {showAddTeacherModal && (
+        <AddTeacherModal
+          onClose={() => setShowAddTeacherModal(false)}
+          onCreated={fetchUsers}
+        />
+      )}
     </Layout>
   );
 }

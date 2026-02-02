@@ -5,60 +5,45 @@ export interface LoginCredentials {
   password: string;
 }
 
+export interface LoggedInUser {
+  _id: string;
+  email: string;
+  role: "teacher" | "parent";
+  firstName?: string;
+  lastName?: string;
+  mustChangePassword?: boolean;
+}
+
 export interface LoginResponse {
   token: string;
-  user: {
-    _id: string;
-    email: string;
-    role: string;
-    firstName?: string;
-    lastName?: string;
-    verificationStatus?: string;
-  };
-}
-
-interface WorkerRegistrationData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  password: string;
-  documents?: string[];
-}
-
-interface RegistrationResponse {
-  message: string;
-  user?: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone: string;
-    role: string;
-    verificationStatus: string;
-  };
-  error?: string;
+  user: LoggedInUser;
 }
 
 export const login = async (
-  credentials: LoginCredentials,
+  credentials: LoginCredentials
 ): Promise<LoginResponse> => {
   const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify(credentials),
   });
 
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || data.error || "Login failed");
+    throw new Error(data.message || "Login failed");
+  }
+
+  if (data.user.role === "admin") {
+    throw new Error("Admin accounts cannot log in on the mobile app");
   }
 
   return data;
 };
 
-export const getMe = async (token: string) => {
+export const getMe = async (token: string): Promise<LoggedInUser> => {
   const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
     method: "GET",
     headers: {
