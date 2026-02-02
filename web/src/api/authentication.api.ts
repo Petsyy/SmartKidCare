@@ -8,6 +8,7 @@ export interface User {
   lastName: string;
   email: string;
   role: "admin" | "teacher" | "parent";
+  isActive?: boolean;
   mustChangePassword: boolean;
   createdAt: string;
   updatedAt: string;
