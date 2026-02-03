@@ -14,7 +14,8 @@ import { Baby, Eye, EyeOff, Mail, Lock } from "lucide-react-native";
 import { useAuth } from "@/src/hooks/useAuth";
 import type { User } from "@/src/context/AuthContext";
 import { LinearGradient } from 'expo-linear-gradient';
-import { login as apiLogin } from "@/src/api/api";
+import { login as apiLogin } from "@/src/api/authentication.api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const FormField = ({ label, children, icon: Icon }: { label: string; children: React.ReactNode; icon?: React.ComponentType<{ size?: number; color?: string; style?: object }> }) => (
   <View className="mb-5">
@@ -49,8 +50,11 @@ export default function Login() {
       const appUser: User = {
         id: apiUser._id,
         email: apiUser.email,
-        role: apiUser.role === "parent" || apiUser.role === "worker" ? apiUser.role : "worker",
+        role: apiUser.role === "parent" || apiUser.role === "teacher" ? apiUser.role : "teacher",
       };
+
+      await AsyncStorage.setItem("token", authToken);
+      await AsyncStorage.setItem("user", JSON.stringify(appUser));
 
       login(appUser, authToken);
     } catch (error: any) {
