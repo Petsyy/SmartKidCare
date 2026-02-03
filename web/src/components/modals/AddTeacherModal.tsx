@@ -2,7 +2,7 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import Swal from "sweetalert2";
 import { createTeacher } from "../../api/teacher.api";
-import { showTeacherCredentialsModal, showErrorModal } from "../../utils/sweetalert.modal";
+import { showTeacherCreatedWithPasswordModal, showErrorModal } from "../../utils/sweetalert.modal";
 
 type Props = {
   onClose: () => void;
@@ -12,6 +12,7 @@ type Props = {
 export default function AddTeacherModal({ onClose, onCreated }: Props) {
   const [form, setForm] = useState({
     firstName: "",
+    middleName: "",
     lastName: "",
     email: "",
     phone: "",
@@ -31,7 +32,7 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.firstName || !form.lastName || !form.email) {
+    if (!form.firstName || !form.middleName || !form.lastName || !form.email) {
       Swal.fire({
         title: "Missing Fields",
         text: "Please fill all required fields",
@@ -49,7 +50,13 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
       onClose();
 
       setTimeout(async () => {
-        await showTeacherCredentialsModal(res.credentials);
+        // Show one combined modal with both teacher info and password
+        await showTeacherCreatedWithPasswordModal(
+          form.firstName,
+          form.lastName,
+          form.email,
+          res.credentials
+        );
 
         onCreated();
 
@@ -88,8 +95,8 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
               Teacher Information
             </h3>
             <div className="space-y-4">
-              {/* First Name and Last Name */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* First Name, Middle Name Last Name */}
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     First Name <span className="text-red-500">*</span>
@@ -100,6 +107,20 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
                     value={form.firstName}
                     onChange={handleInputChange}
                     placeholder="Enter first name"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Middle Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="middleName"
+                    value={form.middleName}
+                    onChange={handleInputChange}
+                    placeholder="Enter middle name"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                     required
                   />
@@ -209,7 +230,7 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
             </button>
           </div>
         </form>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 }

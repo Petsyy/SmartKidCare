@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { Plus } from "lucide-react";
+import { Plus, Eye, Pencil, KeyRound, Power, Users, MoreVertical, Search } from "lucide-react";
 import { getUsers, type User } from "../api/authentication.api";
 import AddTeacherModal from "../components/modals/AddTeacherModal";
 import Layout from "../components/layout/Layout";
-import { handleViewUser, showErrorModal, showTeacherCredentialsModal } from "../utils/sweetalert.modal";
+import { handleViewUser, showErrorModal, showResetPasswordModal, showToggleUserStatusModal, showToggleUserStatusSuccessModal } from "../utils/sweetalert.modal";
 import { getParentChildren, toggleUserStatus, resetUserPassword } from "../api/admin.api";
 import EditUserModal from "../components/modals/EditUserModal";
 import Swal from "sweetalert2";
-
 
 export default function UserManagement() {
   const navigate = useNavigate();
@@ -18,26 +18,53 @@ export default function UserManagement() {
   const [error, setError] = useState<string | null>(null);
   const [showAddTeacherModal, setShowAddTeacherModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [openMenuUserId, setOpenMenuUserId] = useState<string | null>(null);
+  const [menuAnchorRect, setMenuAnchorRect] = useState<DOMRect | null>(null);
+  const [menuUser, setMenuUser] = useState<User | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
+  const openMenu = (user: User, buttonEl: HTMLButtonElement) => {
+    setMenuUser(user);
+    setOpenMenuUserId(user._id);
+    setMenuAnchorRect(buttonEl.getBoundingClientRect());
+  };
+
+  const closeMenu = () => {
+    setOpenMenuUserId(null);
+    setMenuAnchorRect(null);
+    setMenuUser(null);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = () => closeMenu();
+    if (openMenuUserId) {
+      document.addEventListener("click", handleClickOutside);
+      return () => document.removeEventListener("click", handleClickOutside);
+    }
+  }, [openMenuUserId]);
 
   const handleEditUser = (user: User) => {
     setEditingUser(user);
   };
 
-
   const handleResetPassword = async (userId: string) => {
     try {
       const res = await resetUserPassword(userId);
 
-      await showTeacherCredentialsModal(res.credentials);
+      await showResetPasswordModal(res.credentials);
     } catch (err: any) {
       showErrorModal(err.message || "Failed to reset password");
     }
   };
 
-  const handleToggleStatus = async (userId: string) => {
+  const handleToggleStatus = async (user: User) => {
+    const userName = `${user.firstName} ${user.middleName} ${user.lastName}`;
+    const isActivating = user.isActive === false;
+    const confirmed = await showToggleUserStatusModal({ userName, isActivating });
+    if (!confirmed) return;
     try {
-      await toggleUserStatus(userId);
+      await toggleUserStatus(user._id);
+      await showToggleUserStatusSuccessModal({ userName, isActivating });
       fetchUsers(); // refresh table
     } catch (err: any) {
       showErrorModal(err.message || "Failed to update account status");
@@ -89,6 +116,15 @@ export default function UserManagement() {
     }
   };
 
+  const filteredUsers = users.filter((user) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    const fullName = `${user.firstName} ${user.middleName} ${user.lastName}`.toLowerCase();
+    const email = user.email.toLowerCase();
+    const employeeId = (user.employeeId || "").toLowerCase();
+    return fullName.includes(q) || email.includes(q) || employeeId.includes(q);
+  });
+
   return (
     <Layout
       activeItem="users"
@@ -97,25 +133,13 @@ export default function UserManagement() {
     >
       <div className="p-8 space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900">
-              User Management
-            </h1>
-            <p className="text-sm text-gray-500">
-              Manage teacher and parent accounts
-            </p>
-          </div>
-
-          {activeTab === "teacher" && (
-            <button
-              onClick={() => setShowAddTeacherModal(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition"
-            >
-              <Plus size={16} />
-              Add Teacher
-            </button>
-          )}
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">
+            User Management
+          </h1>
+          <p className="text-sm text-gray-500">
+            Manage teacher and parent accounts
+          </p>
         </div>
 
         {/* Tabs */}
@@ -149,10 +173,34 @@ export default function UserManagement() {
 
         {/* Table */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="p-6 border-b">
+          <div className="p-6 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <h2 className="text-lg font-semibold text-gray-900">
               {activeTab === "teacher" ? "Teacher Accounts" : "Parent Accounts"}
             </h2>
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1 sm:flex-initial">
+                <Search
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                />
+                <input
+                  type="text"
+                  placeholder={`Search ${activeTab === "teacher" ? "teachers" : "parents"}...`}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 pr-3 py-2 w-full sm:w-56 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                />
+              </div>
+              {activeTab === "teacher" && (
+                <button
+                  onClick={() => setShowAddTeacherModal(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition shrink-0"
+                >
+                  <Plus size={16} />
+                  Add Teacher
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="overflow-x-auto">
@@ -170,11 +218,9 @@ export default function UserManagement() {
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
                     Email
                   </th>
-                  {activeTab === "teacher" && (
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
-                      Status
-                    </th>
-                  )}
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                    Status
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
                     Actions
                   </th>
@@ -185,7 +231,7 @@ export default function UserManagement() {
                 {isLoading && (
                   <tr>
                     <td
-                      colSpan={activeTab === "teacher" ? 5 : 3}
+                      colSpan={activeTab === "teacher" ? 5 : 4}
                       className="px-6 py-10 text-center text-gray-500"
                     >
                       Loading users...
@@ -196,7 +242,7 @@ export default function UserManagement() {
                 {!isLoading && users.length === 0 && (
                   <tr>
                     <td
-                      colSpan={activeTab === "teacher" ? 5 : 3}
+                      colSpan={activeTab === "teacher" ? 5 : 4}
                       className="px-6 py-12 text-center text-gray-500"
                     >
                       No {activeTab === "teacher" ? "teachers" : "parents"} found.
@@ -204,7 +250,18 @@ export default function UserManagement() {
                   </tr>
                 )}
 
-                {users.map((user) => (
+                {!isLoading && users.length > 0 && filteredUsers.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={activeTab === "teacher" ? 5 : 4}
+                      className="px-6 py-12 text-center text-gray-500"
+                    >
+                      No {activeTab === "teacher" ? "teachers" : "parents"} match your search.
+                    </td>
+                  </tr>
+                )}
+
+                {filteredUsers.map((user) => (
                   <tr key={user._id} className="hover:bg-gray-50">
                     {activeTab === "teacher" && (
                       <td className="px-6 py-4 font-mono text-sm text-gray-900">
@@ -212,63 +269,63 @@ export default function UserManagement() {
                       </td>
                     )}
                     <td className="px-6 py-4 font-medium text-gray-900">
-                      {user.firstName} {user.lastName}
+                      {user.lastName}, {user.firstName} {user.middleName}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
                       {user.email}
                     </td>
-                    {activeTab === "teacher" && (
-                      <td className="px-6 py-4 text-sm">
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${(user as any).status === "Active"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-red-100 text-red-800"
-                          }`}>
-                          {(user as any).status || "Active"}
-                        </span>
-                      </td>
-                    )}
                     <td className="px-6 py-4 text-sm">
-                      <div className="flex items-center gap-2">
-                        {/* View */}
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${user.isActive !== false
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                        }`}>
+                        {user.isActive !== false ? "Active" : "Inactive"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-wrap items-center gap-1.5">
                         <button
                           onClick={() => handleViewUser(user)}
-                          className="text-teal-600 hover:underline"
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-teal-700 bg-teal-50 rounded-md hover:bg-teal-100 transition"
+                          title="View"
                         >
+                          <Eye size={14} />
                           View
                         </button>
-                        {/* Edit */}
                         <button
                           onClick={() => handleEditUser(user)}
-                          className="text-blue-600 hover:underline"
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-md hover:bg-blue-100 transition"
+                          title="Edit"
                         >
+                          <Pencil size={14} />
                           Edit
                         </button>
-
-                        {/* Reset Password */}
-                        <button
-                          onClick={() => handleResetPassword(user._id)}
-                          className="text-orange-600 hover:underline"
-                        >
-                          Reset
-                        </button>
-
-                        {/* Activate / Deactivate */}
-                        <button
-                          onClick={() => handleToggleStatus(user._id)}
-                          className="text-gray-600 hover:underline"
-                        >
-                          {(user as any).isActive === false ? "Activate" : "Deactivate"}
-                        </button>
-
-                        {/* Parent-only */}
                         {activeTab !== "teacher" && (
                           <button
                             onClick={() => handleViewChildren(user._id)}
-                            className="text-blue-600 hover:underline"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 rounded-md hover:bg-indigo-100 transition"
+                            title="View children"
                           >
+                            <Users size={14} />
                             Children
                           </button>
                         )}
+                        <div className="inline-block shrink-0">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (openMenuUserId === user._id) {
+                                closeMenu();
+                              } else {
+                                openMenu(user, e.currentTarget);
+                              }
+                            }}
+                            className="inline-flex items-center justify-center px-2.5 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition"
+                            title="More actions"
+                          >
+                            <MoreVertical size={14} />
+                          </button>
+                        </div>
                       </div>
                     </td>
 
@@ -288,6 +345,40 @@ export default function UserManagement() {
           onDeleted={fetchUsers}
         />
       )}
+
+      {openMenuUserId && menuUser && menuAnchorRect &&
+        createPortal(
+          <div
+            className="fixed py-1 w-44 bg-white rounded-lg shadow-lg border border-gray-200 z-50"
+            style={{
+              top: menuAnchorRect.bottom + 4,
+              left: menuAnchorRect.left,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => {
+                closeMenu();
+                handleResetPassword(menuUser._id);
+              }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-amber-700 hover:bg-amber-50 transition"
+            >
+              <KeyRound size={14} />
+              Reset password
+            </button>
+            <button
+              onClick={() => {
+                closeMenu();
+                handleToggleStatus(menuUser);
+              }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition"
+            >
+              <Power size={14} />
+              {menuUser.isActive === false ? "Activate" : "Deactivate"}
+            </button>
+          </div>,
+          document.body
+        )}
 
       {/* Add Teacher Modal */}
       {showAddTeacherModal && (

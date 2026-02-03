@@ -52,23 +52,94 @@ export interface TeacherCredentials {
   tempPassword: string;
 }
 
-export const showTeacherCredentialsModal = (credentials: TeacherCredentials) => {
+export const showTeacherCreatedWithPasswordModal = (
+  firstName: string,
+  lastName: string,
+  email: string,
+  credentials: TeacherCredentials
+) => {
   return Swal.fire({
-    title: "Teacher Account Created!",
-    html: `<div style="text-align: left; padding: 20px;">
-      <p style="margin-bottom: 12px;"><strong>Email:</strong><br>
-      <span style="font-family: monospace; background: #f3f4f6; padding: 6px 10px; border-radius: 4px; display: inline-block; margin-top: 4px;">${credentials.email}</span></p>
-      <p style="margin-bottom: 12px;"><strong>Temporary Password:</strong><br>
-      <span style="font-family: monospace; background: #f3f4f6; padding: 6px 10px; border-radius: 4px; display: inline-block; margin-top: 4px;">${credentials.tempPassword}</span></p>
-      <p style="color: #DC2626; margin-top: 16px; font-size: 14px;">
-        ⚠ <strong>Important:</strong> Save these credentials now. The teacher will be required to change their password on first login.
-      </p>
-    </div>`,
+    title: "Teacher Account Created Successfully",
+    html: `
+      <div style="padding: 20px; text-align: left;">
+        <div style="background: #f0fdf4; border-left: 4px solid #22c55e; padding: 12px; border-radius: 4px; margin-bottom: 20px;">
+          <p style="margin: 8px 0; color: #166534; font-size: 14px;">
+            <strong>✓ Account Created</strong>
+          </p>
+          <p style="margin: 8px 0; color: #166534; font-size: 14px;">
+            Teacher: <strong>${firstName} ${lastName}</strong>
+          </p>
+          <p style="margin: 8px 0; color: #166534; font-size: 14px;">
+            Email: <strong>${email}</strong>
+          </p>
+        </div>
+
+        <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; border-radius: 4px;">
+          <p style="margin: 0 0 8px 0; color: #92400e; font-weight: 600; font-size: 14px;">
+            Temporary Password
+          </p>
+          <span style="
+            font-family: monospace;
+            background: #f3f4f6;
+            padding: 10px 16px;
+            border-radius: 4px;
+            display: inline-block;
+            font-size: 16px;
+            letter-spacing: 1px;
+            color: #1f2937;
+          ">
+            ${credentials.tempPassword}
+          </span>
+        </div>
+
+        <p style="color: #666; font-size: 13px; margin-top: 16px;">
+          ⚠ <strong>Security Notice:</strong> The teacher must change this password on their first login.
+        </p>
+      </div>
+    `,
     icon: "success",
     confirmButtonText: "Done",
     confirmButtonColor: "#0D9488",
     allowOutsideClick: false,
-    allowEscapeKey: false,
+  });
+};
+
+export const showResetPasswordModal = (credentials: TeacherCredentials) => {
+  return Swal.fire({
+    title: "Password Reset Successful",
+    html: `
+      <div style="padding: 20px; text-align: center;">
+        <p style="margin-bottom: 16px;">
+          A new temporary password has been generated for this user.
+        </p>
+
+        <div style="margin: 24px 0;">
+          <p style="margin-bottom: 8px; font-weight: 600;">
+            Temporary Password
+          </p>
+          <span style="
+            font-family: monospace;
+            background: #f3f4f6;
+            padding: 12px 20px;
+            border-radius: 6px;
+            display: inline-block;
+            font-size: 18px;
+            letter-spacing: 1px;
+          ">
+            ${credentials.tempPassword}
+          </span>
+        </div>
+
+        <p style="color: #DC2626; font-size: 14px; margin-top: 16px;">
+          ⚠ <strong>Security Notice:</strong><br>
+          The user will be required to change this password on their next login.
+        </p>
+      </div>
+    `,
+    icon: "success",
+    confirmButtonText: "Done",
+    confirmButtonColor: "#0D9488",
+    allowOutsideClick: false,
   });
 };
 
@@ -81,6 +152,50 @@ export interface ViewUser {
   role: "admin" | "teacher" | "parent";
   isActive?: boolean;
 }
+
+export interface ToggleUserStatusOptions {
+  userName: string;
+  isActivating: boolean;
+}
+
+export interface ToggleUserStatusSuccessOptions {
+  userName: string;
+  isActivating: boolean;
+}
+
+export const showToggleUserStatusSuccessModal = ({
+  userName,
+  isActivating,
+}: ToggleUserStatusSuccessOptions) => {
+  return Swal.fire({
+    title: isActivating ? "User Activated" : "User Deactivated",
+    text: isActivating
+      ? `${userName} can now log in again.`
+      : `${userName} has been deactivated and can no longer log in.`,
+    icon: "success",
+    confirmButtonText: "OK",
+    confirmButtonColor: "#0D9488",
+  });
+};
+
+export const showToggleUserStatusModal = async ({
+  userName,
+  isActivating,
+}: ToggleUserStatusOptions): Promise<boolean> => {
+  const result = await Swal.fire({
+    title: isActivating ? "Activate User?" : "Deactivate User?",
+    text: isActivating
+      ? `Are you sure you want to activate ${userName}? They will be able to log in again.`
+      : `Are you sure you want to deactivate ${userName}? They will no longer be able to log in.`,
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: isActivating ? "#0D9488" : "#DC2626",
+    cancelButtonColor: "#6B7280",
+    confirmButtonText: isActivating ? "Yes, activate" : "Yes, deactivate",
+    cancelButtonText: "Cancel",
+  });
+  return result.isConfirmed;
+};
 
 export const handleViewUser = (user: ViewUser) => {
   Swal.fire({
@@ -96,6 +211,138 @@ export const handleViewUser = (user: ViewUser) => {
     `,
     confirmButtonText: "Close",
     confirmButtonColor: "#0D9488",
+  });
+};
+
+export interface ViewChild {
+  _id?: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  studentId?: string;
+  age: string | number;
+  gender: string;
+  schoolYear?: string;
+  status?: string;
+  enrollmentDate?: string;
+  childLinkCode?: string;
+  parent?: { firstName: string; lastName: string; email: string } | null;
+}
+
+export const showChangeChildStatusModal = async (
+  childName: string,
+  currentStatus: string
+): Promise<string | null> => {
+  const result = await Swal.fire({
+    title: "Change Status",
+    html: `
+      <p class="text-gray-600 mb-4">Update status for ${childName}</p>
+      <select id="child-status-select" class="swal2-input w-full">
+        <option value="Active" ${currentStatus === "Active" ? "selected" : ""}>Active</option>
+        <option value="Inactive" ${currentStatus === "Inactive" ? "selected" : ""}>Inactive</option>
+        <option value="On Leave" ${currentStatus === "On Leave" ? "selected" : ""}>On Leave</option>
+      </select>
+    `,
+    showCancelButton: true,
+    confirmButtonColor: "#0D9488",
+    cancelButtonColor: "#6B7280",
+    confirmButtonText: "Update",
+    cancelButtonText: "Cancel",
+    preConfirm: () => {
+      const select = document.getElementById("child-status-select") as HTMLSelectElement;
+      return select?.value || null;
+    },
+  });
+  return result.isConfirmed ? result.value : null;
+};
+
+export const showRegenerateLinkCodeConfirm = async (childName: string): Promise<boolean> => {
+  const result = await Swal.fire({
+    title: "Regenerate Link Code?",
+    text: `A new link code will be generated for ${childName}. The previous code will no longer work. Share the new code with the parent.`,
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#0D9488",
+    cancelButtonColor: "#6B7280",
+    confirmButtonText: "Yes, regenerate",
+    cancelButtonText: "Cancel",
+  });
+  return result.isConfirmed;
+};
+
+export const showUnlinkParentConfirm = async (childName: string): Promise<boolean> => {
+  const result = await Swal.fire({
+    title: "Unlink Parent?",
+    text: `Remove the parent association for ${childName}? A new link code will be generated so a different parent can link to this child.`,
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#DC2626",
+    cancelButtonColor: "#6B7280",
+    confirmButtonText: "Yes, unlink",
+    cancelButtonText: "Cancel",
+  });
+  return result.isConfirmed;
+};
+
+export const showViewChildModal = (child: ViewChild) => {
+  const fullName = `${child.lastName}, ${child.firstName}${child.middleName ? ` ${child.middleName}` : ""}`;
+  const statusBadgeColor =
+    child.status === "Active"
+      ? "background:#D1FAE5;color:#065F46"
+      : child.status === "Inactive"
+      ? "background:#FEE2E2;color:#B91C1C"
+      : "background:#FEF3C7;color:#92400E";
+  const parentInfo = child.parent
+    ? `${child.parent.firstName} ${child.parent.lastName} (${child.parent.email})`
+    : "Not linked";
+  const linkCodeDisplay = child.childLinkCode
+    ? `<span style="font-family:monospace;background:#F3F4F6;padding:6px 10px;border-radius:6px">${child.childLinkCode}</span>`
+    : '<span style="color:#6B7280">—</span>';
+  const enrollmentDate = child.enrollmentDate
+    ? new Date(child.enrollmentDate).toLocaleDateString()
+    : "—";
+
+  Swal.fire({
+    title: "Child Details",
+    html: `
+      <div style="text-align:left;font-size:14px;padding:8px 0">
+        <div style="margin-bottom:16px">
+          <div style="color:#6B7280;font-size:12px;font-weight:500;margin-bottom:4px;text-transform:uppercase">Name</div>
+          <div style="font-weight:600;font-size:16px">${fullName}</div>
+        </div>
+        <div style="margin-bottom:16px">
+          <div style="color:#6B7280;font-size:12px;font-weight:500;margin-bottom:4px;text-transform:uppercase">Student ID</div>
+          <span style="font-family:monospace;background:#F3F4F6;padding:6px 10px;border-radius:6px">${child.studentId || "—"}</span>
+        </div>
+        <div style="margin-bottom:16px">
+          <div style="color:#6B7280;font-size:12px;font-weight:500;margin-bottom:4px;text-transform:uppercase">Age / Gender</div>
+          <div>${child.age} years · ${String(child.gender).charAt(0).toUpperCase() + String(child.gender).slice(1)}</div>
+        </div>
+        <div style="margin-bottom:16px">
+          <div style="color:#6B7280;font-size:12px;font-weight:500;margin-bottom:4px;text-transform:uppercase">School Year</div>
+          <div>${child.schoolYear || "—"}</div>
+        </div>
+        <div style="margin-bottom:16px">
+          <div style="color:#6B7280;font-size:12px;font-weight:500;margin-bottom:4px;text-transform:uppercase">Enrollment Date</div>
+          <div>${enrollmentDate}</div>
+        </div>
+        <div style="margin-bottom:16px">
+          <div style="color:#6B7280;font-size:12px;font-weight:500;margin-bottom:6px;text-transform:uppercase">Status</div>
+          <span style="padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;${statusBadgeColor}">${child.status || "Active"}</span>
+        </div>
+        <div style="margin-bottom:16px">
+          <div style="color:#6B7280;font-size:12px;font-weight:500;margin-bottom:4px;text-transform:uppercase">Parent</div>
+          <div>${parentInfo}</div>
+        </div>
+        <div>
+          <div style="color:#6B7280;font-size:12px;font-weight:500;margin-bottom:4px;text-transform:uppercase">Link Code</div>
+          ${linkCodeDisplay}
+        </div>
+      </div>
+    `,
+    confirmButtonText: "Close",
+    confirmButtonColor: "#0D9488",
+    width: "420px",
   });
 };
 
