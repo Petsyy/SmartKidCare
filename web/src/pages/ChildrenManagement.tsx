@@ -1,101 +1,50 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { Search, Plus, Copy } from "lucide-react";
+import { Plus, Search, RefreshCw, Unlink, ToggleLeft } from "lucide-react";
 import Layout from "../components/layout/Layout";
-import AddChildModal, { type ChildFormData } from "../components/modals/AddChildModal";
-import { showParentCredentialsModal, showErrorModal } from "../utils/sweetalert.modal";
+import AddChildModal from "../components/modals/AddChildModal";
+import EditChildModal, { type ChildForEdit } from "../components/modals/EditChildModal";
+import { showViewChildModal } from "../utils/sweetalert.modal";
+import { useChildrenManagement } from "../hooks/useChildrenManagement";
+import { useContextMenu } from "../hooks/useContextMenu";
+import { ChildrenTable } from "../components/ChildrenTable";
 
 export type Child = {
+  _id: string;
   firstName: string;
   middleName?: string;
   lastName: string;
   gender: string;
-  age: string;
+  age: string | number;
   studentId: string;
   schoolYear: string;
   status: string;
   enrollmentDate: string;
+  dateOfBirth?: string | Date;
   childLinkCode?: string;
+  parent?: { firstName: string; lastName: string; email: string } | null;
 };
 
 export default function ChildrenManagement() {
   const navigate = useNavigate();
-  const [children, setChildren] = useState<Child[]>([]);
-  const [search, setSearch] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingChild, setEditingChild] = useState<Child | null>(null);
 
-  useEffect(() => {
-    const fetchChildren = async () => {
-      setIsLoading(true);
-      try {
-        const res = await fetch("http://localhost:5000/api/children", {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-          },
-        });
+  const {
+    children,
+    search,
+    setSearch,
+    isLoading,
+    filteredChildren,
+    handleSaveChild,
+    handleChangeStatus,
+    handleRegenerateLinkCode,
+    handleUnlinkParent,
+  } = useChildrenManagement();
 
-        const data = await res.json();
-
-        if (!res.ok) {
-          console.error("API error:", data.message);
-          setChildren([]);
-          return;
-        }
-
-        setChildren(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.error("Failed to fetch children:", error);
-        console.error("Error details:", {
-          message: error instanceof Error ? error.message : "Unknown error",
-          url: "http://192.168.100.15:5000/api/children"
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchChildren();
-  }, []);
-
-  const handleSaveChild = async (childData: ChildFormData) => {
-    try {
-      const res = await fetch("http://localhost:5000/api/children", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-        },
-        body: JSON.stringify(childData),
-      });
-
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        throw new Error((data as { message?: string }).message || "Failed to save child");
-      }
-
-      const { child, parentCredentials } = data;
-
-      setChildren((prev) => [...prev, child]);
-      setIsModalOpen(false);
-
-      // Show parent credentials modal after Add Child modal closes (so it appears on top)
-      if (parentCredentials) {
-        const creds = {
-          email: parentCredentials.email ?? "",
-          password: parentCredentials.tempPassword ?? "",
-          childLinkCode: parentCredentials.childLinkCode ?? child?.childLinkCode ?? null,
-        };
-        setTimeout(() => showParentCredentialsModal(creds), 350);
-      }
-    } catch (error) {
-      console.error("Failed to save child:", error);
-      const errorMessage = error instanceof Error ? error.message : "Failed to save child";
-      showErrorModal(errorMessage);
-    }
-  };
-
-  const enrolledCount = children.length;
+  const { openMenuUserId, menuAnchorRect, menuUser: menuChild, openMenu, closeMenu } =
+    useContextMenu();
 
   return (
     <Layout
@@ -123,7 +72,7 @@ export default function ChildrenManagement() {
                 Student Directory
               </h2>
               <span className="px-2.5 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-700">
-                {enrolledCount} Enrolled
+                {children.length} Enrolled
               </span>
             </div>
 
@@ -153,118 +102,89 @@ export default function ChildrenManagement() {
             </div>
           </div>
 
-          {/* Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Student ID
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Child Name
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Age
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Gender
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    School Year
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Status
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Link Code
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-gray-100">
-                {isLoading ? (
-                  <tr>
-                    <td
-                      colSpan={7}
-                      className="px-6 py-10 text-center text-sm text-gray-500"
-                    >
-                      Loading students...
-                    </td>
-                  </tr>
-                ) : children.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={7}
-                      className="px-6 py-10 text-center text-sm text-gray-500"
-                    >
-                      No children records found.
-                    </td>
-                  </tr>
-                ) : (
-                  children.map((child, index) => (
-                    <tr
-                      key={index}
-                      className="hover:bg-gray-50 transition-colors"
-                    >
-                      <td className="px-6 py-4 font-mono text-sm text-gray-900">
-                        {child.studentId}
-                      </td>
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                        {child.lastName}, {child.firstName} {child.middleName}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        {child.age}
-                      </td>
-                      <td className="px-6 py-4 text-sm capitalize text-gray-700">
-                        {child.gender}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        {child.schoolYear}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                          {child.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        {child.childLinkCode ? (
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-sm text-gray-900">
-                              {child.childLinkCode}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                navigator.clipboard.writeText(child.childLinkCode ?? "");
-                              }}
-                              className="p-1 rounded hover:bg-gray-200 text-gray-500 hover:text-gray-700"
-                              title="Copy link code"
-                            >
-                              <Copy size={14} />
-                            </button>
-                          </div>
-                        ) : (
-                          <span className="text-gray-400">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-
-            </table>
-          </div>
-
+          <ChildrenTable
+            isLoading={isLoading}
+            children={children}
+            filteredChildren={filteredChildren}
+            onViewChild={showViewChildModal}
+            onEditChild={setEditingChild}
+            onMenuClick={openMenu}
+          />
         </div>
       </div>
 
       <AddChildModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSave={handleSaveChild}
+        onSave={async (childData) => {
+          if (!childData.studentId) {
+            console.error("Student ID is required");
+            return;
+          }
+          const success = await handleSaveChild({ ...childData, studentId: childData.studentId });
+          if (success) {
+            setIsModalOpen(false);
+          }
+        }}
       />
 
+      {editingChild && (
+        <EditChildModal
+          child={editingChild as ChildForEdit}
+          onClose={() => setEditingChild(null)}
+          onUpdated={() => {
+            setEditingChild(null);
+          }}
+        />
+      )}
+
+      {openMenuUserId && menuChild && menuAnchorRect &&
+        createPortal(
+          <div
+            className="fixed py-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50"
+            style={{
+              top: menuAnchorRect.bottom + 4,
+              left: menuAnchorRect.left,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => {
+                handleChangeStatus(menuChild as Child);
+                closeMenu();
+              }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition"
+            >
+              <ToggleLeft size={14} />
+              Change Status
+            </button>
+            {!(menuChild as Child).parent && (
+              <button
+                onClick={() => {
+                  handleRegenerateLinkCode(menuChild as Child);
+                  closeMenu();
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-amber-700 hover:bg-amber-50 transition"
+              >
+                <RefreshCw size={14} />
+                Regenerate Link Code
+              </button>
+            )}
+            {(menuChild as Child).parent && (
+              <button
+                onClick={() => {
+                  handleUnlinkParent(menuChild as Child);
+                  closeMenu();
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition"
+              >
+                <Unlink size={14} />
+                Unlink Parent
+              </button>
+            )}
+          </div>,
+          document.body
+        )}
     </Layout>
   );
 }
