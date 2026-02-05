@@ -1,4 +1,4 @@
-export interface WorkerFormData {
+export interface TeacherFormData {
     firstName: string;
     lastName: string;
     email: string;
@@ -15,7 +15,7 @@ export const formatPhoneNumber = (text: string) => {
   return `${numbers.slice(0, 4)} ${numbers.slice(4, 7)} ${numbers.slice(7, 11)}`;
 };
 
-export const validateForm = (formData: WorkerFormData, isChecked: boolean) => {
+export const validateForm = (formData: TeacherFormData, isChecked: boolean) => {
   const newErrors: { [key: string]: string } = {};
 
   if (!formData.firstName.trim()) {

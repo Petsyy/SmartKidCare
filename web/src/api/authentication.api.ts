@@ -1,10 +1,11 @@
-const API_BASE_URL = "http://localhost:5000";
+import { API_BASE } from "../components/config/config.api";
 
 export interface User {
   _id: string;
   employeeId?: string;          // teacher only
   username?: string;            // admin only
   firstName: string;
+  middleName?: string;
   lastName: string;
   email: string;
   role: "admin" | "teacher" | "parent";
@@ -28,7 +29,7 @@ export const getUsers = async (
       queryParams.append("role", params.role);
     }
 
-    const url = `${API_BASE_URL}/api/auth/users${
+    const url = `${API_BASE}/auth/users${
       queryParams.toString() ? `?${queryParams.toString()}` : ""
     }`;
 
@@ -52,4 +53,4 @@ export const getUsers = async (
   }
 };
 
-export default API_BASE_URL;
+export default API_BASE;

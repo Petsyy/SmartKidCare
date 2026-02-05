@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://192.168.100.15:5000";
+import { API_BASE_URL } from "../config/config";
 
 export interface Child {
   _id: string;
