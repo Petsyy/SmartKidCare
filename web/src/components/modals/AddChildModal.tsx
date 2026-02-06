@@ -12,12 +12,20 @@ export type ChildFormData = {
   schoolYear: string;
   status: string;
 
-  parentFirstName: string;
   parentLastName: string;
+  parentFirstName: string;
+  parentMiddleName: string;
   parentEmail: string;
 
   studentId?: string;
   childLinkCode?: string;
+};
+
+export type InitialParent = {
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  email: string;
 };
 
 type AddChildModalProps = {
@@ -25,6 +33,7 @@ type AddChildModalProps = {
   onClose: () => void;
   onSave: (data: ChildFormData) => void;
   isLoading?: boolean;
+  initialParent?: InitialParent | null;
 };
 
 const schoolYears = [
@@ -46,8 +55,9 @@ const initialFormData: ChildFormData = {
   schoolYear: "2024-2025",
   status: "Active",
 
-  parentFirstName: "",
   parentLastName: "",
+  parentFirstName: "",
+  parentMiddleName: "",
   parentEmail: "",
 };
 
@@ -56,15 +66,26 @@ export default function AddChildModal({
   onClose,
   onSave,
   isLoading = false,
+  initialParent = null,
 }: AddChildModalProps) {
   const [formData, setFormData] = useState<ChildFormData>(initialFormData);
 
-  // Reset form when modal closes
+  // Reset form when modal closes; pre-fill parent when initialParent provided
   useEffect(() => {
     if (!isOpen) {
       setFormData(initialFormData);
+    } else if (initialParent) {
+      setFormData({
+        ...initialFormData,
+        parentFirstName: initialParent.firstName,
+        parentMiddleName: initialParent.middleName ?? "",
+        parentLastName: initialParent.lastName,
+        parentEmail: initialParent.email,
+      });
+    } else {
+      setFormData(initialFormData);
     }
-  }, [isOpen]);
+  }, [isOpen, initialParent]);
 
   const generateStudentId = (enrollmentDate: string) => {
     const year = new Date(enrollmentDate).getFullYear();
@@ -158,9 +179,13 @@ export default function AddChildModal({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Add Child Record</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              {initialParent ? "Add Child for Existing Parent" : "Add Child Record"}
+            </h2>
             <p className="text-sm text-gray-500">
-              Encode child information from existing enrollment records
+              {initialParent
+                ? `Linking new child to ${initialParent.firstName} ${initialParent.lastName} (${initialParent.email})`
+                : "Encode child information from existing enrollment records"}
             </p>
           </div>
           <button
@@ -354,43 +379,60 @@ export default function AddChildModal({
             </div>
           </div>
 
-          {/* Parent Information Section */}
+          {/* Parent Information Section - hidden when parent is pre-selected (e.g. from User Management Add Child) */}
+          {!initialParent && (
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 mb-4">
+            <h3 className="text-sm font-semibold text-gray-900 mb-2">
               Parent / Guardian Information
             </h3>
+            <p className="text-sm text-gray-500 mb-4">
+              To add another child for an existing parent, enter their email address. The child will be linked automatically.
+            </p>
 
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              {/* Last Name, First Name, Middle Name */}
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Parent First Name <span className="text-red-500">*</span>
+                    First Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     name="parentFirstName"
                     value={formData.parentFirstName}
                     onChange={handleInputChange}
-                    placeholder="Enter parent first name"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg
-                     focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    placeholder="Enter last name"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                     required
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Parent Last Name <span className="text-red-500">*</span>
+                    Middle Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="parentMiddleName"
+                    value={formData.parentMiddleName}
+                    onChange={handleInputChange}
+                    placeholder="Enter first name"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Last Name
                   </label>
                   <input
                     type="text"
                     name="parentLastName"
                     value={formData.parentLastName}
                     onChange={handleInputChange}
-                    placeholder="Enter parent last name"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg
-                     focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    required
+                    placeholder="Enter middle name"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />
                 </div>
               </div>
@@ -412,7 +454,7 @@ export default function AddChildModal({
               </div>
             </div>
           </div>
-
+          )}
 
           {/* Info Box */}
           <div className="bg-teal-50 border border-teal-200 rounded-lg p-4 flex gap-3">

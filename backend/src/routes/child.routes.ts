@@ -2,7 +2,9 @@ import express from "express";
 import {
   createChild,
   getChildren,
-  linkChildToParent
+  getMyChildren,
+  linkChildToParent,
+  updateChild,
 } from "../controllers/child.controller";
 import { authenticateToken } from "../middlewares/auth.middleware";
 
@@ -14,9 +16,19 @@ const router = express.Router();
 router.post("/", authenticateToken, createChild);
 
 /**
- * Admin / Worker: view children
+ * Admin / Teacher: view children
  */
 router.get("/", authenticateToken, getChildren);
+
+/**
+ * Parent: get own linked children
+ */
+router.get("/my-children", authenticateToken, getMyChildren);
+
+/**
+ * Admin: update child (edit, change status, regenerate link code, unlink parent)
+ */
+router.patch("/:id", authenticateToken, updateChild);
 
 /** Parent: link child to own account
  */

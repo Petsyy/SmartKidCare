@@ -2,8 +2,9 @@ import { Tabs, Redirect } from "expo-router";
 import { useAuth } from "@/src/hooks/useAuth";
 import { Home, Users, Bell, User } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import ParentGate from "@/src/components/ParentGate";
 
-export default function WorkerLayout() {
+export default function ParentLayout() {
   const { user, role, loading } = useAuth();
   const insets = useSafeAreaInsets();
 
@@ -13,6 +14,7 @@ export default function WorkerLayout() {
   }
 
   return (
+    <ParentGate>
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -61,5 +63,6 @@ export default function WorkerLayout() {
         }}
       />
     </Tabs>
+    </ParentGate>
   );
 }

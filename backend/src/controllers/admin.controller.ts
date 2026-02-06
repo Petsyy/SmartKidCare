@@ -11,9 +11,9 @@ export const createTeacher = async (req: Request, res: Response) => {
       return res.status(403).json({ message: "Admins Only" });
     }
 
-    const { firstName, lastName, email } = req.body;
+    const { firstName, middleName, lastName, email } = req.body;
 
-    if (!firstName || !lastName || !email) {
+    if (!firstName|| !middleName || !lastName || !email) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
@@ -30,6 +30,7 @@ export const createTeacher = async (req: Request, res: Response) => {
     const teacher = await User.create({
       employeeId,
       firstName,
+      middleName,
       lastName,
       email,
       password: hashedPassword,
@@ -58,9 +59,9 @@ export const updateUserProfile = async (req: Request, res: Response) => {
       ? req.params.id[0]
       : req.params.id;
 
-    const { firstName, lastName, email } = req.body;
+    const { firstName, middleName, lastName, email } = req.body;
 
-    if (!firstName || !lastName || !email) {
+    if (!firstName || !middleName || !lastName || !email) {
       return res.status(400).json({ message: "Missing required fields." });
     }
 
@@ -79,6 +80,7 @@ export const updateUserProfile = async (req: Request, res: Response) => {
       req.params.id,
       {
         firstName,
+        middleName,
         lastName,
         email: normalizedEmail,
       },
@@ -100,7 +102,7 @@ export const resetPassword = async (req: Request, res: Response) => {
     if (req.user?.role !== "admin") {
       return res.status(403).json({ message: "Admins Only." });
     }
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: "User not found." });
 
     const tempPassword = Math.random().toString(36).slice(-8);
@@ -138,17 +140,32 @@ export const toggleUserStatus = async (req: Request, res: Response) => {
   }
 };
 
+export const deleteUser = async (req: Request, res: Response) => {
+  try {
+    if (req.user?.role !== "admin") {
+      return res.status(403).json({ message: "Admins Only." });
+    }
+
+    const user = await User.findByIdAndDelete(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found." });
+
+    res.json({ message: "User deleted" });
+  } catch (error: any) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
 export const getParentChildren = async (req: Request, res: Response) => {
   try {
     if (req.user?.role !== "admin") {
       return res.status(403).json({ message: "Admins Only." });
     }
 
-    const children = await Child.find({ parentId: req.params.parentId }).sort({
+    const children = await Child.find({ parent: req.params.parentId }).sort({
       createdAt: -1,
     });
 
-    res.json({ children });
+    res.json(children);
   } catch (error: any) {
     res.status(500).json({ message: "Server error", error: error.message });
   }

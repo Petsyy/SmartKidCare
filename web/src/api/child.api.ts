@@ -4,6 +4,36 @@ const authHeaders = () => ({
   Authorization: `Bearer ${localStorage.getItem("authToken")}`,
 });
 
+export type CreateChildPayload = {
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  dateOfBirth: string;
+  age: string | number;
+  gender: string;
+  enrollmentDate: string;
+  schoolYear: string;
+  status: string;
+  parentFirstName: string;
+  parentLastName: string;
+  parentMiddleName?: string;
+  parentEmail: string;
+};
+
+export const createChild = async (payload: CreateChildPayload) => {
+  const res = await fetch(`${API_BASE}/children`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(),
+    },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || "Failed to create child");
+  return data;
+};
+
 export const getChildren = async () => {
   const res = await fetch(`${API_BASE}/children`, {
     headers: authHeaders(),

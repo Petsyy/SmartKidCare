@@ -13,14 +13,16 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Link2, Baby } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "@/src/hooks/useAuth";
-import { linkChild } from "@/src/api/api";
+import { useAuthContext } from "@/src/context/AuthContext";
+import { linkChild } from "@/src/api/parent.api";
 
 type Props = {
   onLinked: () => void;
 };
 
 export default function LinkChildCode({ onLinked }: Props) {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  const { refreshUser } = useAuthContext();
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -39,6 +41,15 @@ export default function LinkChildCode({ onLinked }: Props) {
     setLoading(true);
     try {
       await linkChild(token, trimmed);
+      
+      // Update user to clear needsToConfirmLink flag
+      if (user) {
+        await refreshUser({
+          ...user,
+          needsToConfirmLink: false,
+        });
+      }
+      
       onLinked();
     } catch (error: any) {
       Alert.alert(

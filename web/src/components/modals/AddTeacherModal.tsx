@@ -2,7 +2,7 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import Swal from "sweetalert2";
 import { createTeacher } from "../../api/teacher.api";
-import { showTeacherCreatedWithPasswordModal, showErrorModal } from "../../utils/sweetalert.modal";
+import { showTeacherCredentialsModal, showErrorModal } from "../../utils/sweetalert.modal";
 
 type Props = {
   onClose: () => void;
@@ -51,7 +51,7 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
 
       setTimeout(async () => {
         // Show one combined modal with both teacher info and password
-        await showTeacherCreatedWithPasswordModal(
+        await showTeacherCredentialsModal(
           form.firstName,
           form.lastName,
           form.email,

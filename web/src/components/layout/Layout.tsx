@@ -20,5 +20,6 @@ export default function Layout({ children, activeItem, onNavigate, breadcrumbs }
         </div>
       </main>
     </div>
+    
   );
 }

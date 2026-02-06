@@ -4,12 +4,14 @@ export interface IUser extends Document {
   username?: string; // admin only
   employeeId?: string; // teacher only
   firstName: string;
+  middleName?: string;
   lastName: string;
   email: string;
   password: string;
   role: "admin" | "teacher" | "parent";
   isActive: boolean;
   mustChangePassword: boolean;
+  needsToConfirmLink: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -23,7 +25,7 @@ const UserSchema: Schema = new Schema(
       sparse: true,
     },
 
-    // worker only
+    // teacher only
     employeeId: {
       type: String,
       unique: true,
@@ -31,6 +33,7 @@ const UserSchema: Schema = new Schema(
     },
 
     firstName: { type: String, required: true },
+    middleName: { type: String },
     lastName: { type: String, required: true },
 
     email: {
@@ -53,6 +56,11 @@ const UserSchema: Schema = new Schema(
     isActive: { type: Boolean, default: true },
 
     mustChangePassword: {
+      type: Boolean,
+      default: false,
+    },
+
+    needsToConfirmLink: {
       type: Boolean,
       default: false,
     },

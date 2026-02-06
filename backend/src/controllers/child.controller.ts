@@ -19,6 +19,7 @@ export const createChild = async (req: Request, res: Response) => {
       schoolYear,
       status,
       parentFirstName,
+      parentMiddleName,
       parentLastName,
       parentEmail,
     } = req.body;
@@ -108,11 +109,13 @@ export const createChild = async (req: Request, res: Response) => {
 
     parent = await User.create({
       firstName: parentFirstName,
+      middleName: parentMiddleName || "",
       lastName: parentLastName,
       email: parentEmail,
       password: hashedPassword,
       role: "parent",
       mustChangePassword: true,
+      needsToConfirmLink: true,
     });
 
     const childLinkCode = generateChildLinkCode();
@@ -126,8 +129,7 @@ export const createChild = async (req: Request, res: Response) => {
       schoolYear,
       status: status || "Active",
       studentId: generateStudentId(year),
-      parent: parent._id,
-      childLinkCode, // Keep for reference / share with another guardian
+      childLinkCode,
     };
 
     // Only add middleName if it exists
@@ -178,6 +180,9 @@ export const linkChildToParent = async (req: Request, res: Response) => {
     child.childLinkCode = undefined;
     await child.save();
 
+    // Clear the needsToConfirmLink flag when parent confirms the link
+    await User.findByIdAndUpdate(parentId, { needsToConfirmLink: false });
+
     res.json({ message: "Child linked successfully", child });
   } catch (error: any) {
     res.status(500).json({ message: "Linking failed", error: error.message });
@@ -194,5 +199,79 @@ export const getChildren = async (_req: Request, res: Response) => {
     res.json(children);
   } catch {
     res.status(500).json({ message: "Failed to fetch children" });
+  }
+};
+
+export const getMyChildren = async (req: Request, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    if (req.user.role !== "parent") {
+      return res.status(403).json({ message: "Parents only" });
+    }
+
+    const children = await Child.find({ parent: req.user.id })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json(children);
+  } catch {
+    res.status(500).json({ message: "Failed to fetch children" });
+  }
+};
+
+export const updateChild = async (req: Request, res: Response) => {
+  try {
+    if (req.user?.role !== "admin") {
+      return res.status(403).json({ message: "Admins only" });
+    }
+
+    const child = await Child.findById(req.params.id);
+    if (!child) {
+      return res.status(404).json({ message: "Child not found" });
+    }
+
+    const {
+      firstName,
+      middleName,
+      lastName,
+      dateOfBirth,
+      age,
+      gender,
+      schoolYear,
+      status,
+      regenerateLinkCode,
+      unlinkParent,
+    } = req.body;
+
+    if (firstName !== undefined) child.firstName = firstName;
+    if (middleName !== undefined) child.middleName = middleName;
+    if (lastName !== undefined) child.lastName = lastName;
+    if (dateOfBirth !== undefined) child.dateOfBirth = dateOfBirth;
+    if (age !== undefined) child.age = Number(age);
+    if (gender !== undefined) child.gender = gender;
+    if (schoolYear !== undefined) child.schoolYear = schoolYear;
+    if (status !== undefined) child.status = status;
+
+    if (unlinkParent === true) {
+      child.parent = undefined;
+      child.childLinkCode = generateChildLinkCode();
+    } else if (regenerateLinkCode === true && !child.parent) {
+      child.childLinkCode = generateChildLinkCode();
+    }
+
+    await child.save();
+
+    const updated = await Child.findById(child._id)
+      .populate("parent", "firstName lastName email")
+      .lean();
+
+    res.json(updated);
+  } catch (error: any) {
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
   }
 };

@@ -28,7 +28,7 @@ export const login = async (req: Request, res: Response) => {
       return res.status(403).json({ message: "Account is deactivated" });
     }
 
-    // Workers & parents must use email
+    // teachers & parents must use email
     if (user.role !== "admin" && user.email !== loginIdentifier) {
       return res.status(401).json({ message: "Invalid credentials" });
     }

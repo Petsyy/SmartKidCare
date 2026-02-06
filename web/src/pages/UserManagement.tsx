@@ -1,42 +1,155 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { Plus, KeyRound, Power, Search } from "lucide-react";
-import { type User } from "../api/authentication.api";
+import { Plus, Eye, Pencil, KeyRound, Power, Users, MoreVertical, Search, Baby } from "lucide-react";
+import { getUsers, type User } from "../api/authentication.api";
 import AddTeacherModal from "../components/modals/AddTeacherModal";
+import AddChildForParentModal from "../components/modals/AddChildForParentModal";
 import Layout from "../components/layout/Layout";
-import { handleViewUser } from "../utils/sweetalert.modal";
+import { handleViewUser, showErrorModal, showResetPasswordModal, showToggleUserStatusModal, showToggleUserStatusSuccessModal, showLinkedChildrenModal } from "../utils/sweetalert.modal";
+import { getParentChildren, toggleUserStatus, resetUserPassword } from "../api/admin.api";
+import { createChild } from "../api/child.api";
 import EditUserModal from "../components/modals/EditUserModal";
-import { useUserManagement } from "../hooks/useUserManagement";
-import { useContextMenu } from "../hooks/useContextMenu";
-import { UserTable } from "../components/UserTable";
 
 export default function UserManagement() {
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<"teacher" | "parent">("teacher");
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showAddTeacherModal, setShowAddTeacherModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [openMenuUserId, setOpenMenuUserId] = useState<string | null>(null);
+  const [menuAnchorRect, setMenuAnchorRect] = useState<DOMRect | null>(null);
+  const [menuUser, setMenuUser] = useState<User | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showAddChildModal, setShowAddChildModal] = useState(false);
+  const [selectedParentForChild, setSelectedParentForChild] = useState<User | null>(null);
 
-  const {
-    activeTab,
-    setActiveTab,
-    isLoading,
-    error,
-    searchQuery,
-    setSearchQuery,
-    filteredUsers,
-    users,
-    handleResetPassword,
-    handleToggleStatus,
-    handleViewChildren,
-    fetchUsers,
-  } = useUserManagement();
+  const openMenu = (user: User, buttonEl: HTMLButtonElement) => {
+    setMenuUser(user);
+    setOpenMenuUserId(user._id);
+    setMenuAnchorRect(buttonEl.getBoundingClientRect());
+  };
 
-  const { openMenuUserId, menuAnchorRect, menuUser, openMenu, closeMenu } =
-    useContextMenu();
+  const closeMenu = () => {
+    setOpenMenuUserId(null);
+    setMenuAnchorRect(null);
+    setMenuUser(null);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = () => closeMenu();
+    if (openMenuUserId) {
+      document.addEventListener("click", handleClickOutside);
+      return () => document.removeEventListener("click", handleClickOutside);
+    }
+  }, [openMenuUserId]);
 
   const handleEditUser = (user: User) => {
     setEditingUser(user);
   };
+
+  const handleResetPassword = async (userId: string) => {
+    try {
+      const res = await resetUserPassword(userId);
+
+      await showResetPasswordModal(res.credentials);
+    } catch (err: any) {
+      showErrorModal(err.message || "Failed to reset password");
+    }
+  };
+
+
+  const handleToggleStatus = async (user: User) => {
+    const userName = `${user.firstName} ${user.middleName} ${user.lastName}`;
+    const isActivating = user.isActive === false;
+    const confirmed = await showToggleUserStatusModal({ userName, isActivating });
+    if (!confirmed) return;
+    try {
+      await toggleUserStatus(user._id);
+      await showToggleUserStatusSuccessModal({ userName, isActivating });
+      fetchUsers(); // refresh table
+    } catch (err: any) {
+      showErrorModal(err.message || "Failed to update account status");
+    }
+  };
+
+  const handleAddChildForParent = (parent: User) => {
+    setSelectedParentForChild(parent);
+    setShowAddChildModal(true);
+  };
+
+  const handleSaveChildForParent = async (data: { parent: { firstName: string; middleName?: string; lastName: string; email: string } } & {
+    firstName: string;
+    middleName: string;
+    lastName: string;
+    dateOfBirth: string;
+    age: string;
+    gender: string;
+    enrollmentDate: string;
+    schoolYear: string;
+    status: string;
+  }) => {
+    try {
+      const p = data.parent;
+      await createChild({
+        firstName: data.firstName,
+        middleName: data.middleName || undefined,
+        lastName: data.lastName,
+        dateOfBirth: data.dateOfBirth,
+        age: data.age,
+        gender: data.gender,
+        enrollmentDate: data.enrollmentDate,
+        schoolYear: data.schoolYear,
+        status: data.status,
+        parentFirstName: p.firstName,
+        parentLastName: p.lastName,
+        parentMiddleName: p.middleName || undefined,
+        parentEmail: p.email,
+      });
+      setShowAddChildModal(false);
+      setSelectedParentForChild(null);
+    } catch (err: any) {
+      showErrorModal(err.message || "Failed to add child");
+      throw err;
+    }
+  };
+
+  const handleViewChildren = async (parentId: string, parentName: string) => {
+    try {
+      const children = await getParentChildren(parentId);
+      showLinkedChildrenModal(children, parentName);
+    } catch (err: any) {
+      showErrorModal(err.message || "Failed to load children");
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, [activeTab]);
+
+  const fetchUsers = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await getUsers({ role: activeTab });
+      setUsers(data);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const filteredUsers = users.filter((user) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    const fullName = `${user.firstName} ${user.middleName} ${user.lastName}`.toLowerCase();
+    const email = user.email.toLowerCase();
+    const employeeId = (user.employeeId || "").toLowerCase();
+    return fullName.includes(q) || email.includes(q) || employeeId.includes(q);
+  });
 
   return (
     <Layout
@@ -116,17 +229,140 @@ export default function UserManagement() {
             </div>
           </div>
 
-          <UserTable
-            activeTab={activeTab}
-            isLoading={isLoading}
-            users={users}
-            filteredUsers={filteredUsers}
-            onViewUser={handleViewUser}
-            onEditUser={handleEditUser}
-            onViewChildren={handleViewChildren}
-            onMenuClick={openMenu}
-            openMenuUserId={openMenuUserId}
-          />
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  {activeTab === "teacher" && (
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                      Employee ID
+                    </th>
+                  )}
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                    Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                    Email
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {isLoading && (
+                  <tr>
+                    <td
+                      colSpan={activeTab === "teacher" ? 5 : 4}
+                      className="px-6 py-10 text-center text-gray-500"
+                    >
+                      Loading users...
+                    </td>
+                  </tr>
+                )}
+
+                {!isLoading && users.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={activeTab === "teacher" ? 5 : 4}
+                      className="px-6 py-12 text-center text-gray-500"
+                    >
+                      No {activeTab === "teacher" ? "teachers" : "parents"} found.
+                    </td>
+                  </tr>
+                )}
+
+                {!isLoading && users.length > 0 && filteredUsers.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={activeTab === "teacher" ? 5 : 4}
+                      className="px-6 py-12 text-center text-gray-500"
+                    >
+                      No {activeTab === "teacher" ? "teachers" : "parents"} match your search.
+                    </td>
+                  </tr>
+                )}
+
+                {filteredUsers.map((user) => (
+                  <tr key={user._id} className="hover:bg-gray-50">
+                    {activeTab === "teacher" && (
+                      <td className="px-6 py-4 font-mono text-sm text-gray-900">
+                        {user.employeeId || "—"}
+                      </td>
+                    )}
+                    <td className="px-6 py-4 font-medium text-gray-900">
+                      {user.lastName}, {user.firstName} {user.middleName}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {user.email}
+                    </td>
+                    <td className="px-6 py-4 text-sm">
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${user.isActive !== false
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                        }`}>
+                        {user.isActive !== false ? "Active" : "Inactive"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <button
+                          onClick={() => handleViewUser(user)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-teal-700 bg-teal-50 rounded-md hover:bg-teal-100 transition"
+                          title="View"
+                        >
+                          <Eye size={14} />
+                          View
+                        </button>
+                        <button
+                          onClick={() => handleEditUser(user)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-md hover:bg-blue-100 transition"
+                          title="Edit"
+                        >
+                          <Pencil size={14} />
+                          Edit
+                        </button>
+                        {activeTab === "parent" && (
+                          <button
+                            onClick={() => {
+                              const parentName = `${user.firstName} ${user.middleName || ''} ${user.lastName}`.replace(/\s+/g, ' ').trim();
+                              handleViewChildren(user._id, parentName);
+                            }}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 rounded-md hover:bg-indigo-100 transition"
+                            title="View children"
+                          >
+                            <Users size={14} />
+                            Children
+                          </button>
+                        )}
+                        <div className="inline-block shrink-0">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (openMenuUserId === user._id) {
+                                closeMenu();
+                              } else {
+                                openMenu(user, e.currentTarget);
+                              }
+                            }}
+                            className="inline-flex items-center justify-center px-2.5 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition"
+                            title="More actions"
+                          >
+                            <MoreVertical size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    </td>
+
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -149,6 +385,18 @@ export default function UserManagement() {
             }}
             onClick={(e) => e.stopPropagation()}
           >
+            {activeTab === "parent" && (
+              <button
+                onClick={() => {
+                  closeMenu();
+                  handleAddChildForParent(menuUser);
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-teal-700 hover:bg-teal-50 transition"
+              >
+                <Baby size={14} />
+                Add Child
+              </button>
+            )}
             <button
               onClick={() => {
                 closeMenu();
@@ -178,6 +426,24 @@ export default function UserManagement() {
         <AddTeacherModal
           onClose={() => setShowAddTeacherModal(false)}
           onCreated={fetchUsers}
+        />
+      )}
+
+      {/* Add Child for Existing Parent Modal */}
+      {showAddChildModal && selectedParentForChild && (
+        <AddChildForParentModal
+          isOpen={showAddChildModal}
+          parent={{
+            firstName: selectedParentForChild.firstName,
+            middleName: selectedParentForChild.middleName,
+            lastName: selectedParentForChild.lastName,
+            email: selectedParentForChild.email,
+          }}
+          onClose={() => {
+            setShowAddChildModal(false);
+            setSelectedParentForChild(null);
+          }}
+          onSave={handleSaveChildForParent}
         />
       )}
     </Layout>

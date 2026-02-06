@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { Text, View, ActivityIndicator, ScrollView, StatusBar } from "react-native";
+import {
+  Text,
+  View,
+  ActivityIndicator,
+  ScrollView,
+  StatusBar,
+} from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getMyChildren, Child } from "@/src/api/parent.api";
@@ -30,6 +36,7 @@ export default function ChildScreen() {
     loadChildren();
   }, []);
 
+
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
@@ -55,14 +62,22 @@ export default function ChildScreen() {
   return (
     <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+
+      {/* HEADER */}
       <View
         style={{ paddingTop: insets.top + 12 }}
         className="bg-teal-600 px-5 pb-5"
       >
-        <Text className="text-3xl font-extrabold text-white">Children List</Text>
-        <Text className="text-lg text-teal-100 mt-1">Enrolled children list</Text>
+        <Text className="text-3xl font-extrabold text-white">
+          My Children
+        </Text>
+        <Text className="text-lg text-teal-100 mt-1">
+          Children linked to your account
+        </Text>
       </View>
 
+
+      {/* LIST */}
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 24 }}
@@ -74,17 +89,25 @@ export default function ChildScreen() {
               No children linked to your account.
             </Text>
           ) : (
-            <View className="space-y-4">
-              {children.map((child) => (
-                <ChildCard
-                  key={child._id}
-                  name={`${child.firstName} ${child.middleName ? child.middleName + " " : ""}${child.lastName}`}
+            <View className="flex flex-col">
+              {children.map((child, index) => (
+                <View key={child._id} className={index < children.length - 1 ? "mb-4" : ""}>
+                  <ChildCard
+                  name={`${child.firstName} ${child.middleName ? child.middleName + " " : ""
+                    }${child.lastName}`}
                   age={child.age}
                   gender={child.gender}
+
+                  // temporary / demo values
+                  attendance="Present"
+                  feeding="Finished"
+                  lastUpdated="Today 10:30 AM"
+
                   onPress={() => {
-                    // navigate to child details later
+                    // navigate to child details
                   }}
                 />
+                </View>
               ))}
             </View>
           )}

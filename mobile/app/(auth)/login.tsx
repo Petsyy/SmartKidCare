@@ -8,14 +8,14 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Baby, Eye, EyeOff, Mail, Lock } from "lucide-react-native";
+import { Eye, EyeOff, Mail, Lock } from "lucide-react-native";
 import { useAuth } from "@/src/hooks/useAuth";
 import type { User } from "@/src/context/AuthContext";
 import { LinearGradient } from 'expo-linear-gradient';
 import { login as apiLogin } from "@/src/api/authentication.api";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const FormField = ({ label, children, icon: Icon }: { label: string; children: React.ReactNode; icon?: React.ComponentType<{ size?: number; color?: string; style?: object }> }) => (
   <View className="mb-5">
@@ -45,18 +45,22 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      const { token: authToken, user: apiUser } = await apiLogin({ email: trimmedEmail, password });
+      const { token: authToken, user: apiUser } = await apiLogin({
+        email: trimmedEmail,
+        password,
+      });
 
       const appUser: User = {
         id: apiUser._id,
         email: apiUser.email,
-        role: apiUser.role === "parent" || apiUser.role === "teacher" ? apiUser.role : "teacher",
+        role:
+          apiUser.role === "parent" || apiUser.role === "teacher"
+            ? apiUser.role
+            : "teacher",
+        needsToConfirmLink: apiUser.needsToConfirmLink,
       };
 
-      await AsyncStorage.setItem("token", authToken);
-      await AsyncStorage.setItem("user", JSON.stringify(appUser));
-
-      login(appUser, authToken);
+      await login(appUser, authToken);
     } catch (error: any) {
       alert(error.message || "Login failed. Please check your credentials.");
     } finally {
@@ -84,7 +88,12 @@ export default function Login() {
               >
                 <View className="items-center">
                   <View className="w-24 h-24 items-center justify-center rounded-full bg-white/20 mb-6 border-2 border-white/30">
-                    <Baby size={40} color="white" />
+                    <Image
+                      source={require('@/assets/images/smartkidcare.png')}
+                      className="w-20 h-20"
+                      style={{ opacity: 0.7 }}
+                      resizeMode="contain"
+                    />
                   </View>
                   <Text className="text-3xl font-bold text-white mb-2 text-center">Welcome Back</Text>
                   <Text className="text-white/90 text-center text-base">Sign in to your SmartKidCare account</Text>

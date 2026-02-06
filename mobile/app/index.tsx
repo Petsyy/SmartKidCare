@@ -14,8 +14,8 @@ export default function Index() {
     return <Redirect href="/(parent)" />;
   }
 
-  if (role === "worker") {
-    return <Redirect href="/(worker)" />;
+  if (role === "teacher") {
+    return <Redirect href="/(teacher)" />;
   }
 
   return null;

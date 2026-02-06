@@ -1,11 +1,13 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-type Role = "parent" | "worker" | null;
+type Role = "parent" | "teacher" | null;
 
 export type User = {
   id: string;
   email: string;
   role: Role;
+  needsToConfirmLink?: boolean;
 };
 
 type AuthContextType = {
@@ -15,6 +17,7 @@ type AuthContextType = {
   loading: boolean;
   login: (user: User, token: string) => void;
   logout: () => void;
+  refreshUser: (user: User) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,6 +30,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const restoreSession = async () => {
       try {
+
+        const storedToken = await AsyncStorage.getItem("token");
+        const storedUser = await AsyncStorage.getItem("user");
+
+        if (storedToken && storedUser) {
+          setToken(storedToken);
+          setUser(JSON.parse(storedUser));
+        }
+      } catch (error) {
+        console.log("Failed to restore session", error);
       } finally {
         setLoading(false);
       }
@@ -35,14 +48,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     restoreSession();
   }, []);
 
-  const login = (userData: User, authToken: string) => {
+  const login = async (userData: User, authToken: string) => {
     setUser(userData);
     setToken(authToken);
+
+    await AsyncStorage.setItem("token", authToken);
+    await AsyncStorage.setItem("user", JSON.stringify(userData));
   };
 
-  const logout = () => {
+  const logout = async () => {
     setUser(null);
     setToken(null);
+
+    await AsyncStorage.removeItem("token");
+    await AsyncStorage.removeItem("user");
+  };
+
+  const refreshUser = async (updatedUser: User) => {
+    setUser(updatedUser);
+    await AsyncStorage.setItem("user", JSON.stringify(updatedUser));
   };
 
   return (
@@ -54,6 +78,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         loading,
         login,
         logout,
+        refreshUser,
       }}
     >
       {children}

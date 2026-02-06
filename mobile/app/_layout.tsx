@@ -24,9 +24,15 @@ function LayoutContent() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(auth)" />
-      <Stack.Screen name="(parent)" />
-      <Stack.Screen name="(worker)" />
+      {!user ? (
+        <Stack.Screen name="(auth)" />
+      ) : role === "parent" ? (
+        <Stack.Screen name="(parent)" />
+      ) : role === "teacher" ? (
+        <Stack.Screen name="(teacher)" />
+      ) : (
+        <Stack.Screen name="(auth)" />
+      )}
     </Stack>
   );
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { View, ActivityIndicator } from "react-native";
 import { useAuth } from "@/src/hooks/useAuth";
-import { getMyChildren } from "@/src/api/api";
+import { getMyChildren } from "@/src/api/parent.api";
 import LinkChildCode from "./LinkChildCode";
 
 type Props = {
@@ -9,7 +9,7 @@ type Props = {
 };
 
 export default function ParentGate({ children }: Props) {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [childrenList, setChildrenList] = useState<unknown[] | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -39,6 +39,11 @@ export default function ParentGate({ children }: Props) {
         <ActivityIndicator size="large" color="#0d9488" />
       </View>
     );
+  }
+
+  // Force link code confirmation if newly created parent account
+  if (user?.needsToConfirmLink) {
+    return <LinkChildCode onLinked={fetchChildren} />;
   }
 
   if (!childrenList || childrenList.length === 0) {
