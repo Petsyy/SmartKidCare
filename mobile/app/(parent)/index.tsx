@@ -232,8 +232,6 @@ export default function ParentDashboard() {
             </Text>
           </View>
           <StatRow color="#22C55E" label="Present" value="33 days" />
-          <StatRow color="#F59E0B" label="Late" value="1 days" />
-          <StatRow color="#3B82F6" label="Excused" value="2 days" />
           <StatRow color="#9CA3AF" label="Absent" value="0 days" />
         </View>
 
