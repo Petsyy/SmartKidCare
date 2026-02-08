@@ -1,6 +1,14 @@
 import { Eye, Pencil, Users, MoreVertical } from "lucide-react";
 import { type User } from "../api/authentication.api";
 
+interface Child {
+  _id: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  studentId: string;
+}
+
 interface UserTableProps {
   activeTab: "teacher" | "parent";
   isLoading: boolean;
@@ -11,6 +19,7 @@ interface UserTableProps {
   onViewChildren: (parentId: string, parentName: string) => void;
   onMenuClick: (user: User, buttonEl: HTMLButtonElement) => void;
   openMenuUserId: string | null;
+  parentChildren?: Record<string, Child[]>;
 }
 
 export function UserTable({
@@ -23,6 +32,7 @@ export function UserTable({
   onViewChildren,
   onMenuClick,
   openMenuUserId,
+  parentChildren = {},
 }: UserTableProps) {
   return (
     <div className="overflow-x-auto">
@@ -40,6 +50,11 @@ export function UserTable({
             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
               Email
             </th>
+            {activeTab === "parent" && (
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                Linked Child
+              </th>
+            )}
             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
               Status
             </th>
@@ -53,7 +68,7 @@ export function UserTable({
           {isLoading && (
             <tr>
               <td
-                colSpan={activeTab === "teacher" ? 5 : 4}
+                colSpan={activeTab === "teacher" ? 5 : 5}
                 className="px-6 py-10 text-center text-gray-500"
               >
                 Loading users...
@@ -64,7 +79,7 @@ export function UserTable({
           {!isLoading && users.length === 0 && (
             <tr>
               <td
-                colSpan={activeTab === "teacher" ? 5 : 4}
+                colSpan={activeTab === "teacher" ? 5 : 5}
                 className="px-6 py-12 text-center text-gray-500"
               >
                 No {activeTab === "teacher" ? "teachers" : "parents"} found.
@@ -75,7 +90,7 @@ export function UserTable({
           {!isLoading && users.length > 0 && filteredUsers.length === 0 && (
             <tr>
               <td
-                colSpan={activeTab === "teacher" ? 5 : 4}
+                colSpan={activeTab === "teacher" ? 5 : 5}
                 className="px-6 py-12 text-center text-gray-500"
               >
                 No {activeTab === "teacher" ? "teachers" : "parents"} match your search.
@@ -94,6 +109,26 @@ export function UserTable({
                 {user.lastName}, {user.firstName} {user.middleName}
               </td>
               <td className="px-6 py-4 text-sm text-gray-600">{user.email}</td>
+              {activeTab === "parent" && (
+                <td className="px-6 py-4 text-sm text-gray-700">
+                  {parentChildren[user._id] && parentChildren[user._id].length > 0 ? (
+                    <div className="space-y-1">
+                      {parentChildren[user._id].map((child) => (
+                        <div key={child._id} className="flex flex-col">
+                          <span className="font-medium">
+                            {child.firstName} {child.middleName ? child.middleName + " " : ""}{child.lastName}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            ID: {child.studentId}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-gray-400">No linked children</span>
+                  )}
+                </td>
+              )}
               <td className="px-6 py-4 text-sm">
                 <span
                   className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${

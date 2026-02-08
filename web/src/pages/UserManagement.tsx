@@ -11,6 +11,14 @@ import { getParentChildren, toggleUserStatus, resetUserPassword } from "../api/a
 import { createChild } from "../api/child.api";
 import EditUserModal from "../components/modals/EditUserModal";
 
+interface Child {
+  _id: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  studentId: string;
+}
+
 export default function UserManagement() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"teacher" | "parent">("teacher");
@@ -25,6 +33,7 @@ export default function UserManagement() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddChildModal, setShowAddChildModal] = useState(false);
   const [selectedParentForChild, setSelectedParentForChild] = useState<User | null>(null);
+  const [parentChildren, setParentChildren] = useState<Record<string, Child[]>>({});
 
   const openMenu = (user: User, buttonEl: HTMLButtonElement) => {
     setMenuUser(user);
@@ -110,6 +119,7 @@ export default function UserManagement() {
       });
       setShowAddChildModal(false);
       setSelectedParentForChild(null);
+      fetchUsers(); // Refresh to update the linked children
     } catch (err: any) {
       showErrorModal(err.message || "Failed to add child");
       throw err;
@@ -135,6 +145,22 @@ export default function UserManagement() {
     try {
       const data = await getUsers({ role: activeTab });
       setUsers(data);
+      
+      // Fetch children for each parent if activeTab is parent
+      if (activeTab === "parent" && data.length > 0) {
+        const childrenData: Record<string, Child[]> = {};
+        await Promise.all(
+          data.map(async (parent) => {
+            try {
+              const children = await getParentChildren(parent._id);
+              childrenData[parent._id] = children;
+            } catch (err) {
+              childrenData[parent._id] = [];
+            }
+          })
+        );
+        setParentChildren(childrenData);
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -177,7 +203,7 @@ export default function UserManagement() {
               : "text-gray-600 hover:bg-gray-100"
               }`}
           >
-            Teachers
+            Teacher Accounts
           </button>
 
           <button
@@ -187,7 +213,7 @@ export default function UserManagement() {
               : "text-gray-600 hover:bg-gray-100"
               }`}
           >
-            Parents
+            Parent Accounts
           </button>
         </div>
 
@@ -244,6 +270,11 @@ export default function UserManagement() {
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
                     Email
                   </th>
+                  {activeTab === "parent" && (
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                      Linked Child
+                    </th>
+                  )}
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
                     Status
                   </th>
@@ -257,7 +288,7 @@ export default function UserManagement() {
                 {isLoading && (
                   <tr>
                     <td
-                      colSpan={activeTab === "teacher" ? 5 : 4}
+                      colSpan={activeTab === "teacher" ? 5 : 5}
                       className="px-6 py-10 text-center text-gray-500"
                     >
                       Loading users...
@@ -268,7 +299,7 @@ export default function UserManagement() {
                 {!isLoading && users.length === 0 && (
                   <tr>
                     <td
-                      colSpan={activeTab === "teacher" ? 5 : 4}
+                      colSpan={activeTab === "teacher" ? 5 : 5}
                       className="px-6 py-12 text-center text-gray-500"
                     >
                       No {activeTab === "teacher" ? "teachers" : "parents"} found.
@@ -279,7 +310,7 @@ export default function UserManagement() {
                 {!isLoading && users.length > 0 && filteredUsers.length === 0 && (
                   <tr>
                     <td
-                      colSpan={activeTab === "teacher" ? 5 : 4}
+                      colSpan={activeTab === "teacher" ? 5 : 5}
                       className="px-6 py-12 text-center text-gray-500"
                     >
                       No {activeTab === "teacher" ? "teachers" : "parents"} match your search.
@@ -300,6 +331,26 @@ export default function UserManagement() {
                     <td className="px-6 py-4 text-sm text-gray-600">
                       {user.email}
                     </td>
+                    {activeTab === "parent" && (
+                      <td className="px-6 py-4 text-sm text-gray-700">
+                        {parentChildren[user._id] && parentChildren[user._id].length > 0 ? (
+                          <div className="space-y-1">
+                            {parentChildren[user._id].map((child) => (
+                              <div key={child._id} className="flex flex-col">
+                                <span className="font-medium">
+                                  {child.firstName} {child.middleName ? child.middleName + " " : ""}{child.lastName}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  ID: {child.studentId}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">No linked children</span>
+                        )}
+                      </td>
+                    )}
                     <td className="px-6 py-4 text-sm">
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${user.isActive !== false
                         ? "bg-green-100 text-green-800"
