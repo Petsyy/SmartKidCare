@@ -58,6 +58,13 @@ export default function TeacherLayout() {
         name="teacher-record-data"
         options={{
           href: null,
+          tabBarStyle: { display: 'none' },
+        }}
+      />
+      <Tabs.Screen
+        name="(child-details)"
+        options={{
+          href: null,
         }}
       />
     </Tabs>

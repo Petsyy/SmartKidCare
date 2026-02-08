@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
 import {
   View,
@@ -9,6 +9,9 @@ import {
   StatusBar,
 } from "react-native";
 import * as Icons from "lucide-react-native";
+import { useAuth } from "@/src/hooks/useAuth";
+import { getChildren } from "@/src/api/teacher.api";
+import type { Child } from "@/src/api/parent.api";
 
 type StatCardProps = {
   title: string;
@@ -34,10 +37,35 @@ type NoticeItemProps = {
 
 export default function TeacherDashboard() {
   const router = useRouter();
+  const { token } = useAuth();
+  const [children, setChildren] = useState<Child[]>([]);
+  const [loading, setLoading] = useState(true);
   const teacherName = "Elena";
   const dateLabel = "Friday, January 30, 2026";
   const centerName = "Bonuan Child Development Center";
   const newNotifs = 2;
+
+  useEffect(() => {
+    const fetchChildren = async () => {
+      try {
+        if (token) {
+          const data = await getChildren(token);
+          setChildren(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch children:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchChildren();
+  }, [token]);
+
+  const totalChildren = useMemo(() => children.length, [children.length]);
+  const presentToday = 0;
+  const absentToday = totalChildren - presentToday;
+  const pendingCount = totalChildren;
 
   return (
     <SafeAreaView className="flex-1 bg-gradient-to-b from-teal-50 to-emerald-50">
@@ -92,8 +120,8 @@ export default function TeacherDashboard() {
             <View className="flex-1">
               <StatCard
                 title="Total Children"
-                value={6}
-                subtitle="Enrolled today"
+                value={loading ? "..." : totalChildren}
+                subtitle={loading ? "Loading" : "Enrolled"}
                 icon={<Icons.Users size={24} color="#0284C7" />}
                 variant="blue"
               />
@@ -101,8 +129,8 @@ export default function TeacherDashboard() {
             <View className="flex-1">
               <StatCard
                 title="Present Today"
-                value={0}
-                subtitle="6 pending"
+                value={loading ? "..." : presentToday}
+                subtitle={loading ? "Loading" : `${pendingCount} pending`}
                 icon={<Icons.UserCheck size={24} color="#059669" />}
                 variant="green"
               />
@@ -113,8 +141,8 @@ export default function TeacherDashboard() {
             <View className="flex-1">
               <StatCard
                 title="Absent Today"
-                value={0}
-                subtitle="0 excused"
+                value={loading ? "..." : absentToday}
+                subtitle={loading ? "Loading" : "0 excused"}
                 icon={<Icons.UserX size={24} color="#374151" />}
                 variant="white"
               />
@@ -122,8 +150,8 @@ export default function TeacherDashboard() {
             <View className="flex-1">
               <StatCard
                 title="Feeding Done"
-                value={0}
-                subtitle="6 pending"
+                value={loading ? "..." : 0}
+                subtitle={loading ? "Loading" : `${pendingCount} pending`}
                 icon={<Icons.UtensilsCrossed size={24} color="#059669" />}
                 variant="green"
               />
@@ -145,7 +173,7 @@ export default function TeacherDashboard() {
               <View className="flex-1">
                 <ActionCard
                   title="Record Attendance"
-                  subtitle="6 pending"
+                  subtitle={loading ? "Loading" : `${pendingCount} pending`}
                   icon={<Icons.ClipboardCheck size={22} color="#059669" />}
                   onPress={() => router.push("/(teacher)/teacher-record-data/attendance")}
                 />
@@ -154,7 +182,7 @@ export default function TeacherDashboard() {
               <View className="flex-1">
                 <ActionCard
                   title="Record Feeding"
-                  subtitle="6 pending"
+                  subtitle={loading ? "Loading" : `${pendingCount} pending`}
                   icon={<Icons.Utensils size={22} color="#059669" />}
                   onPress={() => router.push("/(teacher)/teacher-record-data/feeding")}
                 />

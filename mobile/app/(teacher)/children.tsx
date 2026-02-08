@@ -15,11 +15,11 @@ import { getChildren } from "@/src/api/teacher.api";
 import { getTodayAttendance, getTodayFeeding } from "@/src/api/records.api";
 import { useAuth } from "@/src/hooks/useAuth";
 import ChildCard from "@/src/components/ChildCard";
-import { Search, X } from "lucide-react-native";
+import { Search, X, Users, UserPlus, AlertCircle } from "lucide-react-native";
 
 interface ChildStatus {
-  attendance: string;
-  feeding: string;
+  attendance: "Present" | "Absent" | "Not Recorded";
+  feeding: "Finished" | "Missed" | "Not Recorded";
   lastUpdated: string;
 }
 
@@ -34,6 +34,13 @@ export default function ChildScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [attendanceRecord, setAttendanceRecord] = useState<any>(null);
   const [feedingRecord, setFeedingRecord] = useState<any>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const retryLoad = () => {
+    setError(null);
+    setLoading(true);
+    setRefreshKey(prev => prev + 1);
+  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -58,12 +65,12 @@ export default function ChildScreen() {
     };
 
     loadData();
-  }, [token]);
+  }, [token, refreshKey]);
 
   // Get status for a specific child
   const getChildStatus = (childId: string): ChildStatus => {
-    let attendance = "Not Recorded";
-    let feeding = "Not Recorded";
+    let attendance: "Present" | "Absent" | "Not Recorded" = "Not Recorded";
+    let feeding: "Finished" | "Missed" | "Not Recorded" = "Not Recorded";
     let lastUpdated = "No data";
 
     // Check attendance
@@ -111,7 +118,11 @@ export default function ChildScreen() {
       <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
         <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator />
+          <View className="w-20 h-20 rounded-full bg-teal-100 items-center justify-center mb-4">
+            <Users size={40} color="#14B8A6" />
+          </View>
+          <ActivityIndicator size="large" color="#14B8A6" />
+          <Text className="mt-4 text-base text-gray-600 font-medium">Loading children...</Text>
         </View>
       </SafeAreaView>
     );
@@ -122,7 +133,28 @@ export default function ChildScreen() {
       <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
         <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
         <View className="flex-1 items-center justify-center px-6">
-          <Text className="text-red-500">{error}</Text>
+          <View className="w-24 h-24 rounded-full bg-red-100 items-center justify-center mb-6">
+            <AlertCircle size={48} color="#EF4444" />
+          </View>
+          <Text className="text-2xl font-bold text-gray-800 mb-3 text-center">
+            Oops! Something Went Wrong
+          </Text>
+          <Text className="text-base text-gray-600 text-center mb-6">
+            {error}
+          </Text>
+          <Pressable
+            onPress={retryLoad}
+            className="bg-teal-600 px-8 py-4 rounded-xl"
+            style={{
+              shadowColor: '#14B8A6',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.2,
+              shadowRadius: 4,
+              elevation: 3,
+            }}
+          >
+            <Text className="text-white font-bold text-base">Try Again</Text>
+          </Pressable>
         </View>
       </SafeAreaView>
     );
@@ -162,7 +194,6 @@ export default function ChildScreen() {
         </View>
       </View>
 
-
       {/* LIST */}
       <ScrollView
         className="flex-1"
@@ -171,19 +202,79 @@ export default function ChildScreen() {
       >
         <View className="px-5 pt-5">
           {filteredChildren.length === 0 ? (
-            <View className="items-center justify-center mt-10">
-              <Text className="text-gray-500 text-center">
-                {searchQuery
-                  ? "No children found matching your search."
-                  : "No children enrolled yet."}
-              </Text>
-              {searchQuery && (
-                <Pressable
-                  onPress={() => setSearchQuery("")}
-                  className="mt-4 bg-teal-600 px-6 py-3 rounded-lg"
-                >
-                  <Text className="text-white font-semibold">Clear Search</Text>
-                </Pressable>
+            <View className="items-center justify-center py-16 px-6">
+              {searchQuery ? (
+                <>
+                  {/* No Search Results */}
+                  <View className="w-24 h-24 rounded-full bg-gray-100 items-center justify-center mb-6">
+                    <AlertCircle size={48} color="#9CA3AF" />
+                  </View>
+                  <Text className="text-2xl font-bold text-gray-800 mb-3 text-center">
+                    No Children Found
+                  </Text>
+                  <Text className="text-base text-gray-600 text-center mb-6 leading-6">
+                    No children match "{searchQuery}".{"\n"}
+                    Try a different search term.
+                  </Text>
+                  <Pressable
+                    onPress={() => setSearchQuery("")}
+                    className="bg-teal-600 px-8 py-4 rounded-xl"
+                    style={{
+                      shadowColor: '#14B8A6',
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.2,
+                      shadowRadius: 4,
+                      elevation: 3,
+                    }}
+                  >
+                    <Text className="text-white font-bold text-base">Clear Search</Text>
+                  </Pressable>
+                </>
+              ) : (
+                <>
+                  {/* Empty State */}
+                  <View className="w-32 h-32 rounded-full bg-teal-50 items-center justify-center mb-6">
+                    <Users size={64} color="#14B8A6" />
+                  </View>
+                  <Text className="text-2xl font-bold text-gray-800 mb-3 text-center">
+                    No Children Enrolled Yet
+                  </Text>
+                  <Text className="text-base text-gray-600 text-center mb-8 leading-6">
+                    There are currently no children enrolled in your class.{"\n"}
+                    Children will appear here once they are added by the admin.
+                  </Text>
+
+                  {/* Info Cards */}
+                  <View className="w-full space-y-3">
+                    <View className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex-row items-start">
+                      <View className="w-10 h-10 rounded-full bg-blue-100 items-center justify-center mr-3">
+                        <UserPlus size={20} color="#3B82F6" />
+                      </View>
+                      <View className="flex-1">
+                        <Text className="text-base font-semibold text-blue-900 mb-1">
+                          Waiting for Enrollment
+                        </Text>
+                        <Text className="text-sm text-blue-700">
+                          Contact your administrator to add children to your class roster.
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View className="bg-teal-50 border border-teal-200 rounded-xl p-4 flex-row items-start">
+                      <View className="w-10 h-10 rounded-full bg-teal-100 items-center justify-center mr-3">
+                        <Users size={20} color="#14B8A6" />
+                      </View>
+                      <View className="flex-1">
+                        <Text className="text-base font-semibold text-teal-900 mb-1">
+                          What You Can Do
+                        </Text>
+                        <Text className="text-sm text-teal-700">
+                          Once children are enrolled, you'll be able to record attendance, feeding, and view their details.
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                </>
               )}
             </View>
           ) : (

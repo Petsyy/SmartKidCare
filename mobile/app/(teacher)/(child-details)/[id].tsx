@@ -135,14 +135,11 @@ export default function ChildDetailsScreen() {
         style={{ paddingTop: insets.top + 12 }}
         className="bg-teal-600 px-5 pb-6"
       >
-        <Pressable onPress={() => router.back()} className="mb-4">
-          <ChevronLeft size={28} color="white" />
-        </Pressable>
-
         <View className="flex-row items-center">
-          <View className="w-20 h-20 rounded-full bg-white/20 items-center justify-center mr-4">
-            <User size={40} color="white" />
-          </View>
+          <Pressable onPress={() => router.back()} className="mr-3">
+            <ChevronLeft size={28} color="white" />
+          </Pressable>
+
           <View className="flex-1">
             <Text className="text-3xl font-extrabold text-white">
               {fullName}
@@ -161,7 +158,7 @@ export default function ChildDetailsScreen() {
       >
         <View className="px-5 pt-5 space-y-4">
           {/* Today's Status Card */}
-          <View className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+          <View className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 border-l-4 border-l-green-500 mb-5">
             <View className="flex-row items-center mb-4">
               <Activity size={24} color="#14B8A6" />
               <Text className="text-xl font-bold text-gray-800 ml-2">Today's Status</Text>
@@ -215,43 +212,55 @@ export default function ChildDetailsScreen() {
           </View>
 
           {/* Child Information Card */}
-          <View className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+          <View className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 border-l-4 border-l-green-500 mb-5">
             <View className="flex-row items-center mb-4">
               <User size={24} color="#14B8A6" />
               <Text className="text-xl font-bold text-gray-800 ml-2">Child Information</Text>
             </View>
 
-            <View className="space-y-3">
-              <InfoRow icon={<BookOpen size={20} color="#6B7280" />} label="Age" value={`${child.age} years old`} />
-              <InfoRow icon={<User size={20} color="#6B7280" />} label="Gender" value={child.gender} />
-              <InfoRow icon={<Calendar size={20} color="#6B7280" />} label="School Year" value={child.schoolYear} />
-              <InfoRow icon={<Activity size={20} color="#6B7280" />} label="Status" value={child.status} />
+            <View className="flex-row flex-wrap">
+              <View className="w-1/2 pr-2 mb-4">
+                <InfoRow icon={<BookOpen size={20} color="#6B7280" />} label="Age" value={`${child.age} years old`} />
+              </View>
+              <View className="w-1/2 pl-2 mb-4">
+                <InfoRow icon={<User size={20} color="#6B7280" />} label="Gender" value={child.gender} />
+              </View>
+              <View className="w-1/2 pr-2 mb-4">
+                <InfoRow icon={<Calendar size={20} color="#6B7280" />} label="School Year" value={child.schoolYear} />
+              </View>
+              <View className="w-1/2 pl-2 mb-4">
+                <InfoRow icon={<Activity size={20} color="#6B7280" />} label="Status" value={child.status} />
+              </View>
               {child.dateOfBirth && (
+                <View className="w-1/2 pr-2 mb-4">
+                  <InfoRow 
+                    icon={<Calendar size={20} color="#6B7280" />} 
+                    label="Date of Birth" 
+                    value={new Date(child.dateOfBirth).toLocaleDateString('en-US', { 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })} 
+                  />
+                </View>
+              )}
+              <View className="w-1/2 pl-2 mb-4">
                 <InfoRow 
                   icon={<Calendar size={20} color="#6B7280" />} 
-                  label="Date of Birth" 
-                  value={new Date(child.dateOfBirth).toLocaleDateString('en-US', { 
+                  label="Enrollment Date" 
+                  value={new Date(child.enrollmentDate).toLocaleDateString('en-US', { 
                     year: 'numeric', 
                     month: 'long', 
                     day: 'numeric' 
                   })} 
                 />
-              )}
-              <InfoRow 
-                icon={<Calendar size={20} color="#6B7280" />} 
-                label="Enrollment Date" 
-                value={new Date(child.enrollmentDate).toLocaleDateString('en-US', { 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })} 
-              />
+              </View>
             </View>
           </View>
 
           {/* Parent Information Card */}
           {child.parent ? (
-            <View className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+            <View className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 border-l-4 border-l-green-500 mb-5">
               <View className="flex-row items-center mb-4">
                 <User size={24} color="#14B8A6" />
                 <Text className="text-xl font-bold text-gray-800 ml-2">Parent Information</Text>

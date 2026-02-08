@@ -1,0 +1,39 @@
+import mongoose from "mongoose";
+
+const FeedingRecordSchema = new mongoose.Schema({
+  child: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Child",
+    required: true,
+  },
+  status: {
+    type: String,
+    enum: ["completed", "missed"],
+    required: true,
+  },
+});
+
+const FeedingSchema = new mongoose.Schema(
+  {
+    date: {
+      type: Date,
+      required: true,
+    },
+    teacher: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    foodServed: {
+      type: String,
+      required: true,
+    },
+    records: [FeedingRecordSchema],
+  },
+  { timestamps: true }
+);
+
+// Ensure one feeding record per teacher per day
+FeedingSchema.index({ date: 1, teacher: 1 }, { unique: true });
+
+export default mongoose.model("Feeding", FeedingSchema);
