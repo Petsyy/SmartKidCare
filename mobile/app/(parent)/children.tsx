@@ -7,12 +7,14 @@ import {
   StatusBar,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getMyChildren, Child } from "@/src/api/parent.api";
 import ChildCard from "@/src/components/ChildCard";
 
 export default function ChildScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   const [children, setChildren] = useState<Child[]>([]);
   const [loading, setLoading] = useState(true);
@@ -104,7 +106,7 @@ export default function ChildScreen() {
                   lastUpdated="Today 10:30 AM"
 
                   onPress={() => {
-                    // navigate to child details
+                    router.push(`/(parent)/parent-child-details/${child._id}`);
                   }}
                 />
                 </View>

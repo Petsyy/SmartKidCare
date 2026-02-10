@@ -62,6 +62,12 @@ export default function ParentLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="parent-child-details"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
     </ParentGate>
   );

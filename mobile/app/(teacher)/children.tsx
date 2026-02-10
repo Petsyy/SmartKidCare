@@ -122,7 +122,7 @@ export default function ChildScreen() {
             <Users size={40} color="#14B8A6" />
           </View>
           <ActivityIndicator size="large" color="#14B8A6" />
-          <Text className="mt-4 text-base text-gray-600 font-medium">Loading children...</Text>
+          <Text className="mt-4 text-lg text-gray-600 font-medium">Loading children...</Text>
         </View>
       </SafeAreaView>
     );
@@ -139,7 +139,7 @@ export default function ChildScreen() {
           <Text className="text-2xl font-bold text-gray-800 mb-3 text-center">
             Oops! Something Went Wrong
           </Text>
-          <Text className="text-base text-gray-600 text-center mb-6">
+          <Text className="text-lg text-gray-600 text-center mb-6">
             {error}
           </Text>
           <Pressable
@@ -175,22 +175,19 @@ export default function ChildScreen() {
         <Text className="text-lg text-teal-100 mt-1">
           {children.length} Enrolled Children
         </Text>
+      </View>
 
-        {/* Search Bar */}
-        <View className="mt-4 flex-row items-center bg-white rounded-lg px-4 py-3">
+      {/* Search Bar */}
+      <View className="px-5 pt-4 pb-2 bg-gray-50">
+        <View className="flex-row items-center bg-white rounded-lg px-4 py-3 border border-gray-200">
           <Search size={20} color="#9CA3AF" />
           <TextInput
-            className="flex-1 ml-3 text-base text-gray-800"
+            className="flex-1 ml-3 text-lg text-gray-800"
             placeholder="Search by name or student ID..."
             placeholderTextColor="#9CA3AF"
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
-          {searchQuery.length > 0 && (
-            <Pressable onPress={() => setSearchQuery("")}>
-              <X size={20} color="#9CA3AF" />
-            </Pressable>
-          )}
         </View>
       </View>
 
@@ -200,7 +197,7 @@ export default function ChildScreen() {
         contentContainerStyle={{ paddingBottom: 24 }}
         showsVerticalScrollIndicator={false}
       >
-        <View className="px-5 pt-5">
+        <View className="px-5 pt-2">
           {filteredChildren.length === 0 ? (
             <View className="items-center justify-center py-16 px-6">
               {searchQuery ? (
@@ -212,23 +209,10 @@ export default function ChildScreen() {
                   <Text className="text-2xl font-bold text-gray-800 mb-3 text-center">
                     No Children Found
                   </Text>
-                  <Text className="text-base text-gray-600 text-center mb-6 leading-6">
-                    No children match "{searchQuery}".{"\n"}
+                  <Text className="text-lg text-gray-600 text-center mb-6 leading-6">
+                    No children match your search.{"\n"}
                     Try a different search term.
                   </Text>
-                  <Pressable
-                    onPress={() => setSearchQuery("")}
-                    className="bg-teal-600 px-8 py-4 rounded-xl"
-                    style={{
-                      shadowColor: '#14B8A6',
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.2,
-                      shadowRadius: 4,
-                      elevation: 3,
-                    }}
-                  >
-                    <Text className="text-white font-bold text-base">Clear Search</Text>
-                  </Pressable>
                 </>
               ) : (
                 <>
@@ -239,7 +223,7 @@ export default function ChildScreen() {
                   <Text className="text-2xl font-bold text-gray-800 mb-3 text-center">
                     No Children Enrolled Yet
                   </Text>
-                  <Text className="text-base text-gray-600 text-center mb-8 leading-6">
+                  <Text className="text-lg text-gray-600 text-center mb-8 leading-6">
                     There are currently no children enrolled in your class.{"\n"}
                     Children will appear here once they are added by the admin.
                   </Text>
@@ -251,10 +235,10 @@ export default function ChildScreen() {
                         <UserPlus size={20} color="#3B82F6" />
                       </View>
                       <View className="flex-1">
-                        <Text className="text-base font-semibold text-blue-900 mb-1">
+                        <Text className="text-lg font-semibold text-blue-900 mb-1">
                           Waiting for Enrollment
                         </Text>
-                        <Text className="text-sm text-blue-700">
+                        <Text className="text-base text-blue-700">
                           Contact your administrator to add children to your class roster.
                         </Text>
                       </View>
@@ -265,10 +249,10 @@ export default function ChildScreen() {
                         <Users size={20} color="#14B8A6" />
                       </View>
                       <View className="flex-1">
-                        <Text className="text-base font-semibold text-teal-900 mb-1">
+                        <Text className="text-lg font-semibold text-teal-900 mb-1">
                           What You Can Do
                         </Text>
-                        <Text className="text-sm text-teal-700">
+                        <Text className="text-base text-teal-700">
                           Once children are enrolled, you'll be able to record attendance, feeding, and view their details.
                         </Text>
                       </View>
