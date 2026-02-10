@@ -8,6 +8,9 @@ export type User = {
   email: string;
   role: Role;
   needsToConfirmLink?: boolean;
+  firstName?: string;
+  lastName?: string;
+  middleName?: string;
 };
 
 type AuthContextType = {

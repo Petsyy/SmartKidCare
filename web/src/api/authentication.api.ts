@@ -8,6 +8,7 @@ export interface User {
   middleName?: string;
   lastName: string;
   email: string;
+  phone: string;                // teacher/parent
   role: "admin" | "teacher" | "parent";
   isActive?: boolean;
   mustChangePassword: boolean;

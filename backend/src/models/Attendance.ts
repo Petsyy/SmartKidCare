@@ -11,6 +11,10 @@ const AttendanceRecordSchema = new mongoose.Schema({
     enum: ["present", "absent"],
     required: true,
   },
+  blockchainVerified: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const AttendanceSchema = new mongoose.Schema(

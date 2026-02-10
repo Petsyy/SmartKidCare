@@ -2,6 +2,10 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AdminLogin from "./pages/AdminLogin";
 import UserManagement from "./pages/UserManagement";
 import ChildrenManagement from "./pages/ChildrenManagement";
+import AttendanceTracking from "./pages/AttendanceTracking";
+import FeedingProgram from "./pages/FeedingProgram";
+import ReportAnalytics from "./pages/ReportAnalytics";
+import AdminDashboard from "./pages/AdminDashboard";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 export default function App() {
@@ -30,7 +34,7 @@ export default function App() {
           path="/dashboard"
           element={
             <ProtectedRoute>
-              <UserManagement />
+              <AdminDashboard />
             </ProtectedRoute>
           }
         />
@@ -38,7 +42,7 @@ export default function App() {
           path="/attendance"
           element={
             <ProtectedRoute>
-              <UserManagement />
+              <AttendanceTracking />
             </ProtectedRoute>
           }
         />
@@ -46,7 +50,7 @@ export default function App() {
           path="/feeding"
           element={
             <ProtectedRoute>
-              <UserManagement />
+              <FeedingProgram />
             </ProtectedRoute>
           }
         />
@@ -54,7 +58,7 @@ export default function App() {
           path="/reports"
           element={
             <ProtectedRoute>
-              <UserManagement />
+              <ReportAnalytics />
             </ProtectedRoute>
           }
         />

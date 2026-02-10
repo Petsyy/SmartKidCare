@@ -22,7 +22,7 @@ export default function ParentLayout() {
         tabBarInactiveTintColor: "#9CA3AF",
         tabBarStyle: {
           backgroundColor: "#FFFFFF",
-          borderTopColor: "#E5E7EB",
+          borderTopWidth: 0,
           height: 45 + insets.bottom,
           paddingBottom: insets.bottom,
         },

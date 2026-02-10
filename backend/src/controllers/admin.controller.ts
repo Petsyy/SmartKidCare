@@ -11,9 +11,9 @@ export const createTeacher = async (req: Request, res: Response) => {
       return res.status(403).json({ message: "Admins Only" });
     }
 
-    const { firstName, middleName, lastName, email } = req.body;
+    const { firstName, middleName, lastName, email, phone } = req.body;
 
-    if (!firstName|| !middleName || !lastName || !email) {
+    if (!firstName || !middleName || !lastName || !email || !phone) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
@@ -33,6 +33,7 @@ export const createTeacher = async (req: Request, res: Response) => {
       middleName,
       lastName,
       email,
+      phone,
       password: hashedPassword,
       role: "teacher",
       mustChangePassword: true,
@@ -59,9 +60,9 @@ export const updateUserProfile = async (req: Request, res: Response) => {
       ? req.params.id[0]
       : req.params.id;
 
-    const { firstName, middleName, lastName, email } = req.body;
+    const { firstName, middleName, lastName, email, phone } = req.body;
 
-    if (!firstName || !middleName || !lastName || !email) {
+    if (!firstName || !middleName || !lastName || !email || !phone) {
       return res.status(400).json({ message: "Missing required fields." });
     }
 
@@ -83,6 +84,7 @@ export const updateUserProfile = async (req: Request, res: Response) => {
         middleName,
         lastName,
         email: normalizedEmail,
+        phone,
       },
       { new: true },
     ).select("-password");

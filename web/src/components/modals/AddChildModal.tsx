@@ -16,6 +16,7 @@ export type ChildFormData = {
   parentFirstName: string;
   parentMiddleName: string;
   parentEmail: string;
+  parentPhone: string;
 
   studentId?: string;
   childLinkCode?: string;
@@ -59,6 +60,7 @@ const initialFormData: ChildFormData = {
   parentFirstName: "",
   parentMiddleName: "",
   parentEmail: "",
+  parentPhone: "",
 };
 
 export default function AddChildModal({
@@ -156,6 +158,11 @@ export default function AddChildModal({
     // Validation
     if (!formData.firstName.trim() || !formData.lastName.trim()) {
       alert("Please fill in required fields");
+      return;
+    }
+
+    if (!initialParent && !formData.parentPhone.trim()) {
+      alert("Please provide a parent phone number");
       return;
     }
 
@@ -447,6 +454,22 @@ export default function AddChildModal({
                   value={formData.parentEmail}
                   onChange={handleInputChange}
                   placeholder="parent@email.com"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg
+                   focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Parent Phone Number <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="tel"
+                  name="parentPhone"
+                  value={formData.parentPhone}
+                  onChange={handleInputChange}
+                  placeholder="+63 912 345 6789"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg
                    focus:outline-none focus:ring-2 focus:ring-teal-500"
                   required

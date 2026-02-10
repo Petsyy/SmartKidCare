@@ -10,8 +10,9 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Link2, Baby } from "lucide-react-native";
+import { Link2, Baby, ChevronLeft } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 import { useAuth } from "@/src/hooks/useAuth";
 import { useAuthContext } from "@/src/context/AuthContext";
 import { linkChild } from "@/src/api/parent.api";
@@ -21,6 +22,7 @@ type Props = {
 };
 
 export default function LinkChildCode({ onLinked }: Props) {
+  const router = useRouter();
   const { token, user } = useAuth();
   const { refreshUser } = useAuthContext();
   const [code, setCode] = useState("");
@@ -41,20 +43,20 @@ export default function LinkChildCode({ onLinked }: Props) {
     setLoading(true);
     try {
       await linkChild(token, trimmed);
-      
-      // Update user to clear needsToConfirmLink flag
+
       if (user) {
         await refreshUser({
           ...user,
           needsToConfirmLink: false,
         });
       }
-      
+
       onLinked();
     } catch (error: any) {
       Alert.alert(
         "Link Failed",
-        error.message || "Invalid or expired link code. Please ask your school administrator for a new code."
+        error.message ||
+          "Invalid or expired link code. Please ask your center administrator for a new code.",
       );
     } finally {
       setLoading(false);
@@ -62,8 +64,17 @@ export default function LinkChildCode({ onLinked }: Props) {
   };
 
   return (
-    <LinearGradient colors={["#ecfdf5", "#d1fae5", "#a7f3d0"]} className="flex-1">
+    <LinearGradient
+      colors={["#ecfdf5", "#d1fae5", "#a7f3d0"]}
+      className="flex-1"
+    >
       <SafeAreaView className="flex-1" edges={["top"]}>
+        <Pressable
+          onPress={() => router.replace("/login")}
+          className="ml-4 mt-2 p-2 active:opacity-50"
+        >
+          <ChevronLeft size={28} color="#0d9488" />
+        </Pressable>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           className="flex-1 justify-center px-6"
@@ -102,7 +113,9 @@ export default function LinkChildCode({ onLinked }: Props) {
               onPress={handleSubmit}
               disabled={loading}
               className="mt-6 rounded-xl overflow-hidden"
-              style={({ pressed }) => [{ opacity: loading ? 0.7 : pressed ? 0.9 : 1 }]}
+              style={({ pressed }) => [
+                { opacity: loading ? 0.7 : pressed ? 0.9 : 1 },
+              ]}
             >
               <LinearGradient
                 colors={["#10b981", "#059669"]}
@@ -113,7 +126,9 @@ export default function LinkChildCode({ onLinked }: Props) {
                 {loading ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <Text className="text-white text-lg font-bold">Link Child</Text>
+                  <Text className="text-white text-lg font-bold">
+                    Link Child
+                  </Text>
                 )}
               </LinearGradient>
             </Pressable>

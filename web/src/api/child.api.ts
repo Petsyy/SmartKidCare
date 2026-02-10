@@ -18,6 +18,7 @@ export type CreateChildPayload = {
   parentLastName: string;
   parentMiddleName?: string;
   parentEmail: string;
+  parentPhone?: string;
 };
 
 export const createChild = async (payload: CreateChildPayload) => {

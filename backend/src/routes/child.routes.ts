@@ -2,6 +2,7 @@ import express from "express";
 import {
   createChild,
   getChildren,
+  getChildById,
   getMyChildren,
   linkChildToParent,
   updateChild,
@@ -21,9 +22,14 @@ router.post("/", authenticateToken, createChild);
 router.get("/", authenticateToken, getChildren);
 
 /**
- * Parent: get own linked children
+ * Parent: get own linked children (MUST come before /:id)
  */
 router.get("/my-children", authenticateToken, getMyChildren);
+
+/**
+ * Admin / Teacher: get single child by ID with parent info
+ */
+router.get("/:id", authenticateToken, getChildById);
 
 /**
  * Admin: update child (edit, change status, regenerate link code, unlink parent)

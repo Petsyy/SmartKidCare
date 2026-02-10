@@ -4,7 +4,10 @@ import { Request, Response } from "express";
 
 import Child from "../models/Child";
 import User from "../models/Users";
-import { generateStudentId, generateChildLinkCode } from "../utils/generators";
+import {
+  generateStudentId,
+  generateChildLinkCode,
+} from "../utils/generateStudentId";
 
 export const createChild = async (req: Request, res: Response) => {
   try {
@@ -22,6 +25,7 @@ export const createChild = async (req: Request, res: Response) => {
       parentMiddleName,
       parentLastName,
       parentEmail,
+      parentPhone,
     } = req.body;
 
     if (req.user?.role !== "admin") {
@@ -104,6 +108,9 @@ export const createChild = async (req: Request, res: Response) => {
     }
 
     // Create new parent
+    if (!parentPhone) {
+      return res.status(400).json({ message: "Missing required parent phone number" });
+    }
     const tempPassword = Math.random().toString(36).slice(-8);
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
@@ -112,6 +119,7 @@ export const createChild = async (req: Request, res: Response) => {
       middleName: parentMiddleName || "",
       lastName: parentLastName,
       email: parentEmail,
+      phone: parentPhone,
       password: hashedPassword,
       role: "parent",
       mustChangePassword: true,
@@ -192,7 +200,7 @@ export const linkChildToParent = async (req: Request, res: Response) => {
 export const getChildren = async (_req: Request, res: Response) => {
   try {
     const children = await Child.find()
-      .populate("parent", "firstName lastName email")
+      .populate("parent", "firstName lastName email phone")
       .sort({ createdAt: -1 })
       .lean();
 
@@ -218,6 +226,29 @@ export const getMyChildren = async (req: Request, res: Response) => {
     res.json(children);
   } catch {
     res.status(500).json({ message: "Failed to fetch children" });
+  }
+};
+
+// Get single child by ID with parent info
+export const getChildById = async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id as string;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid child ID" });
+    }
+
+    const child = await Child.findById(id)
+      .populate("parent", "firstName lastName email phone")
+      .lean();
+
+    if (!child) {
+      return res.status(404).json({ message: "Child not found" });
+    }
+
+    res.json(child);
+  } catch {
+    res.status(500).json({ message: "Failed to fetch child details" });
   }
 };
 
@@ -264,7 +295,7 @@ export const updateChild = async (req: Request, res: Response) => {
     await child.save();
 
     const updated = await Child.findById(child._id)
-      .populate("parent", "firstName lastName email")
+      .populate("parent", "firstName lastName email phone")
       .lean();
 
     res.json(updated);

@@ -32,7 +32,7 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.firstName || !form.middleName || !form.lastName || !form.email) {
+    if (!form.firstName || !form.middleName || !form.lastName || !form.email || !form.phone) {
       Swal.fire({
         title: "Missing Fields",
         text: "Please fill all required fields",
@@ -160,15 +160,16 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
               {/* Phone */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone Number
+                  Phone Number <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="tel"
                   name="phone"
                   value={form.phone}
                   onChange={handleInputChange}
-                  placeholder="+1 (555) 000-0000"
+                  placeholder="+63 912 345 6789"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  required
                 />
               </div>
 

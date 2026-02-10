@@ -5,7 +5,7 @@ export interface TeacherData {
   middleName?: string;
   lastName: string;
   email: string;
-  phone?: string;
+  phone: string;
   status?: "Active" | "Inactive";
 }
 

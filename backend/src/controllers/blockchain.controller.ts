@@ -1,0 +1,54 @@
+import { Request, Response } from "express";
+import {
+  storeDailyRecord,
+  verifyDailyRecord,
+  getRecordMeta,
+} from "../services/blockchain.service";
+
+export async function recordAttendance(req: Request, res: Response) {
+  const { childId, date, attendance, feeding } = req.body;
+
+  try {
+    const result = await storeDailyRecord(childId, date, attendance, feeding);
+
+    res.status(200).json({
+      message: "Record stored on blockchain",
+      ...result,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+export async function verifyAttendance(req: Request, res: Response) {
+  const { childId, date, attendanceHash, feedingHash } = req.body;
+
+  try {
+    const result = await verifyDailyRecord(
+      childId,
+      date,
+      attendanceHash,
+      feedingHash,
+    );
+
+    res.status(200).json(result);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+export async function fetchRecordMeta(req: Request, res: Response) {
+  const childId = Array.isArray(req.params.childId)
+    ? req.params.childId[0]
+    : req.params.childId;
+  const date = Array.isArray(req.params.date)
+    ? req.params.date[0]
+    : req.params.date;
+
+  try {
+    const result = await getRecordMeta(childId, date);
+    res.status(200).json(result);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+}

@@ -44,7 +44,7 @@ export const getParentChildren = async (parentId: string) => {
 
 export const updateUser = async (
   userId: string,
-  updates: { firstName?: string; lastName?: string; email?: string },
+  updates: { firstName?: string; middleName?: string; lastName?: string; email?: string; phone?: string },
 ) => {
   const res = await fetch(`${API_BASE}/admin/users/${userId}`, {
     method: "PATCH",

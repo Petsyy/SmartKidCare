@@ -18,6 +18,7 @@ export default function EditUserModal({ user, onClose, onUpdated, onDeleted }: P
     middleName: user.middleName,
     lastName: user.lastName,
     email: user.email,
+    phone: user.phone || "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -33,7 +34,7 @@ export default function EditUserModal({ user, onClose, onUpdated, onDeleted }: P
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.firstName || !form.middleName || !form.lastName || !form.email) {
+    if (!form.firstName || !form.middleName || !form.lastName || !form.email || !form.phone) {
       Swal.fire({
         title: "Missing Fields",
         text: "Please fill all required fields",
@@ -202,6 +203,21 @@ export default function EditUserModal({ user, onClose, onUpdated, onDeleted }: P
                 value={form.email}
                 onChange={handleInputChange}
                 placeholder="user@email.com"
+                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Phone Number <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="tel"
+                name="phone"
+                value={form.phone}
+                onChange={handleInputChange}
+                placeholder="Enter phone number"
                 className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition"
                 required
               />

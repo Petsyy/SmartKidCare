@@ -36,7 +36,7 @@ export default function AdminLogin() {
       localStorage.setItem("authToken", data.token);
       localStorage.setItem("adminUsername", username);
 
-      navigate("/users");
+      navigate("/dashboard");
     } catch (err: any) {
       setError(err.message || "Login failed. Please try again.");
     } finally {

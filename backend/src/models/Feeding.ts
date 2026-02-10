@@ -11,6 +11,10 @@ const FeedingRecordSchema = new mongoose.Schema({
     enum: ["completed", "missed"],
     required: true,
   },
+  blockchainVerified: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const FeedingSchema = new mongoose.Schema(

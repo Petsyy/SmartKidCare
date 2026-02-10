@@ -9,6 +9,7 @@ export interface IUser extends Document {
   email: string;
   password: string;
   role: "admin" | "teacher" | "parent";
+  phone?: string; // required for teacher/parent
   isActive: boolean;
   mustChangePassword: boolean;
   needsToConfirmLink: boolean;
@@ -40,6 +41,14 @@ const UserSchema: Schema = new Schema(
       type: String,
       required: true,
       unique: true,
+    },
+
+    phone: {
+      type: String,
+      required: function (this: { role?: string }): boolean {
+        return this.role !== "admin";
+      },
+      trim: true,
     },
 
     password: {

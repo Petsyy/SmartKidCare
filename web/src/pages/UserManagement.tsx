@@ -174,7 +174,8 @@ export default function UserManagement() {
     const fullName = `${user.firstName} ${user.middleName} ${user.lastName}`.toLowerCase();
     const email = user.email.toLowerCase();
     const employeeId = (user.employeeId || "").toLowerCase();
-    return fullName.includes(q) || email.includes(q) || employeeId.includes(q);
+    const phone = (user.phone || "").toLowerCase();
+    return fullName.includes(q) || email.includes(q) || employeeId.includes(q) || phone.includes(q);
   });
 
   return (
@@ -270,6 +271,16 @@ export default function UserManagement() {
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
                     Email
                   </th>
+                  {activeTab === "teacher" && (
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                      Phone
+                    </th>
+                  )}
+                  {activeTab === "parent" && (
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                      Phone
+                    </th>
+                  )}
                   {activeTab === "parent" && (
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
                       Linked Child
@@ -288,7 +299,7 @@ export default function UserManagement() {
                 {isLoading && (
                   <tr>
                     <td
-                      colSpan={activeTab === "teacher" ? 5 : 5}
+                      colSpan={6}
                       className="px-6 py-10 text-center text-gray-500"
                     >
                       Loading users...
@@ -299,7 +310,7 @@ export default function UserManagement() {
                 {!isLoading && users.length === 0 && (
                   <tr>
                     <td
-                      colSpan={activeTab === "teacher" ? 5 : 5}
+                      colSpan={6}
                       className="px-6 py-12 text-center text-gray-500"
                     >
                       No {activeTab === "teacher" ? "teachers" : "parents"} found.
@@ -310,7 +321,7 @@ export default function UserManagement() {
                 {!isLoading && users.length > 0 && filteredUsers.length === 0 && (
                   <tr>
                     <td
-                      colSpan={activeTab === "teacher" ? 5 : 5}
+                      colSpan={6}
                       className="px-6 py-12 text-center text-gray-500"
                     >
                       No {activeTab === "teacher" ? "teachers" : "parents"} match your search.
@@ -331,6 +342,16 @@ export default function UserManagement() {
                     <td className="px-6 py-4 text-sm text-gray-600">
                       {user.email}
                     </td>
+                    {activeTab === "teacher" && (
+                      <td className="px-6 py-4 text-sm text-gray-700">
+                        {user.phone || "—"}
+                      </td>
+                    )}
+                    {activeTab === "parent" && (
+                      <td className="px-6 py-4 text-sm text-gray-700">
+                        {user.phone || "—"}
+                      </td>
+                    )}
                     {activeTab === "parent" && (
                       <td className="px-6 py-4 text-sm text-gray-700">
                         {parentChildren[user._id] && parentChildren[user._id].length > 0 ? (
