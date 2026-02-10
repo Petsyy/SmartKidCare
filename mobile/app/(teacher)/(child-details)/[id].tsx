@@ -7,12 +7,23 @@ import {
   StatusBar,
   Pressable,
 } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { getChildById, type Child } from "@/src/api/parent.api";
 import { getTodayAttendance, getTodayFeeding } from "@/src/api/records.api";
 import { useAuth } from "@/src/hooks/useAuth";
-import { ChevronLeft, User, Mail, Phone, Calendar, BookOpen, Activity } from "lucide-react-native";
+import {
+  ChevronLeft,
+  User,
+  Mail,
+  Phone,
+  Calendar,
+  BookOpen,
+  Activity,
+} from "lucide-react-native";
 
 export default function ChildDetailsScreen() {
   const insets = useSafeAreaInsets();
@@ -74,20 +85,21 @@ export default function ChildDetailsScreen() {
     // Check attendance
     if (attendanceRecord?.records) {
       const attendanceEntry = attendanceRecord.records.find(
-        (r: any) => (r.child._id || r.child) === child._id
+        (r: any) => (r.child._id || r.child) === child._id,
       );
       if (attendanceEntry) {
-        attendance = attendanceEntry.status === "present" ? "Present" : "Absent";
+        attendance =
+          attendanceEntry.status === "present" ? "Present" : "Absent";
       }
     }
 
     // Check feeding
     if (feedingRecord?.records) {
       const feedingEntry = feedingRecord.records.find(
-        (r: any) => (r.child._id || r.child) === child._id
+        (r: any) => (r.child._id || r.child) === child._id,
       );
       if (feedingEntry) {
-        feeding = feedingEntry.status === "completed" ? "Fed" : "Missed";
+        feeding = feedingEntry.status === "completed" ? "Completed" : "Missed";
       }
     }
 
@@ -97,7 +109,11 @@ export default function ChildDetailsScreen() {
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
-        <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+        <StatusBar
+          barStyle="light-content"
+          translucent
+          backgroundColor="transparent"
+        />
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#14B8A6" />
           <Text className="mt-4 text-gray-600">Loading child details...</Text>
@@ -109,11 +125,17 @@ export default function ChildDetailsScreen() {
   if (error || !child) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
-        <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+        <StatusBar
+          barStyle="light-content"
+          translucent
+          backgroundColor="transparent"
+        />
         <View className="flex-1 items-center justify-center px-6">
-          <Text className="text-red-500 text-center">{error || "Child not found"}</Text>
+          <Text className="text-red-500 text-center">
+            {error || "Child not found"}
+          </Text>
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => router.push("/(teacher)/children")}
             className="mt-6 bg-teal-600 px-6 py-3 rounded-lg"
           >
             <Text className="text-white font-semibold">Go Back</Text>
@@ -128,7 +150,11 @@ export default function ChildDetailsScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      <StatusBar
+        barStyle="light-content"
+        translucent
+        backgroundColor="transparent"
+      />
 
       {/* HEADER */}
       <View
@@ -136,7 +162,10 @@ export default function ChildDetailsScreen() {
         className="bg-teal-600 px-5 pb-6"
       >
         <View className="flex-row items-center">
-          <Pressable onPress={() => router.back()} className="mr-3">
+          <Pressable
+            onPress={() => router.push("/(teacher)/children")}
+            className="mr-3"
+          >
             <ChevronLeft size={28} color="white" />
           </Pressable>
 
@@ -161,20 +190,32 @@ export default function ChildDetailsScreen() {
           <View className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 border-l-4 border-l-green-500 mb-5">
             <View className="flex-row items-center mb-4">
               <Activity size={24} color="#14B8A6" />
-              <Text className="text-xl font-bold text-gray-800 ml-2">Today's Status</Text>
+              <Text className="text-xl font-bold text-gray-800 ml-2">
+                Today's Status
+              </Text>
             </View>
 
             <View className="space-y-3">
               <View className="flex-row justify-between items-center py-2">
                 <Text className="text-base text-gray-600">Attendance:</Text>
-                <View className={`px-3 py-1 rounded-lg ${
-                  status.attendance === "Present" ? "bg-green-100" :
-                  status.attendance === "Absent" ? "bg-red-100" : "bg-gray-100"
-                }`}>
-                  <Text className={`text-base font-semibold ${
-                    status.attendance === "Present" ? "text-green-700" :
-                    status.attendance === "Absent" ? "text-red-700" : "text-gray-700"
-                  }`}>
+                <View
+                  className={`px-3 py-1 rounded-lg ${
+                    status.attendance === "Present"
+                      ? "bg-green-100"
+                      : status.attendance === "Absent"
+                        ? "bg-red-100"
+                        : "bg-gray-100"
+                  }`}
+                >
+                  <Text
+                    className={`text-base font-semibold ${
+                      status.attendance === "Present"
+                        ? "text-green-700"
+                        : status.attendance === "Absent"
+                          ? "text-red-700"
+                          : "text-gray-700"
+                    }`}
+                  >
                     {status.attendance}
                   </Text>
                 </View>
@@ -184,14 +225,24 @@ export default function ChildDetailsScreen() {
 
               <View className="flex-row justify-between items-center py-2">
                 <Text className="text-base text-gray-600">Feeding:</Text>
-                <View className={`px-3 py-1 rounded-lg ${
-                  status.feeding === "Fed" ? "bg-green-100" :
-                  status.feeding === "Missed" ? "bg-red-100" : "bg-gray-100"
-                }`}>
-                  <Text className={`text-base font-semibold ${
-                    status.feeding === "Fed" ? "text-green-700" :
-                    status.feeding === "Missed" ? "text-red-700" : "text-gray-700"
-                  }`}>
+                <View
+                  className={`px-3 py-1 rounded-lg ${
+                    status.feeding === "Completed"
+                      ? "bg-green-100"
+                      : status.feeding === "Missed"
+                        ? "bg-red-100"
+                        : "bg-gray-100"
+                  }`}
+                >
+                  <Text
+                    className={`text-base font-semibold ${
+                      status.feeding === "Completed"
+                        ? "text-green-700"
+                        : status.feeding === "Missed"
+                          ? "text-red-700"
+                          : "text-gray-700"
+                    }`}
+                  >
                     {status.feeding}
                   </Text>
                 </View>
@@ -201,7 +252,9 @@ export default function ChildDetailsScreen() {
                 <>
                   <View className="h-px bg-gray-200" />
                   <View className="py-2">
-                    <Text className="text-sm text-gray-500 mb-1">Today's Menu:</Text>
+                    <Text className="text-sm text-gray-500 mb-1">
+                      Today's Menu:
+                    </Text>
                     <Text className="text-base font-semibold text-gray-800">
                       {feedingRecord.foodServed || "Not specified"}
                     </Text>
@@ -215,44 +268,68 @@ export default function ChildDetailsScreen() {
           <View className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 border-l-4 border-l-green-500 mb-5">
             <View className="flex-row items-center mb-4">
               <User size={24} color="#14B8A6" />
-              <Text className="text-xl font-bold text-gray-800 ml-2">Child Information</Text>
+              <Text className="text-xl font-bold text-gray-800 ml-2">
+                Child Information
+              </Text>
             </View>
 
             <View className="flex-row flex-wrap">
               <View className="w-1/2 pr-2 mb-4">
-                <InfoRow icon={<BookOpen size={20} color="#6B7280" />} label="Age" value={`${child.age} years old`} />
+                <InfoRow
+                  icon={<BookOpen size={20} color="#6B7280" />}
+                  label="Age"
+                  value={`${child.age} years old`}
+                />
               </View>
               <View className="w-1/2 pl-2 mb-4">
-                <InfoRow icon={<User size={20} color="#6B7280" />} label="Gender" value={child.gender} />
+                <InfoRow
+                  icon={<User size={20} color="#6B7280" />}
+                  label="Gender"
+                  value={child.gender}
+                />
               </View>
               <View className="w-1/2 pr-2 mb-4">
-                <InfoRow icon={<Calendar size={20} color="#6B7280" />} label="School Year" value={child.schoolYear} />
+                <InfoRow
+                  icon={<Calendar size={20} color="#6B7280" />}
+                  label="School Year"
+                  value={child.schoolYear}
+                />
               </View>
               <View className="w-1/2 pl-2 mb-4">
-                <InfoRow icon={<Activity size={20} color="#6B7280" />} label="Status" value={child.status} />
+                <InfoRow
+                  icon={<Activity size={20} color="#6B7280" />}
+                  label="Status"
+                  value={child.status}
+                />
               </View>
               {child.dateOfBirth && (
                 <View className="w-1/2 pr-2 mb-4">
-                  <InfoRow 
-                    icon={<Calendar size={20} color="#6B7280" />} 
-                    label="Date of Birth" 
-                    value={new Date(child.dateOfBirth).toLocaleDateString('en-US', { 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    })} 
+                  <InfoRow
+                    icon={<Calendar size={20} color="#6B7280" />}
+                    label="Date of Birth"
+                    value={new Date(child.dateOfBirth).toLocaleDateString(
+                      "en-US",
+                      {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      },
+                    )}
                   />
                 </View>
               )}
               <View className="w-1/2 pl-2 mb-4">
-                <InfoRow 
-                  icon={<Calendar size={20} color="#6B7280" />} 
-                  label="Enrollment Date" 
-                  value={new Date(child.enrollmentDate).toLocaleDateString('en-US', { 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  })} 
+                <InfoRow
+                  icon={<Calendar size={20} color="#6B7280" />}
+                  label="Enrollment Date"
+                  value={new Date(child.enrollmentDate).toLocaleDateString(
+                    "en-US",
+                    {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    },
+                  )}
                 />
               </View>
             </View>
@@ -263,25 +340,27 @@ export default function ChildDetailsScreen() {
             <View className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 border-l-4 border-l-green-500 mb-5">
               <View className="flex-row items-center mb-4">
                 <User size={24} color="#14B8A6" />
-                <Text className="text-xl font-bold text-gray-800 ml-2">Parent Information</Text>
+                <Text className="text-xl font-bold text-gray-800 ml-2">
+                  Parent Information
+                </Text>
               </View>
 
               <View className="space-y-3">
-                <InfoRow 
-                  icon={<User size={20} color="#6B7280" />} 
-                  label="Name" 
-                  value={`${child.parent.firstName} ${child.parent.lastName}`} 
+                <InfoRow
+                  icon={<User size={20} color="#6B7280" />}
+                  label="Name"
+                  value={`${child.parent.firstName} ${child.parent.lastName}`}
                 />
-                <InfoRow 
-                  icon={<Mail size={20} color="#6B7280" />} 
-                  label="Email" 
-                  value={child.parent.email} 
+                <InfoRow
+                  icon={<Mail size={20} color="#6B7280" />}
+                  label="Email"
+                  value={child.parent.email}
                 />
-                {child.parent.phoneNumber && (
-                  <InfoRow 
-                    icon={<Phone size={20} color="#6B7280" />} 
-                    label="Phone" 
-                    value={child.parent.phoneNumber} 
+                {child.parent.phone && (
+                  <InfoRow
+                    icon={<Phone size={20} color="#6B7280" />}
+                    label="Contact Number"
+                    value={child.parent.phone}
                   />
                 )}
               </View>
@@ -291,7 +370,9 @@ export default function ChildDetailsScreen() {
               <View className="flex-row items-center">
                 <User size={24} color="#F59E0B" />
                 <View className="flex-1 ml-3">
-                  <Text className="text-lg font-semibold text-amber-800">No Parent Linked</Text>
+                  <Text className="text-lg font-semibold text-amber-800">
+                    No Parent Linked
+                  </Text>
                   <Text className="text-sm text-amber-700 mt-1">
                     This child has not been linked to a parent account yet.
                   </Text>
@@ -305,7 +386,15 @@ export default function ChildDetailsScreen() {
   );
 }
 
-function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function InfoRow({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+}) {
   return (
     <View className="flex-row items-center py-2">
       <View className="mr-3">{icon}</View>

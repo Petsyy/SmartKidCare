@@ -405,7 +405,7 @@ export default function ParentDashboard() {
         </View>
 
         {/* Attendance & Feeding Breakdown */}
-        <View className="mt-6 bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
+        <View className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
           {/* Attendance Section */}
           <View className="flex-row items-center mb-3">
             <Icons.Calendar size={20} color="#10B981" />

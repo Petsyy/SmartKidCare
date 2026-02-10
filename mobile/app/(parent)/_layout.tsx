@@ -60,6 +60,7 @@ export default function ParentLayout() {
         name="parent-view-record"
         options={{
           href: null,
+          tabBarStyle: { display: "none" },
         }}
       />
       <Tabs.Screen

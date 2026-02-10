@@ -1,35 +1,41 @@
 import { useState, useEffect } from 'react';
-import { View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native';
+import {
+    View,
+    Text,
+    Pressable,
+    ScrollView,
+    ActivityIndicator,
+    Modal,
+} from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, ChevronDown, ChevronRight } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getMyChildren, Child } from '@/src/api/parent.api';
+import { getFeedingHistory } from '@/src/api/records.api';
 
 type FeedingStatus = 'Completed' | 'Missed' | null;
 
 interface FeedingDay {
     day: number;
     status: FeedingStatus;
+    teacherName?: string;
+    recordedAt?: string;
+    foodServed?: string;
 }
 
 export default function ViewFeedingDetails() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const [children, setChildren] = useState<Child[]>([]);
     const [selectedChild, setSelectedChild] = useState<Child | null>(null);
     const [loading, setLoading] = useState(true);
     const [showChildDropdown, setShowChildDropdown] = useState(false);
     const [currentDate, setCurrentDate] = useState(new Date(2026, 1)); // February 2026
-
-    // Mock feeding data - this would come from API in real implementation
-    const [feedingData, setFeedingData] = useState<FeedingDay[]>([
-        { day: 2, status: 'Completed' },
-        { day: 3, status: 'Completed' },
-        { day: 4, status: 'Completed' },
-        { day: 8, status: 'Completed' },
-        { day: 10, status: 'Missed' },
-        { day: 12, status: 'Completed' },
-        { day: 15, status: 'Missed' },
-    ]);
+    const [feedingData, setFeedingData] = useState<FeedingDay[]>([]);
+    const [token, setToken] = useState<string | null>(null);
+    const [selectedDay, setSelectedDay] = useState<number | null>(null);
+    const [showDayModal, setShowDayModal] = useState(false);
 
     useEffect(() => {
         loadChildren();
@@ -37,10 +43,11 @@ export default function ViewFeedingDetails() {
 
     const loadChildren = async () => {
         try {
-            const token = await AsyncStorage.getItem('token');
-            if (!token) throw new Error('No authentication token');
+            const authToken = await AsyncStorage.getItem('token');
+            if (!authToken) throw new Error('No authentication token');
+            setToken(authToken);
 
-            const data = await getMyChildren(token);
+            const data = await getMyChildren(authToken);
             setChildren(data);
             if (data.length > 0) {
                 setSelectedChild(data[0]);
@@ -51,6 +58,64 @@ export default function ViewFeedingDetails() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        const loadFeeding = async () => {
+            if (!token || !selectedChild) {
+                setFeedingData([]);
+                return;
+            }
+
+            try {
+                const year = currentDate.getFullYear();
+                const month = currentDate.getMonth();
+                const startDate = new Date(year, month, 1);
+                const endDate = new Date(year, month + 1, 0, 23, 59, 59, 999);
+
+                const history = await getFeedingHistory(
+                    token,
+                    startDate.toISOString(),
+                    endDate.toISOString(),
+                );
+
+                const byDay = new Map<number, FeedingDay>();
+
+                history.forEach((record: any) => {
+                    const recordDate = new Date(record.date);
+                    const entry = record.records?.find(
+                        (r: any) => (r.child?._id || r.child) === selectedChild._id,
+                    );
+
+                    if (entry) {
+                        const status: FeedingStatus =
+                            entry.status === 'completed' ? 'Completed' : 'Missed';
+                        const teacher = record.teacher;
+                        const teacherName = teacher
+                            ? `${teacher.firstName} ${teacher.lastName}`
+                            : 'Not available';
+                        const recordedAt =
+                            record.updatedAt || record.createdAt || record.date || null;
+                        const foodServed = record.foodServed || 'Not specified';
+
+                        byDay.set(recordDate.getDate(), {
+                            day: recordDate.getDate(),
+                            status,
+                            teacherName,
+                            recordedAt,
+                            foodServed,
+                        });
+                    }
+                });
+
+                setFeedingData(Array.from(byDay.values()));
+            } catch (err) {
+                console.error('Failed to load feeding history:', err);
+                setFeedingData([]);
+            }
+        };
+
+        loadFeeding();
+    }, [token, selectedChild, currentDate]);
 
     const getDaysInMonth = (date: Date) => {
         const year = date.getFullYear();
@@ -68,6 +133,9 @@ export default function ViewFeedingDetails() {
         const dayData = feedingData.find(d => d.day === day);
         return dayData ? dayData.status : null;
     };
+
+    const getDetailsForDay = (day: number) =>
+        feedingData.find((d) => d.day === day) || null;
 
     const getStatusColor = (status: FeedingStatus) => {
         switch (status) {
@@ -127,13 +195,25 @@ export default function ViewFeedingDetails() {
             days.push(<View key={`empty-${i}`} className="w-[14.28%] p-2" />);
         }
 
+        const today = new Date();
+        const isCurrentMonth =
+            today.getFullYear() === currentDate.getFullYear() &&
+            today.getMonth() === currentDate.getMonth();
+
         // Calendar days
         for (let day = 1; day <= daysInMonth; day++) {
             const status = getStatusForDay(day);
-            const isToday = day === 8; // Highlighting day 8 as shown in image
+            const isToday = isCurrentMonth && day === today.getDate();
 
             days.push(
-                <View key={`day-${day}`} className="w-[14.28%] p-2">
+                <Pressable
+                    key={`day-${day}`}
+                    className="w-[14.28%] p-2"
+                    onPress={() => {
+                        setSelectedDay(day);
+                        setShowDayModal(true);
+                    }}
+                >
                     <View className={`items-center justify-center h-10 rounded-full ${isToday ? 'border-2 border-teal-500' : ''}`}>
                         <Text className={`text-base ${isToday ? 'font-bold text-teal-600' : 'text-gray-700'}`}>
                             {day}
@@ -142,7 +222,7 @@ export default function ViewFeedingDetails() {
                             <View className={`w-1.5 h-1.5 rounded-full mt-0.5 ${getStatusColor(status)}`} />
                         )}
                     </View>
-                </View>
+                </Pressable>
             );
         }
 
@@ -171,14 +251,20 @@ export default function ViewFeedingDetails() {
 
     return (
         <View className="flex-1 bg-gray-50">
-            {/* Fixed Teal Header */}
-            <View className="bg-teal-600 pt-12 pb-8 px-6">
-                <View className="flex-row items-start">
-                    <Pressable onPress={() => router.push('/(parent)')} className="mr-4 mt-1">
+            {/* Header */}
+            <View
+                style={{ paddingTop: insets.top + 12 }}
+                className="bg-teal-600 px-5 pb-5"
+            >
+                <View className="flex-row items-center">
+                    <Pressable onPress={() => router.push('/(parent)')} className="mr-4">
                         <ChevronLeft size={24} color="white" />
                     </Pressable>
                     <View className="flex-1">
-                        <Text className="text-2xl font-bold text-white">View Record Details</Text>
+                        <Text className="text-3xl font-extrabold text-white">Feeding</Text>
+                        <Text className="text-lg text-teal-100 mt-1">
+                            View your child's daily feeding
+                        </Text>
                     </View>
                 </View>
             </View>
@@ -305,6 +391,73 @@ export default function ViewFeedingDetails() {
                     </View>
                 </View>
             </ScrollView>
+            <Modal
+                visible={showDayModal}
+                animationType="fade"
+                transparent={true}
+                onRequestClose={() => setShowDayModal(false)}
+            >
+                {(() => {
+                    const dayDetails = selectedDay ? getDetailsForDay(selectedDay) : null;
+                    const recordedLabel = dayDetails?.recordedAt
+                        ? new Date(dayDetails.recordedAt).toLocaleString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                        })
+                        : 'Not available';
+
+                    return (
+                        <View className="flex-1 bg-black/50 items-center justify-center px-6">
+                            <View className="w-full rounded-2xl bg-white p-6">
+                                <View className="flex-row items-center justify-between mb-4">
+                                    <View>
+                                        <Text className="text-lg font-bold text-gray-900">
+                                            Feeding Details
+                                        </Text>
+                                    </View>
+                                    <Pressable
+                                        onPress={() => setShowDayModal(false)}
+                                        className="px-3 py-2"
+                                    >
+                                        <Text className="text-teal-600 font-semibold">Close</Text>
+                                    </Pressable>
+                                </View>
+
+                                <View className="bg-gray-50 rounded-2xl p-4">
+                                    <Text className="text-sm text-gray-500 mb-2">Status</Text>
+                                    <Text className="text-xl font-bold text-gray-900">
+                                        {selectedDay ? getStatusForDay(selectedDay) || 'Not recorded' : 'Not recorded'}
+                                    </Text>
+
+                                    <View className="mt-4">
+                                        <Text className="text-sm text-gray-500 mb-1">Food Served</Text>
+                                        <Text className="text-base font-semibold text-gray-800">
+                                            {dayDetails?.foodServed || 'Not specified'}
+                                        </Text>
+                                    </View>
+
+                                    <View className="mt-4">
+                                        <Text className="text-sm text-gray-500 mb-1">Teacher</Text>
+                                        <Text className="text-base font-semibold text-gray-800">
+                                            {dayDetails?.teacherName || 'Not available'}
+                                        </Text>
+                                    </View>
+
+                                    <View className="mt-3">
+                                        <Text className="text-sm text-gray-500 mb-1">Recorded</Text>
+                                        <Text className="text-base font-semibold text-gray-800">
+                                            {recordedLabel}
+                                        </Text>
+                                    </View>
+                                </View>
+                            </View>
+                        </View>
+                    );
+                })()}
+            </Modal>
         </View>
     );
 }

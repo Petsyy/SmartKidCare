@@ -1,10 +1,30 @@
-import { View, Text, ScrollView } from "react-native";
+import { View, Text, ScrollView, StatusBar } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function NotificationsScreen() {
+  const insets = useSafeAreaInsets();
+
   return (
-    <ScrollView className="flex-1 bg-gray-50 pt-16 pb-6 px-6">
-      <Text className="text-3xl font-bold text-gray-800">Notifications</Text>
-      <Text className="text-base text-gray-500 mt-2">Your notifications appear here</Text>
-    </ScrollView>
+    <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+
+      {/* Header */}
+      <View
+        style={{ paddingTop: insets.top + 12 }}
+        className="bg-teal-600 px-5 pb-5"
+      >
+        <Text className="text-3xl font-extrabold text-white">
+          Notifications
+        </Text>
+        <Text className="text-lg text-teal-100 mt-1">
+          Your notifications appear here
+        </Text>
+      </View>
+
+      {/* Notifications coming soon */}
+      <View className="flex-1 items-center justify-center">
+        <Text className="text-gray-400 text-2xl">No notifications yet</Text>
+      </View>
+    </SafeAreaView>
   );
 }
