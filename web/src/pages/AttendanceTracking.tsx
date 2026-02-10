@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import AttendanceEditModal from "../components/modals/AttendanceEditModal";
+import VerificationModal from "../components/modals/VerificationModal";
 import { useNavigate } from "react-router-dom";
-import { Search, ShieldCheck, ShieldAlert } from "lucide-react";
+import { Search, Pencil, Link } from "lucide-react";
 import Layout from "../components/layout/Layout";
 import { API_BASE } from "../components/config/config.api";
 
@@ -42,7 +44,6 @@ type AttendanceRow = {
   blockchainVerified: boolean;
 };
 
-
 const authHeaders = () => ({
   Authorization: `Bearer ${localStorage.getItem("authToken")}`,
 });
@@ -78,6 +79,16 @@ export default function AttendanceTracking() {
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editModal, setEditModal] = useState<{
+    open: boolean;
+    row: AttendanceRow | null;
+  }>({ open: false, row: null });
+  const [verifyModal, setVerifyModal] = useState<{
+    open: boolean;
+    row: AttendanceRow | null;
+    data?: any | null;
+  }>({ open: false, row: null, data: null });
+  const [, setVerifyLoading] = useState(false);
 
   const flattenAttendance = useCallback(
     (data: AttendanceApiResponse[]): AttendanceRow[] =>
@@ -145,8 +156,6 @@ export default function AttendanceTracking() {
         row.studentId.toLowerCase().includes(term),
     );
   }, [rows, search]);
-
-
 
   return (
     <Layout
@@ -219,7 +228,7 @@ export default function AttendanceTracking() {
                     Submitted At
                   </th>
                   <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    Integrity
+                    Actions / Integrity
                   </th>
                 </tr>
               </thead>
@@ -268,22 +277,106 @@ export default function AttendanceTracking() {
                         {formatDateTime(row.submittedAt)}
                       </td>
                       <td className="px-6 py-4">
-                        {row.blockchainVerified ? (
-                          <div className="flex items-center justify-center gap-2">
-                            <div className="flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1">
-                              <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                              <span className="text-xs font-medium text-emerald-700">Verified</span>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-center gap-2">
-                            <div className="flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1">
-                              <ShieldAlert className="h-4 w-4 text-amber-600" />
-                              <span className="text-xs font-medium text-amber-700">Unverified</span>
-                            </div>
-                          </div>
-                        )}
+                        <AttendanceRowActions
+                          blockchainVerified={row.blockchainVerified}
+                          onEdit={() => setEditModal({ open: true, row })}
+                          onViewVerification={async () => {
+                            setVerifyModal({ open: true, row, data: null }); // open instantly
+                            try {
+                              setVerifyLoading(true);
+                              setError(null);
+
+                              const resp = await fetch(
+                                `${API_BASE}/records/attendance/verify/${row.id}`,
+                                {
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                    ...authHeaders(),
+                                  },
+                                },
+                              );
+
+                              const payload = await resp
+                                .json()
+                                .catch(() => null);
+                              if (!resp.ok)
+                                throw new Error(
+                                  payload?.message ||
+                                    "Failed to fetch verification",
+                                );
+
+                              setVerifyModal({
+                                open: true,
+                                row,
+                                data: payload,
+                              });
+                            } catch (err: any) {
+                              setError(
+                                err?.message || "Unable to fetch verification",
+                              );
+                              setVerifyModal({
+                                open: false,
+                                row: null,
+                                data: null,
+                              });
+                            } finally {
+                              setVerifyLoading(false);
+                            }
+                          }}
+                        />
                       </td>
+                      {/* Edit Modal */}
+                      <AttendanceEditModal
+                        open={editModal.open}
+                        onClose={() => setEditModal({ open: false, row: null })}
+                        onSave={async (status) => {
+                          if (!editModal.row) return;
+                          setIsLoading(true);
+                          setError(null);
+                          try {
+                            // PATCH endpoint: /records/attendance/:id
+                            const response = await fetch(
+                              `${API_BASE}/records/attendance/${editModal.row.id}`,
+                              {
+                                method: "PATCH",
+                                headers: {
+                                  "Content-Type": "application/json",
+                                  ...authHeaders(),
+                                },
+                                body: JSON.stringify({ status }),
+                              },
+                            );
+                            if (!response.ok) {
+                              const payload = await response
+                                .json()
+                                .catch(() => ({}));
+                              throw new Error(
+                                payload.message ||
+                                  "Failed to update attendance",
+                              );
+                            }
+                            await fetchAttendance();
+                            setEditModal({ open: false, row: null });
+                          } catch (err: any) {
+                            setError(
+                              err?.message || "Unable to update attendance",
+                            );
+                          } finally {
+                            setIsLoading(false);
+                          }
+                        }}
+                        initialStatus={editModal.row?.status || "present"}
+                        childName={editModal.row?.childName || ""}
+                      />
+
+                      {/* Verification Modal */}
+                      <VerificationModal
+                        open={verifyModal.open}
+                        onClose={() =>
+                          setVerifyModal({ open: false, row: null, data: null })
+                        }
+                        data={verifyModal.data}
+                      />
                     </tr>
                   ))
                 )}
@@ -311,4 +404,51 @@ function AttendanceStatusBadge({ status }: { status: "present" | "absent" }) {
   );
 }
 
+type AttendanceRowActionsProps = {
+  blockchainVerified: boolean;
+  onEdit: () => void;
+  onViewVerification?: () => void;
+};
 
+function AttendanceRowActions({
+  blockchainVerified,
+  onEdit,
+  onViewVerification,
+}: AttendanceRowActionsProps) {
+  return (
+    <div className="flex items-center gap-2 justify-center">
+      <button
+        className="p-1 rounded hover:bg-gray-100"
+        title="Edit Attendance"
+        onClick={onEdit}
+      >
+        <div className="flex items-center justify-center gap-1 bg-blue-50 px-3 py-1 rounded-md">
+          <Pencil className="h-3 w-3 text-blue-600" />
+          <span className="text-xs font-medium text-blue-600">Edit</span>
+        </div>
+      </button>
+
+      {blockchainVerified ? (
+        <button
+          onClick={onViewVerification}
+          title="View blockchain proof"
+          className="flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1 hover:bg-emerald-100 transition"
+        >
+          <Link className="h-3.5 w-3.5 text-emerald-700" />
+          <span className="text-xs font-medium text-emerald-700">
+            View Proof
+          </span>
+        </button>
+      ) : (
+        <div
+          title="Not recorded on blockchain"
+          className="flex items-center gap-1.5 rounded-md border border-gray-200 bg-gray-100 px-3 py-1"
+        >
+          <span className="text-xs font-medium text-gray-500">
+            Not Verified
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}

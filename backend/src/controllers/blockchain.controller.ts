@@ -4,6 +4,7 @@ import {
   verifyDailyRecord,
   getRecordMeta,
 } from "../services/blockchain.service";
+import { buildDateHash } from "../blockchain/ethers";
 
 export async function recordAttendance(req: Request, res: Response) {
   const { childId, date, attendance, feeding } = req.body;
@@ -46,7 +47,9 @@ export async function fetchRecordMeta(req: Request, res: Response) {
     : req.params.date;
 
   try {
-    const result = await getRecordMeta(childId, date);
+    const dateKey = new Date(date).toISOString().split("T")[0];
+    const dateHash = buildDateHash(childId, dateKey);
+    const result = await getRecordMeta(dateHash);
     res.status(200).json(result);
   } catch (err: any) {
     res.status(500).json({ error: err.message });

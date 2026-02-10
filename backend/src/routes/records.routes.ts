@@ -4,29 +4,26 @@ import {
   submitFeeding,
   getAttendanceHistory,
   getFeedingHistory,
+  updateAttendanceRecord,
+  updateFeedingRecord,
+  deleteAttendanceRecord,
+  getAttendanceVerification,
+  getFeedingVerification,
+  getTxForDateHash,
 } from "../controllers/records.controller";
 import { authenticateToken } from "../middlewares/auth.middleware";
 
 const router = express.Router();
 
-/**
- * Teacher: Submit daily attendance
- */
+router.patch("/attendance/:id", authenticateToken, updateAttendanceRecord);
+router.patch("/feeding/:id", authenticateToken, updateFeedingRecord);
+router.delete("/attendance/:id", authenticateToken, deleteAttendanceRecord);
 router.post("/attendance", authenticateToken, submitAttendance);
-
-/**
- * Teacher: Submit daily feeding
- */
 router.post("/feeding", authenticateToken, submitFeeding);
-
-/**
- * Teacher/Admin: Get attendance history
- */
 router.get("/attendance", authenticateToken, getAttendanceHistory);
-
-/**
- * Teacher/Admin: Get feeding history
- */
+router.get("/attendance/verify/:id", authenticateToken, getAttendanceVerification);
+router.get("/attendance/tx/:dateHash", authenticateToken, getTxForDateHash);
 router.get("/feeding", authenticateToken, getFeedingHistory);
+router.get("/feeding/verify/:id", authenticateToken, getFeedingVerification);
 
 export default router;

@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, ShieldCheck, ShieldAlert } from "lucide-react";
+import { Search, ShieldAlert, Link, Pencil } from "lucide-react";
 import Layout from "../components/layout/Layout";
 import { API_BASE } from "../components/config/config.api";
+import VerificationModal from "../components/modals/VerificationModal";
+import FeedingEditModal from "../components/modals/FeedingEditModal";
 
 type ChildRef = {
   _id: string;
@@ -44,9 +46,27 @@ type FeedingRow = {
   blockchainVerified: boolean;
 };
 
+type AttendanceLookupResponse = {
+  _id: string;
+  date: string;
+  records: Array<{
+    child: ChildRef | string;
+  }>;
+};
+
 const authHeaders = () => ({
   Authorization: `Bearer ${localStorage.getItem("authToken")}`,
 });
+
+const toDateKey = (value: string) => new Date(value).toISOString().split("T")[0];
+
+const getChildIdFromRowId = (rowId: string) => {
+  const parts = String(rowId).split("-");
+  return parts.length > 1 ? parts.slice(1).join("-") : "";
+};
+
+const getChildId = (child: ChildRef | string) =>
+  typeof child === "string" ? child : String(child?._id || "");
 
 const formatChildName = (child?: ChildRef | null) => {
   if (!child) return "Unknown";
@@ -79,6 +99,15 @@ export default function FeedingProgram() {
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [verifyModal, setVerifyModal] = useState<{
+    open: boolean;
+    row: FeedingRow | null;
+    data?: any | null;
+  }>({ open: false, row: null, data: null });
+  const [editModal, setEditModal] = useState<{
+    open: boolean;
+    row: FeedingRow | null;
+  }>({ open: false, row: null });
 
   const flattenFeeding = useCallback(
     (data: FeedingApiResponse[]): FeedingRow[] =>
@@ -145,6 +174,78 @@ export default function FeedingProgram() {
         row.foodServed.toLowerCase().includes(term),
     );
   }, [rows, search]);
+
+  const fetchVerificationData = useCallback(
+    async (row: FeedingRow) => {
+      const headers = {
+        "Content-Type": "application/json",
+        ...authHeaders(),
+      };
+
+      const primaryResp = await fetch(
+        `${API_BASE}/records/feeding/verify/${row.id}`,
+        { headers },
+      );
+      const primaryPayload = await primaryResp.json().catch(() => null);
+      if (primaryResp.ok && primaryPayload) {
+        return primaryPayload;
+      }
+
+      // Fallback: derive attendance verify id and reuse the known-good endpoint.
+      const childId = getChildIdFromRowId(row.id);
+      if (!childId) {
+        throw new Error(
+          primaryPayload?.reason ||
+            primaryPayload?.message ||
+            "Invalid record id",
+        );
+      }
+
+      const attendanceResp = await fetch(`${API_BASE}/records/attendance`, {
+        headers,
+      });
+      const attendancePayload = await attendanceResp.json().catch(() => null);
+      if (!attendanceResp.ok || !Array.isArray(attendancePayload)) {
+        throw new Error(
+          primaryPayload?.reason ||
+            primaryPayload?.message ||
+            "Verification unavailable",
+        );
+      }
+
+      const targetDateKey = toDateKey(row.date);
+      const matchedAttendance = (attendancePayload as AttendanceLookupResponse[]).find(
+        (entry) =>
+          toDateKey(entry.date) === targetDateKey &&
+          entry.records.some((record) => getChildId(record.child) === childId),
+      );
+
+      if (!matchedAttendance) {
+        throw new Error(
+          primaryPayload?.reason ||
+            primaryPayload?.message ||
+            "Matching attendance record not found",
+        );
+      }
+
+      const fallbackResp = await fetch(
+        `${API_BASE}/records/attendance/verify/${matchedAttendance._id}-${childId}`,
+        { headers },
+      );
+      const fallbackPayload = await fallbackResp.json().catch(() => null);
+      if (!fallbackResp.ok || !fallbackPayload) {
+        throw new Error(
+          fallbackPayload?.message ||
+            primaryPayload?.reason ||
+            primaryPayload?.message ||
+            "Verification unavailable",
+        );
+      }
+
+      return fallbackPayload;
+    },
+    [],
+  );
 
   return (
     <Layout
@@ -215,7 +316,7 @@ export default function FeedingProgram() {
                     Submitted At
                   </th>
                   <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    Integrity
+                    Actions / Integrity
                   </th>
                 </tr>
               </thead>
@@ -247,16 +348,62 @@ export default function FeedingProgram() {
                       <td className="px-6 py-4">
                         {row.blockchainVerified ? (
                           <div className="flex items-center justify-center gap-2">
-                            <div className="flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1">
-                              <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                              <span className="text-xs font-medium text-emerald-700">Verified</span>
-                            </div>
+                            <button
+                              className="p-1 rounded hover:bg-gray-100"
+                              title="Edit Feeding"
+                              onClick={() => setEditModal({ open: true, row })}
+                            >
+                              <div className="flex items-center justify-center gap-1 bg-blue-50 px-3 py-1 rounded-md">
+                                <Pencil className="h-3 w-3 text-blue-600" />
+                                <span className="text-xs font-medium text-blue-600">Edit</span>
+                              </div>
+                            </button>
+                            <button
+                              onClick={async () => {
+                                setVerifyModal({ open: true, row, data: null });
+                                try {
+                                  setVerifyModal({
+                                    open: true,
+                                    row,
+                                    data: await fetchVerificationData(row),
+                                  });
+                                } catch (err: any) {
+                                  setVerifyModal({
+                                    open: true,
+                                    row,
+                                    data: {
+                                      isValid: false,
+                                      reason: err?.message || "Unable to fetch verification",
+                                    },
+                                  });
+                                }
+                              }}
+                              title="View blockchain proof"
+                              className="flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1 hover:bg-emerald-100 transition"
+                            >
+                              <Link className="h-3.5 w-3.5 text-emerald-700" />
+                              <span className="text-xs font-medium text-emerald-700">
+                                View Proof
+                              </span>
+                            </button>
                           </div>
                         ) : (
                           <div className="flex items-center justify-center gap-2">
+                            <button
+                              className="p-1 rounded hover:bg-gray-100"
+                              title="Edit Feeding"
+                              onClick={() => setEditModal({ open: true, row })}
+                            >
+                              <div className="flex items-center justify-center gap-1 bg-blue-50 px-3 py-1 rounded-md">
+                                <Pencil className="h-3 w-3 text-blue-600" />
+                                <span className="text-xs font-medium text-blue-600">Edit</span>
+                              </div>
+                            </button>
                             <div className="flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1">
                               <ShieldAlert className="h-4 w-4 text-amber-600" />
-                              <span className="text-xs font-medium text-amber-700">Unverified</span>
+                              <span className="text-xs font-medium text-amber-700">
+                                Unverified
+                              </span>
                             </div>
                           </div>
                         )}
@@ -269,6 +416,46 @@ export default function FeedingProgram() {
           </div>
         </div>
       </div>
+
+      <VerificationModal
+        open={verifyModal.open}
+        onClose={() => setVerifyModal({ open: false, row: null, data: null })}
+        data={verifyModal.data}
+      />
+      <FeedingEditModal
+        open={editModal.open}
+        onClose={() => setEditModal({ open: false, row: null })}
+        onSave={async (status) => {
+          if (!editModal.row) return;
+          setIsLoading(true);
+          setError(null);
+          try {
+            const response = await fetch(
+              `${API_BASE}/records/feeding/${editModal.row.id}`,
+              {
+                method: "PATCH",
+                headers: {
+                  "Content-Type": "application/json",
+                  ...authHeaders(),
+                },
+                body: JSON.stringify({ status }),
+              },
+            );
+            if (!response.ok) {
+              const payload = await response.json().catch(() => ({}));
+              throw new Error(payload.message || "Failed to update feeding");
+            }
+            await fetchFeeding();
+            setEditModal({ open: false, row: null });
+          } catch (err: any) {
+            setError(err?.message || "Unable to update feeding");
+          } finally {
+            setIsLoading(false);
+          }
+        }}
+        initialStatus={editModal.row?.status || "completed"}
+        childName={editModal.row?.childName || ""}
+      />
     </Layout>
   );
 }
