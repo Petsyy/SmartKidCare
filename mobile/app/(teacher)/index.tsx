@@ -319,6 +319,22 @@ export default function TeacherDashboard() {
           />
         </View>
       </ScrollView>
+
+      {/* Floating AI Chat button */}
+      <Pressable
+        onPress={() => router.push("/(teacher)/chat")}
+        className="absolute right-5 rounded-full bg-teal-600 p-4 active:opacity-90"
+        style={{
+          bottom: 24 + insets.bottom + 5,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.2,
+          shadowRadius: 6,
+          elevation: 6,
+        }}
+      >
+        <Icons.MessageCircle size={28} color="white" />
+      </Pressable>
     </SafeAreaView>
   );
 }

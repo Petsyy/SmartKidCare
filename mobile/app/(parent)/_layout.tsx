@@ -57,6 +57,12 @@ export default function ParentLayout() {
         }}
       />
       <Tabs.Screen
+        name="chat"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
         name="parent-view-record"
         options={{
           href: null,

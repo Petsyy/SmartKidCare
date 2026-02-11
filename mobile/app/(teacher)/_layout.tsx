@@ -48,6 +48,12 @@ export default function TeacherLayout() {
         }}
       />
       <Tabs.Screen
+        name="chat"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: "Profile",

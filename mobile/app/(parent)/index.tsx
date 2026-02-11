@@ -123,10 +123,10 @@ export default function ParentDashboard() {
   const childGender = child?.gender ? child.gender : "-";
   const enrolledText = child?.enrollmentDate
     ? new Date(child.enrollmentDate).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      })
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    })
     : "-";
 
   // Calculate statistics for the selected child
@@ -451,10 +451,10 @@ export default function ParentDashboard() {
               <Text className="text-teal-600 font-semibold">
                 {stats.mealsCompleted + stats.mealsMissed > 0
                   ? Math.round(
-                      (stats.mealsCompleted /
-                        (stats.mealsCompleted + stats.mealsMissed)) *
-                        100,
-                    )
+                    (stats.mealsCompleted /
+                      (stats.mealsCompleted + stats.mealsMissed)) *
+                    100,
+                  )
                   : 0}
                 %
               </Text>
@@ -464,10 +464,10 @@ export default function ParentDashboard() {
                 percent={
                   stats.mealsCompleted + stats.mealsMissed > 0
                     ? Math.round(
-                        (stats.mealsCompleted /
-                          (stats.mealsCompleted + stats.mealsMissed)) *
-                          100,
-                      )
+                      (stats.mealsCompleted /
+                        (stats.mealsCompleted + stats.mealsMissed)) *
+                      100,
+                    )
                     : 0
                 }
               />
@@ -524,6 +524,22 @@ export default function ParentDashboard() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Floating AI Chat button */}
+      <Pressable
+        onPress={() => router.push("/(parent)/chat")}
+        className="absolute right-5 rounded-full bg-teal-600 p-4 active:opacity-90"
+        style={{
+          bottom: 24 + insets.bottom + 5,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.2,
+          shadowRadius: 6,
+          elevation: 6,
+        }}
+      >
+        <Icons.MessageCircle size={28} color="white" />
+      </Pressable>
     </SafeAreaView>
   );
 }
