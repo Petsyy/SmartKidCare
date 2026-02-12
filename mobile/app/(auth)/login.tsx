@@ -10,14 +10,23 @@ import {
   ActivityIndicator,
   Image,
 } from "react-native";
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react-native";
 import { useAuth } from "@/src/hooks/useAuth";
 import type { User } from "@/src/context/AuthContext";
-import { LinearGradient } from 'expo-linear-gradient';
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 import { login as apiLogin } from "@/src/api/authentication.api";
 
-const FormField = ({ label, children, icon: Icon }: { label: string; children: React.ReactNode; icon?: React.ComponentType<{ size?: number; color?: string; style?: object }> }) => (
+const FormField = ({
+  label,
+  children,
+  icon: Icon,
+}: {
+  label: string;
+  children: React.ReactNode;
+  icon?: React.ComponentType<{ size?: number; color?: string; style?: object }>;
+}) => (
   <View className="mb-5">
     <View className="flex-row items-center mb-2">
       {Icon && <Icon size={14} color="#6b7280" style={{ marginRight: 6 }} />}
@@ -30,6 +39,7 @@ const FormField = ({ label, children, icon: Icon }: { label: string; children: R
 
 export default function Login() {
   const { login } = useAuth();
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -45,10 +55,20 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      const { token: authToken, user: apiUser } = await apiLogin({
+      const response = await apiLogin({
         email: trimmedEmail,
         password,
       });
+
+      if (response.requiresPasswordChange) {
+        router.push({
+          pathname: "/(auth)/verify-otp",
+          params: { email: response.email },
+        });
+        return;
+      }
+
+      const { token: authToken, user: apiUser } = response;
 
       const appUser: User = {
         id: apiUser._id,
@@ -70,18 +90,18 @@ export default function Login() {
 
   return (
     <LinearGradient
-      colors={['#ecfdf5', '#d1fae5', '#a7f3d0']}
+      colors={["#ecfdf5", "#d1fae5", "#a7f3d0"]}
       className="flex-1"
     >
-      <SafeAreaView className="flex-1" edges={['top']}>
+      <SafeAreaView className="flex-1" edges={["top"]}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          className='flex-1'
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          className="flex-1"
         >
           <View className="flex-1 justify-center">
             <View className="mx-5 rounded-3xl overflow-hidden shadow-lg shadow-green-300">
               <LinearGradient
-                colors={['#10b981', '#059669']}
+                colors={["#10b981", "#059669"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 className="pb-16 pt-8 px-5"
@@ -89,14 +109,18 @@ export default function Login() {
                 <View className="items-center">
                   <View className="w-24 h-24 items-center justify-center rounded-full bg-white/20 mb-6 border-2 border-white/30">
                     <Image
-                      source={require('@/assets/images/smartkidcare.png')}
+                      source={require("@/assets/images/smartkidcare.png")}
                       className="w-20 h-20"
                       style={{ opacity: 0.7 }}
                       resizeMode="contain"
                     />
                   </View>
-                  <Text className="text-3xl font-bold text-white mb-2 text-center">Welcome Back</Text>
-                  <Text className="text-white/90 text-center text-base">Sign in to your SmartKidCare account</Text>
+                  <Text className="text-3xl font-bold text-white mb-2 text-center">
+                    Welcome Back
+                  </Text>
+                  <Text className="text-white/90 text-center text-base">
+                    Sign in to your SmartKidCare account
+                  </Text>
                 </View>
               </LinearGradient>
             </View>
@@ -150,10 +174,12 @@ export default function Login() {
                   onPress={handleLogin}
                   disabled={isLoading}
                   className="rounded-xl overflow-hidden"
-                  style={({ pressed }) => [{ opacity: isLoading ? 0.7 : pressed ? 0.85 : 1 }]}
+                  style={({ pressed }) => [
+                    { opacity: isLoading ? 0.7 : pressed ? 0.85 : 1 },
+                  ]}
                 >
                   <LinearGradient
-                    colors={['#10b981', '#059669']}
+                    colors={["#10b981", "#059669"]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     className="w-full py-4 items-center justify-center rounded-xl shadow-lg shadow-green-200"
