@@ -1,13 +1,20 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import User from "../models/Users";
+import {
+  maybeRequireTeacherPasswordChange,
+  signAuthToken,
+} from "./auth.password.controller";
+
+const escapeRegex = (value: string) =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, username, identifier, password } = req.body;
-
-    const loginIdentifier = email || username || identifier;
+    const loginIdentifier = String(
+      email || username || identifier || "",
+    ).trim();
 
     if (!loginIdentifier || !password) {
       return res.status(400).json({
@@ -16,7 +23,15 @@ export const login = async (req: Request, res: Response) => {
     }
 
     const user = await User.findOne({
-      $or: [{ email: loginIdentifier }, { username: loginIdentifier }],
+      $or: [
+        {
+          email: {
+            $regex: `^${escapeRegex(loginIdentifier)}$`,
+            $options: "i",
+          },
+        },
+        { username: loginIdentifier },
+      ],
     });
 
     if (!user) {
@@ -27,21 +42,24 @@ export const login = async (req: Request, res: Response) => {
       return res.status(403).json({ message: "Account is deactivated" });
     }
 
-    // teachers & parents must use email
-    if (user.role !== "admin" && user.email !== loginIdentifier) {
+    // Teachers and parents must use email.
+    if (
+      user.role !== "admin" &&
+      user.email.toLowerCase() !== loginIdentifier.toLowerCase()
+    ) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await bcrypt.compare(String(password), user.password);
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET as string,
-      { expiresIn: "1d" },
-    );
+    if (await maybeRequireTeacherPasswordChange(user, res)) {
+      return;
+    }
+
+    const token = signAuthToken(String(user._id), user.role);
 
     const userResponse = user.toObject();
     delete (userResponse as any).password;
