@@ -10,6 +10,48 @@ export interface AIChatPayload {
   insights?: string[];
 }
 
+function toLongDate(year: string, month: string, day: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(
+    new Date(Date.UTC(Number(year), Number(month) - 1, Number(day))),
+  );
+}
+
+function normalizeAIReply(text: string): string {
+  const cleaned = text
+    .replace(/\r\n/g, "\n")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/^\s*\d+\.\s+/gm, "- ")
+    .replace(/^\s*\*\s+/gm, "- ")
+    .replace(/^\s*>\s+/gm, "")
+    .replace(/^(\d{4}-\d{2}-\d{2}:\s.*)$/gm, "- $1")
+    .replace(/\b(\d{4})-(\d{2})-(\d{2})\b/g, (_, y, m, d) =>
+      toLongDate(y, m, d),
+    )
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  let hasQuestion = false;
+  const lines = cleaned.split("\n").filter((line) => {
+    if (!line.trim()) return true;
+    if (!/[?]\s*$/.test(line.trim())) return true;
+    if (!hasQuestion) {
+      hasQuestion = true;
+      return true;
+    }
+    return false;
+  });
+
+  return lines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
 export const sendAIChat = async (
   token: string,
   payload: AIChatPayload,
@@ -33,5 +75,6 @@ export const sendAIChat = async (
     throw new Error(message);
   }
 
-  return (data as { reply?: string }).reply ?? "No response.";
+  const reply = (data as { reply?: string }).reply ?? "No response.";
+  return normalizeAIReply(reply);
 };

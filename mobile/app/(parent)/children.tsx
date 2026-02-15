@@ -8,13 +8,14 @@ import {
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getMyChildren, Child } from "@/src/api/parent.api";
 import ChildCard from "@/src/components/ChildCard";
+import { useAuth } from "@/src/hooks/useAuth";
 
 export default function ChildScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { token } = useAuth();
 
   const [children, setChildren] = useState<Child[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,7 +24,6 @@ export default function ChildScreen() {
   useEffect(() => {
     const loadChildren = async () => {
       try {
-        const token = await AsyncStorage.getItem("token");
         if (!token) throw new Error("No authentication token");
 
         const data = await getMyChildren(token);
@@ -36,7 +36,7 @@ export default function ChildScreen() {
     };
 
     loadChildren();
-  }, []);
+  }, [token]);
 
 
   if (loading) {

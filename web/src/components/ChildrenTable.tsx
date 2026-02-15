@@ -121,18 +121,18 @@ export function ChildrenTable({
                   <div className="flex flex-wrap items-center gap-1.5">
                     <button
                       onClick={() => onViewChild(child)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-teal-700 bg-teal-50 rounded-md hover:bg-teal-100 transition"
+                      className="group inline-flex items-center gap-1.5 rounded-lg border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-teal-500/30"
                       title="View"
                     >
-                      <Eye size={14} />
+                      <Eye size={14} className="transition-transform duration-200 group-hover:scale-110" />
                       View
                     </button>
                     <button
                       onClick={() => onEditChild(child)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-md hover:bg-blue-100 transition"
+                      className="group inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                       title="Edit"
                     >
-                      <Pencil size={14} />
+                      <Pencil size={14} className="transition-transform duration-200 group-hover:-rotate-6" />
                       Edit
                     </button>
                     <div className="inline-block shrink-0">
@@ -141,7 +141,7 @@ export function ChildrenTable({
                           e.stopPropagation();
                           onMenuClick(child, e.currentTarget as HTMLButtonElement);
                         }}
-                        className="inline-flex items-center justify-center px-2.5 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition"
+                        className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-semibold text-gray-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-gray-300 hover:bg-gray-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-gray-400/30"
                         title="More actions"
                       >
                         <MoreVertical size={14} />

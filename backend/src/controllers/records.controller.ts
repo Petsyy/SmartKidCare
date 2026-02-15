@@ -1,210 +1,60 @@
 import { Request, Response } from "express";
+import crypto from "crypto";
 // helper functions moved to ./records.helpers
 import Attendance from "../models/Attendance";
 import Feeding from "../models/Feeding";
+import Child from "../models/Child";
 import {
-  storeDailyRecord,
-  getWalletBalance,
-  getGasComparison,
   verifyDailyRecord,
   getRecordMeta,
   findTxForDateHash,
 } from "../services/blockchain.service";
-import { hashData } from "../blockchain/ethers";
+import { buildDateHash, hashData } from "../blockchain/ethers";
 import { toDateKey, tryStoreDailyOnChain } from "../helpers/records.helpers";
 
-// PATCH /records/attendance/:id
-export const updateAttendanceRecord = async (req: Request, res: Response) => {
-  try {
-    let { id } = req.params;
-    const { status } = req.body;
-    if (!status || !["present", "absent"].includes(status)) {
-      return res.status(400).json({ message: "Invalid status" });
-    }
-    if (Array.isArray(id)) id = id[0];
-    // id format: attendanceId-childId
-    const [attendanceId, childId] = String(id).split("-");
-    if (!attendanceId || !childId) {
-      return res.status(400).json({ message: "Invalid record id" });
-    }
-    const attendance = await Attendance.findById(attendanceId);
-    if (!attendance) {
-      return res.status(404).json({ message: "Attendance not found" });
-    }
-    const record = attendance.records.find(
-      (r: any) =>
-        String(r.child) === childId || String(r.child?._id) === childId
-    );
-    if (!record) {
-      return res.status(404).json({ message: "Child record not found" });
-    }
-    // Only update if status is different
-    if (record.status !== status) {
-      record.status = status;
-      record.blockchainVerified = false;
-      record.integrityHash = null;
-      attendance.markModified("records");
-      await attendance.save();
-    }
-    // Optionally trigger blockchain sync (async)
-    tryStoreDailyOnChain(String(attendance.teacher), attendance.date).catch(
-      () => {}
-    );
-    res.json({ message: "Attendance record updated" });
-  } catch (error: any) {
-    console.error("Update attendance error:", error);
-    res.status(500).json({ message: "Failed to update attendance record" });
+const resolveChildId = (child: any): string => {
+  if (child && typeof child === "object") {
+    return String(child._id ?? "");
   }
+  return String(child ?? "");
 };
 
-// PATCH /records/feeding/:id
-export const updateFeedingRecord = async (req: Request, res: Response) => {
-  try {
-    let { id } = req.params;
-    const { status } = req.body;
-    if (!status || !["completed", "missed"].includes(status)) {
-      return res.status(400).json({ message: "Invalid status" });
-    }
-    if (Array.isArray(id)) id = id[0];
-    // id format: feedingId-childId
-    const [feedingId, childId] = String(id).split("-");
-    if (!feedingId || !childId) {
-      return res.status(400).json({ message: "Invalid record id" });
-    }
-    const feeding = await Feeding.findById(feedingId);
-    if (!feeding) {
-      return res.status(404).json({ message: "Feeding not found" });
-    }
-    const record = feeding.records.find(
-      (r: any) =>
-        String(r.child) === childId || String(r.child?._id) === childId
-    );
-    if (!record) {
-      return res.status(404).json({ message: "Child record not found" });
-    }
-    if (record.status !== status) {
-      record.status = status;
-      record.blockchainVerified = false;
-      record.integrityHash = null;
-      feeding.markModified("records");
-      await feeding.save();
-    }
-    tryStoreDailyOnChain(String(feeding.teacher), feeding.date).catch(() => {});
-    res.json({ message: "Feeding record updated" });
-  } catch (error: any) {
-    console.error("Update feeding error:", error);
-    res.status(500).json({ message: "Failed to update feeding record" });
-  }
+const isRecordIntegrityValid = (
+  child: any,
+  status: string,
+  integrityHash?: string | null,
+  blockchainVerified?: boolean | null,
+): boolean => {
+  if (!blockchainVerified) return false;
+  if (!integrityHash) return false;
+  const dataToHash = JSON.stringify({
+    child: resolveChildId(child),
+    status,
+  });
+  const calculatedHash = crypto
+    .createHash("sha256")
+    .update(dataToHash)
+    .digest("hex");
+  return calculatedHash === integrityHash;
 };
 
-// DELETE /records/attendance/:id
-export const deleteAttendanceRecord = async (req: Request, res: Response) => {
-  try {
-    let { id } = req.params;
-    if (Array.isArray(id)) id = id[0];
-    // id format: attendanceId-childId
-    const [attendanceId, childId] = String(id).split("-");
-    if (!attendanceId || !childId) {
-      return res.status(400).json({ message: "Invalid record id" });
-    }
-    const attendance = await Attendance.findById(attendanceId);
-    if (!attendance) {
-      return res.status(404).json({ message: "Attendance not found" });
-    }
-    const initialLength = attendance.records.length;
-    // Use pull to preserve DocumentArray type
-    attendance.records.pull({ child: childId });
-    if (attendance.records.length === initialLength) {
-      return res.status(404).json({ message: "Child record not found" });
-    }
-    attendance.markModified("records");
-    await attendance.save();
-    res.json({ message: "Attendance record deleted" });
-  } catch (error: any) {
-    console.error("Delete attendance error:", error);
-    res.status(500).json({ message: "Failed to delete attendance record" });
-  }
+const DEFAULT_VERIFY_REASON =
+  "Record is not yet stored on-chain or the on-chain hash does not match this record.";
+const EDIT_REANCHOR_REASON =
+  "Record status was modified after submission and has not been re-anchored on-chain yet.";
+
+const queueBlockchainSync = (
+  teacherId: string,
+  date: Date,
+  source: "submit" | "edit" = "submit",
+) => {
+  void tryStoreDailyOnChain(teacherId, date, {
+    markRecordsAsVerified: source === "submit",
+  }).catch((error) => {
+    console.error("Background blockchain sync failed:", error);
+  });
 };
 
-// Submit daily attendance
-export const submitAttendance = async (req: Request, res: Response) => {
-  try {
-    const { date, records } = req.body;
-
-    if (!req.user?.id || req.user.role !== "teacher") {
-      return res.status(403).json({ message: "Teachers only" });
-    }
-
-    if (!date || !records || !Array.isArray(records)) {
-      return res.status(400).json({ message: "Date and records are required" });
-    }
-
-    // Parse date and set to start of day
-    const attendanceDate = new Date(date);
-    attendanceDate.setHours(0, 0, 0, 0);
-
-    // Check if attendance already exists for this teacher on this date
-    const existingAttendance = await Attendance.findOne({
-      teacher: req.user.id,
-      date: attendanceDate,
-    });
-
-    if (existingAttendance) {
-      // Update existing attendance and reset blockchain verification if status changed
-      const newRecords = records as any[];
-
-      // Create a map of old records by child ID
-      const oldRecordMap = new Map(
-        existingAttendance.records.map((r: any) => [String(r.child), r])
-      );
-
-      // Check each new record for status changes
-      newRecords.forEach((newRecord: any) => {
-        const oldRecord = oldRecordMap.get(String(newRecord.child));
-
-        // If status changed, reset blockchain verification
-        if (oldRecord && oldRecord.status !== newRecord.status) {
-          newRecord.blockchainVerified = false;
-        }
-      });
-
-      existingAttendance.records = newRecords as any;
-      await existingAttendance.save();
-
-      // Trigger blockchain sync asynchronously (don't wait)
-      tryStoreDailyOnChain(req.user.id, attendanceDate).catch((err) =>
-        console.error("Background blockchain sync failed:", err)
-      );
-
-      return res.json({
-        message: "Attendance updated successfully",
-        attendance: existingAttendance,
-      });
-    }
-
-    // Create new attendance record
-    const attendance = await Attendance.create({
-      date: attendanceDate,
-      teacher: req.user.id,
-      records,
-    });
-
-    // Trigger blockchain sync asynchronously (don't wait)
-    tryStoreDailyOnChain(req.user.id, attendanceDate).catch((err) =>
-      console.error("Background blockchain sync failed:", err)
-    );
-
-    res.status(201).json({
-      message: "Attendance submitted successfully",
-      attendance,
-    });
-  } catch (error: any) {
-    console.error("Submit attendance error:", error);
-    res.status(500).json({ message: "Failed to submit attendance" });
-  }
-};
-
-// Submit daily feeding
 export const submitFeeding = async (req: Request, res: Response) => {
   try {
     const { date, foodServed, records } = req.body;
@@ -235,7 +85,7 @@ export const submitFeeding = async (req: Request, res: Response) => {
 
       // Create a map of old records by child ID
       const oldRecordMap = new Map(
-        existingFeeding.records.map((r: any) => [String(r.child), r])
+        existingFeeding.records.map((r: any) => [String(r.child), r]),
       );
 
       // Check each new record for status changes
@@ -245,6 +95,7 @@ export const submitFeeding = async (req: Request, res: Response) => {
         // If status changed, reset blockchain verification
         if (oldRecord && oldRecord.status !== newRecord.status) {
           newRecord.blockchainVerified = false;
+          newRecord.integrityHash = null;
         }
       });
 
@@ -252,10 +103,7 @@ export const submitFeeding = async (req: Request, res: Response) => {
       existingFeeding.records = newRecords as any;
       await existingFeeding.save();
 
-      // Trigger blockchain sync asynchronously (don't wait)
-      tryStoreDailyOnChain(req.user.id, feedingDate).catch((err) =>
-        console.error("Background blockchain sync failed:", err)
-      );
+      queueBlockchainSync(req.user.id, feedingDate);
 
       return res.json({
         message: "Feeding updated successfully",
@@ -271,10 +119,7 @@ export const submitFeeding = async (req: Request, res: Response) => {
       records,
     });
 
-    // Trigger blockchain sync asynchronously (don't wait)
-    tryStoreDailyOnChain(req.user.id, feedingDate).catch((err) =>
-      console.error("Background blockchain sync failed:", err)
-    );
+    queueBlockchainSync(req.user.id, feedingDate);
 
     res.status(201).json({
       message: "Feeding submitted successfully",
@@ -286,7 +131,6 @@ export const submitFeeding = async (req: Request, res: Response) => {
   }
 };
 
-// Get attendance history
 export const getAttendanceHistory = async (req: Request, res: Response) => {
   try {
     if (!req.user?.id) {
@@ -297,8 +141,16 @@ export const getAttendanceHistory = async (req: Request, res: Response) => {
 
     const query: any = {};
 
+    let parentChildIds: string[] = [];
+
     if (req.user.role === "teacher") {
       query.teacher = req.user.id;
+    } else if (req.user.role === "parent") {
+      parentChildIds = await getParentChildIds(req.user.id);
+      if (!parentChildIds.length) {
+        return res.json([]);
+      }
+      query["records.child"] = { $in: parentChildIds };
     }
 
     if (startDate && endDate) {
@@ -314,6 +166,41 @@ export const getAttendanceHistory = async (req: Request, res: Response) => {
       .sort({ date: -1 })
       .lean();
 
+    attendance.forEach((entry: any) => {
+      if (!Array.isArray(entry.records)) return;
+      entry.records = entry.records.map((record: any) => ({
+        ...record,
+        blockchainVerified: isRecordIntegrityValid(
+          record.child,
+          record.status,
+          record.integrityHash,
+          record.blockchainVerified,
+        ),
+      }));
+    });
+
+    if (req.user.role === "parent") {
+      const allowedChildIds = new Set(parentChildIds);
+      const scopedAttendance = attendance
+        .map((entry: any) => {
+          const records = Array.isArray(entry.records)
+            ? entry.records.filter((record: any) => {
+                const childValue = record?.child;
+                const childId =
+                  childValue && typeof childValue === "object"
+                    ? String(childValue._id ?? "")
+                    : String(childValue ?? "");
+                return allowedChildIds.has(childId);
+              })
+            : [];
+
+          return { ...entry, records };
+        })
+        .filter((entry: any) => entry.records.length > 0);
+
+      return res.json(scopedAttendance);
+    }
+
     res.json(attendance);
   } catch (error: any) {
     console.error("Get attendance history error:", error);
@@ -321,10 +208,9 @@ export const getAttendanceHistory = async (req: Request, res: Response) => {
   }
 };
 
-// Get verification details for a single attendance record
 export const getAttendanceVerification = async (
   req: Request,
-  res: Response
+  res: Response,
 ) => {
   try {
     let { id } = req.params;
@@ -340,7 +226,7 @@ export const getAttendanceVerification = async (
     // find attendance record
     const aRecord: any = attendance.records.find(
       (r: any) =>
-        String(r.child) === childId || String(r.child?._id) === childId
+        String(r.child) === childId || String(r.child?._id) === childId,
     );
     if (!aRecord)
       return res.status(404).json({ message: "Child attendance not found" });
@@ -352,11 +238,25 @@ export const getAttendanceVerification = async (
     });
     const fRecord: any = feeding?.records.find(
       (r: any) =>
-        String(r.child) === childId || String(r.child?._id) === childId
+        String(r.child) === childId || String(r.child?._id) === childId,
     );
 
-    // Build the keccak hashes the contract uses (matching storeDailyRecord)
     const dateKey = toDateKey(new Date(attendance.date));
+    const dateHash = buildDateHash(childId, dateKey);
+
+    if (!aRecord.blockchainVerified || !aRecord.integrityHash) {
+      return res.json({
+        isValid: false,
+        dateHash,
+        recordedBy: null,
+        timestamp: null,
+        reason: !feeding
+          ? "Feeding record for this date is missing, so this record is not yet anchored on-chain."
+          : EDIT_REANCHOR_REASON,
+      });
+    }
+
+    // Build the keccak hashes the contract uses (matching storeDailyRecord)
     const attendanceData = {
       child: childId,
       date: dateKey,
@@ -378,19 +278,24 @@ export const getAttendanceVerification = async (
       childId,
       dateKey,
       attendanceHash,
-      feedingHash
+      feedingHash,
     );
     const meta = await getRecordMeta(verify.dateHash as string).catch(() => ({
       timestamp: null,
       recordedBy: null,
     }));
+    const reason = verify.isValid
+      ? undefined
+      : !feeding
+        ? "Feeding record for this date is missing, so this record is not yet anchored on-chain."
+        : DEFAULT_VERIFY_REASON;
 
     res.json({
       isValid: verify.isValid,
-      dateHash: verify.dateHash,
+      dateHash,
       recordedBy: meta.recordedBy,
       timestamp: meta.timestamp,
-      walletAddress: (await getWalletBalance()).address,
+      reason,
     });
   } catch (err: any) {
     console.error("Get attendance verification error:", err);
@@ -398,7 +303,6 @@ export const getAttendanceVerification = async (
   }
 };
 
-// Get verification details for a single feeding record
 export const getFeedingVerification = async (req: Request, res: Response) => {
   try {
     let { id } = req.params;
@@ -410,7 +314,6 @@ export const getFeedingVerification = async (req: Request, res: Response) => {
         dateHash: null,
         recordedBy: null,
         timestamp: null,
-        walletAddress: (await getWalletBalance()).address,
         reason: "Invalid id",
       });
 
@@ -421,13 +324,12 @@ export const getFeedingVerification = async (req: Request, res: Response) => {
         dateHash: null,
         recordedBy: null,
         timestamp: null,
-        walletAddress: (await getWalletBalance()).address,
         reason: "Feeding not found",
       });
 
     const fRecord: any = feeding.records.find(
       (r: any) =>
-        String(r.child) === childId || String(r.child?._id) === childId
+        String(r.child) === childId || String(r.child?._id) === childId,
     );
     if (!fRecord)
       return res.status(200).json({
@@ -435,7 +337,6 @@ export const getFeedingVerification = async (req: Request, res: Response) => {
         dateHash: null,
         recordedBy: null,
         timestamp: null,
-        walletAddress: (await getWalletBalance()).address,
         reason: "Child feeding not found",
       });
 
@@ -449,13 +350,12 @@ export const getFeedingVerification = async (req: Request, res: Response) => {
         dateHash: null,
         recordedBy: null,
         timestamp: null,
-        walletAddress: (await getWalletBalance()).address,
         reason: "Attendance not found",
       });
 
     const aRecord: any = attendance.records.find(
       (r: any) =>
-        String(r.child) === childId || String(r.child?._id) === childId
+        String(r.child) === childId || String(r.child?._id) === childId,
     );
     if (!aRecord)
       return res.status(200).json({
@@ -463,11 +363,22 @@ export const getFeedingVerification = async (req: Request, res: Response) => {
         dateHash: null,
         recordedBy: null,
         timestamp: null,
-        walletAddress: (await getWalletBalance()).address,
         reason: "Child attendance not found",
       });
 
     const dateKey = toDateKey(new Date(feeding.date));
+    const dateHash = buildDateHash(childId, dateKey);
+
+    if (!fRecord.blockchainVerified || !fRecord.integrityHash) {
+      return res.json({
+        isValid: false,
+        dateHash,
+        recordedBy: null,
+        timestamp: null,
+        reason: EDIT_REANCHOR_REASON,
+      });
+    }
+
     const attendanceData = {
       child: childId,
       date: dateKey,
@@ -489,19 +400,20 @@ export const getFeedingVerification = async (req: Request, res: Response) => {
       childId,
       dateKey,
       attendanceHash,
-      feedingHash
+      feedingHash,
     );
     const meta = await getRecordMeta(verify.dateHash as string).catch(() => ({
       timestamp: null,
       recordedBy: null,
     }));
+    const reason = verify.isValid ? undefined : DEFAULT_VERIFY_REASON;
 
     res.json({
       isValid: verify.isValid,
-      dateHash: verify.dateHash,
+      dateHash,
       recordedBy: meta.recordedBy,
       timestamp: meta.timestamp,
-      walletAddress: (await getWalletBalance()).address,
+      reason,
     });
   } catch (err: any) {
     console.error("Get feeding verification error:", err);
@@ -509,7 +421,6 @@ export const getFeedingVerification = async (req: Request, res: Response) => {
   }
 };
 
-// GET /records/attendance/tx/:dateHash
 export const getTxForDateHash = async (req: Request, res: Response) => {
   try {
     let { dateHash } = req.params;
@@ -533,7 +444,6 @@ export const getTxForDateHash = async (req: Request, res: Response) => {
   }
 };
 
-// Get feeding history
 export const getFeedingHistory = async (req: Request, res: Response) => {
   try {
     if (!req.user?.id) {
@@ -544,8 +454,16 @@ export const getFeedingHistory = async (req: Request, res: Response) => {
 
     const query: any = {};
 
+    let parentChildIds: string[] = [];
+
     if (req.user.role === "teacher") {
       query.teacher = req.user.id;
+    } else if (req.user.role === "parent") {
+      parentChildIds = await getParentChildIds(req.user.id);
+      if (!parentChildIds.length) {
+        return res.json([]);
+      }
+      query["records.child"] = { $in: parentChildIds };
     }
 
     if (startDate && endDate) {
@@ -561,9 +479,228 @@ export const getFeedingHistory = async (req: Request, res: Response) => {
       .sort({ date: -1 })
       .lean();
 
+    feeding.forEach((entry: any) => {
+      if (!Array.isArray(entry.records)) return;
+      entry.records = entry.records.map((record: any) => ({
+        ...record,
+        blockchainVerified: isRecordIntegrityValid(
+          record.child,
+          record.status,
+          record.integrityHash,
+          record.blockchainVerified,
+        ),
+      }));
+    });
+
+    if (req.user.role === "parent") {
+      const allowedChildIds = new Set(parentChildIds);
+      const scopedFeeding = feeding
+        .map((entry: any) => {
+          const records = Array.isArray(entry.records)
+            ? entry.records.filter((record: any) => {
+                const childValue = record?.child;
+                const childId =
+                  childValue && typeof childValue === "object"
+                    ? String(childValue._id ?? "")
+                    : String(childValue ?? "");
+                return allowedChildIds.has(childId);
+              })
+            : [];
+
+          return { ...entry, records };
+        })
+        .filter((entry: any) => entry.records.length > 0);
+
+      return res.json(scopedFeeding);
+    }
+
     res.json(feeding);
   } catch (error: any) {
     console.error("Get feeding history error:", error);
     res.status(500).json({ message: "Failed to fetch feeding history" });
+  }
+};
+
+async function getParentChildIds(parentId: string): Promise<string[]> {
+  const children = await Child.find({ parent: parentId }).select("_id").lean();
+  return children.map((child: any) => String(child._id));
+}
+
+export const updateAttendanceRecord = async (req: Request, res: Response) => {
+  try {
+    let { id } = req.params;
+    const { status } = req.body;
+    if (!status || !["present", "absent"].includes(status)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
+    if (Array.isArray(id)) id = id[0];
+    const [attendanceId, childId] = String(id).split("-");
+    if (!attendanceId || !childId) {
+      return res.status(400).json({ message: "Invalid record id" });
+    }
+    const attendance = await Attendance.findById(attendanceId);
+    if (!attendance) {
+      return res.status(404).json({ message: "Attendance not found" });
+    }
+    const record = attendance.records.find(
+      (r: any) =>
+        String(r.child) === childId || String(r.child?._id) === childId,
+    );
+    if (!record) {
+      return res.status(404).json({ message: "Child record not found" });
+    }
+    // Only update if status is different
+    if (record.status !== status) {
+      record.status = status;
+      record.blockchainVerified = false;
+      record.integrityHash = null;
+      attendance.markModified("records");
+      await attendance.save();
+      queueBlockchainSync(
+        String(attendance.teacher),
+        new Date(attendance.date),
+        "edit",
+      );
+    }
+    res.json({ message: "Attendance record updated" });
+  } catch (error: any) {
+    console.error("Update attendance error:", error);
+    res.status(500).json({ message: "Failed to update attendance record" });
+  }
+};
+
+export const updateFeedingRecord = async (req: Request, res: Response) => {
+  try {
+    let { id } = req.params;
+    const { status } = req.body;
+    if (!status || !["completed", "missed"].includes(status)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
+    if (Array.isArray(id)) id = id[0];
+    // id format: feedingId-childId
+    const [feedingId, childId] = String(id).split("-");
+    if (!feedingId || !childId) {
+      return res.status(400).json({ message: "Invalid record id" });
+    }
+    const feeding = await Feeding.findById(feedingId);
+    if (!feeding) {
+      return res.status(404).json({ message: "Feeding not found" });
+    }
+    const record = feeding.records.find(
+      (r: any) =>
+        String(r.child) === childId || String(r.child?._id) === childId,
+    );
+    if (!record) {
+      return res.status(404).json({ message: "Child record not found" });
+    }
+    if (record.status !== status) {
+      record.status = status;
+      record.blockchainVerified = false;
+      record.integrityHash = null;
+      feeding.markModified("records");
+      await feeding.save();
+      queueBlockchainSync(
+        String(feeding.teacher),
+        new Date(feeding.date),
+        "edit",
+      );
+    }
+    res.json({ message: "Feeding record updated" });
+  } catch (error: any) {
+    console.error("Update feeding error:", error);
+    res.status(500).json({ message: "Failed to update feeding record" });
+  }
+};
+
+export const deleteAttendanceRecord = async (req: Request, res: Response) => {
+  try {
+    let { id } = req.params;
+    if (Array.isArray(id)) id = id[0];
+    // id format: attendanceId-childId
+    const [attendanceId, childId] = String(id).split("-");
+    if (!attendanceId || !childId) {
+      return res.status(400).json({ message: "Invalid record id" });
+    }
+    const attendance = await Attendance.findById(attendanceId);
+    if (!attendance) {
+      return res.status(404).json({ message: "Attendance not found" });
+    }
+    const initialLength = attendance.records.length;
+    // Use pull to preserve DocumentArray type
+    attendance.records.pull({ child: childId });
+    if (attendance.records.length === initialLength) {
+      return res.status(404).json({ message: "Child record not found" });
+    }
+    attendance.markModified("records");
+    await attendance.save();
+    res.json({ message: "Attendance record deleted" });
+  } catch (error: any) {
+    console.error("Delete attendance error:", error);
+    res.status(500).json({ message: "Failed to delete attendance record" });
+  }
+};
+
+export const submitAttendance = async (req: Request, res: Response) => {
+  try {
+    const { date, records } = req.body;
+
+    if (!req.user?.id || req.user.role !== "teacher") {
+      return res.status(403).json({ message: "Teachers only" });
+    }
+
+    if (!date || !records || !Array.isArray(records)) {
+      return res.status(400).json({ message: "Date and records are required" });
+    }
+
+    const attendanceDate = new Date(date);
+    attendanceDate.setHours(0, 0, 0, 0);
+
+    const existingAttendance = await Attendance.findOne({
+      teacher: req.user.id,
+      date: attendanceDate,
+    });
+
+    if (existingAttendance) {
+      const newRecords = records as any[];
+
+      const oldRecordMap = new Map(
+        existingAttendance.records.map((r: any) => [String(r.child), r]),
+      );
+
+      newRecords.forEach((newRecord: any) => {
+        const oldRecord = oldRecordMap.get(String(newRecord.child));
+
+        if (oldRecord && oldRecord.status !== newRecord.status) {
+          newRecord.blockchainVerified = false;
+          newRecord.integrityHash = null;
+        }
+      });
+
+      existingAttendance.records = newRecords as any;
+      await existingAttendance.save();
+
+      queueBlockchainSync(req.user.id, attendanceDate);
+
+      return res.json({
+        message: "Attendance updated successfully",
+        attendance: existingAttendance,
+      });
+    }
+
+    const attendance = await Attendance.create({
+      date: attendanceDate,
+      teacher: req.user.id,
+      records,
+    });
+
+    queueBlockchainSync(req.user.id, attendanceDate);
+
+    res.status(201).json({
+      message: "Attendance submitted successfully",
+      attendance,
+    });
+  } catch (error: any) {
+    console.error("Submit attendance error:", error);
+    res.status(500).json({ message: "Failed to submit attendance" });
   }
 };

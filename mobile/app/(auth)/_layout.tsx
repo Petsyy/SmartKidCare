@@ -17,6 +17,11 @@ export default function AuthLayout() {
     >
       <Stack.Screen name="splash-screen/onboarding" />
       <Stack.Screen name="login" />
+      <Stack.Screen name="forgot-password" />
+      <Stack.Screen name="forgot-password-otp" />
+      <Stack.Screen name="forgot-password-reset" />
+      <Stack.Screen name="verify-otp" />
+      <Stack.Screen name="change-password" />
     </Stack>
   );
 }

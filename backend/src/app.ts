@@ -1,8 +1,9 @@
-
 import express, { Application } from "express";
 import cors from "cors";
 // import morgan from "morgan";
 import rateLimit from "express-rate-limit";
+import cookieParser from "cookie-parser";
+import mongoSanitize from "express-mongo-sanitize";
 
 import authRoutes from "./routes/auth.routes";
 import childRoutes from "./routes/child.routes";
@@ -14,14 +15,31 @@ import aiRoutes from "./routes/ai.routes";
 const app: Application = express();
 
 const limiter = rateLimit({
-  windowMs: 5 * 60 * 1000, // 5 minutes
+  windowMs: 5 * 60 * 1000,
   max: 100,
   standardHeaders: true,
   legacyHeaders: false,
 });
 
-app.use(cors());
+app.use(cookieParser());
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL,
+    credentials: true,
+  }),
+);
+
 app.use(express.json());
+app.use((req, res, next) => {
+  if (req.body) {
+    mongoSanitize.sanitize(req.body);
+  }
+  if (req.params) {
+    mongoSanitize.sanitize(req.params);
+  }
+  next();
+});
+
 app.use(limiter);
 // app.use(morgan("dev")); // HTTP request logging disabled
 app.use("/api/admin", adminRoutes);

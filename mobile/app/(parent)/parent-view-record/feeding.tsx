@@ -10,9 +10,9 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, ChevronDown, ChevronRight } from 'lucide-react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getMyChildren, Child } from '@/src/api/parent.api';
 import { getFeedingHistory } from '@/src/api/records.api';
+import { useAuth } from '@/src/hooks/useAuth';
 
 type FeedingStatus = 'Completed' | 'Missed' | null;
 
@@ -27,27 +27,25 @@ interface FeedingDay {
 export default function ViewFeedingDetails() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { token } = useAuth();
     const [children, setChildren] = useState<Child[]>([]);
     const [selectedChild, setSelectedChild] = useState<Child | null>(null);
     const [loading, setLoading] = useState(true);
     const [showChildDropdown, setShowChildDropdown] = useState(false);
     const [currentDate, setCurrentDate] = useState(new Date(2026, 1)); // February 2026
     const [feedingData, setFeedingData] = useState<FeedingDay[]>([]);
-    const [token, setToken] = useState<string | null>(null);
     const [selectedDay, setSelectedDay] = useState<number | null>(null);
     const [showDayModal, setShowDayModal] = useState(false);
 
     useEffect(() => {
         loadChildren();
-    }, []);
+    }, [token]);
 
     const loadChildren = async () => {
         try {
-            const authToken = await AsyncStorage.getItem('token');
-            if (!authToken) throw new Error('No authentication token');
-            setToken(authToken);
+            if (!token) throw new Error('No authentication token');
 
-            const data = await getMyChildren(authToken);
+            const data = await getMyChildren(token);
             setChildren(data);
             if (data.length > 0) {
                 setSelectedChild(data[0]);

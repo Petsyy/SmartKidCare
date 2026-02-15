@@ -52,19 +52,28 @@ export interface TeacherCredentials {
   tempPassword: string;
 }
 
+export interface TeacherEmailDelivery {
+  sent: boolean;
+  to: string;
+}
+
 export const showTeacherCredentialsModal = (
   firstName: string,
   lastName: string,
   email: string,
-  credentials: TeacherCredentials
+  emailDelivery?: TeacherEmailDelivery,
 ) => {
+  const deliveryMessage = emailDelivery?.sent
+    ? `Credentials have been sent to <strong>${emailDelivery.to}</strong>.`
+    : "Teacher can use their email and reset flow if delivery is unavailable.";
+
   return Swal.fire({
     title: "Teacher Account Created Successfully",
     html: `
       <div style="padding: 20px; text-align: left;">
         <div style="background: #f0fdf4; border-left: 4px solid #22c55e; padding: 12px; border-radius: 4px; margin-bottom: 20px;">
           <p style="margin: 8px 0; color: #166534; font-size: 14px;">
-            <strong>✓ Account Created</strong>
+            <strong>Account Created</strong>
           </p>
           <p style="margin: 8px 0; color: #166534; font-size: 14px;">
             Teacher: <strong>${firstName} ${lastName}</strong>
@@ -73,28 +82,11 @@ export const showTeacherCredentialsModal = (
             Email: <strong>${email}</strong>
           </p>
         </div>
-
-        <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; border-radius: 4px;">
-          <p style="margin: 0 0 8px 0; color: #92400e; font-weight: 600; font-size: 14px;">
-            Temporary Password
+        <div style="background: #ecfeff; border-left: 4px solid #06b6d4; padding: 12px; border-radius: 4px; margin-top: 16px;">
+          <p style="margin: 0; color: #155e75; font-size: 14px;">
+            <strong>Email Delivery:</strong> ${deliveryMessage}
           </p>
-          <span style="
-            font-family: monospace;
-            background: #f3f4f6;
-            padding: 10px 16px;
-            border-radius: 4px;
-            display: inline-block;
-            font-size: 16px;
-            letter-spacing: 1px;
-            color: #1f2937;
-          ">
-            ${credentials.tempPassword}
-          </span>
         </div>
-
-        <p style="color: #666; font-size: 13px; margin-top: 16px;">
-          ⚠ <strong>Security Notice:</strong> The teacher must change this password on their first login.
-        </p>
       </div>
     `,
     icon: "success",
@@ -154,7 +146,10 @@ export interface LinkedChild {
   status?: string;
 }
 
-export const showLinkedChildrenModal = (children: LinkedChild[], parentName: string) => {
+export const showLinkedChildrenModal = (
+  children: LinkedChild[],
+  parentName: string,
+) => {
   if (!children.length) {
     return Swal.fire({
       title: "No Children Linked",
@@ -175,13 +170,18 @@ export const showLinkedChildrenModal = (children: LinkedChild[], parentName: str
     });
   }
 
-  const childrenList = children.map((child) => {
-    const middleName = child.middleName ? ` ${child.middleName}` : '';
-    const fullName = `${child.firstName}${middleName} ${child.lastName}`;
-    const statusColor = child.status === 'Active' ? '#10b981' : child.status === 'Inactive' ? '#ef4444' : '#f59e0b';
+  const childrenList = children
+    .map((child) => {
+      const middleName = child.middleName ? ` ${child.middleName}` : "";
+      const fullName = `${child.firstName}${middleName} ${child.lastName}`;
+      const statusColor =
+        child.status === "Active"
+          ? "#10b981"
+          : child.status === "Inactive"
+            ? "#ef4444"
+            : "#f59e0b";
 
-    
-    return `
+      return `
       <div style="
         background: #f9fafb;
         border: 1px solid #e5e7eb;
@@ -200,7 +200,9 @@ export const showLinkedChildrenModal = (children: LinkedChild[], parentName: str
               ${fullName}
             </p>
           </div>
-          ${child.status ? `
+          ${
+            child.status
+              ? `
             <span style="
               background: ${statusColor}15;
               color: ${statusColor};
@@ -211,17 +213,21 @@ export const showLinkedChildrenModal = (children: LinkedChild[], parentName: str
             ">
               ${child.status}
             </span>
-          ` : ''}
+          `
+              : ""
+          }
         </div>
         <div style="margin-bottom: 12px;">
           <p style="margin: 0 0 4px 0; font-size: 14px; color: #6b7280; font-weight: 500;">
             Student ID:
           </p>
           <p style="margin: 0; font-size: 16px; color: #374151; font-family: monospace; font-weight: 500;">
-            ${child.studentId || 'No Student ID'}
+            ${child.studentId || "No Student ID"}
           </p>
         </div>
-        ${child.age ? `
+        ${
+          child.age
+            ? `
           <div>
             <p style="margin: 0 0 4px 0; font-size: 14px; color: #6b7280; font-weight: 500;">
               Age:
@@ -230,10 +236,13 @@ export const showLinkedChildrenModal = (children: LinkedChild[], parentName: str
               ${child.age} years old
             </p>
           </div>
-        ` : ''}
+        `
+            : ""
+        }
       </div>
     `;
-  }).join('');
+    })
+    .join("");
 
   return Swal.fire({
     title: `Linked Children (${children.length})`,
@@ -252,7 +261,7 @@ export const showLinkedChildrenModal = (children: LinkedChild[], parentName: str
     `,
     confirmButtonColor: "#0D9488",
     confirmButtonText: "Close",
-    width: '650px',
+    width: "650px",
   });
 };
 
@@ -344,7 +353,7 @@ export interface ViewChild {
 
 export const showChangeChildStatusModal = async (
   childName: string,
-  currentStatus: string
+  currentStatus: string,
 ): Promise<string | null> => {
   const result = await Swal.fire({
     title: "Change Status",
@@ -353,7 +362,6 @@ export const showChangeChildStatusModal = async (
       <select id="child-status-select" class="swal2-input w-full">
         <option value="Active" ${currentStatus === "Active" ? "selected" : ""}>Active</option>
         <option value="Inactive" ${currentStatus === "Inactive" ? "selected" : ""}>Inactive</option>
-        <option value="On Leave" ${currentStatus === "On Leave" ? "selected" : ""}>On Leave</option>
       </select>
     `,
     showCancelButton: true,
@@ -362,14 +370,18 @@ export const showChangeChildStatusModal = async (
     confirmButtonText: "Update",
     cancelButtonText: "Cancel",
     preConfirm: () => {
-      const select = document.getElementById("child-status-select") as HTMLSelectElement;
+      const select = document.getElementById(
+        "child-status-select",
+      ) as HTMLSelectElement;
       return select?.value || null;
     },
   });
   return result.isConfirmed ? result.value : null;
 };
 
-export const showRegenerateLinkCodeConfirm = async (childName: string): Promise<boolean> => {
+export const showRegenerateLinkCodeConfirm = async (
+  childName: string,
+): Promise<boolean> => {
   const result = await Swal.fire({
     title: "Regenerate Link Code?",
     text: `A new link code will be generated for ${childName}. The previous code will no longer work. Share the new code with the parent.`,
@@ -383,7 +395,9 @@ export const showRegenerateLinkCodeConfirm = async (childName: string): Promise<
   return result.isConfirmed;
 };
 
-export const showUnlinkParentConfirm = async (childName: string): Promise<boolean> => {
+export const showUnlinkParentConfirm = async (
+  childName: string,
+): Promise<boolean> => {
   const result = await Swal.fire({
     title: "Unlink Parent?",
     text: `Remove the parent association for ${childName}? A new link code will be generated so a different parent can link to this child.`,
@@ -403,8 +417,8 @@ export const showViewChildModal = (child: ViewChild) => {
     child.status === "Active"
       ? "background:#D1FAE5;color:#065F46"
       : child.status === "Inactive"
-      ? "background:#FEE2E2;color:#B91C1C"
-      : "background:#FEF3C7;color:#92400E";
+        ? "background:#FEE2E2;color:#B91C1C"
+        : "background:#FEF3C7;color:#92400E";
   const parentInfo = child.parent
     ? `${child.parent.firstName} ${child.parent.lastName} (${child.parent.email})`
     : "Not linked";
@@ -458,4 +472,3 @@ export const showViewChildModal = (child: ViewChild) => {
     width: "420px",
   });
 };
-

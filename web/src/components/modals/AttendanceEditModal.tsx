@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export type AttendanceEditModalProps = {
   open: boolean;
@@ -15,28 +15,44 @@ export default function AttendanceEditModal({
   initialStatus,
   childName,
 }: AttendanceEditModalProps) {
-  const [status, setStatus] = useState<"present" | "absent">(
-    initialStatus,
-  );
+  const [status, setStatus] = useState<"present" | "absent">(initialStatus);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setStatus(initialStatus);
+      setIsVisible(true);
+    } else {
+      setIsVisible(false);
+    }
+  }, [open, initialStatus]);
 
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-md rounded-xl bg-gray-50 shadow-xl ring-1 ring-black/5">
-        <div className="border-b border-gray-200 px-6 py-4">
-          <h2 className="text-base font-semibold text-gray-900">
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-200 ${
+        isVisible ? "opacity-100" : "opacity-0"
+      }`}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      {/* Light Overlay (No black blur) */}
+      <div className="absolute inset-0 bg-black/20" />
+
+      {/* Clean Modal (No Shadow, added subtle border for definition) */}
+      <div className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white border border-gray-200">
+        <div className="border-b border-gray-100 px-6 py-5">
+          <h2 className="text-lg font-semibold text-gray-900">
             Edit Attendance
           </h2>
-          <p className="mt-1 text-xs text-gray-500">
-            Adjust the attendance status for this child. Changes are saved
-            immediately.
+          <p className="mt-1 text-sm text-gray-500">
+            Adjust the attendance status for this child.
           </p>
         </div>
 
         <div className="space-y-4 px-6 py-5">
-          <div className="rounded-lg bg-white/60 px-4 py-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+          <div className="rounded-xl bg-gray-50 border border-gray-100 px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
               Child
             </p>
             <p className="mt-1 text-sm font-semibold text-gray-900">
@@ -45,48 +61,33 @@ export default function AttendanceEditModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-700">
+            <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500">
               Attendance Status
             </label>
-            <p className="mt-1 text-xs text-gray-500">
-              Choose whether this child is marked present or absent.
-            </p>
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setStatus("present")}
-                className={`flex items-center justify-center rounded-lg border px-3 py-2 text-sm font-medium transition ${status === "present"
-                    ? "border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm"
-                    : "border-gray-200 bg-white text-gray-700 hover:border-emerald-400 hover:bg-emerald-50/60"
-                  }`}
-              >
-                Present
-              </button>
-              <button
-                type="button"
-                onClick={() => setStatus("absent")}
-                className={`flex items-center justify-center rounded-lg border px-3 py-2 text-sm font-medium transition ${status === "absent"
-                    ? "border-rose-500 bg-rose-50 text-rose-700 shadow-sm"
-                    : "border-gray-200 bg-white text-gray-700 hover:border-rose-400 hover:bg-rose-50/60"
-                  }`}
-              >
-                Absent
-              </button>
-            </div>
+            <select
+              value={status}
+              onChange={(event) =>
+                setStatus(event.target.value as "present" | "absent")
+              }
+              className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
+            >
+              <option value="present">Present</option>
+              <option value="absent">Absent</option>
+            </select>
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-3 border-t border-gray-200 bg-gray-50 px-6 py-4">
+        <div className="flex items-center justify-end gap-3 border-t border-gray-100 bg-gray-50/50 px-6 py-4">
           <button
             type="button"
-            className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100"
+            className="rounded-lg px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 transition"
             onClick={onClose}
           >
             Cancel
           </button>
           <button
             type="button"
-            className="inline-flex items-center rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2"
+            className="inline-flex items-center rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 transition focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
             onClick={() => onSave(status)}
           >
             Save Changes

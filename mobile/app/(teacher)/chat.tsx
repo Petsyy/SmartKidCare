@@ -10,15 +10,21 @@ import {
   Platform,
   StatusBar,
 } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import * as Icons from "lucide-react-native";
 import { useAuth } from "@/src/hooks/useAuth";
 import { sendAIChat } from "@/src/api/ai.api";
+import { getAttendanceHistory, getFeedingHistory } from "@/src/api/records.api";
 import {
-  getAttendanceHistory,
-  getFeedingHistory,
-} from "@/src/api/records.api";
+  buildSummary,
+  formatDateLabel,
+  resolveTeacherFollowUpMessage,
+  formatAttendanceChildren
+} from "@/src/components/ai-chatbot-helpers/chatHelpers";
 
 const SUGGESTIONS = [
   "Who was absent today?",
@@ -31,17 +37,6 @@ type Message = {
   role: "user" | "assistant";
   content: string;
 };
-
-function buildSummary(
-  label: string,
-  data: any[],
-  formatter: (item: any) => string,
-): string {
-  if (!data?.length) return `No ${label} data available.`;
-  const lines = data.slice(0, 10).map(formatter);
-  const more = data.length > 10 ? ` ... and ${data.length - 10} more.` : "";
-  return `Recent ${label} (${data.length} total): ${lines.join("; ")}${more}`;
-}
 
 export default function TeacherChatScreen() {
   const insets = useSafeAreaInsets();
@@ -91,8 +86,11 @@ export default function TeacherChatScreen() {
           buildSummary(
             "attendance",
             attList,
-            (e: any) =>
-              `${e?.date ?? "?"}: ${e?.records?.length ?? 0} records`,
+            (e: any) => {
+              const count = Array.isArray(e?.records) ? e.records.length : 0;
+              const children = formatAttendanceChildren(e?.records ?? []);
+              return `${formatDateLabel(e?.date)}: ${count} records${children ? ` (children: ${children})` : ""}`;
+            },
           ),
         );
         setFeedingSummary(
@@ -100,7 +98,7 @@ export default function TeacherChatScreen() {
             "feeding",
             feedList,
             (e: any) =>
-              `${e?.date ?? "?"}: ${e?.foodServed ?? "?"} (${e?.records?.length ?? 0} records)`,
+              `${formatDateLabel(e?.date)}: ${e?.foodServed ?? "?"} (${e?.records?.length ?? 0} records)`,
           ),
         );
       } catch {
@@ -122,6 +120,7 @@ export default function TeacherChatScreen() {
   const sendMessage = useCallback(async () => {
     const text = input.trim();
     if (!text || !token || loading) return;
+    const resolvedMessage = resolveTeacherFollowUpMessage(text, messages);
 
     setInput("");
     const userMsg: Message = {
@@ -139,37 +138,54 @@ export default function TeacherChatScreen() {
     ]);
 
     try {
-      const reply = await sendAIChat(token, {
+      const lowerText = resolvedMessage.toLowerCase();
+
+      const needsAnalytics =
+        lowerText.includes("attendance") ||
+        lowerText.includes("feeding") ||
+        lowerText.includes("absent") ||
+        lowerText.includes("present") ||
+        lowerText.includes("summary") ||
+        lowerText.includes("how many") ||
+        lowerText.includes("records");
+
+      let payload: any = {
         role: "teacher",
-        message: text,
-        attendanceSummary,
-        feedingSummary,
-        insights: [],
-      });
+        message: resolvedMessage,
+      };
+
+      // Attach summaries when the question is analytics-related.
+      if (needsAnalytics) {
+        payload.attendanceSummary = attendanceSummary;
+        payload.feedingSummary = feedingSummary;
+        payload.insights = [];
+      }
+
+      const reply = await sendAIChat(token, payload);
 
       setMessages((prev) =>
-        prev.map((m) =>
-          m.id === assistantId ? { ...m, content: reply } : m,
-        ),
+        prev.map((m) => (m.id === assistantId ? { ...m, content: reply } : m)),
       );
     } catch (err: any) {
       setMessages((prev) =>
         prev.map((m) =>
           m.id === assistantId
             ? {
-              ...m,
-              content: err?.message ?? "Something went wrong. Please try again.",
-            }
+                ...m,
+                content:
+                  err?.message ?? "Something went wrong. Please try again.",
+              }
             : m,
         ),
       );
     } finally {
       setLoading(false);
     }
-  }, [input, loading, token, attendanceSummary, feedingSummary]);
+  }, [input, loading, token, attendanceSummary, feedingSummary, messages]);
 
   const onSuggestionPress = (text: string) => {
     setInput(text);
+    setTimeout(() => sendMessage(), 100);
   };
 
   const renderItem = ({ item }: { item: Message }) => {
@@ -183,26 +199,47 @@ export default function TeacherChatScreen() {
         {!isUser && (
           <View
             className="mr-3 h-9 w-9 items-center justify-center rounded-full bg-teal-100"
-            style={{ shadowColor: "#0D9488", shadowOpacity: 0.2, shadowRadius: 4, shadowOffset: { width: 0, height: 1 }, elevation: 2 }}
+            style={{
+              shadowColor: "#0D9488",
+              shadowOpacity: 0.2,
+              shadowRadius: 4,
+              shadowOffset: { width: 0, height: 1 },
+              elevation: 2,
+            }}
           >
             <Icons.Bot size={18} color="#0D9488" />
           </View>
         )}
         <View
-          className={`max-w-[80%] rounded-2xl px-4 py-3.5 ${isUser
-            ? "rounded-br-sm bg-teal-600"
-            : "rounded-bl-sm border border-gray-100 bg-white"
-            }`}
+          className={`max-w-[80%] rounded-2xl px-4 py-3.5 ${
+            isUser
+              ? "rounded-br-sm bg-teal-600"
+              : "rounded-bl-sm border border-gray-100 bg-white"
+          }`}
           style={
             isUser
-              ? { shadowColor: "#0D9488", shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 }
-              : { shadowColor: "#000", shadowOpacity: 0.06, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 }
+              ? {
+                  shadowColor: "#0D9488",
+                  shadowOpacity: 0.25,
+                  shadowRadius: 8,
+                  shadowOffset: { width: 0, height: 2 },
+                  elevation: 4,
+                }
+              : {
+                  shadowColor: "#000",
+                  shadowOpacity: 0.06,
+                  shadowRadius: 8,
+                  shadowOffset: { width: 0, height: 2 },
+                  elevation: 2,
+                }
           }
         >
           {isLoading ? (
             <View className="flex-row items-center gap-2.5 py-0.5">
               <ActivityIndicator size="small" color="#14B8A6" />
-              <Text className="text-sm font-medium text-gray-500">Thinking…</Text>
+              <Text className="text-sm font-medium text-gray-500">
+                Thinking…
+              </Text>
             </View>
           ) : (
             <Text
@@ -217,7 +254,13 @@ export default function TeacherChatScreen() {
         {isUser && (
           <View
             className="ml-3 h-9 w-9 items-center justify-center rounded-full bg-teal-600"
-            style={{ shadowColor: "#0D9488", shadowOpacity: 0.3, shadowRadius: 4, shadowOffset: { width: 0, height: 1 }, elevation: 2 }}
+            style={{
+              shadowColor: "#0D9488",
+              shadowOpacity: 0.3,
+              shadowRadius: 4,
+              shadowOffset: { width: 0, height: 1 },
+              elevation: 2,
+            }}
           >
             <Icons.User size={18} color="white" />
           </View>
@@ -230,7 +273,13 @@ export default function TeacherChatScreen() {
     <View className="px-1 pt-1 pb-6">
       <View
         className="flex-row items-center gap-4 rounded-3xl border border-teal-100 bg-white p-5"
-        style={{ shadowColor: "#0D9488", shadowOpacity: 0.08, shadowRadius: 16, shadowOffset: { width: 0, height: 4 }, elevation: 3 }}
+        style={{
+          shadowColor: "#0D9488",
+          shadowOpacity: 0.08,
+          shadowRadius: 16,
+          shadowOffset: { width: 0, height: 4 },
+          elevation: 3,
+        }}
       >
         <View className="h-12 w-12 items-center justify-center rounded-2xl bg-teal-500">
           <Icons.Bot size={26} color="white" />
@@ -243,9 +292,7 @@ export default function TeacherChatScreen() {
             Ask about attendance, feeding, or daily operations.
           </Text>
         </View>
-        {contextLoading && (
-          <ActivityIndicator size="small" color="#14B8A6" />
-        )}
+        {contextLoading && <ActivityIndicator size="small" color="#14B8A6" />}
       </View>
     </View>
   );
@@ -267,9 +314,18 @@ export default function TeacherChatScreen() {
             key={s}
             onPress={() => onSuggestionPress(s)}
             className="rounded-2xl border border-gray-200 bg-white px-4 py-3.5 active:opacity-80"
-            style={{ shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 }}
+            style={{
+              shadowColor: "#000",
+              shadowOpacity: 0.04,
+              shadowRadius: 8,
+              shadowOffset: { width: 0, height: 2 },
+              elevation: 2,
+            }}
           >
-            <Text className="text-center text-sm font-medium text-gray-700" numberOfLines={2}>
+            <Text
+              className="text-center text-sm font-medium text-gray-700"
+              numberOfLines={2}
+            >
               {s}
             </Text>
           </Pressable>
@@ -312,7 +368,6 @@ export default function TeacherChatScreen() {
             </View>
           </View>
         </View>
-
 
         {/* Messages */}
         <FlatList

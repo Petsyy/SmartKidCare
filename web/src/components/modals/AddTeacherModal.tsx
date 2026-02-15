@@ -1,8 +1,13 @@
 import { useState } from "react";
 import { X } from "lucide-react";
-import Swal from "sweetalert2";
 import { createTeacher } from "../../api/teacher.api";
 import { showTeacherCredentialsModal, showErrorModal } from "../../utils/sweetalert.modal";
+import {
+  type AddTeacherField,
+  type AddTeacherFormErrors,
+  validateAddTeacherField,
+  validateAddTeacherForm,
+} from "../../utils/formValidation";
 
 type Props = {
   onClose: () => void;
@@ -16,53 +21,70 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
     lastName: "",
     email: "",
     phone: "",
-    status: "Active",
   });
 
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<AddTeacherFormErrors>({});
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const setFieldError = (field: AddTeacherField, nextForm = form) => {
+    const error = validateAddTeacherField(field, nextForm);
+    setErrors((prev) => {
+      const next = { ...prev };
+      if (error) {
+        next[field] = error;
+      } else {
+        delete next[field];
+      }
+      return next;
+    });
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    const field = name as AddTeacherField;
+    const nextForm = {
+      ...form,
+      [field]: value,
+    };
+    setForm(nextForm);
+
+    if (errors[field]) {
+      setFieldError(field, nextForm);
+    }
+  };
+
+  const handleFieldBlur = (field: AddTeacherField) => {
+    setFieldError(field);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!form.firstName || !form.middleName || !form.lastName || !form.email || !form.phone) {
-      Swal.fire({
-        title: "Missing Fields",
-        text: "Please fill all required fields",
-        icon: "warning",
-        confirmButtonText: "OK",
-        confirmButtonColor: "#0D9488",
-      });
+    const formErrors = validateAddTeacherForm(form);
+    setErrors(formErrors);
+    if (Object.keys(formErrors).length > 0) {
       return;
     }
 
     setLoading(true);
     try {
-      const res = await createTeacher(form as typeof form & { status: "Active" | "Inactive" });
+      const res = await createTeacher(form);
 
       onClose();
 
       setTimeout(async () => {
-        // Show one combined modal with both teacher info and password
         await showTeacherCredentialsModal(
           form.firstName,
           form.lastName,
-          form.email,
-          res.credentials
+          res.credentials.email,
+          res.emailDelivery,
         );
 
         onCreated();
 
       }, 150);
-    } catch (error: any) {
-      showErrorModal(error.message || "Failed to create teacher");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to create teacher";
+      showErrorModal(message);
     } finally {
       setLoading(false);
     }
@@ -106,10 +128,14 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
                     name="firstName"
                     value={form.firstName}
                     onChange={handleInputChange}
+                    onBlur={() => handleFieldBlur("firstName")}
                     placeholder="Enter first name"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                     required
                   />
+                  {errors.firstName && (
+                    <p className="mt-1 text-xs text-red-600">{errors.firstName}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -120,10 +146,14 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
                     name="middleName"
                     value={form.middleName}
                     onChange={handleInputChange}
+                    onBlur={() => handleFieldBlur("middleName")}
                     placeholder="Enter middle name"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                     required
                   />
+                  {errors.middleName && (
+                    <p className="mt-1 text-xs text-red-600">{errors.middleName}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -134,10 +164,14 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
                     name="lastName"
                     value={form.lastName}
                     onChange={handleInputChange}
+                    onBlur={() => handleFieldBlur("lastName")}
                     placeholder="Enter last name"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                     required
                   />
+                  {errors.lastName && (
+                    <p className="mt-1 text-xs text-red-600">{errors.lastName}</p>
+                  )}
                 </div>
               </div>
 
@@ -151,10 +185,14 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
                   name="email"
                   value={form.email}
                   onChange={handleInputChange}
+                  onBlur={() => handleFieldBlur("email")}
                   placeholder="teacher@email.com"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                   required
                 />
+                {errors.email && (
+                  <p className="mt-1 text-xs text-red-600">{errors.email}</p>
+                )}
               </div>
 
               {/* Phone */}
@@ -167,27 +205,16 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
                   name="phone"
                   value={form.phone}
                   onChange={handleInputChange}
+                  onBlur={() => handleFieldBlur("phone")}
                   placeholder="+63 912 345 6789"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                   required
                 />
+                {errors.phone && (
+                  <p className="mt-1 text-xs text-red-600">{errors.phone}</p>
+                )}
               </div>
 
-              {/* Status */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Status
-                </label>
-                <select
-                  name="status"
-                  value={form.status}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                >
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                </select>
-              </div>
             </div>
           </div>
 
@@ -235,3 +262,4 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
     </div >
   );
 }
+

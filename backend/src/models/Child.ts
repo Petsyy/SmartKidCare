@@ -14,7 +14,7 @@ const ChildSchema = new mongoose.Schema(
     schoolYear: { type: String, required: true },
     status: {
       type: String,
-      enum: ["Active", "Inactive", "On Leave"],
+      enum: ["Active", "Inactive"],
       default: "Active",
     },
 

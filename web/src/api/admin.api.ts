@@ -1,15 +1,9 @@
 import { API_BASE } from "../components/config/config.api";
 
-const authHeaders = () => ({
-  Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-});
-
 export const resetUserPassword = async (userId: string) => {
   const res = await fetch(`${API_BASE}/admin/users/${userId}/reset-password`, {
     method: "POST",
-    headers: {
-      ...authHeaders(),
-    },
+    credentials: "include",
   });
 
   const data = await res.json();
@@ -20,9 +14,7 @@ export const resetUserPassword = async (userId: string) => {
 export const toggleUserStatus = async (userId: string) => {
   const res = await fetch(`${API_BASE}/admin/users/${userId}/toggle-status`, {
     method: "PATCH",
-    headers: {
-      ...authHeaders(),
-    },
+    credentials: "include",
   });
 
   const data = await res.json();
@@ -32,9 +24,7 @@ export const toggleUserStatus = async (userId: string) => {
 
 export const getParentChildren = async (parentId: string) => {
   const res = await fetch(`${API_BASE}/admin/parents/${parentId}/children`, {
-    headers: {
-      ...authHeaders(),
-    },
+    credentials: "include",
   });
 
   const data = await res.json();
@@ -48,9 +38,9 @@ export const updateUser = async (
 ) => {
   const res = await fetch(`${API_BASE}/admin/users/${userId}`, {
     method: "PATCH",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      ...authHeaders(),
     },
     body: JSON.stringify(updates),
   });
@@ -63,9 +53,7 @@ export const updateUser = async (
 export const deleteUser = async (userId: string) => {
   const res = await fetch(`${API_BASE}/admin/users/${userId}`, {
     method: "DELETE",
-    headers: {
-      ...authHeaders(),
-    },
+    credentials: "include",
   });
 
   const data = await res.json();

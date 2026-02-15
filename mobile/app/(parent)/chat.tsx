@@ -10,15 +10,20 @@ import {
   Platform,
   StatusBar,
 } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import * as Icons from "lucide-react-native";
 import { useAuth } from "@/src/hooks/useAuth";
 import { sendAIChat } from "@/src/api/ai.api";
 import {
-  getAttendanceHistory,
-  getFeedingHistory,
-} from "@/src/api/records.api";
+  buildSummary,
+  formatDateLabel,
+  formatAttendanceChildren,
+} from "@/src/components/ai-chatbot-helpers/chatHelpers";
+import { getAttendanceHistory, getFeedingHistory } from "@/src/api/records.api";
 
 const SUGGESTIONS = [
   "Why was my child marked absent today?",
@@ -31,17 +36,6 @@ type Message = {
   role: "user" | "assistant";
   content: string;
 };
-
-function buildSummary(
-  label: string,
-  data: any[],
-  formatter: (item: any) => string,
-): string {
-  if (!data?.length) return `No ${label} data available.`;
-  const lines = data.slice(0, 10).map(formatter);
-  const more = data.length > 10 ? ` ... and ${data.length - 10} more.` : "";
-  return `Recent ${label} (${data.length} total): ${lines.join("; ")}${more}`;
-}
 
 export default function ParentChatScreen() {
   const insets = useSafeAreaInsets();
@@ -87,19 +81,18 @@ export default function ParentChatScreen() {
         if (cancelled) return;
 
         setAttendanceSummary(
-          buildSummary(
-            "attendance",
-            attList,
-            (e: any) =>
-              `${e?.date ?? "?"}: ${e?.records?.length ?? 0} records`,
-          ),
+          buildSummary("attendance", attList, (e: any) => {
+            const count = Array.isArray(e?.records) ? e.records.length : 0;
+            const children = formatAttendanceChildren(e?.records ?? []);
+            return `${formatDateLabel(e?.date)}: ${count} records${children ? ` (children: ${children})` : ""}`;
+          }),
         );
         setFeedingSummary(
           buildSummary(
             "feeding",
             feedList,
             (e: any) =>
-              `${e?.date ?? "?"}: ${e?.foodServed ?? "?"} (${e?.records?.length ?? 0} records)`,
+              `${formatDateLabel(e?.date)}: ${e?.foodServed ?? "?"} (${e?.records?.length ?? 0} records)`,
           ),
         );
       } catch {
@@ -147,9 +140,7 @@ export default function ParentChatScreen() {
       });
 
       setMessages((prev) =>
-        prev.map((m) =>
-          m.id === assistantId ? { ...m, content: reply } : m,
-        ),
+        prev.map((m) => (m.id === assistantId ? { ...m, content: reply } : m)),
       );
     } catch (err: any) {
       setMessages((prev) =>
@@ -157,7 +148,8 @@ export default function ParentChatScreen() {
           m.id === assistantId
             ? {
                 ...m,
-                content: err?.message ?? "Something went wrong. Please try again.",
+                content:
+                  err?.message ?? "Something went wrong. Please try again.",
               }
             : m,
         ),
@@ -275,9 +267,7 @@ export default function ParentChatScreen() {
             Ask about your child's attendance and feeding.
           </Text>
         </View>
-        {contextLoading && (
-          <ActivityIndicator size="small" color="#14B8A6" />
-        )}
+        {contextLoading && <ActivityIndicator size="small" color="#14B8A6" />}
       </View>
     </View>
   );

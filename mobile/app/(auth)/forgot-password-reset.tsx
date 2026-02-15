@@ -13,23 +13,20 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ChevronLeft, Eye, EyeOff, Lock } from "lucide-react-native";
-import { useAuth } from "@/src/hooks/useAuth";
-import type { User } from "@/src/context/AuthContext";
-import { completeTeacherPasswordSetup } from "@/src/api/authentication.api";
+import { resetForgotPassword } from "@/src/api/authentication.api";
 import { validatePasswordRules } from "@/src/validations/password-validation";
 import PasswordStrengthFeedback from "@/src/components/password/PasswordStrengthFeedback";
 
-export default function ChangePasswordScreen() {
+export default function ForgotPasswordResetScreen() {
   const router = useRouter();
-  const { login } = useAuth();
-  const params = useLocalSearchParams<{ setupToken?: string | string[] }>();
-  const setupToken = useMemo(() => {
-    const value = params.setupToken;
+  const params = useLocalSearchParams<{ resetToken?: string | string[] }>();
+  const resetToken = useMemo(() => {
+    const value = params.resetToken;
     if (Array.isArray(value)) {
       return String(value[0] || "").trim();
     }
     return String(value || "").trim();
-  }, [params.setupToken]);
+  }, [params.resetToken]);
 
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -37,9 +34,9 @@ export default function ChangePasswordScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSetPassword = async () => {
-    if (!setupToken) {
-      Alert.alert("Invalid Request", "Missing setup token. Please log in again.");
+  const handleResetPassword = async () => {
+    if (!resetToken) {
+      Alert.alert("Invalid Request", "Missing reset token. Please restart forgot password.");
       return;
     }
 
@@ -61,25 +58,15 @@ export default function ChangePasswordScreen() {
 
     setIsSubmitting(true);
     try {
-      const { token: authToken, user: apiUser } = await completeTeacherPasswordSetup(
-        setupToken,
-        newPassword
-      );
-
-      const appUser: User = {
-        id: apiUser._id,
-        email: apiUser.email,
-        role:
-          apiUser.role === "parent" || apiUser.role === "teacher"
-            ? apiUser.role
-            : "teacher",
-        needsToConfirmLink: apiUser.needsToConfirmLink,
-      };
-
-      await login(appUser, authToken);
-      router.replace("/");
+      await resetForgotPassword(resetToken, newPassword);
+      Alert.alert("Success", "Password reset successful. You can now log in.", [
+        {
+          text: "OK",
+          onPress: () => router.replace("/(auth)/login"),
+        },
+      ]);
     } catch (error: any) {
-      Alert.alert("Setup Failed", error.message || "Unable to set password.");
+      Alert.alert("Reset Failed", error.message || "Unable to reset password.");
     } finally {
       setIsSubmitting(false);
     }
@@ -104,15 +91,15 @@ export default function ChangePasswordScreen() {
               <View className="w-16 h-16 rounded-full bg-teal-100 items-center justify-center mb-3">
                 <Lock size={30} color="#0d9488" />
               </View>
-              <Text className="text-2xl font-bold text-gray-900 text-center">
-                Set New Password
+              <Text className="text-3xl font-bold text-gray-900 text-center">
+                Reset Password
               </Text>
-              <Text className="text-gray-600 text-center mt-2">
-                Create your permanent password to activate your account.
+              <Text className="text-lg text-gray-600 text-center mt-2">
+                Set a new password for your account.
               </Text>
             </View>
 
-            <Text className="text-sm font-semibold text-gray-700 mb-2">
+            <Text className="text-base font-semibold text-gray-700 mb-2">
               New Password
             </Text>
             <View className="mb-4">
@@ -123,7 +110,7 @@ export default function ChangePasswordScreen() {
                   onChangeText={setNewPassword}
                   placeholder="Enter new password"
                   placeholderTextColor="#9CA3AF"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 pr-12"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-lg text-gray-900 pr-12"
                 />
                 <Pressable
                   onPress={() => setShowNewPassword((prev) => !prev)}
@@ -139,7 +126,7 @@ export default function ChangePasswordScreen() {
               <PasswordStrengthFeedback password={newPassword} />
             </View>
 
-            <Text className="text-sm font-semibold text-gray-700 mb-2">
+            <Text className="text-base font-semibold text-gray-700 mb-2">
               Confirm Password
             </Text>
             <View className="relative">
@@ -149,7 +136,7 @@ export default function ChangePasswordScreen() {
                 onChangeText={setConfirmPassword}
                 placeholder="Re-enter new password"
                 placeholderTextColor="#9CA3AF"
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 pr-12"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl text-lg text-gray-900 pr-12"
               />
               <Pressable
                 onPress={() => setShowConfirmPassword((prev) => !prev)}
@@ -164,7 +151,7 @@ export default function ChangePasswordScreen() {
             </View>
 
             <Pressable
-              onPress={handleSetPassword}
+              onPress={handleResetPassword}
               disabled={isSubmitting}
               className="mt-6 rounded-xl overflow-hidden"
               style={({ pressed }) => [{ opacity: isSubmitting ? 0.7 : pressed ? 0.85 : 1 }]}
@@ -179,7 +166,7 @@ export default function ChangePasswordScreen() {
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
                   <Text className="text-white text-lg font-bold">
-                    Save Password
+                    Save New Password
                   </Text>
                 )}
               </LinearGradient>

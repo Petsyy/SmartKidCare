@@ -1,17 +1,30 @@
 import { Search, Bell, ChevronRight, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { API_BASE } from "../config/config.api";
 
 type HeaderProps = {
   breadcrumbs?: string[];
 };
 
-export default function Header({ breadcrumbs = ["Admin", "User Management"] }: HeaderProps) {
+export default function Header({
+  breadcrumbs = ["Admin", "User Management"],
+}: HeaderProps) {
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
-  const adminEmail = localStorage.getItem("adminEmail") || "admin@smartkidcare.com";
+  const adminEmail =
+    localStorage.getItem("adminEmail") || "admin@smartkidcare.com";
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch(`${API_BASE}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch {
+      // Ignore logout network errors and still clear local UI state.
+    }
+
     localStorage.removeItem("authToken");
     localStorage.removeItem("adminEmail");
     navigate("/login");
@@ -32,7 +45,13 @@ export default function Header({ breadcrumbs = ["Admin", "User Management"] }: H
           {breadcrumbs.map((crumb, index) => (
             <div key={index} className="flex items-center gap-2">
               {index > 0 && <ChevronRight size={16} />}
-              <span className={index === breadcrumbs.length - 1 ? "text-gray-900 font-medium" : ""}>
+              <span
+                className={
+                  index === breadcrumbs.length - 1
+                    ? "text-gray-900 font-medium"
+                    : ""
+                }
+              >
                 {crumb}
               </span>
             </div>
@@ -43,7 +62,10 @@ export default function Header({ breadcrumbs = ["Admin", "User Management"] }: H
         <div className="flex items-center gap-4">
           {/* Search Bar */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              size={18}
+            />
             <input
               type="text"
               placeholder="Search..."

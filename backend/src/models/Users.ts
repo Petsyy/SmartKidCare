@@ -13,6 +13,9 @@ export interface IUser extends Document {
   isActive: boolean;
   mustChangePassword: boolean;
   needsToConfirmLink: boolean;
+  passwordResetOtpHash?: string;
+  passwordResetOtpExpiresAt?: Date;
+  passwordResetOtpPurpose?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -72,6 +75,21 @@ const UserSchema: Schema = new Schema(
     needsToConfirmLink: {
       type: Boolean,
       default: false,
+    },
+
+    passwordResetOtpHash: {
+      type: String,
+      default: undefined,
+    },
+
+    passwordResetOtpExpiresAt: {
+      type: Date,
+      default: undefined,
+    },
+
+    passwordResetOtpPurpose: {
+      type: String,
+      default: undefined,
     },
   },
   {

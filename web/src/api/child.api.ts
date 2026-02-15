@@ -1,9 +1,5 @@
 import { API_BASE } from "../components/config/config.api";
 
-const authHeaders = () => ({
-  Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-});
-
 export type CreateChildPayload = {
   firstName: string;
   middleName?: string;
@@ -24,9 +20,9 @@ export type CreateChildPayload = {
 export const createChild = async (payload: CreateChildPayload) => {
   const res = await fetch(`${API_BASE}/children`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      ...authHeaders(),
     },
     body: JSON.stringify(payload),
   });
@@ -37,7 +33,7 @@ export const createChild = async (payload: CreateChildPayload) => {
 
 export const getChildren = async () => {
   const res = await fetch(`${API_BASE}/children`, {
-    headers: authHeaders(),
+    credentials: "include",
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || "Failed to fetch children");
@@ -53,6 +49,7 @@ export const updateChild = async (
     dateOfBirth?: string;
     age?: number;
     gender?: string;
+    enrollmentDate?: string;
     schoolYear?: string;
     status?: string;
     regenerateLinkCode?: boolean;
@@ -61,9 +58,9 @@ export const updateChild = async (
 ) => {
   const res = await fetch(`${API_BASE}/children/${childId}`, {
     method: "PATCH",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      ...authHeaders(),
     },
     body: JSON.stringify(updates),
   });

@@ -1,6 +1,10 @@
 import { Router } from "express";
-import rateLimit from "express-rate-limit";
-import { login, getMe, getAllUsers } from "../controllers/auth.controller";
+import {
+  login,
+  getMe,
+  getAllUsers,
+  logout,
+} from "../controllers/auth.controller";
 import {
   verifyTeacherPasswordOtp,
   resendTeacherPasswordOtp,
@@ -11,38 +15,79 @@ import {
   changePassword,
 } from "../controllers/auth.password.controller";
 import { authenticateToken } from "../middlewares/auth.middleware";
-
+import {
+  loginLimiter,
+  otpResendCooldownLimiter,
+  otpSendLimiter,
+  otpVerifyLimiter,
+} from "../lib/rateLimit";
+import {
+  validateChangePassword,
+  validateForgotPasswordRequest,
+  validateForgotPasswordReset,
+  validateForgotPasswordVerify,
+  validateGetUsersQuery,
+  validateLogin,
+  validateOtpVerify,
+  validatePasswordSetup,
+  validateResendOtp,
+} from "../validators/auth.validator";
 
 const router = Router();
-
-// Stricter rate limiter for auth endpoints (e.g., login): 10 requests per 15 minutes per IP
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // Limit each IP to 10 requests per windowMs
-  message: {
-    message: "Too many authentication attempts from this IP, please try again after 15 minutes."
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
 
 /**
  * Auth
  */
-router.post("/login", authLimiter, login);
-router.post("/admin/login", authLimiter, login);
-router.post("/password-otp/verify", verifyTeacherPasswordOtp);
-router.post("/password-otp/resend", resendTeacherPasswordOtp);
-router.post("/password/setup", completeTeacherPasswordSetup);
-router.post("/forgot-password/request", requestForgotPasswordOtp);
-router.post("/forgot-password/verify", verifyForgotPasswordOtp);
-router.post("/forgot-password/reset", resetForgotPassword);
-router.post("/change-password", authenticateToken, changePassword);
+router.post("/login", loginLimiter, validateLogin, login);
+router.post("/admin/login", loginLimiter, validateLogin, login);
+router.post(
+  "/password-otp/verify",
+  validateOtpVerify,
+  otpVerifyLimiter,
+  verifyTeacherPasswordOtp,
+);
+router.post(
+  "/password-otp/resend",
+  validateResendOtp,
+  otpSendLimiter,
+  otpResendCooldownLimiter,
+  resendTeacherPasswordOtp,
+);
+router.post(
+  "/password/setup",
+  validatePasswordSetup,
+  completeTeacherPasswordSetup,
+);
+router.post(
+  "/forgot-password/request",
+  validateForgotPasswordRequest,
+  otpSendLimiter,
+  otpResendCooldownLimiter,
+  requestForgotPasswordOtp,
+);
+router.post(
+  "/forgot-password/verify",
+  validateForgotPasswordVerify,
+  otpVerifyLimiter,
+  verifyForgotPasswordOtp,
+);
+router.post(
+  "/forgot-password/reset",
+  validateForgotPasswordReset,
+  resetForgotPassword,
+);
+router.post(
+  "/change-password",
+  authenticateToken,
+  validateChangePassword,
+  changePassword,
+);
 router.get("/me", authenticateToken, getMe);
+router.post("/logout", logout);
 
 /**
  * Admin-only
  */
-router.get("/users", authenticateToken, getAllUsers);
+router.get("/users", authenticateToken, validateGetUsersQuery, getAllUsers);
 
 export default router;

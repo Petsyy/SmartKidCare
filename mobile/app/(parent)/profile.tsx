@@ -12,6 +12,9 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { useRouter, useFocusEffect } from "expo-router";
 import { useAuthContext } from "../../src/context/AuthContext";
 import { getParentProfile } from "@/src/api/parent.api";
+import { API_BASE_URL } from "@/src/config/config";
+import { validatePasswordRules } from "@/src/validations/password-validation";
+import PasswordStrengthFeedback from "@/src/components/password/PasswordStrengthFeedback";
 import React, { useState } from "react";
 import * as Icons from "lucide-react-native";
 
@@ -88,15 +91,16 @@ export default function ProfileScreen() {
       return;
     }
 
-    if (newPassword.length < 6) {
-      setPasswordError("Password must be at least 6 characters");
+    const passwordValidation = validatePasswordRules(newPassword);
+    if (!passwordValidation.isValid) {
+      setPasswordError(passwordValidation.message || "Invalid password");
       return;
     }
 
     setPasswordLoading(true);
     try {
       const response = await fetch(
-        "http://localhost:5000/api/auth/change-password",
+        `${API_BASE_URL}/api/auth/change-password`,
         {
           method: "POST",
           headers: {
@@ -320,6 +324,7 @@ export default function ProfileScreen() {
                   className="w-full px-4 py-3 border border-gray-300 rounded-2xl text-gray-900"
                   editable={!passwordLoading}
                 />
+                <PasswordStrengthFeedback password={newPassword} />
               </View>
 
               <View>

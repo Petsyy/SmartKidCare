@@ -1,9 +1,16 @@
-export type AIRole = "parent" | "teacher" | "admin";
-
 export interface AIChatRequest {
-  role: AIRole;
-  attendanceSummary?: string;
-  feedingSummary?: string;
-  insights?: string[];
+  role: "parent" | "teacher" | "admin";
   message: string;
+
+  child?: {
+    id: string;
+    name: string;
+  };
+
+  record?: {
+    date: string;
+    attendanceStatus?: string;
+    feedingStatus?: string;
+    verified?: boolean;
+  };
 }

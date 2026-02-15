@@ -4,21 +4,32 @@ import { ShieldCheck, ShieldX, ExternalLink, Copy, X } from "lucide-react";
 type Props = {
   open: boolean;
   onClose: () => void;
+  loading?: boolean;
   data?: {
     isValid: boolean;
-    dateHash?: string;
-    recordedBy?: string | null; // signer (if your API returns it)
-    timestamp?: number | null; // unix seconds
-    walletAddress?: string; // fallback signer address
-    txHash?: string; // OPTIONAL: if you add this later
-    reason?: string; // explanation when unverified/fetch fallback
+    dateHash?: string | null;
+    recordedBy?: string | null;
+    timestamp?: number | null;
+    reason?: string;
   } | null;
 };
 
-const shorten = (val: string, head = 8, tail = 6) =>
-  val.length > head + tail ? `${val.slice(0, head)}…${val.slice(-tail)}` : val;
+const EMPTY_VALUE = "-";
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
-export default function VerificationModal({ open, onClose, data }: Props) {
+const isUsableAddress = (value?: string | null) =>
+  Boolean(
+    value &&
+      value !== EMPTY_VALUE &&
+      String(value).toLowerCase() !== ZERO_ADDRESS.toLowerCase(),
+  );
+
+export default function VerificationModal({
+  open,
+  onClose,
+  loading = false,
+  data,
+}: Props) {
   const [isVisible, setIsVisible] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
@@ -28,27 +39,36 @@ export default function VerificationModal({ open, onClose, data }: Props) {
   }, [open]);
 
   const recordedOn = useMemo(() => {
-    if (!data?.timestamp) return "—";
+    if (!data?.timestamp) return EMPTY_VALUE;
     return new Date(data.timestamp * 1000).toLocaleString();
   }, [data?.timestamp]);
 
-  const wallet = useMemo(
-    () => data?.recordedBy || data?.walletAddress || "—",
-    [data?.recordedBy, data?.walletAddress],
+  const signerWallet = useMemo(
+    () => (isUsableAddress(data?.recordedBy) ? String(data?.recordedBy) : null),
+    [data?.recordedBy],
   );
 
-  const etherscanLink = useMemo(() => {
-    if (!wallet || wallet === "—") return "#";
-    // If you later include txHash in API, prefer tx link:
-    // return data?.txHash ? `https://sepolia.etherscan.io/tx/${data.txHash}` : `https://sepolia.etherscan.io/address/${wallet}`;
-    return `https://sepolia.etherscan.io/address/${wallet}`;
-  }, [wallet]);
-
-  const dateHash = data?.dateHash || "—";
+  const dateHash = data?.dateHash || EMPTY_VALUE;
   const isValid = !!data?.isValid;
 
+  const etherscanLink = useMemo(() => {
+    if (signerWallet) {
+      return `https://sepolia.etherscan.io/address/${signerWallet}`;
+    }
+    return "#";
+  }, [signerWallet]);
+
+  const statusReason = useMemo(() => {
+    if (loading) return null;
+    if (isValid) return null;
+    return (
+      data?.reason ||
+      "Record is not yet stored on-chain, or the chain hash does not match this record."
+    );
+  }, [data?.reason, isValid, loading]);
+
   const copyToClipboard = async (value: string, key: string) => {
-    if (!value || value === "—") return;
+    if (!value || value === EMPTY_VALUE) return;
     try {
       await navigator.clipboard.writeText(value);
       setCopiedKey(key);
@@ -67,12 +87,9 @@ export default function VerificationModal({ open, onClose, data }: Props) {
       } transition-opacity duration-200`}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      {/* Overlay (match your admin modals) */}
-      <div className="absolute inset-0 bg-gray-400/50" />
+      <div className="absolute inset-0 bg-black/20" />
 
-      {/* Modal */}
-      <div className="relative w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
-        {/* Header */}
+      <div className="relative w-full max-w-lg overflow-hidden rounded-2xl bg-white">
         <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-5">
           <div className="flex items-start gap-3">
             <div
@@ -106,9 +123,7 @@ export default function VerificationModal({ open, onClose, data }: Props) {
           </button>
         </div>
 
-        {/* Body */}
-        <div className="px-6 py-5 space-y-4">
-          {/* Status card */}
+        <div className="space-y-4 px-6 py-5">
           <div
             className={`rounded-xl border p-4 ${
               isValid
@@ -121,38 +136,40 @@ export default function VerificationModal({ open, onClose, data }: Props) {
             </div>
             <div
               className={`mt-1 text-sm font-semibold ${
-                isValid ? "text-emerald-800" : "text-rose-800"
+                loading
+                  ? "text-gray-700"
+                  : isValid
+                    ? "text-emerald-800"
+                    : "text-rose-800"
               }`}
             >
-              {isValid ? "VERIFIED" : "UNVERIFIED"}
+              {loading ? "CHECKING..." : isValid ? "VERIFIED" : "UNVERIFIED"}
             </div>
-            {data?.reason && (
-              <div className="mt-2 text-xs text-gray-700">
-                {data.reason}
-              </div>
+            {statusReason && (
+              <div className="mt-2 text-xs text-gray-700">{statusReason}</div>
             )}
           </div>
 
-          {/* Details grid */}
           <div className="grid grid-cols-1 gap-3">
-            {/* Wallet */}
             <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <div className="text-xs font-semibold tracking-wide text-gray-600">
                     WALLET (SIGNER)
                   </div>
-                  <div className="mt-1 font-mono text-sm text-gray-900 break-all">
-                    {wallet}
+                  <div className="mt-1 break-all font-mono text-sm text-gray-900">
+                    {loading ? "Loading..." : signerWallet || EMPTY_VALUE}
                   </div>
                 </div>
 
                 <button
                   type="button"
-                  onClick={() => copyToClipboard(wallet, "wallet")}
-                  className="shrink-0 inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition"
-                  disabled={wallet === "—"}
-                  title="Copy wallet"
+                  onClick={() =>
+                    copyToClipboard(signerWallet || EMPTY_VALUE, "wallet")
+                  }
+                  className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-50"
+                  disabled={!signerWallet}
+                  title="Copy signer wallet"
                 >
                   <Copy size={14} />
                   {copiedKey === "wallet" ? "Copied" : "Copy"}
@@ -160,24 +177,23 @@ export default function VerificationModal({ open, onClose, data }: Props) {
               </div>
             </div>
 
-            {/* Date Hash */}
             <div className="rounded-xl border border-gray-200 bg-white p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <div className="text-xs font-semibold tracking-wide text-gray-600">
                     ON-CHAIN DATA HASH (DATE HASH)
                   </div>
-                  <div className="mt-1 font-mono text-sm text-gray-900 break-all">
-                    {dateHash}
+                  <div className="mt-1 break-all font-mono text-sm text-gray-900">
+                    {loading ? "Loading..." : dateHash}
                   </div>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => copyToClipboard(dateHash, "dateHash")}
-                  className="shrink-0 inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-100 transition"
-                  disabled={dateHash === "—"}
-                  title="Copy hash"
+                  className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-100"
+                  disabled={dateHash === EMPTY_VALUE}
+                  title="Copy date hash"
                 >
                   <Copy size={14} />
                   {copiedKey === "dateHash" ? "Copied" : "Copy"}
@@ -185,19 +201,17 @@ export default function VerificationModal({ open, onClose, data }: Props) {
               </div>
             </div>
 
-            {/* Timestamp */}
             <div className="rounded-xl border border-gray-200 bg-white p-4">
               <div className="text-xs font-semibold tracking-wide text-gray-600">
                 RECORDED ON-CHAIN
               </div>
               <div className="mt-1 text-sm font-semibold text-gray-900">
-                {recordedOn}
+                {loading ? "Loading..." : recordedOn}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Footer */}
         <div className="flex items-center justify-between gap-3 border-t border-gray-100 px-6 py-4">
           <a
             href={etherscanLink}
@@ -214,7 +228,7 @@ export default function VerificationModal({ open, onClose, data }: Props) {
           </a>
 
           <button
-            className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition"
+            className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
             onClick={onClose}
           >
             Close

@@ -38,10 +38,8 @@ const AttendanceSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Ensure one attendance record per teacher per day
 AttendanceSchema.index({ date: 1, teacher: 1 }, { unique: true });
 
-// Post-find middleware to check integrity
 AttendanceSchema.post("findOne", function(doc) {
   if (doc && doc.records) {
     doc.records.forEach((record: any) => {

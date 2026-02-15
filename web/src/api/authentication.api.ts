@@ -36,9 +36,9 @@ export const getUsers = async (
 
     const response = await fetch(url, {
       method: "GET",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("authToken")}`,
       },
     });
 

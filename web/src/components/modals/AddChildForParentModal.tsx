@@ -1,5 +1,11 @@
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
+import {
+  type AddChildForParentField,
+  type AddChildForParentFormErrors,
+  validateAddChildForParentField,
+  validateAddChildForParentForm,
+} from "../../utils/formValidation";
 
 export type ParentForChild = {
   firstName: string;
@@ -17,7 +23,6 @@ export type ChildForParentFormData = {
   gender: "male" | "female";
   enrollmentDate: string;
   schoolYear: string;
-  status: string;
 };
 
 type AddChildForParentModalProps = {
@@ -29,7 +34,6 @@ type AddChildForParentModalProps = {
 };
 
 const schoolYears = ["2024-2025", "2025-2026", "2026-2027"];
-const statuses = ["Active", "Inactive", "On Leave"];
 
 const initialFormData: ChildForParentFormData = {
   firstName: "",
@@ -40,7 +44,6 @@ const initialFormData: ChildForParentFormData = {
   gender: "male",
   enrollmentDate: "",
   schoolYear: "2024-2025",
-  status: "Active",
 };
 
 function calculateAge(dob: string) {
@@ -63,32 +66,70 @@ export default function AddChildForParentModal({
   isLoading = false,
 }: AddChildForParentModalProps) {
   const [formData, setFormData] = useState<ChildForParentFormData>(initialFormData);
+  const [errors, setErrors] = useState<AddChildForParentFormErrors>({});
 
   useEffect(() => {
-    if (!isOpen) setFormData(initialFormData);
+    if (!isOpen) {
+      setFormData(initialFormData);
+      setErrors({});
+    }
   }, [isOpen]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => {
-      let next = { ...prev, [name]: value };
-      if (name === "dateOfBirth") next.age = calculateAge(value);
-      if (name === "enrollmentDate" && value) {
-        const year = new Date(value).getFullYear();
-        if (!isNaN(year)) next.schoolYear = `${year}-${year + 1}`;
+  const setFieldError = (
+    field: AddChildForParentField,
+    nextForm = formData,
+  ) => {
+    const error = validateAddChildForParentField(field, nextForm);
+    setErrors((prev) => {
+      const next = { ...prev };
+      if (error) {
+        next[field] = error;
+      } else {
+        delete next[field];
       }
       return next;
     });
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    const field = name as AddChildForParentField;
+    const nextForm: ChildForParentFormData = { ...formData, [field]: value };
+
+    if (field === "dateOfBirth") nextForm.age = calculateAge(value);
+    if (field === "enrollmentDate" && value) {
+      const year = new Date(value).getFullYear();
+      if (!isNaN(year)) nextForm.schoolYear = `${year}-${year + 1}`;
+    }
+
+    setFormData(nextForm);
+
+    if (errors[field]) {
+      setFieldError(field, nextForm);
+    }
+    if (field === "dateOfBirth" || field === "enrollmentDate") {
+      setFieldError("dateOfBirth", nextForm);
+      setFieldError("enrollmentDate", nextForm);
+    }
+  };
+
+  const handleFieldBlur = (field: AddChildForParentField) => {
+    setFieldError(field);
+  };
+
   const handleGenderChange = (gender: "male" | "female") => {
-    setFormData((prev) => ({ ...prev, gender }));
+    const nextForm = { ...formData, gender };
+    setFormData(nextForm);
+    if (errors.gender) {
+      setFieldError("gender", nextForm);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.firstName.trim() || !formData.lastName.trim()) {
-      alert("Please fill in required fields");
+    const formErrors = validateAddChildForParentForm(formData);
+    setErrors(formErrors);
+    if (Object.keys(formErrors).length > 0) {
       return;
     }
     onSave({ ...formData, parent });
@@ -125,10 +166,14 @@ export default function AddChildForParentModal({
                     name="firstName"
                     value={formData.firstName}
                     onChange={handleInputChange}
+                    onBlur={() => handleFieldBlur("firstName")}
                     placeholder="Enter first name"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                     required
                   />
+                  {errors.firstName && (
+                    <p className="mt-1 text-xs text-red-600">{errors.firstName}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
@@ -137,9 +182,13 @@ export default function AddChildForParentModal({
                     name="middleName"
                     value={formData.middleName}
                     onChange={handleInputChange}
+                    onBlur={() => handleFieldBlur("middleName")}
                     placeholder="Enter middle name"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />
+                  {errors.middleName && (
+                    <p className="mt-1 text-xs text-red-600">{errors.middleName}</p>
+                  )}
                 </div>
               </div>
               <div>
@@ -151,10 +200,14 @@ export default function AddChildForParentModal({
                   name="lastName"
                   value={formData.lastName}
                   onChange={handleInputChange}
+                  onBlur={() => handleFieldBlur("lastName")}
                   placeholder="Enter last name"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                   required
                 />
+                {errors.lastName && (
+                  <p className="mt-1 text-xs text-red-600">{errors.lastName}</p>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -166,9 +219,13 @@ export default function AddChildForParentModal({
                     name="dateOfBirth"
                     value={formData.dateOfBirth}
                     onChange={handleInputChange}
+                    onBlur={() => handleFieldBlur("dateOfBirth")}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                     required
                   />
+                  {errors.dateOfBirth && (
+                    <p className="mt-1 text-xs text-red-600">{errors.dateOfBirth}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Age</label>
@@ -210,6 +267,9 @@ export default function AddChildForParentModal({
                     <span className="text-sm text-gray-700">Female</span>
                   </label>
                 </div>
+                {errors.gender && (
+                  <p className="mt-1 text-xs text-red-600">{errors.gender}</p>
+                )}
               </div>
             </div>
           </div>
@@ -227,9 +287,13 @@ export default function AddChildForParentModal({
                     name="enrollmentDate"
                     value={formData.enrollmentDate}
                     onChange={handleInputChange}
+                    onBlur={() => handleFieldBlur("enrollmentDate")}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                     required
                   />
+                  {errors.enrollmentDate && (
+                    <p className="mt-1 text-xs text-red-600">{errors.enrollmentDate}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">School Year</label>
@@ -237,26 +301,17 @@ export default function AddChildForParentModal({
                     name="schoolYear"
                     value={formData.schoolYear}
                     onChange={handleInputChange}
+                    onBlur={() => handleFieldBlur("schoolYear")}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                   >
                     {schoolYears.map((y) => (
                       <option key={y} value={y}>{y}</option>
                     ))}
                   </select>
+                  {errors.schoolYear && (
+                    <p className="mt-1 text-xs text-red-600">{errors.schoolYear}</p>
+                  )}
                 </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select
-                  name="status"
-                  value={formData.status}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                >
-                  {statuses.map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
               </div>
             </div>
           </div>

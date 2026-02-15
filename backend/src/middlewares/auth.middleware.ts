@@ -14,9 +14,18 @@ declare global {
   }
 }
 
-export const authenticateToken = (req: Request, res: Response, next: NextFunction): void => {
-  const authHeader = req.headers.authorization;
-  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+export const authenticateToken = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void => {
+  const headerToken = req.headers.authorization?.startsWith("Bearer ")
+    ? req.headers.authorization.slice(7)
+    : null;
+
+  const cookieToken = req.cookies?.authToken;
+
+  const token = headerToken || cookieToken;
 
   if (!token) {
     res.status(401).json({ message: "Access denied. No token provided." });
@@ -31,7 +40,12 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     }
 
     const decoded = jwt.verify(token, secret) as JwtPayload;
-    req.user = { id: decoded.id, role: decoded.role };
+
+    req.user = {
+      id: decoded.id,
+      role: decoded.role,
+    };
+
     next();
   } catch {
     res.status(401).json({ message: "Invalid or expired token." });

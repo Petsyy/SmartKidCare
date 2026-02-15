@@ -17,7 +17,7 @@ export default function PasswordStrengthFeedback({
   if (!password) {
     return (
       <View className="mt-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2">
-        <Text className="text-xs text-gray-600">
+        <Text className="text-base text-gray-600">
           Use a strong password that follows the rules below.
         </Text>
       </View>
@@ -27,8 +27,8 @@ export default function PasswordStrengthFeedback({
   return (
     <View className="mt-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-3">
       <View className="mb-2 flex-row items-center justify-between">
-        <Text className="text-xs font-medium text-gray-600">Password strength</Text>
-        <Text className="text-xs font-semibold" style={{ color: feedback.color }}>
+        <Text className="text-base font-medium text-gray-600">Password strength</Text>
+        <Text className="text-base font-semibold" style={{ color: feedback.color }}>
           {feedback.label}
         </Text>
       </View>
@@ -47,7 +47,7 @@ export default function PasswordStrengthFeedback({
         {feedback.rules.map((rule) => (
           <Text
             key={rule.id}
-            className={rule.isMet ? "mb-1 text-xs text-emerald-700" : "mb-1 text-xs text-gray-600"}
+            className={rule.isMet ? "mb-1 text-base text-emerald-700" : "mb-1 text-base text-gray-600"}
           >
             {rule.isMet ? "[OK] " : "[ ] "}
             {rule.label}

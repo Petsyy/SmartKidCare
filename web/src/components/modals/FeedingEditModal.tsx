@@ -27,7 +27,9 @@ export default function FeedingEditModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="w-full max-w-md rounded-xl bg-gray-50 shadow-xl ring-1 ring-black/5">
         <div className="border-b border-gray-200 px-6 py-4">
-          <h2 className="text-base font-semibold text-gray-900">Edit Feeding</h2>
+          <h2 className="text-base font-semibold text-gray-900">
+            Edit Feeding
+          </h2>
           <p className="mt-1 text-xs text-gray-500">
             Update feeding status for this child. Changes are saved immediately.
           </p>
@@ -38,7 +40,9 @@ export default function FeedingEditModal({
             <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
               Child
             </p>
-            <p className="mt-1 text-sm font-semibold text-gray-900">{childName}</p>
+            <p className="mt-1 text-sm font-semibold text-gray-900">
+              {childName}
+            </p>
           </div>
 
           <div>
@@ -48,30 +52,16 @@ export default function FeedingEditModal({
             <p className="mt-1 text-xs text-gray-500">
               Choose whether feeding is completed or missed.
             </p>
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setStatus("completed")}
-                className={`flex items-center justify-center rounded-lg border px-3 py-2 text-sm font-medium transition ${
-                  status === "completed"
-                    ? "border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm"
-                    : "border-gray-200 bg-white text-gray-700 hover:border-emerald-400 hover:bg-emerald-50/60"
-                }`}
-              >
-                Completed
-              </button>
-              <button
-                type="button"
-                onClick={() => setStatus("missed")}
-                className={`flex items-center justify-center rounded-lg border px-3 py-2 text-sm font-medium transition ${
-                  status === "missed"
-                    ? "border-rose-500 bg-rose-50 text-rose-700 shadow-sm"
-                    : "border-gray-200 bg-white text-gray-700 hover:border-rose-400 hover:bg-rose-50/60"
-                }`}
-              >
-                Missed
-              </button>
-            </div>
+            <select
+              value={status}
+              onChange={(event) =>
+                setStatus(event.target.value as "completed" | "missed")
+              }
+              className="mt-3 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
+            >
+              <option value="completed">Completed</option>
+              <option value="missed">Missed</option>
+            </select>
           </div>
         </div>
 

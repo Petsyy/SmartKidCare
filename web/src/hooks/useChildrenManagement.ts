@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { type Child } from "../pages/ChildrenManagement";
 import { getChildren, updateChild } from "../api/child.api";
+import { API_BASE } from "../components/config/config.api";
 import {
   showErrorModal,
   showChangeChildStatusModal,
@@ -44,13 +45,16 @@ export function useChildrenManagement() {
 
   const handleSaveChild = async (childData: ChildFormData) => {
     try {
-      const res = await fetch("http://localhost:5000/api/children", {
+      const res = await fetch(`${API_BASE}/children`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("authToken")}`,
         },
-        body: JSON.stringify(childData),
+        body: JSON.stringify({
+          ...childData,
+          status: "Active",
+        }),
       });
 
       const data = await res.json().catch(() => ({}));

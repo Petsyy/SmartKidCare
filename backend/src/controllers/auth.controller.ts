@@ -64,7 +64,19 @@ export const login = async (req: Request, res: Response) => {
     const userResponse = user.toObject();
     delete (userResponse as any).password;
 
-    res.json({ token, user: userResponse });
+    if (user.role === "admin") {
+      res.cookie("authToken", token, {
+        httpOnly: true,
+        secure: false, // true in production
+        sameSite: "lax",
+        maxAge: 24 * 60 * 60 * 1000,
+      });
+
+      return res.json({ user: userResponse });
+    }
+
+    // Parent & Teacher (Mobile)
+    return res.json({ token, user: userResponse });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -85,6 +97,16 @@ export const getMe = async (req: Request, res: Response) => {
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
+};
+
+export const logout = async (_req: Request, res: Response) => {
+  res.clearCookie("authToken", {
+    httpOnly: true,
+    secure: false, // true in production
+    sameSite: "lax",
+  });
+
+  res.json({ message: "Logged out" });
 };
 
 export const getAllUsers = async (req: Request, res: Response) => {

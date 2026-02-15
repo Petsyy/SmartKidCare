@@ -1,5 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  clearSession,
+  getToken,
+  getUser,
+  saveToken,
+  saveUser,
+} from "@/src/utils/authStorage";
 
 type Role = "parent" | "teacher" | null;
 
@@ -18,8 +25,8 @@ type AuthContextType = {
   token: string | null;
   role: Role;
   loading: boolean;
-  login: (user: User, token: string) => void;
-  logout: () => void;
+  login: (user: User, token: string) => Promise<void>;
+  logout: () => Promise<void>;
   refreshUser: (user: User) => Promise<void>;
 };
 
@@ -33,13 +40,40 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const restoreSession = async () => {
       try {
+        let storedToken = await getToken();
+        let storedUser = await getUser<User>();
 
-        const storedToken = await AsyncStorage.getItem("token");
-        const storedUser = await AsyncStorage.getItem("user");
+        // Migrate legacy AsyncStorage session data to SecureStore.
+        if (!storedToken) {
+          const legacyToken = await AsyncStorage.getItem("token");
+          if (legacyToken) {
+            storedToken = legacyToken;
+            await saveToken(legacyToken);
+            await AsyncStorage.removeItem("token");
+          }
+        }
+
+        if (!storedUser) {
+          const legacyUser = await AsyncStorage.getItem("user");
+          if (legacyUser) {
+            try {
+              const parsedLegacyUser = JSON.parse(legacyUser) as User;
+              storedUser = parsedLegacyUser;
+              await saveUser(parsedLegacyUser);
+            } catch {
+              // Drop invalid legacy user payload.
+            } finally {
+              await AsyncStorage.removeItem("user");
+            }
+          }
+        }
 
         if (storedToken && storedUser) {
           setToken(storedToken);
-          setUser(JSON.parse(storedUser));
+          setUser(storedUser);
+        } else {
+          // Clear inconsistent auth leftovers.
+          await clearSession();
         }
       } catch (error) {
         console.log("Failed to restore session", error);
@@ -55,21 +89,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(userData);
     setToken(authToken);
 
-    await AsyncStorage.setItem("token", authToken);
-    await AsyncStorage.setItem("user", JSON.stringify(userData));
+    await Promise.all([saveToken(authToken), saveUser(userData)]);
   };
 
   const logout = async () => {
     setUser(null);
     setToken(null);
 
-    await AsyncStorage.removeItem("token");
-    await AsyncStorage.removeItem("user");
+    await Promise.all([
+      clearSession(),
+      AsyncStorage.removeItem("token"),
+      AsyncStorage.removeItem("user"),
+    ]);
   };
 
   const refreshUser = async (updatedUser: User) => {
     setUser(updatedUser);
-    await AsyncStorage.setItem("user", JSON.stringify(updatedUser));
+    await saveUser(updatedUser);
   };
 
   return (

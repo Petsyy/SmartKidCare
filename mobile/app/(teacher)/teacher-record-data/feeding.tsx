@@ -6,7 +6,6 @@ import {
   ActivityIndicator,
   TextInput,
   Modal,
-  ScrollView,
   Alert,
   StatusBar,
 } from "react-native";
@@ -20,9 +19,8 @@ import {
   Search,
   CheckCircle,
   Lock,
-  Calendar,
 } from "lucide-react-native";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useAuth } from "@/src/hooks/useAuth";
 import { getChildren } from "@/src/api/teacher.api";
 import {
@@ -52,6 +50,7 @@ export default function RecordFeeding() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { token } = useAuth();
+
   const [children, setChildren] = useState<Child[]>([]);
   const [loading, setLoading] = useState(true);
   const [feedingStatus, setFeedingStatus] = useState<Record<string, boolean>>(
@@ -61,15 +60,15 @@ export default function RecordFeeding() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showMenuModal, setShowMenuModal] = useState(false);
   const [isReadOnly, setIsReadOnly] = useState(false);
-  const [submittedAt, setSubmittedAt] = useState<string | null>(null);
   const [blockchainData, setBlockchainData] = useState<OnChainData | null>(
     null,
   );
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const presentChildrenIds = useMemo(() => {
     try {
       return params.presentChildren
-        ? JSON.parse(params.presentChildren as string)
+        ? (JSON.parse(params.presentChildren as string) as string[])
         : [];
     } catch {
       return [];
@@ -84,81 +83,78 @@ export default function RecordFeeding() {
       year: "numeric",
     });
 
-  // Parse blockchain data from attendance submission if available
+  const interactionDisabled = isReadOnly || isSubmitting;
+
   useEffect(() => {
-    if (params.blockchainData) {
-      try {
-        const data = JSON.parse(params.blockchainData as string);
-        setBlockchainData(data);
-      } catch (err) {
-        console.error("Failed to parse blockchain data:", err);
-      }
+    if (!params.blockchainData) return;
+    try {
+      const data = JSON.parse(params.blockchainData as string) as OnChainData;
+      setBlockchainData(data);
+    } catch (err) {
+      console.error("Failed to parse blockchain data:", err);
     }
   }, [params.blockchainData]);
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
       try {
-        if (token) {
-          // Fetch children and today's feeding record
-          const [childrenData, todayRecord] = await Promise.all([
-            getChildren(token),
-            getTodayFeeding(token),
-          ]);
+        const [childrenData, todayRecord] = await Promise.all([
+          getChildren(token),
+          getTodayFeeding(token),
+        ]);
 
-          // Determine which children to show
-          let childrenToShow: Child[] = [];
+        let childrenToShow: Child[] = [];
 
-          if (todayRecord) {
-            // Record already exists - show the children from that record
-            const recordedChildIds = todayRecord.records.map(
-              (r: any) => r.child._id || r.child,
-            );
+        if (todayRecord) {
+          const recordedChildIds = new Set(
+            todayRecord.records.map((r: any) => String(r.child._id || r.child)),
+          );
+          childrenToShow = childrenData.filter((child) =>
+            recordedChildIds.has(child._id),
+          );
+
+          setIsReadOnly(true);
+          setFoodServed(todayRecord.foodServed);
+
+          const existingStatus: Record<string, boolean> = {};
+          todayRecord.records.forEach((record: any) => {
+            existingStatus[String(record.child._id || record.child)] =
+              record.status !== "completed";
+          });
+          setFeedingStatus(existingStatus);
+        } else {
+          if (presentChildrenIds.length > 0) {
+            const presentIds = new Set(presentChildrenIds.map(String));
             childrenToShow = childrenData.filter((child) =>
-              recordedChildIds.includes(child._id),
+              presentIds.has(child._id),
             );
-
-            // Set read-only mode
-            setIsReadOnly(true);
-            setSubmittedAt(todayRecord.createdAt);
-            setFoodServed(todayRecord.foodServed);
-
-            // Populate feeding status from existing record (inverted: false = completed, true = missed)
-            const existingStatus: Record<string, boolean> = {};
-            todayRecord.records.forEach((record: any) => {
-              existingStatus[record.child._id || record.child] =
-                record.status !== "completed";
-            });
-            setFeedingStatus(existingStatus);
           } else {
-            // No record exists - check if we have present children IDs from attendance
-            if (presentChildrenIds.length > 0) {
-              childrenToShow = childrenData.filter((child) =>
-                presentChildrenIds.includes(child._id),
-              );
-            } else {
-              // No present children IDs provided - fetch today's attendance to get them
-              const todayAttendance = await getTodayAttendance(token);
-              if (todayAttendance?.records) {
-                const presentIds = todayAttendance.records
+            const todayAttendance = await getTodayAttendance(token);
+            if (todayAttendance?.records) {
+              const presentIds = new Set(
+                todayAttendance.records
                   .filter((r: any) => r.status === "present")
-                  .map((r: any) => r.child._id || r.child);
-                childrenToShow = childrenData.filter((child) =>
-                  presentIds.includes(child._id),
-                );
-              }
+                  .map((r: any) => String(r.child._id || r.child)),
+              );
+              childrenToShow = childrenData.filter((child) =>
+                presentIds.has(child._id),
+              );
             }
-
-            // Initialize feeding status (inverted: true = missed by default)
-            const initialStatus: Record<string, boolean> = {};
-            childrenToShow.forEach((child) => {
-              initialStatus[child._id] = true;
-            });
-            setFeedingStatus(initialStatus);
           }
 
-          setChildren(childrenToShow);
+          const initialStatus: Record<string, boolean> = {};
+          childrenToShow.forEach((child) => {
+            initialStatus[child._id] = true;
+          });
+          setFeedingStatus(initialStatus);
         }
+
+        setChildren(childrenToShow);
       } catch (error) {
         console.error("Failed to fetch data:", error);
       } finally {
@@ -170,12 +166,14 @@ export default function RecordFeeding() {
   }, [token, presentChildrenIds]);
 
   const filteredChildren = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return children;
+
     return children.filter((child) => {
-      const fullName = `${child.lastName}, ${child.firstName} ${child.middleName || ""}`.toLowerCase();
-      return (
-        fullName.includes(searchQuery.toLowerCase()) ||
-        child.studentId.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      const fullName =
+        `${child.lastName}, ${child.firstName} ${child.middleName || ""}`.toLowerCase();
+      const studentId = String(child.studentId || "").toLowerCase();
+      return fullName.includes(query) || studentId.includes(query);
     });
   }, [children, searchQuery]);
 
@@ -185,29 +183,29 @@ export default function RecordFeeding() {
     return { fed, missed, total: children.length };
   }, [feedingStatus, children.length]);
 
-  const toggleChildFeeding = (childId: string) => {
+  const toggleChildFeeding = useCallback((childId: string) => {
     setFeedingStatus((prev) => ({
       ...prev,
       [childId]: !prev[childId],
     }));
-  };
+  }, []);
 
-  const markAllAsCompleted = () => {
+  const markAllAsCompleted = useCallback(() => {
     const allFed: Record<string, boolean> = {};
     children.forEach((child) => {
       allFed[child._id] = false;
     });
     setFeedingStatus(allFed);
-  };
+  }, [children]);
 
   const handleSubmit = async () => {
-    // If read-only, just navigate back to dashboard
+    if (isSubmitting) return;
+
     if (isReadOnly) {
       router.push("/(teacher)");
       return;
     }
 
-    // Validate authentication
     if (!token) {
       Alert.alert(
         "Authentication Error",
@@ -216,14 +214,13 @@ export default function RecordFeeding() {
       return;
     }
 
-    // Validate required fields
     if (!foodServed) {
       Alert.alert("Validation Error", "Please select food served");
       return;
     }
 
+    setIsSubmitting(true);
     try {
-      // Prepare feeding data (inverted back: false = completed, true = missed)
       const records: FeedingRecord[] = Object.entries(feedingStatus).map(
         ([childId, isMissed]) => ({
           child: childId,
@@ -231,19 +228,16 @@ export default function RecordFeeding() {
         }),
       );
 
-      // Submit to backend
       const response = await submitFeeding(token, {
         date: attendanceDate,
         foodServed,
         records,
       });
 
-      // Store blockchain data if available
       if (response.onChain) {
         setBlockchainData(response.onChain);
       }
 
-      // Show success message
       Alert.alert(
         "Success",
         "Records saved successfully!\n\nBlockchain verification is processing in the background.",
@@ -255,8 +249,221 @@ export default function RecordFeeding() {
         "Failed to submit feeding records. Please try again.",
       );
       console.error("Feeding submission error:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
+  const renderChildCard = useCallback(
+    ({ item: child }: { item: Child }) => (
+      <Pressable
+        onPress={() => !interactionDisabled && toggleChildFeeding(child._id)}
+        disabled={interactionDisabled}
+        className={`mx-6 mb-3 rounded-xl overflow-hidden border-2 ${
+          !feedingStatus[child._id]
+            ? "bg-teal-50 border-teal-400"
+            : "bg-white border-gray-200"
+        } ${interactionDisabled ? "opacity-90" : ""}`}
+        style={{
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          elevation: 3,
+        }}
+      >
+        <View className="flex-row items-center p-4">
+          <View
+            className={`w-12 h-12 rounded-full items-center justify-center mr-4 ${
+              !feedingStatus[child._id] ? "bg-teal-500" : "bg-gray-300"
+            }`}
+          >
+            <Text className="text-white font-bold text-lg">
+              {child.firstName.charAt(0)}
+              {child.lastName.charAt(0)}
+            </Text>
+          </View>
+
+          <View className="flex-1">
+            <View className="flex-row items-center">
+              <Text className="text-lg font-bold text-gray-800">
+                {child.lastName}, {child.firstName}
+                {child.middleName ? ` ${child.middleName}` : ""}
+              </Text>
+            </View>
+            <Text className="text-sm text-gray-600 mt-0.5">
+              {child.studentId || `${child.age} years old • ${child.gender}`}
+            </Text>
+          </View>
+
+          <View>
+            {!feedingStatus[child._id] ? (
+              <View className="items-center">
+                <CheckCircle size={32} color="#14B8A6" />
+                <Text className="text-teal-600 font-bold text-sm mt-1">
+                  Completed
+                </Text>
+              </View>
+            ) : (
+              <View className="items-center">
+                <X size={32} color="#9CA3AF" />
+                <Text className="text-gray-500 font-medium text-sm mt-1">
+                  Missed
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </Pressable>
+    ),
+    [feedingStatus, interactionDisabled, toggleChildFeeding],
+  );
+
+  const headerSection = (
+    <>
+      {isReadOnly && (
+        <View className="px-6 pt-4 pb-5">
+          <View className="bg-teal-50 border-2 border-teal-300 rounded-lg p-4 flex-row items-center">
+            <CheckCircle size={24} color="#14B8A6" />
+            <View className="flex-1 ml-3">
+              <Text className="text-base font-bold text-teal-800">
+                Successfully Submitted
+              </Text>
+              <Text className="text-sm text-teal-700 mt-1">
+                Feeding for today were successfully submitted.
+              </Text>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {blockchainData && blockchainData.successes.length > 0 && (
+        <View className="px-6 pb-5">
+          <View className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
+            <View className="flex-row items-center mb-2">
+              <Lock size={20} color="#3B82F6" />
+              <Text className="text-base font-bold text-blue-800 ml-2">
+                Saved on Blockchain
+              </Text>
+            </View>
+            <Text className="text-sm text-blue-700 mb-2">
+              Records secured with blockchain verification
+            </Text>
+            <View className="bg-blue-100 p-3 rounded-lg">
+              <Text className="text-xs font-semibold text-blue-900 mb-1">
+                Transaction Hash:
+              </Text>
+              <Text
+                className="text-xs text-blue-800 font-mono"
+                numberOfLines={1}
+                ellipsizeMode="middle"
+              >
+                {blockchainData.successes[0].result.txHash}
+              </Text>
+              <Text className="text-xs text-blue-600 mt-2">
+                {blockchainData.successes.length} record
+                {blockchainData.successes.length > 1 ? "s" : ""} verified on
+                blockchain
+              </Text>
+            </View>
+          </View>
+        </View>
+      )}
+
+      <View className="px-6 pb-5 py-4">
+        <View className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <View className="flex-row items-start mb-2">
+            <Check size={16} color="#10B981" className="mt-0.5" />
+            <Text className="ml-2 text-sm text-gray-800 flex-1">
+              <Text className="font-semibold">Completed</Text> - child consumed
+              the lunch meal as observed by the teacher
+            </Text>
+          </View>
+          <View className="flex-row items-start">
+            <X size={16} color="#EF4444" className="mt-0.5" />
+            <Text className="ml-2 text-sm text-gray-800 flex-1">
+              <Text className="font-semibold">Missed</Text> - child did not eat,
+              refused food, or was not present during lunch
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      <View className="px-6 pb-5">
+        <Text className="text-base font-medium text-gray-700 mb-2">
+          Food Served (Menu) <Text className="text-red-500">*</Text>
+        </Text>
+        <Pressable
+          onPress={() => !interactionDisabled && setShowMenuModal(true)}
+          disabled={interactionDisabled}
+          className={`flex-row items-center justify-between bg-white border border-gray-300 rounded-lg px-4 py-3 ${
+            interactionDisabled ? "opacity-75" : ""
+          }`}
+        >
+          <Text
+            className={`text-base ${foodServed ? "text-gray-800" : "text-gray-400"}`}
+          >
+            {foodServed || "Select food menu"}
+          </Text>
+          {!interactionDisabled && <ChevronDown size={20} color="#9CA3AF" />}
+        </Pressable>
+      </View>
+
+      <View className="px-6 pb-5">
+        <View className="flex-row gap-3">
+          <View className="flex-1 bg-teal-50 p-3 rounded-xl shadow-sm border border-teal-100">
+            <View className="flex-row items-center">
+              <CheckCircle size={18} color="#14B8A6" />
+              <Text className="ml-2 text-xs text-teal-700">Completed</Text>
+            </View>
+            <Text className="text-xl font-bold text-teal-700 mt-1">
+              {stats.fed}
+            </Text>
+          </View>
+
+          <View className="flex-1 bg-red-50 p-3 rounded-xl shadow-sm border border-red-100">
+            <View className="flex-row items-center">
+              <X size={18} color="#EF4444" />
+              <Text className="ml-2 text-xs text-red-700">Missed</Text>
+            </View>
+            <Text className="text-xl font-bold text-red-700 mt-1">
+              {stats.missed}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      <View className="px-6 pb-5">
+        <View className="flex-row items-center bg-white border border-gray-200 rounded-lg px-4 py-3">
+          <Search size={20} color="#9CA3AF" />
+          <TextInput
+            className="flex-1 ml-3 text-base text-gray-800"
+            placeholder="Search child name"
+            placeholderTextColor="#9CA3AF"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
+      </View>
+
+      {!isReadOnly && (
+        <View className="px-6 pb-5">
+          <Pressable
+            onPress={markAllAsCompleted}
+            disabled={isSubmitting}
+            className={`flex-row items-center justify-center px-4 py-2.5 rounded-lg ${
+              isSubmitting ? "bg-teal-300" : "bg-teal-500"
+            }`}
+          >
+            <CheckCircle size={16} color="white" />
+            <Text className="ml-2 text-white text-sm font-semibold">
+              Mark All as Completed
+            </Text>
+          </Pressable>
+        </View>
+      )}
+    </>
+  );
 
   if (loading) {
     return (
@@ -302,243 +509,33 @@ export default function RecordFeeding() {
         backgroundColor="transparent"
       />
 
-      {/* HEADER */}
       <View className="bg-teal-600 px-6 pt-12 pb-6">
         <View className="flex-row mb-2">
-          <Pressable
-            onPress={() => router.push("/(teacher)")}
-            className="mr-3 mt-4"
-          >
+          <Pressable onPress={() => router.push("/(teacher)")} className="mr-3 mt-4">
             <ChevronLeft size={30} color="#FFFFFF" />
           </Pressable>
           <View className="flex-1">
             <Text className="text-3xl font-extrabold text-white">
               Record Feeding
             </Text>
-            <Text className="text-base text-teal-100 mt-1">
-              {attendanceDate}
-            </Text>
+            <Text className="text-base text-teal-100 mt-1">{attendanceDate}</Text>
           </View>
         </View>
       </View>
 
-      <ScrollView
-        className="flex-1 bg-gray-50"
+      <FlatList
+        data={filteredChildren}
+        keyExtractor={(item) => item._id}
+        renderItem={renderChildCard}
         keyboardDismissMode="on-drag"
+        removeClippedSubviews
+        initialNumToRender={12}
+        maxToRenderPerBatch={10}
+        windowSize={7}
         contentContainerStyle={{ paddingBottom: 120 }}
-      >
-        {/* Read-Only Banner */}
-        {isReadOnly && (
-          <View className="px-6 pt-4 pb-5">
-            <View className="bg-teal-50 border-2 border-teal-300 rounded-lg p-4 flex-row items-center">
-              <CheckCircle size={24} color="#14B8A6" />
-              <View className="flex-1 ml-3">
-                <Text className="text-base font-bold text-teal-800">
-                  Successfully Submitted
-                </Text>
-                <Text className="text-sm text-teal-700 mt-1">
-                  Feeding for today were successfully submitted.
-                </Text>
-              </View>
-            </View>
-          </View>
-        )}
-
-        {/* Blockchain Confirmation Banner */}
-        {blockchainData && blockchainData.successes.length > 0 && (
-          <View className="px-6 pb-5">
-            <View className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
-              <View className="flex-row items-center mb-2">
-                <Lock size={20} color="#3B82F6" />
-                <Text className="text-base font-bold text-blue-800 ml-2">
-                  Saved on Blockchain
-                </Text>
-              </View>
-              <Text className="text-sm text-blue-700 mb-2">
-                Records secured with blockchain verification
-              </Text>
-              <View className="bg-blue-100 p-3 rounded-lg">
-                <Text className="text-xs font-semibold text-blue-900 mb-1">
-                  Transaction Hash:
-                </Text>
-                <Text
-                  className="text-xs text-blue-800 font-mono"
-                  numberOfLines={1}
-                  ellipsizeMode="middle"
-                >
-                  {blockchainData.successes[0].result.txHash}
-                </Text>
-                <Text className="text-xs text-blue-600 mt-2">
-                  {blockchainData.successes.length} record
-                  {blockchainData.successes.length > 1 ? "s" : ""} verified on
-                  blockchain
-                </Text>
-              </View>
-            </View>
-          </View>
-        )}
-
-        {/* Info Box */}
-        <View className="px-6 pb-5 py-4">
-          <View className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <View className="flex-row items-start mb-2">
-              <Check size={16} color="#10B981" className="mt-0.5" />
-              <Text className="ml-2 text-sm text-gray-800 flex-1">
-                <Text className="font-semibold">Completed</Text> - child
-                consumed the lunch meal as observed by the teacher
-              </Text>
-            </View>
-            <View className="flex-row items-start">
-              <X size={16} color="#EF4444" className="mt-0.5" />
-              <Text className="ml-2 text-sm text-gray-800 flex-1">
-                <Text className="font-semibold">Missed</Text> - child did not
-                eat, refused food, or was not present during lunch
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Food Served */}
-        <View className="px-6 pb-5">
-          <Text className="text-base font-medium text-gray-700 mb-2">
-            Food Served (Menu) <Text className="text-red-500">*</Text>
-          </Text>
-          <Pressable
-            onPress={() => !isReadOnly && setShowMenuModal(true)}
-            disabled={isReadOnly}
-            className={`flex-row items-center justify-between bg-white border border-gray-300 rounded-lg px-4 py-3 ${isReadOnly ? "opacity-75" : ""}`}
-          >
-            <Text
-              className={`text-base ${foodServed ? "text-gray-800" : "text-gray-400"}`}
-            >
-              {foodServed || "Select food menu"}
-            </Text>
-            {!isReadOnly && <ChevronDown size={20} color="#9CA3AF" />}
-          </Pressable>
-        </View>
-
-        {/* Stats */}
-        <View className="px-6 pb-5">
-          <View className="flex-row gap-3">
-            <View className="flex-1 bg-teal-50 p-3 rounded-xl shadow-sm border border-teal-100">
-              <View className="flex-row items-center">
-                <CheckCircle size={18} color="#14B8A6" />
-                <Text className="ml-2 text-xs text-teal-700">Completed</Text>
-              </View>
-              <Text className="text-xl font-bold text-teal-700 mt-1">
-                {stats.fed}
-              </Text>
-            </View>
-
-            <View className="flex-1 bg-red-50 p-3 rounded-xl shadow-sm border border-red-100">
-              <View className="flex-row items-center">
-                <X size={18} color="#EF4444" />
-                <Text className="ml-2 text-xs text-red-700">Missed</Text>
-              </View>
-              <Text className="text-xl font-bold text-red-700 mt-1">
-                {stats.missed}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Search */}
-        <View className="px-6 pb-5">
-          <View className="flex-row items-center bg-white border border-gray-200 rounded-lg px-4 py-3">
-            <Search size={20} color="#9CA3AF" />
-            <TextInput
-              className="flex-1 ml-3 text-base text-gray-800"
-              placeholder="Search child name"
-              placeholderTextColor="#9CA3AF"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-          </View>
-        </View>
-
-        {/* Info Text & Mark All Button */}
-        {!isReadOnly && (
-          <View className="px-6 pb-5">
-            <Pressable
-              onPress={markAllAsCompleted}
-              className="flex-row items-center justify-center bg-teal-500 px-4 py-2.5 rounded-lg"
-            >
-              <CheckCircle size={16} color="white" />
-              <Text className="ml-2 text-white text-sm font-semibold">
-                Mark All as Completed
-              </Text>
-            </Pressable>
-          </View>
-        )}
-
-        {/* Children List */}
-        <View className="px-6 pb-4">
-          {filteredChildren.map((child) => (
-            <Pressable
-              key={child._id}
-              onPress={() => !isReadOnly && toggleChildFeeding(child._id)}
-              disabled={isReadOnly}
-              className={`mb-3 rounded-xl overflow-hidden border-2 ${
-                !feedingStatus[child._id]
-                  ? "bg-teal-50 border-teal-400"
-                  : "bg-white border-gray-200"
-              } ${isReadOnly ? "opacity-90" : ""}`}
-              style={{
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 4,
-                elevation: 3,
-              }}
-            >
-              <View className="flex-row items-center p-4">
-                {/* Avatar */}
-                <View
-                  className={`w-12 h-12 rounded-full items-center justify-center mr-4 ${!feedingStatus[child._id] ? "bg-teal-500" : "bg-gray-300"}`}
-                >
-                  <Text className="text-white font-bold text-lg">
-                    {child.firstName.charAt(0)}
-                    {child.lastName.charAt(0)}
-                  </Text>
-                </View>
-
-                {/* Child Info */}
-                <View className="flex-1">
-                  <View className="flex-row items-center">
-                    <Text className="text-lg font-bold text-gray-800">
-                      {child.lastName}, {child.firstName}{child.middleName ? ` ${child.middleName}` : ""}
-                    </Text>
-                  </View>
-                  <Text className="text-sm text-gray-600 mt-0.5">
-                    {child.studentId ||
-                      `${child.age} years old • ${child.gender}`}
-                  </Text>
-                </View>
-
-                {/* Status */}
-                <View>
-                  {!feedingStatus[child._id] ? (
-                    <View className="items-center">
-                      <CheckCircle size={32} color="#14B8A6" />
-                      <Text className="text-teal-600 font-bold text-sm mt-1">
-                        Completed
-                      </Text>
-                    </View>
-                  ) : (
-                    <View className="items-center">
-                      <X size={32} color="#9CA3AF" />
-                      <Text className="text-gray-500 font-medium text-sm mt-1">
-                        Missed
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-            </Pressable>
-          ))}
-
-          {/* No Search Results */}
-          {searchQuery && filteredChildren.length === 0 && (
+        ListHeaderComponent={headerSection}
+        ListEmptyComponent={
+          searchQuery ? (
             <View className="items-center justify-center py-8">
               <Search size={48} color="#D1D5DB" />
               <Text className="text-gray-700 font-semibold text-lg mt-4">
@@ -548,23 +545,24 @@ export default function RecordFeeding() {
                 Try searching with a different name
               </Text>
             </View>
-          )}
-
-          {/* Bottom Info */}
-          <View className="flex-row items-start bg-teal-50 border border-teal-200 rounded-lg p-3 mt-2">
-            <CheckCircle size={16} color="#14B8A6" className="mt-0.5" />
-            <Text className="ml-2 text-sm text-gray-700 flex-1">
-              Feeding records are teacher-observed, teacher-confirmed, and
-              securely stored
-            </Text>
+          ) : null
+        }
+        ListFooterComponent={
+          <View className="px-6 pb-4">
+            <View className="flex-row items-start bg-teal-50 border border-teal-200 rounded-lg p-3 mt-2">
+              <CheckCircle size={16} color="#14B8A6" className="mt-0.5" />
+              <Text className="ml-2 text-sm text-gray-700 flex-1">
+                Feeding records are teacher-observed, teacher-confirmed, and
+                securely stored
+              </Text>
+            </View>
           </View>
-        </View>
-      </ScrollView>
+        }
+      />
 
-      {/* Food Menu Modal */}
       <Modal
         visible={showMenuModal}
-        transparent={true}
+        transparent
         animationType="slide"
         onRequestClose={() => setShowMenuModal(false)}
       >
@@ -585,7 +583,7 @@ export default function RecordFeeding() {
             <View className="max-h-96">
               <FlatList
                 data={foodMenuOptions}
-                keyExtractor={(item, index) => index.toString()}
+                keyExtractor={(item, index) => `${item}-${index}`}
                 renderItem={({ item: food }) => (
                   <Pressable
                     onPress={() => {
@@ -603,26 +601,32 @@ export default function RecordFeeding() {
         </View>
       </Modal>
 
-      {/* Submit Button */}
       <View className="absolute bottom-0 left-0 right-0 px-6 py-4 bg-white border-t border-gray-200">
         <Pressable
           onPress={handleSubmit}
+          disabled={isSubmitting}
           android_ripple={{ color: "transparent" }}
-          className="bg-teal-600 py-4 rounded-xl items-center justify-center"
-          style={({ pressed }) => [
-            {
-              shadowColor: "#14B8A6",
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.3,
-              shadowRadius: 8,
-              elevation: 5,
-              opacity: 1,
-            },
-          ]}
+          className={`py-4 rounded-xl items-center justify-center ${
+            isSubmitting ? "bg-teal-400" : "bg-teal-600"
+          }`}
+          style={{
+            shadowColor: "#14B8A6",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 8,
+            elevation: 5,
+          }}
         >
-          <Text className="text-white text-lg font-bold">
-            {isReadOnly ? "Back to Dashboard" : "Save Feeding"}
-          </Text>
+          <View className="flex-row items-center">
+            {isSubmitting && <ActivityIndicator color="#FFFFFF" size="small" />}
+            <Text className={`text-white text-lg font-bold ${isSubmitting ? "ml-2" : ""}`}>
+              {isReadOnly
+                ? "Back to Dashboard"
+                : isSubmitting
+                  ? "Saving..."
+                  : "Save Feeding"}
+            </Text>
+          </View>
         </Pressable>
       </View>
     </SafeAreaView>

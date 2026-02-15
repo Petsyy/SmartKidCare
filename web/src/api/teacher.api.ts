@@ -25,6 +25,10 @@ export interface CreateTeacherResponse {
     email: string;
     tempPassword: string;
   };
+  emailDelivery?: {
+    sent: boolean;
+    to: string;
+  };
 }
 
 export interface ListTeachersParams {
@@ -38,9 +42,9 @@ export const createTeacher = async (data: TeacherData): Promise<CreateTeacherRes
   try {
     const response = await fetch(`${API_BASE}/admin/teachers`, {
       method: 'POST',
+      credentials: "include",
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
       },
       body: JSON.stringify(data),
     });
@@ -74,9 +78,9 @@ export const getTeachers = async (params?: ListTeachersParams): Promise<Teacher[
 
     const response = await fetch(url, {
       method: 'GET',
+      credentials: "include",
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
       },
     });
 
@@ -97,9 +101,9 @@ export const getTeacher = async (teacherId: string): Promise<Teacher> => {
   try {
     const response = await fetch(`${API_BASE}/admin/teachers/${teacherId}`, {
       method: 'GET',
+      credentials: "include",
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
       },
     });
 
@@ -120,9 +124,9 @@ export const updateTeacher = async (teacherId: string, data: Partial<TeacherData
   try {
     const response = await fetch(`${API_BASE}/admin/teachers/${teacherId}`, {
       method: 'PATCH',
+      credentials: "include",
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
       },
       body: JSON.stringify(data),
     });
@@ -144,9 +148,9 @@ export const deleteTeacher = async (teacherId: string): Promise<void> => {
   try {
     const response = await fetch(`${API_BASE}/admin/teachers/${teacherId}`, {
       method: 'DELETE',
+      credentials: "include",
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
       },
     });
 
@@ -167,9 +171,9 @@ export const updateTeacherStatus = async (
   try {
     const response = await fetch(`${API_BASE}/admin/teachers/${teacherId}/status`, {
       method: 'PATCH',
+      credentials: "include",
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
       },
       body: JSON.stringify({ verificationStatus }),
     });

@@ -4,12 +4,20 @@ import Feeding from "../models/Feeding";
 import {
   storeDailyRecord,
   getWalletBalance,
-  getGasComparison,
 } from "../services/blockchain.service";
 
 export const toDateKey = (date: Date) => date.toISOString().split("T")[0];
 
-export const tryStoreDailyOnChain = async (teacherId: string, date: Date) => {
+type SyncOptions = {
+  markRecordsAsVerified?: boolean;
+};
+
+export const tryStoreDailyOnChain = async (
+  teacherId: string,
+  date: Date,
+  options: SyncOptions = {},
+) => {
+  const { markRecordsAsVerified = true } = options;
   try {
     const [attendance, feeding] = await Promise.all([
       Attendance.findOne({ teacher: teacherId, date }),
@@ -17,6 +25,15 @@ export const tryStoreDailyOnChain = async (teacherId: string, date: Date) => {
     ]);
 
     if (!attendance || !feeding) {
+      const missingParts = [
+        !attendance ? "attendance" : null,
+        !feeding ? "feeding" : null,
+      ]
+        .filter(Boolean)
+        .join(" and ");
+      console.log(
+        `[Blockchain sync skipped] Missing ${missingParts} record for teacher ${teacherId} on ${toDateKey(date)}`,
+      );
       return null;
     }
 
@@ -44,7 +61,13 @@ export const tryStoreDailyOnChain = async (teacherId: string, date: Date) => {
       feedingByChild.set(String(record.child), { status: record.status });
     });
 
-    const successes: Array<{ childId: string; result: unknown }> = [];
+    const successes: Array<{
+      childId: string;
+      attendanceStatus: string;
+      feedingStatus: string;
+      feedingFoodServed: string;
+      result: unknown;
+    }> = [];
     const failures: Array<{ childId: string; error: string }> = [];
 
     for (const [childId, attendanceRecord] of attendanceByChild.entries()) {
@@ -79,7 +102,13 @@ export const tryStoreDailyOnChain = async (teacherId: string, date: Date) => {
           attendanceData,
           feedingData,
         );
-        successes.push({ childId, result });
+        successes.push({
+          childId,
+          attendanceStatus: attendanceRecord.status,
+          feedingStatus: feedingData.status,
+          feedingFoodServed: feedingData.foodServed,
+          result,
+        });
       } catch (error: any) {
         failures.push({
           childId,
@@ -88,14 +117,45 @@ export const tryStoreDailyOnChain = async (teacherId: string, date: Date) => {
       }
     }
 
-    // Mark successful records as blockchain verified
-    if (successes.length > 0 && attendance && feeding) {
-      const verifiedChildIds = new Set(successes.map((s) => s.childId));
+    // Optionally update DB verification state after successful on-chain writes.
+    if (markRecordsAsVerified && successes.length > 0 && attendance && feeding) {
+      const latestAttendance = await Attendance.findById(attendance._id);
+      const latestFeeding = await Feeding.findById(feeding._id);
 
-      attendance.records.forEach((record: any) => {
-        if (verifiedChildIds.has(String(record.child))) {
+      if (!latestAttendance || !latestFeeding) {
+        return { successes, failures };
+      }
+
+      const latestAttendanceByChild = new Map<string, string>();
+      latestAttendance.records.forEach((record: any) => {
+        latestAttendanceByChild.set(String(record.child), record.status);
+      });
+
+      const latestFeedingByChild = new Map<string, string>();
+      latestFeeding.records.forEach((record: any) => {
+        latestFeedingByChild.set(String(record.child), record.status);
+      });
+
+      const eligibleChildIds = new Set<string>();
+      successes.forEach((success) => {
+        const currentAttendanceStatus = latestAttendanceByChild.get(
+          success.childId,
+        );
+        const currentFeedingStatus = latestFeedingByChild.get(success.childId);
+        const currentFoodServed = String(latestFeeding.foodServed || "");
+
+        if (
+          currentAttendanceStatus === success.attendanceStatus &&
+          currentFeedingStatus === success.feedingStatus &&
+          currentFoodServed === String(success.feedingFoodServed || "")
+        ) {
+          eligibleChildIds.add(success.childId);
+        }
+      });
+
+      latestAttendance.records.forEach((record: any) => {
+        if (eligibleChildIds.has(String(record.child))) {
           record.blockchainVerified = true;
-          // Always use string ObjectId for hash
           const childId =
             record.child && record.child._id ? record.child._id : record.child;
           const dataToHash = JSON.stringify({
@@ -109,10 +169,9 @@ export const tryStoreDailyOnChain = async (teacherId: string, date: Date) => {
         }
       });
 
-      feeding.records.forEach((record: any) => {
-        if (verifiedChildIds.has(String(record.child))) {
+      latestFeeding.records.forEach((record: any) => {
+        if (eligibleChildIds.has(String(record.child))) {
           record.blockchainVerified = true;
-          // Always use string ObjectId for hash
           const childId =
             record.child && record.child._id ? record.child._id : record.child;
           const dataToHash = JSON.stringify({
@@ -126,33 +185,11 @@ export const tryStoreDailyOnChain = async (teacherId: string, date: Date) => {
         }
       });
 
-      // Ensure nested array changes are persisted
-      attendance.markModified("records");
-      feeding.markModified("records");
+      latestAttendance.markModified("records");
+      latestFeeding.markModified("records");
 
-      await Promise.all([attendance.save(), feeding.save()]);
+      await Promise.all([latestAttendance.save(), latestFeeding.save()]);
     }
-
-    // Show balance comparison
-    try {
-      const comparison = await getGasComparison();
-      console.log("\n[Balance Comparison]");
-      console.log(
-        "         Current Balance:",
-        comparison.currentBalance,
-        "ETH",
-      );
-      console.log("Session Spent:", comparison.totalGasSpent, "ETH");
-      console.log(
-        "Total Transactions:",
-        comparison.totalTransactions,
-        IDBTransaction,
-      );
-    } catch (error) {
-      console.error("Failed to fetch balance comparison");
-    }
-
-    console.log("");
 
     return { successes, failures };
   } catch (error) {

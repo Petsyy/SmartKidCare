@@ -4,6 +4,11 @@ import bcrypt from "bcryptjs";
 import User from "../models/Users";
 import { generateEmployeeId } from "../utils/generateEmployeeId";
 import Child from "../models/Child";
+import {
+  isValidEmailAddress,
+  mapCredentialDeliveryError,
+  sendTeacherCredentialsEmail,
+} from "../services/teacherCredentials.service";
 
 export const createTeacher = async (req: Request, res: Response) => {
   try {
@@ -17,7 +22,12 @@ export const createTeacher = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    const existing = await User.findOne({ email });
+    const normalizedEmail = String(email).toLowerCase().trim();
+    if (!isValidEmailAddress(normalizedEmail)) {
+      return res.status(400).json({ message: "Please provide a valid email." });
+    }
+
+    const existing = await User.findOne({ email: normalizedEmail });
     if (existing) {
       return res.status(409).json({ message: "Email already in use" });
     }
@@ -32,17 +42,58 @@ export const createTeacher = async (req: Request, res: Response) => {
       firstName,
       middleName,
       lastName,
-      email,
+      email: normalizedEmail,
       phone,
       password: hashedPassword,
       role: "teacher",
       mustChangePassword: true,
+      passwordResetOtpHash: undefined,
+      passwordResetOtpExpiresAt: undefined,
     });
-    res.status(201).json({
-      teacher,
-      credentials: {
-        email,
+
+    try {
+      await sendTeacherCredentialsEmail({
+        to: normalizedEmail,
+        firstName: teacher.firstName,
+        employeeId: teacher.employeeId || employeeId,
         tempPassword,
+      });
+    } catch (error: any) {
+      let rollbackSucceeded = false;
+      try {
+        await User.findByIdAndDelete(teacher._id);
+        rollbackSucceeded = true;
+      } catch (rollbackError: any) {
+        console.error("Teacher rollback after email failure failed:", {
+          teacherId: teacher._id,
+          message: rollbackError?.message,
+        });
+      }
+
+      const deliveryErrorMessage = mapCredentialDeliveryError(error);
+      if (rollbackSucceeded) {
+        return res.status(502).json({
+          message: `${deliveryErrorMessage} Teacher account was not saved.`,
+        });
+      }
+
+      return res.status(502).json({
+        message: `${deliveryErrorMessage} Teacher account exists, but credentials were not delivered.`,
+      });
+    }
+
+    const teacherResponse = teacher.toObject();
+    delete (teacherResponse as any).password;
+
+    res.status(201).json({
+      teacher: teacherResponse,
+      credentials: {
+        email: normalizedEmail,
+        tempPassword,
+      },
+      emailDelivery: {
+        sent: true,
+        to: normalizedEmail,
       },
     });
   } catch (error: any) {
@@ -110,6 +161,9 @@ export const resetPassword = async (req: Request, res: Response) => {
     const tempPassword = Math.random().toString(36).slice(-8);
     user.password = await bcrypt.hash(tempPassword, 10);
     user.mustChangePassword = true;
+    user.passwordResetOtpHash = undefined;
+    user.passwordResetOtpExpiresAt = undefined;
+    user.passwordResetOtpPurpose = undefined;
 
     await user.save();
 
