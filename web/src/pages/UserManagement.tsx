@@ -1,13 +1,34 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { Plus, Eye, Pencil, KeyRound, Power, Users, MoreVertical, Search, Baby } from "lucide-react";
+import {
+  Plus,
+  Eye,
+  Pencil,
+  KeyRound,
+  Power,
+  Users,
+  MoreVertical,
+  Search,
+  Baby,
+} from "lucide-react";
 import { getUsers, type User } from "../api/authentication.api";
 import AddTeacherModal from "../components/modals/AddTeacherModal";
 import AddChildForParentModal from "../components/modals/AddChildForParentModal";
 import Layout from "../components/layout/Layout";
-import { handleViewUser, showErrorModal, showResetPasswordModal, showToggleUserStatusModal, showToggleUserStatusSuccessModal, showLinkedChildrenModal } from "../utils/sweetalert.modal";
-import { getParentChildren, toggleUserStatus, resetUserPassword } from "../api/admin.api";
+import {
+  handleViewUser,
+  showErrorModal,
+  showResetPasswordModal,
+  showToggleUserStatusModal,
+  showToggleUserStatusSuccessModal,
+  showLinkedChildrenModal,
+} from "../utils/sweetalert.modal";
+import {
+  getParentChildren,
+  toggleUserStatus,
+  resetUserPassword,
+} from "../api/admin.api";
 import { createChild } from "../api/child.api";
 import EditUserModal from "../components/modals/EditUserModal";
 
@@ -32,8 +53,11 @@ export default function UserManagement() {
   const [menuUser, setMenuUser] = useState<User | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddChildModal, setShowAddChildModal] = useState(false);
-  const [selectedParentForChild, setSelectedParentForChild] = useState<User | null>(null);
-  const [parentChildren, setParentChildren] = useState<Record<string, Child[]>>({});
+  const [selectedParentForChild, setSelectedParentForChild] =
+    useState<User | null>(null);
+  const [parentChildren, setParentChildren] = useState<Record<string, Child[]>>(
+    {},
+  );
 
   const openMenu = (user: User, buttonEl: HTMLButtonElement) => {
     setMenuUser(user);
@@ -69,11 +93,13 @@ export default function UserManagement() {
     }
   };
 
-
   const handleToggleStatus = async (user: User) => {
     const userName = `${user.firstName} ${user.middleName} ${user.lastName}`;
     const isActivating = user.isActive === false;
-    const confirmed = await showToggleUserStatusModal({ userName, isActivating });
+    const confirmed = await showToggleUserStatusModal({
+      userName,
+      isActivating,
+    });
     if (!confirmed) return;
     try {
       await toggleUserStatus(user._id);
@@ -89,17 +115,25 @@ export default function UserManagement() {
     setShowAddChildModal(true);
   };
 
-  const handleSaveChildForParent = async (data: { parent: { firstName: string; middleName?: string; lastName: string; email: string } } & {
-    firstName: string;
-    middleName: string;
-    lastName: string;
-    dateOfBirth: string;
-    age: string;
-    gender: string;
-    enrollmentDate: string;
-    schoolYear: string;
-    status: string;
-  }) => {
+  const handleSaveChildForParent = async (
+    data: {
+      parent: {
+        firstName: string;
+        middleName?: string;
+        lastName: string;
+        email: string;
+      };
+    } & {
+      firstName: string;
+      middleName: string;
+      lastName: string;
+      dateOfBirth: string;
+      age: string;
+      gender: string;
+      enrollmentDate: string;
+      schoolYear: string;
+    },
+  ) => {
     try {
       const p = data.parent;
       await createChild({
@@ -111,7 +145,7 @@ export default function UserManagement() {
         gender: data.gender,
         enrollmentDate: data.enrollmentDate,
         schoolYear: data.schoolYear,
-        status: data.status,
+        status: "Active",
         parentFirstName: p.firstName,
         parentLastName: p.lastName,
         parentMiddleName: p.middleName || undefined,
@@ -145,7 +179,7 @@ export default function UserManagement() {
     try {
       const data = await getUsers({ role: activeTab });
       setUsers(data);
-      
+
       // Fetch children for each parent if activeTab is parent
       if (activeTab === "parent" && data.length > 0) {
         const childrenData: Record<string, Child[]> = {};
@@ -157,7 +191,7 @@ export default function UserManagement() {
             } catch (err) {
               childrenData[parent._id] = [];
             }
-          })
+          }),
         );
         setParentChildren(childrenData);
       }
@@ -171,11 +205,17 @@ export default function UserManagement() {
   const filteredUsers = users.filter((user) => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase().trim();
-    const fullName = `${user.firstName} ${user.middleName} ${user.lastName}`.toLowerCase();
+    const fullName =
+      `${user.firstName} ${user.middleName} ${user.lastName}`.toLowerCase();
     const email = user.email.toLowerCase();
     const employeeId = (user.employeeId || "").toLowerCase();
     const phone = (user.phone || "").toLowerCase();
-    return fullName.includes(q) || email.includes(q) || employeeId.includes(q) || phone.includes(q);
+    return (
+      fullName.includes(q) ||
+      email.includes(q) ||
+      employeeId.includes(q) ||
+      phone.includes(q)
+    );
   });
 
   return (
@@ -199,20 +239,22 @@ export default function UserManagement() {
         <div className="flex gap-2">
           <button
             onClick={() => setActiveTab("teacher")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${activeTab === "teacher"
-              ? "bg-teal-50 text-teal-700 border border-teal-200"
-              : "text-gray-600 hover:bg-gray-100"
-              }`}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+              activeTab === "teacher"
+                ? "bg-teal-50 text-teal-700 border border-teal-200"
+                : "text-gray-600 hover:bg-gray-100"
+            }`}
           >
             Teacher Accounts
           </button>
 
           <button
             onClick={() => setActiveTab("parent")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${activeTab === "parent"
-              ? "bg-teal-50 text-teal-700 border border-teal-200"
-              : "text-gray-600 hover:bg-gray-100"
-              }`}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+              activeTab === "parent"
+                ? "bg-teal-50 text-teal-700 border border-teal-200"
+                : "text-gray-600 hover:bg-gray-100"
+            }`}
           >
             Parent Accounts
           </button>
@@ -313,21 +355,25 @@ export default function UserManagement() {
                       colSpan={6}
                       className="px-6 py-12 text-center text-gray-500"
                     >
-                      No {activeTab === "teacher" ? "teachers" : "parents"} found.
+                      No {activeTab === "teacher" ? "teachers" : "parents"}{" "}
+                      found.
                     </td>
                   </tr>
                 )}
 
-                {!isLoading && users.length > 0 && filteredUsers.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={6}
-                      className="px-6 py-12 text-center text-gray-500"
-                    >
-                      No {activeTab === "teacher" ? "teachers" : "parents"} match your search.
-                    </td>
-                  </tr>
-                )}
+                {!isLoading &&
+                  users.length > 0 &&
+                  filteredUsers.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className="px-6 py-12 text-center text-gray-500"
+                      >
+                        No {activeTab === "teacher" ? "teachers" : "parents"}{" "}
+                        match your search.
+                      </td>
+                    </tr>
+                  )}
 
                 {filteredUsers.map((user) => (
                   <tr key={user._id} className="hover:bg-gray-50">
@@ -354,12 +400,17 @@ export default function UserManagement() {
                     )}
                     {activeTab === "parent" && (
                       <td className="px-6 py-4 text-sm text-gray-700">
-                        {parentChildren[user._id] && parentChildren[user._id].length > 0 ? (
+                        {parentChildren[user._id] &&
+                        parentChildren[user._id].length > 0 ? (
                           <div className="space-y-1">
                             {parentChildren[user._id].map((child) => (
                               <div key={child._id} className="flex flex-col">
                                 <span className="font-medium">
-                                  {child.firstName} {child.middleName ? child.middleName + " " : ""}{child.lastName}
+                                  {child.firstName}{" "}
+                                  {child.middleName
+                                    ? child.middleName + " "
+                                    : ""}
+                                  {child.lastName}
                                 </span>
                                 <span className="text-xs text-gray-500">
                                   ID: {child.studentId}
@@ -368,15 +419,20 @@ export default function UserManagement() {
                             ))}
                           </div>
                         ) : (
-                          <span className="text-gray-400">No linked children</span>
+                          <span className="text-gray-400">
+                            No linked children
+                          </span>
                         )}
                       </td>
                     )}
                     <td className="px-6 py-4 text-sm">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${user.isActive !== false
-                        ? "bg-green-100 text-green-800"
-                        : "bg-red-100 text-red-800"
-                        }`}>
+                      <span
+                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                          user.isActive !== false
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
                         {user.isActive !== false ? "Active" : "Inactive"}
                       </span>
                     </td>
@@ -384,30 +440,42 @@ export default function UserManagement() {
                       <div className="flex flex-wrap items-center gap-1.5">
                         <button
                           onClick={() => handleViewUser(user)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-teal-700 bg-teal-50 rounded-md hover:bg-teal-100 transition"
+                          className="group inline-flex items-center gap-1.5 rounded-lg border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-teal-500/30"
                           title="View"
                         >
-                          <Eye size={14} />
+                          <Eye
+                            size={14}
+                            className="transition-transform duration-200 group-hover:scale-110"
+                          />
                           View
                         </button>
                         <button
                           onClick={() => handleEditUser(user)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-md hover:bg-blue-100 transition"
+                          className="group inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                           title="Edit"
                         >
-                          <Pencil size={14} />
+                          <Pencil
+                            size={14}
+                            className="transition-transform duration-200 group-hover:-rotate-6"
+                          />
                           Edit
                         </button>
                         {activeTab === "parent" && (
                           <button
                             onClick={() => {
-                              const parentName = `${user.firstName} ${user.middleName || ''} ${user.lastName}`.replace(/\s+/g, ' ').trim();
+                              const parentName =
+                                `${user.firstName} ${user.middleName || ""} ${user.lastName}`
+                                  .replace(/\s+/g, " ")
+                                  .trim();
                               handleViewChildren(user._id, parentName);
                             }}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 rounded-md hover:bg-indigo-100 transition"
+                            className="group inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-indigo-300 hover:bg-indigo-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
                             title="View children"
                           >
-                            <Users size={14} />
+                            <Users
+                              size={14}
+                              className="transition-transform duration-200 group-hover:scale-110"
+                            />
                             Children
                           </button>
                         )}
@@ -421,7 +489,7 @@ export default function UserManagement() {
                                 openMenu(user, e.currentTarget);
                               }
                             }}
-                            className="inline-flex items-center justify-center px-2.5 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition"
+                            className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-semibold text-gray-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-gray-300 hover:bg-gray-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-gray-400/30"
                             title="More actions"
                           >
                             <MoreVertical size={14} />
@@ -429,7 +497,6 @@ export default function UserManagement() {
                         </div>
                       </div>
                     </td>
-
                   </tr>
                 ))}
               </tbody>
@@ -447,7 +514,9 @@ export default function UserManagement() {
         />
       )}
 
-      {openMenuUserId && menuUser && menuAnchorRect &&
+      {openMenuUserId &&
+        menuUser &&
+        menuAnchorRect &&
         createPortal(
           <div
             className="fixed py-1 w-44 bg-white rounded-lg shadow-lg border border-gray-200 z-50"
@@ -490,7 +559,7 @@ export default function UserManagement() {
               {menuUser.isActive === false ? "Activate" : "Deactivate"}
             </button>
           </div>,
-          document.body
+          document.body,
         )}
 
       {/* Add Teacher Modal */}
@@ -521,4 +590,3 @@ export default function UserManagement() {
     </Layout>
   );
 }
-

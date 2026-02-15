@@ -44,10 +44,6 @@ type AttendanceRow = {
   blockchainVerified: boolean;
 };
 
-const authHeaders = () => ({
-  Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-});
-
 const formatChildName = (child?: ChildRef | null) => {
   if (!child) return "Unknown";
   const middleName = child.middleName ?? child.middle ?? child.middle_name;
@@ -57,7 +53,7 @@ const formatChildName = (child?: ChildRef | null) => {
 
 const formatDate = (value: string) =>
   new Date(value).toLocaleDateString("en-US", {
-    month: "short",
+    month: "numeric",
     day: "2-digit",
     year: "numeric",
   });
@@ -65,7 +61,7 @@ const formatDate = (value: string) =>
 const formatDateTime = (value?: string) =>
   value
     ? new Date(value).toLocaleString("en-US", {
-        month: "short",
+        month: "numeric",
         day: "2-digit",
         year: "numeric",
         hour: "2-digit",
@@ -88,7 +84,7 @@ export default function AttendanceTracking() {
     row: AttendanceRow | null;
     data?: any | null;
   }>({ open: false, row: null, data: null });
-  const [, setVerifyLoading] = useState(false);
+  const [verifyLoading, setVerifyLoading] = useState(false);
 
   const flattenAttendance = useCallback(
     (data: AttendanceApiResponse[]): AttendanceRow[] =>
@@ -118,9 +114,9 @@ export default function AttendanceTracking() {
     try {
       const url = `${API_BASE}/records/attendance`;
       const response = await fetch(url, {
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          ...authHeaders(),
         },
       });
 
@@ -228,7 +224,7 @@ export default function AttendanceTracking() {
                     Submitted At
                   </th>
                   <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    Actions / Integrity
+                    Actions / Verification
                   </th>
                 </tr>
               </thead>
@@ -278,7 +274,6 @@ export default function AttendanceTracking() {
                       </td>
                       <td className="px-6 py-4">
                         <AttendanceRowActions
-                          blockchainVerified={row.blockchainVerified}
                           onEdit={() => setEditModal({ open: true, row })}
                           onViewVerification={async () => {
                             setVerifyModal({ open: true, row, data: null }); // open instantly
@@ -289,9 +284,9 @@ export default function AttendanceTracking() {
                               const resp = await fetch(
                                 `${API_BASE}/records/attendance/verify/${row.id}`,
                                 {
+                                  credentials: "include",
                                   headers: {
                                     "Content-Type": "application/json",
-                                    ...authHeaders(),
                                   },
                                 },
                               );
@@ -339,9 +334,9 @@ export default function AttendanceTracking() {
                               `${API_BASE}/records/attendance/${editModal.row.id}`,
                               {
                                 method: "PATCH",
+                                credentials: "include",
                                 headers: {
                                   "Content-Type": "application/json",
-                                  ...authHeaders(),
                                 },
                                 body: JSON.stringify({ status }),
                               },
@@ -375,6 +370,7 @@ export default function AttendanceTracking() {
                         onClose={() =>
                           setVerifyModal({ open: false, row: null, data: null })
                         }
+                        loading={verifyLoading}
                         data={verifyModal.data}
                       />
                     </tr>
@@ -405,50 +401,35 @@ function AttendanceStatusBadge({ status }: { status: "present" | "absent" }) {
 }
 
 type AttendanceRowActionsProps = {
-  blockchainVerified: boolean;
   onEdit: () => void;
   onViewVerification?: () => void;
 };
 
 function AttendanceRowActions({
-  blockchainVerified,
   onEdit,
   onViewVerification,
 }: AttendanceRowActionsProps) {
   return (
     <div className="flex items-center gap-2 justify-center">
       <button
-        className="p-1 rounded hover:bg-gray-100"
+        className="group inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3.5 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-blue-500/30"
         title="Edit Attendance"
         onClick={onEdit}
       >
-        <div className="flex items-center justify-center gap-1 bg-blue-50 px-3 py-1 rounded-md">
-          <Pencil className="h-3 w-3 text-blue-600" />
-          <span className="text-xs font-medium text-blue-600">Edit</span>
-        </div>
+        <Pencil className="h-3.5 w-3.5 transition-transform duration-200 group-hover:-rotate-6" />
+        <span>Edit</span>
       </button>
 
-      {blockchainVerified ? (
-        <button
-          onClick={onViewVerification}
-          title="View blockchain proof"
-          className="flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1 hover:bg-emerald-100 transition"
-        >
-          <Link className="h-3.5 w-3.5 text-emerald-700" />
-          <span className="text-xs font-medium text-emerald-700">
-            View Proof
-          </span>
-        </button>
-      ) : (
-        <div
-          title="Not recorded on blockchain"
-          className="flex items-center gap-1.5 rounded-md border border-gray-200 bg-gray-100 px-3 py-1"
-        >
-          <span className="text-xs font-medium text-gray-500">
-            Not Verified
-          </span>
-        </div>
-      )}
+      <button
+        onClick={onViewVerification}
+        title="View blockchain proof"
+        className="group inline-flex items-center gap-2 rounded-lg border border-teal-200 bg-linear-to-r from-teal-50 to-emerald-50 px-3.5 py-1.5 text-xs font-semibold text-teal-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:from-teal-100 hover:to-emerald-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-teal-500/30"
+      >
+        <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/90 ring-1 ring-teal-200">
+          <Link className="h-3.5 w-3.5 text-teal-700" />
+        </span>
+        <span>View Proof</span>
+      </button>
     </div>
   );
 }

@@ -44,12 +44,58 @@ type RecentActivity = {
   childName: string;
   action: string;
   timestamp: string;
+  sortTime: number;
   status: string;
 };
 
-const authHeaders = () => ({
-  Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-});
+const formatChildName = (child?: any) => {
+  if (!child) return "Unknown Child";
+  const firstName = child.firstName || child.first || "";
+  const middleName = child.middleName || child.middle || "";
+  const lastName = child.lastName || child.last || "";
+  const trailing = [firstName, middleName].filter(Boolean).join(" ");
+  if (lastName && trailing) return `${lastName}, ${trailing}`;
+  if (lastName) return lastName;
+  if (trailing) return trailing;
+  return "Unknown Child";
+};
+
+const getChildId = (child: any) =>
+  typeof child === "string" ? child : String(child?._id || "");
+
+const getLocalDateKey = (value: Date) => {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const getRecordDateKey = (value: unknown) => {
+  const d = new Date(String(value || ""));
+  if (Number.isNaN(d.getTime())) return "";
+  return getLocalDateKey(d);
+};
+
+const getLatestDateKey = (entries: any[]): string =>
+  entries.reduce((latest: string, entry: any) => {
+    const hasRecords =
+      Array.isArray(entry?.records) && entry.records.length > 0;
+    if (!hasRecords) return latest;
+    const key = getRecordDateKey(entry?.date);
+    if (!key) return latest;
+    return !latest || key > latest ? key : latest;
+  }, "");
+
+const formatDateKey = (key: string) => {
+  if (!key) return "";
+  const [year, month, day] = key.split("-").map(Number);
+  if (!year || !month || !day) return key;
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+  }).format(new Date(year, month - 1, day));
+};
 
 const StatCard = ({
   title,
@@ -110,61 +156,121 @@ export default function AdminDashboard() {
   });
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [pieData, setPieData] = useState<PieDataPoint[]>([]);
-  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>(
+    [],
+  );
   const [isLoading, setIsLoading] = useState(true);
+  const [dateMeta, setDateMeta] = useState<{
+    todayKey: string;
+    attendanceKey: string;
+    feedingKey: string;
+  }>({
+    todayKey: "",
+    attendanceKey: "",
+    feedingKey: "",
+  });
 
   const fetchDashboardData = useCallback(async () => {
     setIsLoading(true);
     try {
+      const fetchJson = async (url: string) => {
+        const res = await fetch(url, {
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        });
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const message =
+            (payload as { message?: string; error?: string }).message ||
+            (payload as { message?: string; error?: string }).error ||
+            `Request failed (${res.status})`;
+          throw new Error(`${url}: ${message}`);
+        }
+        return payload;
+      };
+
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+      const todayKey = getLocalDateKey(today);
+      const weekStart = new Date(today);
+      weekStart.setDate(weekStart.getDate() - 6);
+      const weekKeys = new Set<string>();
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(weekStart);
+        d.setDate(weekStart.getDate() + i);
+        weekKeys.add(getLocalDateKey(d));
+      }
 
-      // Get last 7 days for chart
-      const sevenDaysAgo = new Date(today);
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const [childrenPayload, usersPayload, attendancePayload, feedingPayload] =
+        await Promise.all([
+          fetchJson(`${API_BASE}/children`),
+          fetchJson(`${API_BASE}/auth/users`),
+          fetchJson(`${API_BASE}/records/attendance`),
+          fetchJson(`${API_BASE}/records/feeding`),
+        ]);
 
-      const todayParams = `?startDate=${today.toISOString()}&endDate=${new Date(today.getTime() + 86400000).toISOString()}`;
-      const weekParams = `?startDate=${sevenDaysAgo.toISOString()}&endDate=${new Date(today.getTime() + 86400000).toISOString()}`;
-
-      const [
-        childrenRes,
-        usersRes,
-        todayAttendanceRes,
-        todayFeedingRes,
-        weekAttendanceRes,
-      ] = await Promise.all([
-        fetch(`${API_BASE}/children`, {
-          headers: { "Content-Type": "application/json", ...authHeaders() },
-        }),
-        fetch(`${API_BASE}/admin/users`, {
-          headers: { "Content-Type": "application/json", ...authHeaders() },
-        }),
-        fetch(`${API_BASE}/records/attendance${todayParams}`, {
-          headers: { "Content-Type": "application/json", ...authHeaders() },
-        }),
-        fetch(`${API_BASE}/records/feeding${todayParams}`, {
-          headers: { "Content-Type": "application/json", ...authHeaders() },
-        }),
-        fetch(`${API_BASE}/records/attendance${weekParams}`, {
-          headers: { "Content-Type": "application/json", ...authHeaders() },
-        }),
-      ]);
-
-      const children = await childrenRes.json().catch(() => []);
-      const users = await usersRes.json().catch(() => []);
-      const todayAttendance = await todayAttendanceRes.json().catch(() => []);
-      const todayFeeding = await todayFeedingRes.json().catch(() => []);
-      const weekAttendance = await weekAttendanceRes.json().catch(() => []);
-
-      const childrenArray = Array.isArray(children) ? children : [];
-      const usersArray = Array.isArray(users) ? users : [];
-      const todayAttendanceArray = Array.isArray(todayAttendance)
-        ? todayAttendance
+      const childrenArray = Array.isArray(childrenPayload)
+        ? childrenPayload
         : [];
-      const todayFeedingArray = Array.isArray(todayFeeding) ? todayFeeding : [];
-      const weekAttendanceArray = Array.isArray(weekAttendance)
-        ? weekAttendance
+      const usersArray = Array.isArray((usersPayload as any)?.users)
+        ? (usersPayload as any).users
         : [];
+      const attendanceArray = Array.isArray(attendancePayload)
+        ? attendancePayload
+        : [];
+      const feedingArray = Array.isArray(feedingPayload) ? feedingPayload : [];
+      const todayAttendanceArray = attendanceArray.filter(
+        (entry: any) => getRecordDateKey(entry.date) === todayKey,
+      );
+      const todayFeedingArray = feedingArray.filter(
+        (entry: any) => getRecordDateKey(entry.date) === todayKey,
+      );
+      const todayAttendanceCount = todayAttendanceArray.reduce(
+        (sum: number, entry: any) =>
+          sum + (Array.isArray(entry?.records) ? entry.records.length : 0),
+        0,
+      );
+      const todayFeedingCount = todayFeedingArray.reduce(
+        (sum: number, entry: any) =>
+          sum + (Array.isArray(entry?.records) ? entry.records.length : 0),
+        0,
+      );
+      const latestAttendanceKey = getLatestDateKey(attendanceArray);
+      const latestFeedingKey = getLatestDateKey(feedingArray);
+      const attendanceKey =
+        todayAttendanceCount > 0 ? todayKey : latestAttendanceKey || todayKey;
+      const feedingKey =
+        todayFeedingCount > 0 ? todayKey : latestFeedingKey || todayKey;
+      const effectiveAttendanceArray =
+        todayAttendanceCount > 0
+          ? todayAttendanceArray
+          : attendanceArray.filter(
+              (entry: any) => getRecordDateKey(entry.date) === attendanceKey,
+            );
+      const effectiveFeedingArray =
+        todayFeedingCount > 0
+          ? todayFeedingArray
+          : feedingArray.filter(
+              (entry: any) => getRecordDateKey(entry.date) === feedingKey,
+            );
+      setDateMeta({
+        todayKey,
+        attendanceKey,
+        feedingKey,
+      });
+      const weekAttendanceArray = attendanceArray.filter((entry: any) => {
+        const entryKey = getRecordDateKey(entry.date);
+        return weekKeys.has(entryKey);
+      });
+      const childEntries: Array<[string, any]> = childrenArray.reduce(
+        (acc: Array<[string, any]>, child: any) => {
+          const id = String(child?._id || "");
+          if (id) acc.push([id, child]);
+          return acc;
+        },
+        [],
+      );
+      const childMap = new Map<string, any>(childEntries);
 
       // Calculate today's stats
       const totalChildren = childrenArray.length;
@@ -177,7 +283,7 @@ export default function AdminDashboard() {
 
       let todayAttTotal = 0;
       let todayAttPresent = 0;
-      todayAttendanceArray.forEach((entry: any) => {
+      effectiveAttendanceArray.forEach((entry: any) => {
         entry.records?.forEach((record: any) => {
           todayAttTotal += 1;
           if (record.status === "present") todayAttPresent += 1;
@@ -186,7 +292,7 @@ export default function AdminDashboard() {
 
       let todayFeedTotal = 0;
       let todayFeedCompleted = 0;
-      todayFeedingArray.forEach((entry: any) => {
+      effectiveFeedingArray.forEach((entry: any) => {
         entry.records?.forEach((record: any) => {
           todayFeedTotal += 1;
           if (record.status === "completed") todayFeedCompleted += 1;
@@ -214,9 +320,7 @@ export default function AdminDashboard() {
       // Build chart data
       const dayMap = new Map<string, { total: number; present: number }>();
       weekAttendanceArray.forEach((entry: any) => {
-        const date = new Date(entry.date);
-        date.setHours(0, 0, 0, 0);
-        const key = date.toISOString().split("T")[0];
+        const key = getRecordDateKey(entry.date);
 
         if (!dayMap.has(key)) {
           dayMap.set(key, { total: 0, present: 0 });
@@ -230,20 +334,19 @@ export default function AdminDashboard() {
       });
 
       const chartPoints: ChartDataPoint[] = [];
-      const days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+      const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
       for (let i = 6; i >= 0; i--) {
         const d = new Date(today);
         d.setDate(d.getDate() - i);
         d.setHours(0, 0, 0, 0);
-        const key = d.toISOString().split("T")[0];
+        const key = getLocalDateKey(d);
         const data = dayMap.get(key) || { total: 0, present: 0 };
         const rate = data.total
           ? Math.round((data.present / data.total) * 100)
           : 0;
 
-        const dayName =
-          days[d.getDay() === 0 ? 6 : d.getDay() - 1] || `Day ${i}`;
+        const dayName = days[d.getDay()] || `Day ${i}`;
 
         chartPoints.push({
           day: dayName,
@@ -271,43 +374,57 @@ export default function AdminDashboard() {
 
       // Build recent activities from today's attendance and feeding
       const activities: RecentActivity[] = [];
-      
-      todayAttendanceArray.forEach((entry: any) => {
+
+      attendanceArray.forEach((entry: any) => {
         entry.records?.forEach((record: any) => {
-          const child = record.child;
-          if (child && (child.firstName || child.first)) {
-            const childName = `${child.lastName || child.last || ""}, ${child.firstName || child.first || ""} ${child.middleName || child.middle || ""}`.trim();
-            activities.push({
-              id: `att-${record._id || Math.random()}`,
-              type: "attendance",
-              childName,
-              action: record.status === "present" ? "Checked in" : "Marked absent",
-              timestamp: new Date(entry.date).toLocaleString(),
-              status: record.status,
-            });
-          }
+          const childId = getChildId(record.child);
+          const childObj =
+            typeof record.child === "object"
+              ? record.child
+              : childMap.get(childId) || null;
+          const eventTime = new Date(
+            entry.updatedAt || entry.createdAt || entry.date,
+          );
+
+          activities.push({
+            id: `att-${entry._id || "row"}-${childId || record._id || Math.random()}`,
+            type: "attendance",
+            childName: formatChildName(childObj),
+            action:
+              record.status === "present" ? "Checked in" : "Marked absent",
+            timestamp: eventTime.toLocaleString(),
+            sortTime: eventTime.getTime(),
+            status: record.status,
+          });
         });
       });
 
-      todayFeedingArray.forEach((entry: any) => {
+      feedingArray.forEach((entry: any) => {
         entry.records?.forEach((record: any) => {
-          const child = record.child;
-          if (child && (child.firstName || child.first)) {
-            const childName = `${child.lastName || child.last || ""}, ${child.firstName || child.first || ""} ${child.middleName || child.middle || ""}`.trim();
-            activities.push({
-              id: `feed-${record._id || Math.random()}`,
-              type: "feeding",
-              childName,
-              action: record.status === "completed" ? "Fed lunch" : "Missed lunch",
-              timestamp: new Date(entry.date).toLocaleString(),
-              status: record.status,
-            });
-          }
+          const childId = getChildId(record.child);
+          const childObj =
+            typeof record.child === "object"
+              ? record.child
+              : childMap.get(childId) || null;
+          const eventTime = new Date(
+            entry.updatedAt || entry.createdAt || entry.date,
+          );
+
+          activities.push({
+            id: `feed-${entry._id || "row"}-${childId || record._id || Math.random()}`,
+            type: "feeding",
+            childName: formatChildName(childObj),
+            action:
+              record.status === "completed" ? "Fed lunch" : "Missed lunch",
+            timestamp: eventTime.toLocaleString(),
+            sortTime: eventTime.getTime(),
+            status: record.status,
+          });
         });
       });
 
       // Sort by timestamp (most recent first) and take top 10
-      activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      activities.sort((a, b) => b.sortTime - a.sortTime);
       setRecentActivities(activities.slice(0, 10));
     } catch (error) {
       console.error("Failed to fetch dashboard data:", error);
@@ -353,7 +470,12 @@ export default function AdminDashboard() {
               <StatCard
                 title="Today's Attendance Rate"
                 value={`${stats.todayAttendanceRate}%`}
-                subtitle="Present today"
+                subtitle={
+                  dateMeta.attendanceKey &&
+                  dateMeta.attendanceKey !== dateMeta.todayKey
+                    ? `Present on ${formatDateKey(dateMeta.attendanceKey)}`
+                    : "Present today"
+                }
                 trend={{ value: "↑ 2%", isUp: true }}
                 icon={Calendar}
                 color="teal"
@@ -361,7 +483,12 @@ export default function AdminDashboard() {
               <StatCard
                 title="Lunch Feeding Compliance"
                 value={`${stats.todayFeedingRate}%`}
-                subtitle="Children fed"
+                subtitle={
+                  dateMeta.feedingKey &&
+                  dateMeta.feedingKey !== dateMeta.todayKey
+                    ? `Children fed on ${formatDateKey(dateMeta.feedingKey)}`
+                    : "Children fed"
+                }
                 trend={{
                   value: stats.todayFeedingRate >= 70 ? "↑ 3%" : "↓ 3%",
                   isUp: stats.todayFeedingRate >= 70,
@@ -452,7 +579,12 @@ export default function AdminDashboard() {
                     Today's Attendance Status
                   </h3>
                   <p className="text-sm text-gray-500">
-                    Distribution of present vs absent students
+                    {dateMeta.attendanceKey &&
+                    dateMeta.attendanceKey !== dateMeta.todayKey
+                      ? `No records for today. Showing latest from ${formatDateKey(
+                          dateMeta.attendanceKey,
+                        )}`
+                      : "Distribution of present vs absent students"}
                   </p>
                 </div>
 
@@ -480,11 +612,15 @@ export default function AdminDashboard() {
                 <div className="mt-4 flex items-center justify-center gap-6 text-sm">
                   <div className="flex items-center gap-2">
                     <div className="h-3 w-3 rounded-full bg-emerald-500"></div>
-                    <span className="text-gray-600">Present: {pieData[0]?.value || 0}</span>
+                    <span className="text-gray-600">
+                      Present: {pieData[0]?.value || 0}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="h-3 w-3 rounded-full bg-rose-500"></div>
-                    <span className="text-gray-600">Absent: {pieData[1]?.value || 0}</span>
+                    <span className="text-gray-600">
+                      Absent: {pieData[1]?.value || 0}
+                    </span>
                   </div>
                 </div>
               </div>

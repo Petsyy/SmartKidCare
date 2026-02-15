@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Shield, UserIcon, Lock, AlertCircle } from "lucide-react";
+import { API_BASE } from "../components/config/config.api";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -19,13 +20,17 @@ export default function AdminLogin() {
         throw new Error("Please fill in all fields");
       }
 
-      const response = await fetch("http://localhost:5000/api/auth/admin/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `${API_BASE}/auth/admin/login`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({ username, password }),
         },
-        body: JSON.stringify({ username, password }),
-      });
+      );
 
       const data = await response.json();
 
@@ -33,8 +38,9 @@ export default function AdminLogin() {
         throw new Error(data.message || "Login failed");
       }
 
-      localStorage.setItem("authToken", data.token);
-      localStorage.setItem("adminUsername", username);
+      if (data?.user?.email) {
+        localStorage.setItem("adminEmail", data.user.email);
+      }
 
       navigate("/dashboard");
     } catch (err: any) {
@@ -59,11 +65,14 @@ export default function AdminLogin() {
             <p className="text-gray-500 text-sm mt-1">Admin Portal</p>
           </div>
 
-
           <div className="px-8 py-8">
             <div className="mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">Welcome Back</h2>
-              <p className="text-sm text-gray-500 mt-1">Sign in to your account to continue</p>
+              <h2 className="text-xl font-semibold text-gray-900">
+                Welcome Back
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Sign in to your account to continue
+              </p>
             </div>
 
             {error && (
