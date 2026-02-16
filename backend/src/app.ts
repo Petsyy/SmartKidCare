@@ -11,6 +11,7 @@ import adminRoutes from "./routes/admin.routes";
 import recordsRoutes from "./routes/records.routes";
 import blockchainRoutes from "./routes/blockchain.routes";
 import aiRoutes from "./routes/ai.routes";
+import notificationRoutes from "./routes/notification.routes";
 
 const app: Application = express();
 
@@ -40,6 +41,7 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use("/api/notifications", notificationRoutes);
 app.use(limiter);
 // app.use(morgan("dev")); // HTTP request logging disabled
 app.use("/api/admin", adminRoutes);

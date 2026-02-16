@@ -1,5 +1,13 @@
 import mongoose, { Schema, Document } from "mongoose";
 
+export interface IUserPushToken {
+  token: string;
+  platform: "ios" | "android" | "web" | "unknown";
+  deviceName?: string | null;
+  appOwnership?: string | null;
+  updatedAt: Date;
+}
+
 export interface IUser extends Document {
   username?: string; // admin only
   employeeId?: string; // teacher only
@@ -10,6 +18,8 @@ export interface IUser extends Document {
   password: string;
   role: "admin" | "teacher" | "parent";
   phone?: string; // required for teacher/parent
+  pushToken?: string | null;
+  pushTokens?: IUserPushToken[];
   isActive: boolean;
   mustChangePassword: boolean;
   needsToConfirmLink: boolean;
@@ -53,6 +63,38 @@ const UserSchema: Schema = new Schema(
       },
       trim: true,
     },
+
+    pushToken: {
+      type: String,
+      default: null,
+    },
+
+    pushTokens: [
+      {
+        token: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        platform: {
+          type: String,
+          enum: ["ios", "android", "web", "unknown"],
+          default: "unknown",
+        },
+        deviceName: {
+          type: String,
+          default: null,
+        },
+        appOwnership: {
+          type: String,
+          default: null,
+        },
+        updatedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
 
     password: {
       type: String,

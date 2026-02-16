@@ -7,6 +7,7 @@
     "dev": "nodemon --watch src --exec ts-node src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "seed:records": "ts-node scripts/seedRecords.ts",
     "check-balance": "ts-node scripts/check-sepolia-balance.ts",
     "import-dataset": "ts-node scripts/importDataset.ts"
   },
@@ -22,6 +23,7 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.4",
     "ethers": "^6.16.0",
+    "expo-server-sdk": "^5.0.0",
     "express": "^5.2.1",
     "express-mongo-sanitize": "^2.2.0",
     "jsonwebtoken": "^9.0.3",
