@@ -1,6 +1,8 @@
 import "@/global.css";
 import { Stack } from "expo-router";
-import { ActivityIndicator, View } from "react-native";
+import { useEffect } from "react";
+import { ActivityIndicator, Platform, View } from "react-native";
+import * as Notifications from "expo-notifications";
 import { AuthProvider } from "@/src/context/AuthContext";
 import { useAuth } from "@/src/hooks/useAuth";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -9,6 +11,16 @@ import { configureReanimatedLogger, ReanimatedLogLevel } from "react-native-rean
 configureReanimatedLogger({
   level: ReanimatedLogLevel.warn,
   strict: false,
+});
+
+// Show incoming push notifications even when app is in the foreground.
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
 });
 
 function LayoutContent() {
@@ -38,6 +50,17 @@ function LayoutContent() {
 }
 
 export default function RootLayout() {
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+
+    void Notifications.setNotificationChannelAsync("default", {
+      name: "default",
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: "#14B8A6",
+    });
+  }, []);
+
   return (
     <SafeAreaProvider>
       <AuthProvider>

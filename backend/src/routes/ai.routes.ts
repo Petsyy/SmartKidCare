@@ -1,7 +1,11 @@
 import { Router } from "express";
 import { AIServiceError, askGemini } from "../services/gemini.service";
 import { buildAIContext } from "../services/aiContext.service";
-import { tryHandleDateSpecificQuery } from "../services/aiDateQuery.service";
+import { tryHandleAgentQuery } from "../services/aiAgent.service";
+import {
+  tryHandleDateSpecificQuery,
+  tryHandleStatusMetricQuery,
+} from "../services/aiDateQuery.service";
 import {
   buildAffirmativeFollowUpReply,
   buildGreetingReply,
@@ -14,13 +18,8 @@ const router = Router();
 
 router.post("/chat", async (req, res) => {
   try {
-    const {
-      role,
-      attendanceSummary,
-      feedingSummary,
-      insights,
-      message,
-    } = req.body ?? {};
+    const { role, attendanceSummary, feedingSummary, insights, message } =
+      req.body ?? {};
 
     if (!role || typeof message !== "string" || !message.trim()) {
       return res.status(400).json({
@@ -53,19 +52,40 @@ router.post("/chat", async (req, res) => {
       });
     }
 
-    const deterministicReply = tryHandleDateSpecificQuery({
-      message: trimmedMessage,
-      attendanceSummary: attendanceSummary ?? "No attendance data available.",
-      feedingSummary: feedingSummary ?? "No feeding data available.",
+    const normalizedAttendanceSummary =
+      attendanceSummary ?? "No attendance data available.";
+    const normalizedFeedingSummary =
+      feedingSummary ?? "No feeding data available.";
+
+    const agentReply = await tryHandleAgentQuery({
+      role: String(role),
+      question: trimmedMessage,
+      attendanceSummary: normalizedAttendanceSummary,
+      feedingSummary: normalizedFeedingSummary,
     });
+    if (agentReply) {
+      return res.json({ reply: agentReply });
+    }
+
+    const deterministicReply =
+      tryHandleStatusMetricQuery({
+        message: trimmedMessage,
+        attendanceSummary: normalizedAttendanceSummary,
+        feedingSummary: normalizedFeedingSummary,
+      }) ??
+      tryHandleDateSpecificQuery({
+        message: trimmedMessage,
+        attendanceSummary: normalizedAttendanceSummary,
+        feedingSummary: normalizedFeedingSummary,
+      });
     if (deterministicReply) {
       return res.json({ reply: deterministicReply });
     }
 
     const prompt = buildAIContext({
       role,
-      attendanceSummary: attendanceSummary ?? "No attendance data available.",
-      feedingSummary: feedingSummary ?? "No feeding data available.",
+      attendanceSummary: normalizedAttendanceSummary,
+      feedingSummary: normalizedFeedingSummary,
       insights: Array.isArray(insights) ? insights : [],
       question: trimmedMessage,
     });
@@ -78,10 +98,12 @@ router.post("/chat", async (req, res) => {
       const fallbackReply = buildQuotaFallbackReply({
         role: String(req.body?.role ?? ""),
         question: String(req.body?.message ?? ""),
-        attendanceSummary:
-          String(req.body?.attendanceSummary ?? "No attendance data available."),
-        feedingSummary:
-          String(req.body?.feedingSummary ?? "No feeding data available."),
+        attendanceSummary: String(
+          req.body?.attendanceSummary ?? "No attendance data available.",
+        ),
+        feedingSummary: String(
+          req.body?.feedingSummary ?? "No feeding data available.",
+        ),
         retryAfterSeconds: error.retryAfterSeconds,
       });
 

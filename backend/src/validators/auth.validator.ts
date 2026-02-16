@@ -15,7 +15,15 @@ const validate =
       });
     }
 
-    (req as any)[part] = parsed.data;
+    if (part === "query") {
+      const query = req.query as Record<string, unknown>;
+      Object.keys(query).forEach((key) => {
+        delete query[key];
+      });
+      Object.assign(query, parsed.data as Record<string, unknown>);
+    } else {
+      (req as any).body = parsed.data;
+    }
     return next();
   };
 

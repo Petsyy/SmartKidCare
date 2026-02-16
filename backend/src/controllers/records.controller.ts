@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import crypto from "crypto";
-// helper functions moved to ./records.helpers
 import Attendance from "../models/Attendance";
 import Feeding from "../models/Feeding";
 import Child from "../models/Child";
@@ -9,6 +8,10 @@ import {
   getRecordMeta,
   findTxForDateHash,
 } from "../services/blockchain.service";
+import {
+  notifyAttendanceSubmitted,
+  notifyFeedingSubmitted,
+} from "../services/notifications-services/recordEventNotification.service";
 import { buildDateHash, hashData } from "../blockchain/ethers";
 import { toDateKey, tryStoreDailyOnChain } from "../helpers/records.helpers";
 
@@ -104,6 +107,16 @@ export const submitFeeding = async (req: Request, res: Response) => {
       await existingFeeding.save();
 
       queueBlockchainSync(req.user.id, feedingDate);
+      void notifyFeedingSubmitted({
+        date: feedingDate,
+        foodServed,
+        records: newRecords as Array<{
+          child: unknown;
+          status: "completed" | "missed";
+        }>,
+      }).catch((error) => {
+        console.error("Feeding notification dispatch failed:", error);
+      });
 
       return res.json({
         message: "Feeding updated successfully",
@@ -120,6 +133,16 @@ export const submitFeeding = async (req: Request, res: Response) => {
     });
 
     queueBlockchainSync(req.user.id, feedingDate);
+    void notifyFeedingSubmitted({
+      date: feedingDate,
+      foodServed,
+      records: records as Array<{
+        child: unknown;
+        status: "completed" | "missed";
+      }>,
+    }).catch((error) => {
+      console.error("Feeding notification dispatch failed:", error);
+    });
 
     res.status(201).json({
       message: "Feeding submitted successfully",
@@ -680,6 +703,15 @@ export const submitAttendance = async (req: Request, res: Response) => {
       await existingAttendance.save();
 
       queueBlockchainSync(req.user.id, attendanceDate);
+      void notifyAttendanceSubmitted({
+        date: attendanceDate,
+        records: newRecords as Array<{
+          child: unknown;
+          status: "present" | "absent";
+        }>,
+      }).catch((error) => {
+        console.error("Attendance notification dispatch failed:", error);
+      });
 
       return res.json({
         message: "Attendance updated successfully",
@@ -694,6 +726,15 @@ export const submitAttendance = async (req: Request, res: Response) => {
     });
 
     queueBlockchainSync(req.user.id, attendanceDate);
+    void notifyAttendanceSubmitted({
+      date: attendanceDate,
+      records: records as Array<{
+        child: unknown;
+        status: "present" | "absent";
+      }>,
+    }).catch((error) => {
+      console.error("Attendance notification dispatch failed:", error);
+    });
 
     res.status(201).json({
       message: "Attendance submitted successfully",

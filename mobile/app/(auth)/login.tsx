@@ -70,6 +70,10 @@ export default function Login() {
 
       const { token: authToken, user: apiUser } = response;
 
+      if (__DEV__) {
+        console.log("[Login JWT Token]", authToken);
+      }
+
       const appUser: User = {
         id: apiUser._id,
         email: apiUser.email,

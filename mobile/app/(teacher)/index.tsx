@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter, useFocusEffect } from "expo-router";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import {
   View,
   Text,
@@ -18,6 +19,17 @@ import { useAuth } from "@/src/hooks/useAuth";
 import { getChildren, getTeacherProfile } from "@/src/api/teacher.api";
 import { getTodayAttendance, getTodayFeeding } from "@/src/api/records.api";
 import type { Child } from "@/src/api/parent.api";
+import {
+  getTeacherNotificationsFeed,
+  type TeacherNotificationFeedItem,
+} from "@/src/api/notifications.api";
+
+const toLocalDateKey = (value: Date = new Date()): string => {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 
 type StatCardProps = {
   title: string;
@@ -36,12 +48,39 @@ type ActionCardProps = {
 type NoticeItemProps = {
   title: string;
   desc: string;
+  meta?: string;
   tone?: "emerald" | "blue" | "orange";
   onPress?: () => void;
 };
 
+const NOTICE_TYPE_UI: Record<
+  TeacherNotificationFeedItem["type"],
+  {
+    fallbackTitle: string;
+    tone: "emerald" | "blue" | "orange";
+  }
+> = {
+  attendance_reminder: {
+    fallbackTitle: "Morning Attendance",
+    tone: "emerald",
+  },
+  attendance_incomplete: {
+    fallbackTitle: "Attendance Incomplete",
+    tone: "orange",
+  },
+  feeding_reminder: {
+    fallbackTitle: "Lunch Feeding",
+    tone: "blue",
+  },
+  feeding_incomplete: {
+    fallbackTitle: "Feeding Incomplete",
+    tone: "orange",
+  },
+};
+
 export default function TeacherDashboard() {
   const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
   const router = useRouter();
   const { token } = useAuth();
   const [children, setChildren] = useState<Child[]>([]);
@@ -49,8 +88,12 @@ export default function TeacherDashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [attendanceData, setAttendanceData] = useState<any>(null);
   const [feedingData, setFeedingData] = useState<any>(null);
+  const [recentNotifications, setRecentNotifications] = useState<
+    TeacherNotificationFeedItem[]
+  >([]);
   const [teacherName, setTeacherName] = useState<string>("Teacher");
   const centerName = "Child Development Center";
+  const todayDateKey = useMemo(() => toLocalDateKey(), []);
 
   // Dynamic date
   const currentDate = new Date();
@@ -66,21 +109,32 @@ export default function TeacherDashboard() {
       if (!isRefreshing) setLoading(true);
 
       if (token) {
-        const [childrenData, todayAttendance, todayFeeding, profileData] =
-          await Promise.all([
-            getChildren(token),
-            getTodayAttendance(token),
-            getTodayFeeding(token),
-            getTeacherProfile(token),
-          ]);
+        const [
+          childrenData,
+          todayAttendance,
+          todayFeeding,
+          profileData,
+          notificationsFeed,
+        ] = await Promise.all([
+          getChildren(token),
+          getTodayAttendance(token),
+          getTodayFeeding(token),
+          getTeacherProfile(token),
+          getTeacherNotificationsFeed(token, { date: todayDateKey }).catch(
+            () => null,
+          ),
+        ]);
         setChildren(childrenData);
         setAttendanceData(todayAttendance);
         setFeedingData(todayFeeding);
+        setRecentNotifications(notificationsFeed?.notifications || []);
 
         // Set teacher name from profile
         if (profileData?.firstName) {
           setTeacherName(profileData.firstName);
         }
+      } else {
+        setRecentNotifications([]);
       }
     } catch (error) {
       console.error("Failed to fetch data:", error);
@@ -93,7 +147,7 @@ export default function TeacherDashboard() {
   useFocusEffect(
     React.useCallback(() => {
       fetchData();
-    }, [token]),
+    }, [token, todayDateKey]),
   );
 
   const onRefresh = () => {
@@ -125,6 +179,14 @@ export default function TeacherDashboard() {
   }, [feedingData]);
 
   const pendingCount = totalChildren;
+  const scrollBottomPadding = useMemo(
+    () => Math.max(120, tabBarHeight + 72),
+    [tabBarHeight],
+  );
+  const fabBottom = useMemo(
+    () => 16 + Math.max(insets.bottom - 12, 0),
+    [insets.bottom],
+  );
 
   if (loading) {
     return (
@@ -182,7 +244,7 @@ export default function TeacherDashboard() {
         contentContainerStyle={{
           paddingHorizontal: 20,
           paddingTop: 20,
-          paddingBottom: 100,
+          paddingBottom: scrollBottomPadding,
         }}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -304,30 +366,44 @@ export default function TeacherDashboard() {
             </Pressable>
           </View>
 
-          <NoticeItem
-            title="Monthly Report Due"
-            desc="Please submit the monthly attendance and feeding report."
-            tone="emerald"
-            onPress={() => {}}
-          />
-          <View className="h-3" />
-          <NoticeItem
-            title="System Maintenance"
-            desc="The system will undergo maintenance on Saturday."
-            tone="blue"
-            onPress={() => {}}
-          />
+          {recentNotifications.length > 0 ? (
+            recentNotifications.slice(0, 3).map((item, index) => {
+              const ui = NOTICE_TYPE_UI[item.type];
+              const title =
+                item.title === "Reminder" ? ui.fallbackTitle : item.title;
+              const visibleCount = Math.min(recentNotifications.length, 3);
+
+              return (
+                <React.Fragment key={item.id}>
+                  <NoticeItem
+                    title={title}
+                    desc={item.message}
+                    meta={item.timeLabel}
+                    tone={ui.tone}
+                    onPress={() => router.push("/(teacher)/notifications")}
+                  />
+                  {index < visibleCount - 1 ? <View className="h-3" /> : null}
+                </React.Fragment>
+              );
+            })
+          ) : (
+            <View className="rounded-2xl bg-gray-50 p-4">
+              <Text className="text-sm font-medium text-gray-600">
+                No recent notifications for today.
+              </Text>
+            </View>
+          )}
         </View>
       </ScrollView>
 
       {/* Floating AI Chat button */}
       <Pressable
         onPress={() => router.push("/(teacher)/chat")}
-        className="absolute right-5 rounded-full bg-teal-600 p-4 active:opacity-90"
+        className="absolute right-4 h-16 w-16 items-center justify-center rounded-full bg-teal-600 active:opacity-90"
         style={{
-          bottom: 24 + insets.bottom + 5,
+          bottom: fabBottom,
           shadowColor: "#000",
-          shadowOffset: { width: 0, height: 4 },
+          shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.2,
           shadowRadius: 6,
           elevation: 6,
@@ -417,6 +493,7 @@ function ActionCard({ title, subtitle, icon, onPress }: ActionCardProps) {
 function NoticeItem({
   title,
   desc,
+  meta,
   tone = "emerald",
   onPress,
 }: NoticeItemProps) {
@@ -439,6 +516,11 @@ function NoticeItem({
             {title}
           </Text>
           <Text className="mt-1 text-sm leading-5 text-gray-600">{desc}</Text>
+          {meta ? (
+            <Text className="mt-2 text-xs font-semibold text-gray-500">
+              {meta}
+            </Text>
+          ) : null}
         </View>
       </View>
     </Pressable>

@@ -23,7 +23,9 @@ import {
   buildSummary,
   formatDateLabel,
   resolveTeacherFollowUpMessage,
-  formatAttendanceChildren
+  formatAttendanceChildren,
+  summarizeAttendanceStatuses,
+  summarizeFeedingStatuses,
 } from "@/src/components/ai-chatbot-helpers/chatHelpers";
 
 const SUGGESTIONS = [
@@ -87,9 +89,9 @@ export default function TeacherChatScreen() {
             "attendance",
             attList,
             (e: any) => {
-              const count = Array.isArray(e?.records) ? e.records.length : 0;
+              const counts = summarizeAttendanceStatuses(e?.records ?? []);
               const children = formatAttendanceChildren(e?.records ?? []);
-              return `${formatDateLabel(e?.date)}: ${count} records${children ? ` (children: ${children})` : ""}`;
+              return `${formatDateLabel(e?.date)}: total ${counts.total}, present ${counts.present}, absent ${counts.absent}${children ? ` (children: ${children})` : ""}`;
             },
           ),
         );
@@ -97,8 +99,10 @@ export default function TeacherChatScreen() {
           buildSummary(
             "feeding",
             feedList,
-            (e: any) =>
-              `${formatDateLabel(e?.date)}: ${e?.foodServed ?? "?"} (${e?.records?.length ?? 0} records)`,
+            (e: any) => {
+              const counts = summarizeFeedingStatuses(e?.records ?? []);
+              return `${formatDateLabel(e?.date)}: ${e?.foodServed ?? "?"} (total ${counts.total}, completed ${counts.completed}, missed ${counts.missed})`;
+            },
           ),
         );
       } catch {

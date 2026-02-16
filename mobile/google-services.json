@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "921483148778",
+    "project_id": "smartkidcare-95b37",
+    "storage_bucket": "smartkidcare-95b37.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:921483148778:android:e611fbbb05ab746a1dc693",
+        "android_client_info": {
+          "package_name": "com.anonymous.smartkidcare"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDJEI9AAPfjY1374zHYtv_q466sjJtX2fA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

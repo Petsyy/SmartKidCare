@@ -7,6 +7,8 @@ import ParentGate from "@/src/components/ParentGate";
 export default function ParentLayout() {
   const { user, role, loading } = useAuth();
   const insets = useSafeAreaInsets();
+  const bottomInset = Math.max(insets.bottom, 10);
+  const tabBarHeight = 62 + bottomInset;
 
   if (loading) return null;
   if (!user || role !== "parent") {
@@ -22,9 +24,18 @@ export default function ParentLayout() {
         tabBarInactiveTintColor: "#9CA3AF",
         tabBarStyle: {
           backgroundColor: "#FFFFFF",
-          borderTopWidth: 0,
-          height: 45 + insets.bottom,
-          paddingBottom: insets.bottom,
+          borderTopWidth: 1,
+          borderTopColor: "#E5E7EB",
+          height: tabBarHeight,
+          paddingTop: 8,
+          paddingBottom: bottomInset,
+        },
+        tabBarItemStyle: {
+          paddingVertical: 2,
+        },
+        tabBarLabelStyle: {
+          marginBottom: 2,
+          fontSize: 12,
         },
       }}
     >

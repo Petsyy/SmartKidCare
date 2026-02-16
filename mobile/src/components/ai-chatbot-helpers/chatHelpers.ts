@@ -57,6 +57,54 @@ export function buildSummary(
   return `Recent ${label} (${data.length} total): ${lines.join("; ")}${more}`;
 }
 
+export function summarizeAttendanceStatuses(records: any[]): {
+  total: number;
+  present: number;
+  absent: number;
+} {
+  const safeRecords = Array.isArray(records) ? records : [];
+  let present = 0;
+  let absent = 0;
+
+  for (const record of safeRecords) {
+    if (record?.status === "present") {
+      present += 1;
+    } else if (record?.status === "absent") {
+      absent += 1;
+    }
+  }
+
+  return {
+    total: safeRecords.length,
+    present,
+    absent,
+  };
+}
+
+export function summarizeFeedingStatuses(records: any[]): {
+  total: number;
+  completed: number;
+  missed: number;
+} {
+  const safeRecords = Array.isArray(records) ? records : [];
+  let completed = 0;
+  let missed = 0;
+
+  for (const record of safeRecords) {
+    if (record?.status === "completed") {
+      completed += 1;
+    } else if (record?.status === "missed") {
+      missed += 1;
+    }
+  }
+
+  return {
+    total: safeRecords.length,
+    completed,
+    missed,
+  };
+}
+
 export function resolveTeacherFollowUpMessage(
   text: string,
   messages: ChatMessageLike[],

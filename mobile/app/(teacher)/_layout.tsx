@@ -6,6 +6,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 export default function TeacherLayout() {
   const { user, role, loading } = useAuth();
   const insets = useSafeAreaInsets();
+  const bottomInset = Math.max(insets.bottom, 10);
+  const tabBarHeight = 62 + bottomInset;
 
   if (loading) return null;
   if (!user || role !== "teacher") {
@@ -21,8 +23,17 @@ export default function TeacherLayout() {
         tabBarStyle: {
           backgroundColor: "#FFFFFF",
           borderTopColor: "#E5E7EB",
-          height: 45 + insets.bottom,
-          paddingBottom: insets.bottom,
+          borderTopWidth: 1,
+          height: tabBarHeight,
+          paddingTop: 8,
+          paddingBottom: bottomInset,
+        },
+        tabBarItemStyle: {
+          paddingVertical: 2,
+        },
+        tabBarLabelStyle: {
+          marginBottom: 2,
+          fontSize: 12,
         },
       }}
     >
