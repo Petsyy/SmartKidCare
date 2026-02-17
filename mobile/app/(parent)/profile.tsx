@@ -12,7 +12,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { useRouter, useFocusEffect } from "expo-router";
 import { useAuthContext } from "../../src/context/AuthContext";
 import { getParentProfile } from "@/src/api/parent.api";
-import { API_BASE_URL } from "@/src/config/config";
+import { API_BASE_URL } from "@/src/config/config.api";
 import { validatePasswordRules } from "@/src/validations/password-validation";
 import PasswordStrengthFeedback from "@/src/components/password-strength-feedback/PasswordStrengthFeedback";
 import React, { useState } from "react";

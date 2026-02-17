@@ -28,6 +28,31 @@ const getJwtSecret = () => {
 const escapeRegex = (value: string) =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+const findActiveTeacherByEmail = async (email: string) => {
+  const normalized = String(email || "")
+    .trim()
+    .toLowerCase();
+  if (!normalized) return null;
+
+  // Fast path: exact match can use the unique index on email.
+  const exact = await User.findOne({
+    email: normalized,
+    role: "teacher",
+    isActive: true,
+  });
+  if (exact) return exact;
+
+  // Backward compatibility for legacy mixed-case emails.
+  return User.findOne({
+    email: {
+      $regex: `^${escapeRegex(normalized)}$`,
+      $options: "i",
+    },
+    role: "teacher",
+    isActive: true,
+  });
+};
+
 const hashOtp = (otp: string) =>
   createHash("sha256")
     .update(`${otp}:${process.env.OTP_SECRET || getJwtSecret()}`)
@@ -326,14 +351,7 @@ export const requestForgotPasswordOtp = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Email is required." });
     }
 
-    const user = await User.findOne({
-      email: {
-        $regex: `^${escapeRegex(normalizedEmail)}$`,
-        $options: "i",
-      },
-      role: { $in: ["teacher", "parent"] },
-      isActive: true,
-    });
+    const user = await findActiveTeacherByEmail(normalizedEmail);
 
     if (user) {
       // Do not block the response on SMTP latency; render can be slow to deliver mail.
@@ -374,14 +392,7 @@ export const verifyForgotPasswordOtp = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Email and OTP are required." });
     }
 
-    const user = await User.findOne({
-      email: {
-        $regex: `^${escapeRegex(normalizedEmail)}$`,
-        $options: "i",
-      },
-      role: { $in: ["teacher", "parent"] },
-      isActive: true,
-    });
+    const user = await findActiveTeacherByEmail(normalizedEmail);
 
     if (!user) {
       return res.status(400).json({ message: "Invalid OTP request." });
@@ -468,7 +479,7 @@ export const resetForgotPassword = async (req: Request, res: Response) => {
     }
 
     const user = await User.findById(decoded.id);
-    if (!user || (user.role !== "teacher" && user.role !== "parent")) {
+    if (!user || user.role !== "teacher") {
       return res.status(404).json({ message: "User account not found." });
     }
 

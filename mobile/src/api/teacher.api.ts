@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "../config/config";
+import { API_BASE_URL } from "../config/config.api";
 import { Child } from "./parent.api";
 
 export const getChildren = async (token: string): Promise<Child[]> => {
