@@ -77,10 +77,11 @@ export default function RecordFeeding() {
 
   const attendanceDate =
     (params.attendanceDate as string) ||
-    new Date().toLocaleDateString("en-US", {
+    new Date().toLocaleDateString("en-PH", {
       month: "short",
       day: "numeric",
       year: "numeric",
+      timeZone: "Asia/Manila",
     });
 
   const interactionDisabled = isReadOnly || isSubmitting;

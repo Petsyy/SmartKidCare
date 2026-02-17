@@ -124,7 +124,11 @@ export default function ViewFeedingDetails() {
     };
 
     const getMonthName = (date: Date) => {
-        return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        return date.toLocaleDateString('en-PH', {
+            month: 'long',
+            year: 'numeric',
+            timeZone: 'Asia/Manila',
+        });
     };
 
     const getStatusForDay = (day: number): FeedingStatus => {
@@ -398,12 +402,13 @@ export default function ViewFeedingDetails() {
                 {(() => {
                     const dayDetails = selectedDay ? getDetailsForDay(selectedDay) : null;
                     const recordedLabel = dayDetails?.recordedAt
-                        ? new Date(dayDetails.recordedAt).toLocaleString('en-US', {
+                        ? new Date(dayDetails.recordedAt).toLocaleString('en-PH', {
                             month: 'short',
                             day: 'numeric',
                             year: 'numeric',
                             hour: 'numeric',
                             minute: '2-digit',
+                            timeZone: 'Asia/Manila',
                         })
                         : 'Not available';
 

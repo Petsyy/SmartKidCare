@@ -24,17 +24,17 @@ export const tryStoreDailyOnChain = async (
       Feeding.findOne({ teacher: teacherId, date }),
     ]);
 
-    if (!attendance || !feeding) {
-      const missingParts = [
-        !attendance ? "attendance" : null,
-        !feeding ? "feeding" : null,
-      ]
-        .filter(Boolean)
-        .join(" and ");
+    if (!attendance) {
       console.log(
-        `[Blockchain sync skipped] Missing ${missingParts} record for teacher ${teacherId} on ${toDateKey(date)}`,
+        `[Blockchain sync skipped] Missing attendance record for teacher ${teacherId} on ${toDateKey(date)}`,
       );
       return null;
+    }
+
+    if (!feeding) {
+      console.log(
+        `[Blockchain sync] Feeding record is missing for teacher ${teacherId} on ${toDateKey(date)}. Using default missed feeding data for anchoring.`,
+      );
     }
 
     // Check and log wallet balance
@@ -57,9 +57,11 @@ export const tryStoreDailyOnChain = async (
 
     // Build feeding map (may be empty if no feeding record for a child)
     const feedingByChild = new Map<string, { status: string }>();
-    feeding.records.forEach((record: any) => {
-      feedingByChild.set(String(record.child), { status: record.status });
-    });
+    if (feeding?.records) {
+      feeding.records.forEach((record: any) => {
+        feedingByChild.set(String(record.child), { status: record.status });
+      });
+    }
 
     const successes: Array<{
       childId: string;
@@ -85,14 +87,14 @@ export const tryStoreDailyOnChain = async (
             child: childId,
             date: dateKey,
             status: feedingRecord.status,
-            foodServed: feeding.foodServed,
+            foodServed: feeding?.foodServed || "",
             teacherId,
           }
         : {
             child: childId,
             date: dateKey,
             status: "missed",
-            foodServed: feeding.foodServed || "",
+            foodServed: feeding?.foodServed || "",
             teacherId,
           };
       try {
@@ -118,11 +120,11 @@ export const tryStoreDailyOnChain = async (
     }
 
     // Optionally update DB verification state after successful on-chain writes.
-    if (markRecordsAsVerified && successes.length > 0 && attendance && feeding) {
+    if (markRecordsAsVerified && successes.length > 0 && attendance) {
       const latestAttendance = await Attendance.findById(attendance._id);
-      const latestFeeding = await Feeding.findById(feeding._id);
+      const latestFeeding = feeding ? await Feeding.findById(feeding._id) : null;
 
-      if (!latestAttendance || !latestFeeding) {
+      if (!latestAttendance) {
         return { successes, failures };
       }
 
@@ -132,17 +134,23 @@ export const tryStoreDailyOnChain = async (
       });
 
       const latestFeedingByChild = new Map<string, string>();
-      latestFeeding.records.forEach((record: any) => {
-        latestFeedingByChild.set(String(record.child), record.status);
-      });
+      if (latestFeeding?.records) {
+        latestFeeding.records.forEach((record: any) => {
+          latestFeedingByChild.set(String(record.child), record.status);
+        });
+      }
 
       const eligibleChildIds = new Set<string>();
       successes.forEach((success) => {
         const currentAttendanceStatus = latestAttendanceByChild.get(
           success.childId,
         );
-        const currentFeedingStatus = latestFeedingByChild.get(success.childId);
-        const currentFoodServed = String(latestFeeding.foodServed || "");
+        const currentFeedingStatus = latestFeeding
+          ? latestFeedingByChild.get(success.childId)
+          : "missed";
+        const currentFoodServed = latestFeeding
+          ? String(latestFeeding.foodServed || "")
+          : "";
 
         if (
           currentAttendanceStatus === success.attendanceStatus &&
@@ -169,26 +177,34 @@ export const tryStoreDailyOnChain = async (
         }
       });
 
-      latestFeeding.records.forEach((record: any) => {
-        if (eligibleChildIds.has(String(record.child))) {
-          record.blockchainVerified = true;
-          const childId =
-            record.child && record.child._id ? record.child._id : record.child;
-          const dataToHash = JSON.stringify({
-            child: String(childId),
-            status: record.status,
-          });
-          record.integrityHash = crypto
-            .createHash("sha256")
-            .update(dataToHash)
-            .digest("hex");
-        }
-      });
+      if (latestFeeding) {
+        latestFeeding.records.forEach((record: any) => {
+          if (eligibleChildIds.has(String(record.child))) {
+            record.blockchainVerified = true;
+            const childId =
+              record.child && record.child._id ? record.child._id : record.child;
+            const dataToHash = JSON.stringify({
+              child: String(childId),
+              status: record.status,
+            });
+            record.integrityHash = crypto
+              .createHash("sha256")
+              .update(dataToHash)
+              .digest("hex");
+          }
+        });
+      }
 
       latestAttendance.markModified("records");
-      latestFeeding.markModified("records");
+      if (latestFeeding) {
+        latestFeeding.markModified("records");
+      }
 
-      await Promise.all([latestAttendance.save(), latestFeeding.save()]);
+      if (latestFeeding) {
+        await Promise.all([latestAttendance.save(), latestFeeding.save()]);
+      } else {
+        await latestAttendance.save();
+      }
     }
 
     return { successes, failures };

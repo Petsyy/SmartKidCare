@@ -10,19 +10,20 @@ export function formatDateLabel(value: unknown): string {
     const year = Number(match[1]);
     const month = Number(match[2]);
     const day = Number(match[3]);
-    return new Intl.DateTimeFormat("en-US", {
+    return new Intl.DateTimeFormat("en-PH", {
       month: "long",
       day: "numeric",
       year: "numeric",
-      timeZone: "UTC",
+      timeZone: "Asia/Manila",
     }).format(new Date(Date.UTC(year, month - 1, day)));
   }
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat("en-PH", {
     month: "long",
     day: "numeric",
     year: "numeric",
+    timeZone: "Asia/Manila",
   }).format(parsed);
 }
 

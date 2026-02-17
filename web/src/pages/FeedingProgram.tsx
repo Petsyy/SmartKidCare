@@ -46,6 +46,22 @@ type FeedingRow = {
   blockchainVerified: boolean;
 };
 
+type PaginatedFeedingResponse = {
+  data: FeedingRow[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+};
+
+type DatePreset = "all" | "today" | "thisWeek" | "thisMonth";
+type FeedingStatusFilter = "all" | "completed" | "missed";
+type VerificationFilter = "all" | "verified" | "unverified";
+
 type AttendanceLookupResponse = {
   _id: string;
   date: string;
@@ -73,20 +89,22 @@ const formatChildName = (child?: ChildRef | null) => {
 };
 
 const formatDate = (value: string) =>
-  new Date(value).toLocaleDateString("en-US", {
+  new Date(value).toLocaleDateString("en-PH", {
     month: "numeric",
     day: "2-digit",
     year: "numeric",
+    timeZone: "Asia/Manila",
   });
 
 const formatDateTime = (value?: string) =>
   value
-    ? new Date(value).toLocaleString("en-US", {
+    ? new Date(value).toLocaleString("en-PH", {
         month: "numeric",
         day: "2-digit",
         year: "numeric",
         hour: "2-digit",
         minute: "2-digit",
+        timeZone: "Asia/Manila",
       })
     : "—";
 
@@ -94,6 +112,14 @@ export default function FeedingProgram() {
   const navigate = useNavigate();
   const [rows, setRows] = useState<FeedingRow[]>([]);
   const [search, setSearch] = useState("");
+  const [datePreset, setDatePreset] = useState<DatePreset>("all");
+  const [statusFilter, setStatusFilter] = useState<FeedingStatusFilter>("all");
+  const [verificationFilter, setVerificationFilter] =
+    useState<VerificationFilter>("all");
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [verifyModal, setVerifyModal] = useState<{
@@ -134,7 +160,23 @@ export default function FeedingProgram() {
     setIsLoading(true);
     setError(null);
     try {
-      const url = `${API_BASE}/records/feeding`;
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+      });
+      if (search.trim()) {
+        params.set("search", search.trim());
+      }
+      if (datePreset !== "all") {
+        params.set("datePreset", datePreset);
+      }
+      if (statusFilter !== "all") {
+        params.set("status", statusFilter);
+      }
+      if (verificationFilter !== "all") {
+        params.set("verification", verificationFilter);
+      }
+      const url = `${API_BASE}/records/feeding?${params.toString()}`;
       const response = await fetch(url, {
         credentials: "include",
         headers: {
@@ -150,29 +192,54 @@ export default function FeedingProgram() {
         throw new Error(message);
       }
 
-      const data: FeedingApiResponse[] = Array.isArray(payload) ? payload : [];
-      setRows(flattenFeeding(data));
+      if (Array.isArray(payload)) {
+        const data = flattenFeeding(payload as FeedingApiResponse[]);
+        setRows(data);
+        setTotal(data.length);
+        setTotalPages(data.length > 0 ? 1 : 0);
+      } else {
+        const paginated = payload as PaginatedFeedingResponse;
+        setRows(Array.isArray(paginated.data) ? paginated.data : []);
+        if (Number.isFinite(Number(paginated.pagination?.page))) {
+          setPage(Number(paginated.pagination.page));
+        }
+        if (Number.isFinite(Number(paginated.pagination?.limit))) {
+          setLimit(Number(paginated.pagination.limit));
+        }
+        setTotal(Number(paginated.pagination?.total ?? 0));
+        setTotalPages(Number(paginated.pagination?.totalPages ?? 0));
+      }
     } catch (err: any) {
       setError(err?.message || "Unable to fetch feeding records");
     } finally {
       setIsLoading(false);
     }
-  }, [flattenFeeding]);
+  }, [
+    datePreset,
+    flattenFeeding,
+    limit,
+    page,
+    search,
+    statusFilter,
+    verificationFilter,
+  ]);
 
   useEffect(() => {
     fetchFeeding();
   }, [fetchFeeding]);
 
-  const filteredRows = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    if (!term) return rows;
-    return rows.filter(
-      (row) =>
-        row.childName.toLowerCase().includes(term) ||
-        row.studentId.toLowerCase().includes(term) ||
-        row.foodServed.toLowerCase().includes(term),
-    );
-  }, [rows, search]);
+  const rangeLabel = useMemo(() => {
+    if (total === 0 || rows.length === 0) return "0 of 0";
+    const start = (page - 1) * limit + 1;
+    const end = Math.min(page * limit, total);
+    return `${start}-${end} of ${total}`;
+  }, [limit, page, rows.length, total]);
+
+  const hasActiveFilters =
+    datePreset !== "all" ||
+    statusFilter !== "all" ||
+    verificationFilter !== "all" ||
+    search.trim().length > 0;
 
   const fetchVerificationData = useCallback(async (row: FeedingRow) => {
     const headers = {
@@ -280,10 +347,90 @@ export default function FeedingProgram() {
               <input
                 type="text"
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(event) => {
+                  setPage(1);
+                  setSearch(event.target.value);
+                }}
                 placeholder="Search by name, meal, or ID"
                 className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
+            </div>
+          </div>
+          <div className="flex flex-col gap-3 border-b bg-gray-50/60 px-6 py-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-wrap items-center gap-2">
+              {(["all", "today", "thisWeek", "thisMonth"] as DatePreset[]).map(
+                (preset) => {
+                  const isActive = datePreset === preset;
+                  const label =
+                    preset === "all"
+                      ? "All Dates"
+                      : preset === "today"
+                        ? "Today"
+                        : preset === "thisWeek"
+                          ? "This Week"
+                          : "This Month";
+
+                  return (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => {
+                        setPage(1);
+                        setDatePreset(preset);
+                      }}
+                      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                        isActive
+                          ? "border-teal-300 bg-teal-100 text-teal-800"
+                          : "border-gray-300 bg-white text-gray-600 hover:border-teal-200 hover:text-teal-700"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                },
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={statusFilter}
+                onChange={(event) => {
+                  setPage(1);
+                  setStatusFilter(event.target.value as FeedingStatusFilter);
+                }}
+                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              >
+                <option value="all">All Status</option>
+                <option value="completed">Completed</option>
+                <option value="missed">Missed</option>
+              </select>
+              <select
+                value={verificationFilter}
+                onChange={(event) => {
+                  setPage(1);
+                  setVerificationFilter(
+                    event.target.value as VerificationFilter,
+                  );
+                }}
+                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              >
+                <option value="all">All Verification</option>
+                <option value="verified">Verified</option>
+                <option value="unverified">Needs Review</option>
+              </select>
+              <button
+                type="button"
+                disabled={!hasActiveFilters}
+                onClick={() => {
+                  setPage(1);
+                  setSearch("");
+                  setDatePreset("all");
+                  setStatusFilter("all");
+                  setVerificationFilter("all");
+                }}
+                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Clear
+              </button>
             </div>
           </div>
 
@@ -333,7 +480,7 @@ export default function FeedingProgram() {
                       Loading feeding records...
                     </td>
                   </tr>
-                ) : filteredRows.length === 0 ? (
+                ) : rows.length === 0 ? (
                   <tr>
                     <td
                       colSpan={8}
@@ -343,7 +490,7 @@ export default function FeedingProgram() {
                     </td>
                   </tr>
                 ) : (
-                  filteredRows.map((row) => (
+                  rows.map((row) => (
                     <tr
                       key={row.id}
                       className="transition-colors hover:bg-gray-50"
@@ -419,6 +566,45 @@ export default function FeedingProgram() {
                 )}
               </tbody>
             </table>
+          </div>
+          <div className="flex items-center justify-between border-t px-6 py-4">
+            <div className="flex items-center gap-3 text-sm text-gray-600">
+              <span>{rangeLabel}</span>
+              <select
+                value={limit}
+                onChange={(event) => setLimit(Number(event.target.value))}
+                className="rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              >
+                <option value={10}>10 / page</option>
+                <option value={25}>25 / page</option>
+                <option value={50}>50 / page</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                disabled={isLoading || page <= 1}
+                className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <span className="text-sm text-gray-600">
+                Page {totalPages === 0 ? 0 : page} / {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  setPage((prev) =>
+                    totalPages > 0 ? Math.min(totalPages, prev + 1) : prev,
+                  )
+                }
+                disabled={isLoading || page >= totalPages}
+                className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
           </div>
         </div>
       </div>

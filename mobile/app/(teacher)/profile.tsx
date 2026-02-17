@@ -14,7 +14,7 @@ import { useAuthContext } from "../../src/context/AuthContext";
 import { getTeacherProfile } from "@/src/api/teacher.api";
 import { API_BASE_URL } from "@/src/config/config";
 import { validatePasswordRules } from "@/src/validations/password-validation";
-import PasswordStrengthFeedback from "@/src/components/password/PasswordStrengthFeedback";
+import PasswordStrengthFeedback from "@/src/components/password-strength-feedback/PasswordStrengthFeedback";
 import React, { useState } from "react";
 import * as Icons from "lucide-react-native";
 

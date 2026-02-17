@@ -308,11 +308,12 @@ export default function ChildDetailsScreen() {
                     icon={<Calendar size={20} color="#6B7280" />}
                     label="Date of Birth"
                     value={new Date(child.dateOfBirth).toLocaleDateString(
-                      "en-US",
+                      "en-PH",
                       {
                         year: "numeric",
                         month: "long",
                         day: "numeric",
+                        timeZone: "Asia/Manila",
                       },
                     )}
                   />
@@ -322,14 +323,15 @@ export default function ChildDetailsScreen() {
                 <InfoRow
                   icon={<Calendar size={20} color="#6B7280" />}
                   label="Enrollment Date"
-                  value={new Date(child.enrollmentDate).toLocaleDateString(
-                    "en-US",
-                    {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    },
-                  )}
+                    value={new Date(child.enrollmentDate).toLocaleDateString(
+                      "en-PH",
+                      {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                        timeZone: "Asia/Manila",
+                      },
+                    )}
                 />
               </View>
             </View>

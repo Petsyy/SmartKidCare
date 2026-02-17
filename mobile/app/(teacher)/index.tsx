@@ -97,11 +97,12 @@ export default function TeacherDashboard() {
 
   // Dynamic date
   const currentDate = new Date();
-  const dateLabel = currentDate.toLocaleDateString("en-US", {
+  const dateLabel = currentDate.toLocaleDateString("en-PH", {
     weekday: "long",
     month: "long",
     day: "numeric",
     year: "numeric",
+    timeZone: "Asia/Manila",
   });
 
   const fetchData = async (isRefreshing = false) => {

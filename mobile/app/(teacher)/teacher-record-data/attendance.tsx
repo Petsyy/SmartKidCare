@@ -37,10 +37,11 @@ export default function RecordAttendance() {
   const [attendance, setAttendance] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDate, setSelectedDate] = useState(
-    new Date().toLocaleDateString("en-US", {
+    new Date().toLocaleDateString("en-PH", {
       month: "short",
       day: "numeric",
       year: "numeric",
+      timeZone: "Asia/Manila",
     }),
   );
   const [isReadOnly, setIsReadOnly] = useState(false);

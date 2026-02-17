@@ -11,11 +11,11 @@ export interface AIChatPayload {
 }
 
 function toLongDate(year: string, month: string, day: string): string {
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat("en-PH", {
     month: "long",
     day: "numeric",
     year: "numeric",
-    timeZone: "UTC",
+    timeZone: "Asia/Manila",
   }).format(
     new Date(Date.UTC(Number(year), Number(month) - 1, Number(day))),
   );

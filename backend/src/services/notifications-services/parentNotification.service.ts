@@ -59,12 +59,13 @@ const formatTimeFromDate = (value?: Date | string | null): string => {
   if (!value) return "--:--";
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "--:--";
-  const h = d.getHours();
-  const m = d.getMinutes();
-  const meridiem = h >= 12 ? "PM" : "AM";
-  const h12 = h % 12 === 0 ? 12 : h % 12;
-  const mm = String(m).padStart(2, "0");
-  return `${h12}:${mm} ${meridiem}`;
+
+  return d.toLocaleTimeString("en-PH", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: "Asia/Manila",
+  });
 };
 
 const asIdString = (value: unknown): string => {

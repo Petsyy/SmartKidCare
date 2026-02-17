@@ -71,11 +71,11 @@ const toDateKey = (value: Date): string => {
 const formatDateLabel = (value: Date): string => {
   const [year, month, day] = toDateKey(value).split("-").map(Number);
   const utcDate = new Date(Date.UTC(year, (month || 1) - 1, day || 1));
-  return utcDate.toLocaleDateString("en-US", {
+  return utcDate.toLocaleDateString("en-PH", {
     month: "long",
     day: "numeric",
     year: "numeric",
-    timeZone: "UTC",
+    timeZone: "Asia/Manila",
   });
 };
 

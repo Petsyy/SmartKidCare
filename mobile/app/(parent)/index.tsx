@@ -48,11 +48,12 @@ export default function ParentDashboard() {
 
   // Dynamic date
   const currentDate = new Date();
-  const dateLabel = currentDate.toLocaleDateString("en-US", {
+  const dateLabel = currentDate.toLocaleDateString("en-PH", {
     weekday: "long",
     month: "long",
     day: "numeric",
     year: "numeric",
+    timeZone: "Asia/Manila",
   });
 
   const fetchData = async (isRefreshing = false) => {
@@ -122,11 +123,12 @@ export default function ParentDashboard() {
   const childAge = child?.age ?? "-";
   const childGender = child?.gender ? child.gender : "-";
   const enrolledText = child?.enrollmentDate
-    ? new Date(child.enrollmentDate).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    })
+    ? new Date(child.enrollmentDate).toLocaleDateString("en-PH", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        timeZone: "Asia/Manila",
+      })
     : "-";
 
   // Calculate statistics for the selected child

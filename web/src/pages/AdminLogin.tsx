@@ -32,10 +32,21 @@ export default function AdminLogin() {
         },
       );
 
-      const data = await response.json();
+      // Render/proxies may return non-JSON or empty error bodies.
+      const raw = await response.text();
+      let data: any = null;
+      try {
+        data = raw ? JSON.parse(raw) : null;
+      } catch {
+        data = null;
+      }
 
       if (!response.ok) {
-        throw new Error(data.message || "Login failed");
+        const message =
+          data?.message ||
+          data?.error ||
+          `Login failed (HTTP ${response.status})`;
+        throw new Error(message);
       }
 
       if (data?.user?.email) {

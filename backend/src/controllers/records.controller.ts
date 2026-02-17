@@ -58,6 +58,55 @@ const queueBlockchainSync = (
   });
 };
 
+const parsePositiveInt = (value: unknown, fallback: number): number => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  const normalized = Math.floor(parsed);
+  return normalized > 0 ? normalized : fallback;
+};
+
+const shouldPaginate = (query: Request["query"]): boolean =>
+  query.page !== undefined || query.limit !== undefined;
+
+const formatChildName = (child?: any): string => {
+  if (!child || typeof child !== "object") return "Unknown";
+  const middleName = child.middleName ?? child.middle ?? child.middle_name;
+  const trailing = [child.firstName, middleName].filter(Boolean).join(" ");
+  return trailing ? `${child.lastName}, ${trailing}` : String(child.lastName);
+};
+
+const getDateRangeFromPreset = (
+  preset: string,
+): { start: Date; end: Date } | null => {
+  const now = new Date();
+  const start = new Date(now);
+  const end = new Date(now);
+
+  if (preset === "today") {
+    start.setHours(0, 0, 0, 0);
+    end.setHours(23, 59, 59, 999);
+    return { start, end };
+  }
+
+  if (preset === "thisWeek") {
+    const day = start.getDay();
+    const diffToMonday = day === 0 ? 6 : day - 1;
+    start.setDate(start.getDate() - diffToMonday);
+    start.setHours(0, 0, 0, 0);
+    end.setHours(23, 59, 59, 999);
+    return { start, end };
+  }
+
+  if (preset === "thisMonth") {
+    start.setDate(1);
+    start.setHours(0, 0, 0, 0);
+    end.setHours(23, 59, 59, 999);
+    return { start, end };
+  }
+
+  return null;
+};
+
 export const submitFeeding = async (req: Request, res: Response) => {
   try {
     const { date, foodServed, records } = req.body;
@@ -160,7 +209,16 @@ export const getAttendanceHistory = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const { startDate, endDate } = req.query;
+    const {
+      startDate,
+      endDate,
+      page,
+      limit,
+      search,
+      status,
+      verification,
+      datePreset,
+    } = req.query;
 
     const query: any = {};
 
@@ -171,6 +229,19 @@ export const getAttendanceHistory = async (req: Request, res: Response) => {
     } else if (req.user.role === "parent") {
       parentChildIds = await getParentChildIds(req.user.id);
       if (!parentChildIds.length) {
+        if (shouldPaginate(req.query)) {
+          return res.json({
+            data: [],
+            pagination: {
+              page: parsePositiveInt(page, 1),
+              limit: parsePositiveInt(limit, 25),
+              total: 0,
+              totalPages: 0,
+              hasNextPage: false,
+              hasPrevPage: false,
+            },
+          });
+        }
         return res.json([]);
       }
       query["records.child"] = { $in: parentChildIds };
@@ -181,6 +252,14 @@ export const getAttendanceHistory = async (req: Request, res: Response) => {
         $gte: new Date(startDate as string),
         $lte: new Date(endDate as string),
       };
+    } else if (datePreset) {
+      const range = getDateRangeFromPreset(String(datePreset));
+      if (range) {
+        query.date = {
+          $gte: range.start,
+          $lte: range.end,
+        };
+      }
     }
 
     const attendance = await Attendance.find(query)
@@ -202,9 +281,11 @@ export const getAttendanceHistory = async (req: Request, res: Response) => {
       }));
     });
 
+    let scopedAttendance = attendance;
+
     if (req.user.role === "parent") {
       const allowedChildIds = new Set(parentChildIds);
-      const scopedAttendance = attendance
+      scopedAttendance = attendance
         .map((entry: any) => {
           const records = Array.isArray(entry.records)
             ? entry.records.filter((record: any) => {
@@ -221,10 +302,88 @@ export const getAttendanceHistory = async (req: Request, res: Response) => {
         })
         .filter((entry: any) => entry.records.length > 0);
 
+    }
+
+    if (!shouldPaginate(req.query)) {
       return res.json(scopedAttendance);
     }
 
-    res.json(attendance);
+    const currentPage = parsePositiveInt(page, 1);
+    const currentLimit = parsePositiveInt(limit, 25);
+    const normalizedSearch = String(search || "")
+      .trim()
+      .toLowerCase();
+    const normalizedStatus = String(status || "")
+      .trim()
+      .toLowerCase();
+    const normalizedVerification = String(verification || "")
+      .trim()
+      .toLowerCase();
+
+    const flatRows = scopedAttendance.flatMap((entry: any, entryIndex: number) =>
+      (Array.isArray(entry.records) ? entry.records : []).map(
+        (record: any, recordIndex: number) => {
+          const child =
+            record?.child && typeof record.child === "object"
+              ? record.child
+              : null;
+          const childId = String(
+            child?._id ?? record?.child ?? `${entryIndex}-${recordIndex}`,
+          );
+          return {
+            id: `${entry._id}-${childId}`,
+            date: entry.date,
+            studentId: child?.studentId ?? "--",
+            childName: formatChildName(child),
+            status: record.status,
+            teacherName: entry.teacher
+              ? `${entry.teacher.firstName} ${entry.teacher.lastName}`
+              : "--",
+            submittedAt: entry.updatedAt || entry.createdAt || entry.date,
+            blockchainVerified: Boolean(record.blockchainVerified),
+          };
+        },
+      ),
+    );
+
+    const filteredRows = normalizedSearch
+      ? flatRows.filter(
+          (row: any) =>
+            String(row.childName).toLowerCase().includes(normalizedSearch) ||
+            String(row.studentId).toLowerCase().includes(normalizedSearch),
+        )
+      : flatRows;
+
+    const statusFilteredRows =
+      normalizedStatus === "present" || normalizedStatus === "absent"
+        ? filteredRows.filter((row: any) => row.status === normalizedStatus)
+        : filteredRows;
+
+    const verificationFilteredRows =
+      normalizedVerification === "verified"
+        ? statusFilteredRows.filter((row: any) => row.blockchainVerified)
+        : normalizedVerification === "unverified"
+          ? statusFilteredRows.filter((row: any) => !row.blockchainVerified)
+          : statusFilteredRows;
+
+    const total = verificationFilteredRows.length;
+    const totalPages = total > 0 ? Math.ceil(total / currentLimit) : 0;
+    const safePage =
+      totalPages > 0 ? Math.min(currentPage, totalPages) : currentPage;
+    const start = (safePage - 1) * currentLimit;
+    const data = verificationFilteredRows.slice(start, start + currentLimit);
+
+    return res.json({
+      data,
+      pagination: {
+        page: safePage,
+        limit: currentLimit,
+        total,
+        totalPages,
+        hasNextPage: safePage < totalPages,
+        hasPrevPage: safePage > 1 && totalPages > 0,
+      },
+    });
   } catch (error: any) {
     console.error("Get attendance history error:", error);
     res.status(500).json({ message: "Failed to fetch attendance history" });
@@ -473,7 +632,16 @@ export const getFeedingHistory = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const { startDate, endDate } = req.query;
+    const {
+      startDate,
+      endDate,
+      page,
+      limit,
+      search,
+      status,
+      verification,
+      datePreset,
+    } = req.query;
 
     const query: any = {};
 
@@ -484,6 +652,19 @@ export const getFeedingHistory = async (req: Request, res: Response) => {
     } else if (req.user.role === "parent") {
       parentChildIds = await getParentChildIds(req.user.id);
       if (!parentChildIds.length) {
+        if (shouldPaginate(req.query)) {
+          return res.json({
+            data: [],
+            pagination: {
+              page: parsePositiveInt(page, 1),
+              limit: parsePositiveInt(limit, 25),
+              total: 0,
+              totalPages: 0,
+              hasNextPage: false,
+              hasPrevPage: false,
+            },
+          });
+        }
         return res.json([]);
       }
       query["records.child"] = { $in: parentChildIds };
@@ -494,6 +675,14 @@ export const getFeedingHistory = async (req: Request, res: Response) => {
         $gte: new Date(startDate as string),
         $lte: new Date(endDate as string),
       };
+    } else if (datePreset) {
+      const range = getDateRangeFromPreset(String(datePreset));
+      if (range) {
+        query.date = {
+          $gte: range.start,
+          $lte: range.end,
+        };
+      }
     }
 
     const feeding = await Feeding.find(query)
@@ -515,9 +704,11 @@ export const getFeedingHistory = async (req: Request, res: Response) => {
       }));
     });
 
+    let scopedFeeding = feeding;
+
     if (req.user.role === "parent") {
       const allowedChildIds = new Set(parentChildIds);
-      const scopedFeeding = feeding
+      scopedFeeding = feeding
         .map((entry: any) => {
           const records = Array.isArray(entry.records)
             ? entry.records.filter((record: any) => {
@@ -534,10 +725,90 @@ export const getFeedingHistory = async (req: Request, res: Response) => {
         })
         .filter((entry: any) => entry.records.length > 0);
 
+    }
+
+    if (!shouldPaginate(req.query)) {
       return res.json(scopedFeeding);
     }
 
-    res.json(feeding);
+    const currentPage = parsePositiveInt(page, 1);
+    const currentLimit = parsePositiveInt(limit, 25);
+    const normalizedSearch = String(search || "")
+      .trim()
+      .toLowerCase();
+    const normalizedStatus = String(status || "")
+      .trim()
+      .toLowerCase();
+    const normalizedVerification = String(verification || "")
+      .trim()
+      .toLowerCase();
+
+    const flatRows = scopedFeeding.flatMap((entry: any, entryIndex: number) =>
+      (Array.isArray(entry.records) ? entry.records : []).map(
+        (record: any, recordIndex: number) => {
+          const child =
+            record?.child && typeof record.child === "object"
+              ? record.child
+              : null;
+          const childId = String(
+            child?._id ?? record?.child ?? `${entryIndex}-${recordIndex}`,
+          );
+          return {
+            id: `${entry._id}-${childId}`,
+            date: entry.date,
+            studentId: child?.studentId ?? "--",
+            childName: formatChildName(child),
+            foodServed: entry.foodServed || "",
+            status: record.status,
+            teacherName: entry.teacher
+              ? `${entry.teacher.firstName} ${entry.teacher.lastName}`
+              : "--",
+            submittedAt: entry.updatedAt || entry.createdAt || entry.date,
+            blockchainVerified: Boolean(record.blockchainVerified),
+          };
+        },
+      ),
+    );
+
+    const filteredRows = normalizedSearch
+      ? flatRows.filter(
+          (row: any) =>
+            String(row.childName).toLowerCase().includes(normalizedSearch) ||
+            String(row.studentId).toLowerCase().includes(normalizedSearch) ||
+            String(row.foodServed).toLowerCase().includes(normalizedSearch),
+        )
+      : flatRows;
+
+    const statusFilteredRows =
+      normalizedStatus === "completed" || normalizedStatus === "missed"
+        ? filteredRows.filter((row: any) => row.status === normalizedStatus)
+        : filteredRows;
+
+    const verificationFilteredRows =
+      normalizedVerification === "verified"
+        ? statusFilteredRows.filter((row: any) => row.blockchainVerified)
+        : normalizedVerification === "unverified"
+          ? statusFilteredRows.filter((row: any) => !row.blockchainVerified)
+          : statusFilteredRows;
+
+    const total = verificationFilteredRows.length;
+    const totalPages = total > 0 ? Math.ceil(total / currentLimit) : 0;
+    const safePage =
+      totalPages > 0 ? Math.min(currentPage, totalPages) : currentPage;
+    const start = (safePage - 1) * currentLimit;
+    const data = verificationFilteredRows.slice(start, start + currentLimit);
+
+    return res.json({
+      data,
+      pagination: {
+        page: safePage,
+        limit: currentLimit,
+        total,
+        totalPages,
+        hasNextPage: safePage < totalPages,
+        hasPrevPage: safePage > 1 && totalPages > 0,
+      },
+    });
   } catch (error: any) {
     console.error("Get feeding history error:", error);
     res.status(500).json({ message: "Failed to fetch feeding history" });

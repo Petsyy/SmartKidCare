@@ -80,9 +80,10 @@ export default function ChildScreen() {
       );
       if (attendanceEntry) {
         attendance = attendanceEntry.status === "present" ? "Present" : "Absent";
-        lastUpdated = new Date(attendanceRecord.createdAt).toLocaleTimeString("en-US", {
+        lastUpdated = new Date(attendanceRecord.createdAt).toLocaleTimeString("en-PH", {
           hour: "2-digit",
           minute: "2-digit",
+          timeZone: "Asia/Manila",
         });
       }
     }

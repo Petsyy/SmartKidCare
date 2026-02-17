@@ -76,6 +76,13 @@ const getRecordDateKey = (value: unknown) => {
   return getLocalDateKey(d);
 };
 
+const formatDateTimeManila = (value: Date) =>
+  new Intl.DateTimeFormat("en-PH", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Manila",
+  }).format(value);
+
 const getLatestDateKey = (entries: any[]): string =>
   entries.reduce((latest: string, entry: any) => {
     const hasRecords =
@@ -90,10 +97,11 @@ const formatDateKey = (key: string) => {
   if (!key) return "";
   const [year, month, day] = key.split("-").map(Number);
   if (!year || !month || !day) return key;
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat("en-PH", {
     month: "short",
     day: "2-digit",
     year: "numeric",
+    timeZone: "Asia/Manila",
   }).format(new Date(year, month - 1, day));
 };
 
@@ -392,7 +400,7 @@ export default function AdminDashboard() {
             childName: formatChildName(childObj),
             action:
               record.status === "present" ? "Checked in" : "Marked absent",
-            timestamp: eventTime.toLocaleString(),
+            timestamp: formatDateTimeManila(eventTime),
             sortTime: eventTime.getTime(),
             status: record.status,
           });
@@ -416,7 +424,7 @@ export default function AdminDashboard() {
             childName: formatChildName(childObj),
             action:
               record.status === "completed" ? "Fed lunch" : "Missed lunch",
-            timestamp: eventTime.toLocaleString(),
+            timestamp: formatDateTimeManila(eventTime),
             sortTime: eventTime.getTime(),
             status: record.status,
           });

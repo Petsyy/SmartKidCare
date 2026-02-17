@@ -67,11 +67,11 @@ function fromDateKey(key: string): Date {
 }
 
 function toLongDateFromKey(key: string): string {
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat("en-PH", {
     month: "long",
     day: "numeric",
     year: "numeric",
-    timeZone: "UTC",
+    timeZone: "Asia/Manila",
   }).format(fromDateKey(key));
 }
 
