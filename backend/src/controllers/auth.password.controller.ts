@@ -336,12 +336,19 @@ export const requestForgotPasswordOtp = async (req: Request, res: Response) => {
     });
 
     if (user) {
-      await issuePasswordOtp(
+      // Do not block the response on SMTP latency; render can be slow to deliver mail.
+      void issuePasswordOtp(
         user,
         FORGOT_PASSWORD_OTP_PURPOSE,
         "SmartKidCare forgot-password OTP",
         "Use this OTP to reset your SmartKidCare password:",
-      );
+      ).catch((error: any) => {
+        console.error("Forgot-password OTP background send failed:", {
+          email: user.email,
+          code: error?.code,
+          message: error?.message,
+        });
+      });
     }
 
     return res.json({

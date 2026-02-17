@@ -3,10 +3,12 @@ import { Stack } from "expo-router";
 import { useEffect } from "react";
 import { ActivityIndicator, Platform, View } from "react-native";
 import * as Notifications from "expo-notifications";
+import Constants from "expo-constants";
 import { AuthProvider } from "@/src/context/AuthContext";
 import { useAuth } from "@/src/hooks/useAuth";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { configureReanimatedLogger, ReanimatedLogLevel } from "react-native-reanimated";
+import { registerPushToken } from "@/src/api/notifications.api";
 
 configureReanimatedLogger({
   level: ReanimatedLogLevel.warn,
@@ -24,7 +26,61 @@ Notifications.setNotificationHandler({
 });
 
 function LayoutContent() {
-  const { user, role, loading } = useAuth();
+  const { user, role, token, loading } = useAuth();
+
+  useEffect(() => {
+    if (!user || !token) return;
+    if (Platform.OS === "web") return;
+
+    const registerToken = async () => {
+      try {
+        const permission = await Notifications.getPermissionsAsync();
+        let finalStatus = permission.status;
+
+        if (finalStatus !== "granted") {
+          const requested = await Notifications.requestPermissionsAsync();
+          finalStatus = requested.status;
+        }
+
+        if (finalStatus !== "granted") {
+          console.warn("Push permission not granted.");
+          return;
+        }
+
+        const projectId =
+          Constants.expoConfig?.extra?.eas?.projectId ||
+          Constants.easConfig?.projectId;
+
+        if (!projectId) {
+          console.warn("Missing Expo EAS projectId for push registration.");
+          return;
+        }
+
+        const pushToken = (
+          await Notifications.getExpoPushTokenAsync({ projectId })
+        ).data;
+
+        await registerPushToken(token, {
+          pushToken,
+          platform:
+            Platform.OS === "ios"
+              ? "ios"
+              : Platform.OS === "android"
+                ? "android"
+                : "unknown",
+          deviceName: Constants.deviceName ?? null,
+          appOwnership: Constants.appOwnership ?? null,
+        });
+      } catch (error: any) {
+        console.warn(
+          "Push token registration failed:",
+          error?.message || String(error),
+        );
+      }
+    };
+
+    void registerToken();
+  }, [token, user]);
 
   if (loading) {
     return (
