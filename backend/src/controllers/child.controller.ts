@@ -111,7 +111,7 @@ export const createChild = async (req: Request, res: Response) => {
     if (!parentPhone) {
       return res.status(400).json({ message: "Missing required parent phone number" });
     }
-    const tempPassword = Math.random().toString(36).slice(-8);
+    const tempPassword = Math.random().toString(36).slice(-8).toUpperCase();
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
     parent = await User.create({
@@ -302,6 +302,31 @@ export const updateChild = async (req: Request, res: Response) => {
   } catch (error: any) {
     res.status(500).json({
       message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+export const deleteChild = async (req: Request, res: Response) => {
+  try {
+    if (req.user?.role !== "admin") {
+      return res.status(403).json({ message: "Admins only" });
+    }
+
+    const id = req.params.id as string;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid child ID" });
+    }
+
+    const deleted = await Child.findByIdAndDelete(id);
+    if (!deleted) {
+      return res.status(404).json({ message: "Child not found" });
+    }
+
+    return res.json({ message: "Child deleted successfully" });
+  } catch (error: any) {
+    return res.status(500).json({
+      message: "Failed to delete child",
       error: error.message,
     });
   }

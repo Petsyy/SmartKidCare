@@ -4,7 +4,11 @@ import {
   getMe,
   getAllUsers,
   logout,
-} from "../controllers/auth.controller";
+} from "../controllers/auth/auth.controller";
+import {
+  verifyAdminLoginMfa,
+  resendAdminLoginMfa,
+} from "../controllers/auth/adminMfa.controller";
 import {
   verifyTeacherPasswordOtp,
   resendTeacherPasswordOtp,
@@ -13,15 +17,20 @@ import {
   verifyForgotPasswordOtp,
   resetForgotPassword,
   changePassword,
-} from "../controllers/auth.password.controller";
+} from "../controllers/auth/password.controller";
 import { authenticateToken } from "../middlewares/auth.middleware";
 import {
+  adminMfaResendCooldownLimiter,
+  adminMfaSendLimiter,
+  adminMfaVerifyLimiter,
   loginLimiter,
   otpResendCooldownLimiter,
   otpSendLimiter,
   otpVerifyLimiter,
 } from "../lib/rateLimit";
 import {
+  validateAdminMfaResend,
+  validateAdminMfaVerify,
   validateChangePassword,
   validateForgotPasswordRequest,
   validateForgotPasswordReset,
@@ -40,6 +49,19 @@ const router = Router();
  */
 router.post("/login", loginLimiter, validateLogin, login);
 router.post("/admin/login", loginLimiter, validateLogin, login);
+router.post(
+  "/admin/mfa/verify",
+  validateAdminMfaVerify,
+  adminMfaVerifyLimiter,
+  verifyAdminLoginMfa,
+);
+router.post(
+  "/admin/mfa/resend",
+  validateAdminMfaResend,
+  adminMfaSendLimiter,
+  adminMfaResendCooldownLimiter,
+  resendAdminLoginMfa,
+);
 router.post(
   "/password-otp/verify",
   validateOtpVerify,

@@ -5,12 +5,12 @@ import { authenticateToken } from "../middlewares/auth.middleware";
 import {
   extractUserPushTokens,
   sendExpoPushNotifications,
-} from "../services/notifications-services/pushNotification.service";
+} from "../services/notifications/pushNotification.service";
 import {
   dispatchTeacherNotificationsV1,
   getTeacherNotificationsFeed,
-} from "../services/notifications-services/teacherNotification.service";
-import { getParentNotificationsFeed } from "../services/notifications-services/parentNotification.service";
+} from "../services/notifications/teacherNotification.service";
+import { getParentNotificationsFeed } from "../services/notifications/parentNotification.service";
 
 type Platform = "ios" | "android" | "web" | "unknown";
 

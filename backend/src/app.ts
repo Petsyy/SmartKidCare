@@ -22,10 +22,30 @@ const limiter = rateLimit({
   legacyHeaders: false,
 });
 
+const allowedOrigins = String(process.env.FRONTEND_URL || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 app.use(cookieParser());
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL,
+    origin: (origin, callback) => {
+      // Allow non-browser clients and same-origin requests without Origin.
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      // If FRONTEND_URL is not configured, allow all origins in development
+      // while still echoing the request origin for credentials support.
+      if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
   }),
 );

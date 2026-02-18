@@ -2,8 +2,8 @@ import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { createHash, randomInt } from "crypto";
-import User, { IUser } from "../models/Users";
-import { sendEmail } from "../services/email.service";
+import User, { IUser } from "../../models/Users";
+import { sendEmail } from "../../services/email.service";
 
 const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const SETUP_TOKEN_TTL = "15m";

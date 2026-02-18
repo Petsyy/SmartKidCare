@@ -1,10 +1,15 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
-import User from "../models/Users";
+import User from "../../models/Users";
 import {
   maybeRequireTeacherPasswordChange,
   signAuthToken,
-} from "./auth.password.controller";
+} from "./password.controller";
+import {
+  issueAdminLoginOtp,
+  mapOtpDeliveryError,
+  maskEmail,
+} from "../../services/adminLoginMfa.service";
 
 const escapeRegex = (value: string) =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -59,21 +64,30 @@ export const login = async (req: Request, res: Response) => {
       return;
     }
 
-    const token = signAuthToken(String(user._id), user.role);
+    if (user.role === "admin") {
+      try {
+        const mfaToken = await issueAdminLoginOtp(user);
+        return res.json({
+          requiresMfa: true,
+          mfaToken,
+          email: maskEmail(user.email),
+          message: "OTP sent to your admin email.",
+        });
+      } catch (error: any) {
+        console.error("Admin login OTP send failed:", {
+          email: user.email,
+          code: error?.code,
+          message: error?.message,
+        });
+        return res.status(500).json({
+          message: mapOtpDeliveryError(error),
+        });
+      }
+    }
 
+    const token = signAuthToken(String(user._id), user.role);
     const userResponse = user.toObject();
     delete (userResponse as any).password;
-
-    if (user.role === "admin") {
-      res.cookie("authToken", token, {
-        httpOnly: true,
-        secure: false, // true in production
-        sameSite: "lax",
-        maxAge: 24 * 60 * 60 * 1000,
-      });
-
-      return res.json({ user: userResponse });
-    }
 
     // Parent & Teacher (Mobile)
     return res.json({ token, user: userResponse });

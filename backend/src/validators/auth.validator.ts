@@ -37,17 +37,23 @@ const loginSchema = z
     identifier: nonEmptyString.optional(),
     password: nonEmptyString,
   })
-  .refine(
-    (data) => Boolean(data.email || data.username || data.identifier),
-    {
-      message: "Email, username, or identifier is required.",
-      path: ["email"],
-    },
-  );
+  .refine((data) => Boolean(data.email || data.username || data.identifier), {
+    message: "Email, username, or identifier is required.",
+    path: ["email"],
+  });
 
 const otpVerifySchema = z.object({
   email: emailSchema,
   otp: nonEmptyString,
+});
+
+const adminMfaVerifySchema = z.object({
+  mfaToken: nonEmptyString,
+  otp: nonEmptyString,
+});
+
+const adminMfaResendSchema = z.object({
+  mfaToken: nonEmptyString,
 });
 
 const emailOnlySchema = z.object({
@@ -75,6 +81,8 @@ const getUsersQuerySchema = z.object({
 
 export const validateLogin = validate(loginSchema);
 export const validateOtpVerify = validate(otpVerifySchema);
+export const validateAdminMfaVerify = validate(adminMfaVerifySchema);
+export const validateAdminMfaResend = validate(adminMfaResendSchema);
 export const validateResendOtp = validate(emailOnlySchema);
 export const validatePasswordSetup = validate(passwordSetupSchema);
 export const validateForgotPasswordRequest = validate(emailOnlySchema);

@@ -34,7 +34,7 @@ export const createTeacher = async (req: Request, res: Response) => {
 
     const employeeId = await generateEmployeeId();
 
-    const tempPassword = Math.random().toString(36).slice(-8);
+    const tempPassword = Math.random().toString(36).slice(-8).toUpperCase();
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
     const teacher = await User.create({
@@ -51,6 +51,10 @@ export const createTeacher = async (req: Request, res: Response) => {
       passwordResetOtpExpiresAt: undefined,
     });
 
+    let emailDelivery: { sent: boolean; to: string; message?: string } = {
+      sent: true,
+      to: normalizedEmail,
+    };
     try {
       await sendTeacherCredentialsEmail({
         to: normalizedEmail,
@@ -59,27 +63,18 @@ export const createTeacher = async (req: Request, res: Response) => {
         tempPassword,
       });
     } catch (error: any) {
-      let rollbackSucceeded = false;
-      try {
-        await User.findByIdAndDelete(teacher._id);
-        rollbackSucceeded = true;
-      } catch (rollbackError: any) {
-        console.error("Teacher rollback after email failure failed:", {
-          teacherId: teacher._id,
-          message: rollbackError?.message,
-        });
-      }
-
       const deliveryErrorMessage = mapCredentialDeliveryError(error);
-      if (rollbackSucceeded) {
-        return res.status(502).json({
-          message: `${deliveryErrorMessage} Teacher account was not saved.`,
-        });
-      }
-
-      return res.status(502).json({
-        message: `${deliveryErrorMessage} Teacher account exists, but credentials were not delivered.`,
+      console.error("Teacher credentials email delivery failed:", {
+        teacherId: teacher._id,
+        email: normalizedEmail,
+        code: error?.code,
+        message: error?.message,
       });
+      emailDelivery = {
+        sent: false,
+        to: normalizedEmail,
+        message: deliveryErrorMessage,
+      };
     }
 
     const teacherResponse = teacher.toObject();
@@ -91,10 +86,7 @@ export const createTeacher = async (req: Request, res: Response) => {
         email: normalizedEmail,
         tempPassword,
       },
-      emailDelivery: {
-        sent: true,
-        to: normalizedEmail,
-      },
+      emailDelivery,
     });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -158,7 +150,7 @@ export const resetPassword = async (req: Request, res: Response) => {
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: "User not found." });
 
-    const tempPassword = Math.random().toString(36).slice(-8);
+    const tempPassword = Math.random().toString(36).slice(-8).toUpperCase();
     user.password = await bcrypt.hash(tempPassword, 10);
     user.mustChangePassword = true;
     user.passwordResetOtpHash = undefined;

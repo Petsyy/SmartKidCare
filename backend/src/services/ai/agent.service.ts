@@ -5,7 +5,7 @@ import {
   renderAgentToolResult,
   AgentToolName,
   AgentToolResult,
-} from "./aiTools.service";
+} from "./tools.service";
 
 type AIRole = "parent" | "teacher" | "admin";
 

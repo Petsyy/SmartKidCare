@@ -1,18 +1,18 @@
 import { Router } from "express";
-import { AIServiceError, askGemini } from "../services/gemini.service";
-import { buildAIContext } from "../services/aiContext.service";
-import { tryHandleAgentQuery } from "../services/aiAgent.service";
+import { AIServiceError, askGemini } from "../services/ai/gemini.service";
+import { buildAIContext } from "../services/ai/context.service";
+import { tryHandleAgentQuery } from "../services/ai/agent.service";
 import {
   tryHandleDateSpecificQuery,
   tryHandleStatusMetricQuery,
-} from "../services/aiDateQuery.service";
+} from "../services/ai/dateQuery.service";
 import {
   buildAffirmativeFollowUpReply,
   buildGreetingReply,
   buildQuotaFallbackReply,
   isAffirmative,
   isGreeting,
-} from "../services/aiChatReply.service";
+} from "../services/ai/chatReply.service";
 
 const router = Router();
 

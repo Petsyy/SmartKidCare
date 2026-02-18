@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { askGemini } from "../services/gemini.service";
+import { askGemini } from "../services/ai/gemini.service";
 import { AIChatRequest } from "../types/ai.types";
 
 function isGreeting(message: string) {
@@ -72,6 +72,3 @@ ${message}
     });
   }
 }
-
-
-

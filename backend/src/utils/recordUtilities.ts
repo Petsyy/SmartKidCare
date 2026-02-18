@@ -33,8 +33,9 @@ export const tryStoreDailyOnChain = async (
 
     if (!feeding) {
       console.log(
-        `[Blockchain sync] Feeding record is missing for teacher ${teacherId} on ${toDateKey(date)}. Using default missed feeding data for anchoring.`,
+        `[Blockchain sync skipped] Missing feeding record for teacher ${teacherId} on ${toDateKey(date)}`,
       );
+      return null;
     }
 
     // Check and log wallet balance
@@ -49,19 +50,17 @@ export const tryStoreDailyOnChain = async (
 
     const dateKey = toDateKey(date);
 
-    // Always submit all attendance records for blockchain verification, regardless of feeding status
+    // Build attendance map keyed by child id.
     const attendanceByChild = new Map<string, { status: string }>();
     attendance.records.forEach((record: any) => {
       attendanceByChild.set(String(record.child), { status: record.status });
     });
 
-    // Build feeding map (may be empty if no feeding record for a child)
+    // Build feeding map keyed by child id.
     const feedingByChild = new Map<string, { status: string }>();
-    if (feeding?.records) {
-      feeding.records.forEach((record: any) => {
-        feedingByChild.set(String(record.child), { status: record.status });
-      });
-    }
+    feeding.records.forEach((record: any) => {
+      feedingByChild.set(String(record.child), { status: record.status });
+    });
 
     const successes: Array<{
       childId: string;
@@ -73,30 +72,29 @@ export const tryStoreDailyOnChain = async (
     const failures: Array<{ childId: string; error: string }> = [];
 
     for (const [childId, attendanceRecord] of attendanceByChild.entries()) {
-      // Always submit attendance, even if no feeding record exists for this child
       const feedingRecord = feedingByChild.get(childId);
+      if (!feedingRecord) {
+        failures.push({
+          childId,
+          error:
+            "Missing feeding record for child on this date; on-chain sync skipped for this child",
+        });
+        continue;
+      }
+
       const attendanceData = {
         child: childId,
         date: dateKey,
         status: attendanceRecord.status,
         teacherId,
       };
-      // If feeding record exists, use it; otherwise, submit a default 'missed' feeding
-      const feedingData = feedingRecord
-        ? {
-            child: childId,
-            date: dateKey,
-            status: feedingRecord.status,
-            foodServed: feeding?.foodServed || "",
-            teacherId,
-          }
-        : {
-            child: childId,
-            date: dateKey,
-            status: "missed",
-            foodServed: feeding?.foodServed || "",
-            teacherId,
-          };
+      const feedingData = {
+        child: childId,
+        date: dateKey,
+        status: feedingRecord.status,
+        foodServed: feeding.foodServed || "",
+        teacherId,
+      };
       try {
         const result = await storeDailyRecord(
           childId,
@@ -147,14 +145,16 @@ export const tryStoreDailyOnChain = async (
         );
         const currentFeedingStatus = latestFeeding
           ? latestFeedingByChild.get(success.childId)
-          : "missed";
+          : undefined;
         const currentFoodServed = latestFeeding
           ? String(latestFeeding.foodServed || "")
-          : "";
+          : undefined;
 
         if (
           currentAttendanceStatus === success.attendanceStatus &&
+          currentFeedingStatus !== undefined &&
           currentFeedingStatus === success.feedingStatus &&
+          currentFoodServed !== undefined &&
           currentFoodServed === String(success.feedingFoodServed || "")
         ) {
           eligibleChildIds.add(success.childId);

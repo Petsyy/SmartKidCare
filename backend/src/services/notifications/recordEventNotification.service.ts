@@ -70,6 +70,40 @@ const summarizeNames = (names: string[], maxVisible = 3): string => {
   return `${visible} and ${unique.length - maxVisible} more`;
 };
 
+const buildAttendanceSummaryBody = (
+  records: ParentRecord[],
+  dateLabel: string,
+): string => {
+  if (records.length === 1) {
+    const record = records[0];
+    return record.status === "present"
+      ? `${record.childName} was marked present on ${dateLabel}.`
+      : `${record.childName} was marked absent on ${dateLabel}.`;
+  }
+
+  return `Attendance submitted for ${dateLabel}.`;
+};
+
+const buildFeedingSummaryBody = (
+  records: ParentRecord[],
+  dateLabel: string,
+  foodServed: string,
+): string => {
+  const menuLabel = String(foodServed || "").trim();
+
+  if (records.length === 1) {
+    const record = records[0];
+    const mealName = menuLabel || "the meal";
+    return record.status === "completed"
+      ? `${record.childName} finished ${mealName} on ${dateLabel}.`
+      : `${record.childName} missed ${mealName} on ${dateLabel}.`;
+  }
+
+  return menuLabel
+    ? `Feeding submitted for ${dateLabel} (${menuLabel}).`
+    : `Feeding submitted for ${dateLabel}.`;
+};
+
 const buildParentTargets = async (
   records: RecordInput[],
 ): Promise<ParentTarget[]> => {
@@ -175,10 +209,7 @@ export const notifyAttendanceSubmitted = async (params: {
     const summaryResult = await sendExpoPushNotifications({
       tokens: target.tokens,
       title: "Attendance Submitted",
-      body:
-        absentRecords.length > 0
-          ? `Attendance for ${dateLabel}: ${presentCount} present, ${absentRecords.length} absent.`
-          : `Attendance for ${dateLabel}: all ${total} marked present.`,
+      body: buildAttendanceSummaryBody(target.records, dateLabel),
       data: {
         type: "attendance_submitted",
         date: dateKey,
@@ -246,7 +277,11 @@ export const notifyFeedingSubmitted = async (params: {
     const summaryResult = await sendExpoPushNotifications({
       tokens: target.tokens,
       title: "Feeding Submitted",
-      body: `${params.foodServed} on ${dateLabel}: ${completedCount} completed, ${missedRecords.length} missed.`,
+      body: buildFeedingSummaryBody(
+        target.records,
+        dateLabel,
+        params.foodServed,
+      ),
       data: {
         type: "feeding_submitted",
         date: dateKey,
