@@ -28,6 +28,7 @@ export interface CreateTeacherResponse {
   emailDelivery?: {
     sent: boolean;
     to: string;
+    message?: string;
   };
 }
 

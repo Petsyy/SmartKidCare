@@ -9,8 +9,15 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { getMyChildren, Child } from "@/src/api/parent.api";
+import { getTodayAttendance, getTodayFeeding } from "@/src/api/records.api";
 import ChildCard from "@/src/components/ChildCard";
 import { useAuth } from "@/src/hooks/useAuth";
+
+interface ChildStatus {
+  attendance: "Present" | "Absent" | "Not Recorded";
+  feeding: "Finished" | "Missed" | "Not Recorded";
+  lastUpdated: string;
+}
 
 export default function ChildScreen() {
   const insets = useSafeAreaInsets();
@@ -20,14 +27,22 @@ export default function ChildScreen() {
   const [children, setChildren] = useState<Child[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [attendanceRecord, setAttendanceRecord] = useState<any>(null);
+  const [feedingRecord, setFeedingRecord] = useState<any>(null);
 
   useEffect(() => {
     const loadChildren = async () => {
       try {
         if (!token) throw new Error("No authentication token");
 
-        const data = await getMyChildren(token);
+        const [data, attendance, feeding] = await Promise.all([
+          getMyChildren(token),
+          getTodayAttendance(token).catch(() => null),
+          getTodayFeeding(token).catch(() => null),
+        ]);
         setChildren(data);
+        setAttendanceRecord(attendance);
+        setFeedingRecord(feeding);
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -37,6 +52,53 @@ export default function ChildScreen() {
 
     loadChildren();
   }, [token]);
+
+  const getChildStatus = (childId: string): ChildStatus => {
+    let attendance: "Present" | "Absent" | "Not Recorded" = "Not Recorded";
+    let feeding: "Finished" | "Missed" | "Not Recorded" = "Not Recorded";
+    let lastUpdated = "No data";
+
+    if (attendanceRecord?.records) {
+      const attendanceEntry = attendanceRecord.records.find((record: any) => {
+        const recordChildId =
+          typeof record?.child === "string"
+            ? record.child
+            : (record?.child?._id ?? "");
+        return String(recordChildId) === String(childId);
+      });
+
+      if (attendanceEntry) {
+        attendance = attendanceEntry.status === "present" ? "Present" : "Absent";
+        const updatedAt =
+          attendanceRecord.updatedAt ||
+          attendanceRecord.createdAt ||
+          attendanceRecord.date;
+        if (updatedAt) {
+          lastUpdated = new Date(updatedAt).toLocaleTimeString("en-PH", {
+            hour: "2-digit",
+            minute: "2-digit",
+            timeZone: "Asia/Manila",
+          });
+        }
+      }
+    }
+
+    if (feedingRecord?.records) {
+      const feedingEntry = feedingRecord.records.find((record: any) => {
+        const recordChildId =
+          typeof record?.child === "string"
+            ? record.child
+            : (record?.child?._id ?? "");
+        return String(recordChildId) === String(childId);
+      });
+
+      if (feedingEntry) {
+        feeding = feedingEntry.status === "completed" ? "Finished" : "Missed";
+      }
+    }
+
+    return { attendance, feeding, lastUpdated };
+  };
 
 
   if (loading) {
@@ -92,25 +154,28 @@ export default function ChildScreen() {
             </Text>
           ) : (
             <View className="flex flex-col">
-              {children.map((child, index) => (
-                <View key={child._id} className={index < children.length - 1 ? "mb-4" : ""}>
-                  <ChildCard
-                  name={`${child.firstName} ${child.middleName ? child.middleName + " " : ""
-                    }${child.lastName}`}
-                  age={child.age}
-                  gender={child.gender}
-
-                  // temporary / demo values
-                  attendance="Present"
-                  feeding="Finished"
-                  lastUpdated="Today 10:30 AM"
-
-                  onPress={() => {
-                    router.push(`/(parent)/parent-child-details/${child._id}`);
-                  }}
-                />
-                </View>
-              ))}
+              {children.map((child, index) => {
+                const status = getChildStatus(child._id);
+                return (
+                  <View
+                    key={child._id}
+                    className={index < children.length - 1 ? "mb-4" : ""}
+                  >
+                    <ChildCard
+                      name={`${child.firstName} ${child.middleName ? child.middleName + " " : ""
+                        }${child.lastName}`}
+                      age={child.age}
+                      gender={child.gender}
+                      attendance={status.attendance}
+                      feeding={status.feeding}
+                      lastUpdated={status.lastUpdated}
+                      onPress={() => {
+                        router.push(`/(parent)/parent-child-details/${child._id}`);
+                      }}
+                    />
+                  </View>
+                );
+              })}
             </View>
           )}
         </View>

@@ -119,9 +119,6 @@ export default function ChildScreen() {
       <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
         <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
         <View className="flex-1 items-center justify-center">
-          <View className="w-20 h-20 rounded-full bg-teal-100 items-center justify-center mb-4">
-            <Users size={40} color="#14B8A6" />
-          </View>
           <ActivityIndicator size="large" color="#14B8A6" />
           <Text className="mt-4 text-lg text-gray-600 font-medium">Loading children...</Text>
         </View>
@@ -276,7 +273,7 @@ export default function ChildScreen() {
                       attendance={status.attendance}
                       feeding={status.feeding}
                       lastUpdated={status.lastUpdated}
-                      onPress={() => router.push(`/(teacher)/(child-details)/${child._id}`)}
+                      onPress={() => router.push(`/(teacher)/child-details/${child._id}`)}
                     />
                   </View>
                 );

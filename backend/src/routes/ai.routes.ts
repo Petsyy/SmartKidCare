@@ -64,6 +64,7 @@ router.post("/chat", async (req, res) => {
       feedingSummary: normalizedFeedingSummary,
     });
     if (agentReply) {
+      console.log("[AI_CHAT_PATH] agent", { message: trimmedMessage });
       return res.json({ reply: agentReply });
     }
 
@@ -79,6 +80,7 @@ router.post("/chat", async (req, res) => {
         feedingSummary: normalizedFeedingSummary,
       });
     if (deterministicReply) {
+      console.log("[AI_CHAT_PATH] deterministic", { message: trimmedMessage });
       return res.json({ reply: deterministicReply });
     }
 
@@ -91,6 +93,7 @@ router.post("/chat", async (req, res) => {
     });
 
     const reply = await askGemini(prompt);
+    console.log("[AI_CHAT_PATH] gemini", { message: trimmedMessage });
 
     res.json({ reply });
   } catch (error) {

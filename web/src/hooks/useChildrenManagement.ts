@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { type Child } from "../pages/ChildrenManagement";
-import { getChildren, updateChild } from "../api/child.api";
+import Swal from "sweetalert2";
+import { deleteChild, getChildren, updateChild } from "../api/child.api";
 import { API_BASE } from "../components/config/config.api";
 import {
   showErrorModal,
@@ -129,6 +130,35 @@ export function useChildrenManagement() {
     }
   };
 
+  const handleDeleteChild = async (child: Child) => {
+    const result = await Swal.fire({
+      title: "Delete Child?",
+      text: `Are you sure you want to delete ${child.firstName} ${child.lastName}? This action cannot be undone.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#DC2626",
+      cancelButtonColor: "#6B7280",
+      confirmButtonText: "Yes, delete",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      await deleteChild(child._id);
+      setChildren((prev) => prev.filter((item) => item._id !== child._id));
+
+      await Swal.fire({
+        title: "Deleted",
+        text: "Child has been deleted successfully.",
+        icon: "success",
+        confirmButtonColor: "#0D9488",
+      });
+    } catch (err: any) {
+      showErrorModal(err.message || "Failed to delete child");
+    }
+  };
+
   const filteredChildren = children.filter((child) => {
     if (!search.trim()) return true;
     const q = search.toLowerCase().trim();
@@ -149,5 +179,6 @@ export function useChildrenManagement() {
     handleChangeStatus,
     handleRegenerateLinkCode,
     handleUnlinkParent,
+    handleDeleteChild,
   };
 }

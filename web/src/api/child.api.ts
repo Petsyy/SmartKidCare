@@ -68,3 +68,13 @@ export const updateChild = async (
   if (!res.ok) throw new Error(data.message || "Failed to update child");
   return data;
 };
+
+export const deleteChild = async (childId: string) => {
+  const res = await fetch(`${API_BASE}/children/${childId}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || "Failed to delete child");
+  return data;
+};

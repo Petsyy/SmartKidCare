@@ -120,10 +120,10 @@ export default function Login() {
                     />
                   </View>
                   <Text className="text-3xl font-bold text-white mb-2 text-center">
-                    Welcome Back
+                    SmartKidCare
                   </Text>
                   <Text className="text-white/90 text-center text-base">
-                    Sign in to your SmartKidCare account
+                    Sign in to your account to continue
                   </Text>
                 </View>
               </LinearGradient>

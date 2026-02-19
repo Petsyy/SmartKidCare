@@ -117,7 +117,7 @@ export default function FeedingProgram() {
   const [verificationFilter, setVerificationFilter] =
     useState<VerificationFilter>("all");
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(25);
+  const [limit, setLimit] = useState(10);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(false);

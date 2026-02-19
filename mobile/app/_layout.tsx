@@ -1,7 +1,7 @@
 import "@/global.css";
 import { Stack } from "expo-router";
 import { useEffect } from "react";
-import { ActivityIndicator, Platform, View } from "react-native";
+import { ActivityIndicator, LogBox, Platform, View } from "react-native";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
 import { AuthProvider } from "@/src/context/AuthContext";
@@ -15,7 +15,6 @@ configureReanimatedLogger({
   strict: false,
 });
 
-// Show incoming push notifications even when app is in the foreground.
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowBanner: true,
@@ -106,6 +105,13 @@ function LayoutContent() {
 }
 
 export default function RootLayout() {
+  useEffect(() => {
+    LogBox.ignoreLogs([
+      "SafeAreaView has been deprecated and will be removed in a future release.",
+      "[Reanimated] Reduced motion setting is enabled on this device.",
+    ]);
+  }, []);
+
   useEffect(() => {
     if (Platform.OS !== "android") return;
 

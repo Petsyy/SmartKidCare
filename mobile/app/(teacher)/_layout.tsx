@@ -79,7 +79,7 @@ export default function TeacherLayout() {
         }}
       />
       <Tabs.Screen
-        name="(child-details)"
+        name="child-details"
         options={{
           href: null,
         }}

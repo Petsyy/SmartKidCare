@@ -55,6 +55,7 @@ export interface TeacherCredentials {
 export interface TeacherEmailDelivery {
   sent: boolean;
   to: string;
+  message?: string;
 }
 
 export const showTeacherCredentialsModal = (
@@ -65,7 +66,7 @@ export const showTeacherCredentialsModal = (
 ) => {
   const deliveryMessage = emailDelivery?.sent
     ? `Credentials have been sent to <strong>${emailDelivery.to}</strong>.`
-    : "Teacher can use their email and reset flow if delivery is unavailable.";
+    : emailDelivery?.message || "Email delivery failed. Share credentials manually.";
 
   return Swal.fire({
     title: "Teacher Account Created Successfully",
@@ -82,8 +83,8 @@ export const showTeacherCredentialsModal = (
             Email: <strong>${email}</strong>
           </p>
         </div>
-        <div style="background: #ecfeff; border-left: 4px solid #06b6d4; padding: 12px; border-radius: 4px; margin-top: 16px;">
-          <p style="margin: 0; color: #155e75; font-size: 14px;">
+        <div style="background: ${emailDelivery?.sent ? "#ecfeff" : "#fff7ed"}; border-left: 4px solid ${emailDelivery?.sent ? "#06b6d4" : "#f97316"}; padding: 12px; border-radius: 4px; margin-top: 16px;">
+          <p style="margin: 0; color: ${emailDelivery?.sent ? "#155e75" : "#9a3412"}; font-size: 14px;">
             <strong>Email Delivery:</strong> ${deliveryMessage}
           </p>
         </div>

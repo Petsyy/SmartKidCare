@@ -1,7 +1,14 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { Plus, Search, RefreshCw, Unlink, ToggleLeft } from "lucide-react";
+import {
+  Plus,
+  Search,
+  RefreshCw,
+  Unlink,
+  ToggleLeft,
+  Trash2,
+} from "lucide-react";
 import Layout from "../components/layout/Layout";
 import AddChildModal from "../components/modals/AddChildModal";
 import EditChildModal, { type ChildForEdit } from "../components/modals/EditChildModal";
@@ -41,6 +48,7 @@ export default function ChildrenManagement() {
     handleChangeStatus,
     handleRegenerateLinkCode,
     handleUnlinkParent,
+    handleDeleteChild,
   } = useChildrenManagement();
 
   const { openMenuUserId, menuAnchorRect, menuUser: menuChild, openMenu, closeMenu } =
@@ -182,6 +190,16 @@ export default function ChildrenManagement() {
                 Unlink Parent
               </button>
             )}
+            <button
+              onClick={async () => {
+                closeMenu();
+                await handleDeleteChild(menuChild as Child);
+              }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition"
+            >
+              <Trash2 size={14} />
+              Delete Child
+            </button>
           </div>,
           document.body
         )}

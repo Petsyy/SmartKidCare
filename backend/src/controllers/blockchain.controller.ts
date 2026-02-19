@@ -38,7 +38,7 @@ export async function verifyAttendance(req: Request, res: Response) {
   }
 }
 
-export async function fetchRecordMeta(req: Request, res: Response) {
+export async function fetchRecordMeta(req: Request, res: Response) {332
   const childId = Array.isArray(req.params.childId)
     ? req.params.childId[0]
     : req.params.childId;
