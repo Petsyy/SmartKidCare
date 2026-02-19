@@ -14,7 +14,10 @@ const MONTHS = [
 ];
 
 export type AgentToolTimeframe = "today" | "week" | "recent";
-export type AgentToolName = "count_absences" | "count_missed_meals";
+export type AgentToolName =
+  | "summarize_attendance"
+  | "summarize_feeding"
+  | "generate_child_report";
 
 type SummaryEntry = { key: string; detail: string };
 
@@ -28,10 +31,11 @@ type FeedingCounts = {
   total: number | null;
   completed: number | null;
   missed: number | null;
+  food: string | null;
 };
 
-type CountAbsencesResult = {
-  tool: "count_absences";
+type SummarizeAttendanceResult = {
+  tool: "summarize_attendance";
   timeframe: AgentToolTimeframe;
   timeframeLabel: string;
   absent: number | null;
@@ -41,18 +45,50 @@ type CountAbsencesResult = {
   note?: string;
 };
 
-type CountMissedMealsResult = {
-  tool: "count_missed_meals";
+type SummarizeFeedingResult = {
+  tool: "summarize_feeding";
   timeframe: AgentToolTimeframe;
   timeframeLabel: string;
   missed: number | null;
   completed: number | null;
   datesWithMissedMeals: Array<{ date: string; missed: number }>;
+  entries: FoodIntakeEntry[];
   latestDate: string | null;
   note?: string;
 };
 
-export type AgentToolResult = CountAbsencesResult | CountMissedMealsResult;
+type FoodIntakeEntry = {
+  date: string;
+  food: string | null;
+  total: number | null;
+  completed: number | null;
+  missed: number | null;
+};
+
+type GenerateChildReportResult = {
+  tool: "generate_child_report";
+  timeframe: AgentToolTimeframe;
+  timeframeLabel: string;
+  attendance: {
+    absent: number | null;
+    present: number | null;
+    datesWithAbsences: Array<{ date: string; absent: number }>;
+  };
+  feeding: {
+    missed: number | null;
+    completed: number | null;
+    entries: FoodIntakeEntry[];
+    datesWithMissedMeals: Array<{ date: string; missed: number }>;
+  };
+  latestAttendanceDate: string | null;
+  latestFeedingDate: string | null;
+  note?: string;
+};
+
+export type AgentToolResult =
+  | SummarizeAttendanceResult
+  | SummarizeFeedingResult
+  | GenerateChildReportResult;
 
 function toDateKey(date: Date): string {
   const year = date.getUTCFullYear();
@@ -134,6 +170,14 @@ function deriveCounterpartCount(
   return Math.max(total - known, 0);
 }
 
+function extractFoodLabel(detail: string): string | null {
+  const head = detail.split("(")[0]?.trim() ?? "";
+  if (!head) return null;
+  if (/^total\b/i.test(head)) return null;
+  if (/^\d+\s+records?$/i.test(head)) return null;
+  return head;
+}
+
 function parseAttendanceCounts(detail: string): AttendanceCounts {
   const total = extractTotalCount(detail);
   let present = extractLabeledCount(detail, "present");
@@ -161,7 +205,12 @@ function parseFeedingCounts(detail: string): FeedingCounts {
     completed = deriveCounterpartCount(total, missed);
   }
 
-  return { total, completed, missed };
+  return {
+    total,
+    completed,
+    missed,
+    food: extractFoodLabel(detail),
+  };
 }
 
 function sumKnown(values: Array<number | null>): {
@@ -266,17 +315,17 @@ function pluralize(count: number, singular: string, plural: string): string {
   return count === 1 ? singular : plural;
 }
 
-function executeCountAbsencesTool(
+function executeSummarizeAttendanceTool(
   attendanceSummary: string,
   timeframe: AgentToolTimeframe,
-): CountAbsencesResult {
+): SummarizeAttendanceResult {
   const allEntries = parseSummaryEntries(attendanceSummary);
   const latestDate = latestSummaryDate(allEntries);
   const scopedEntries = filterEntriesByTimeframe(allEntries, timeframe);
 
   if (!scopedEntries.length) {
     return {
-      tool: "count_absences",
+      tool: "summarize_attendance",
       timeframe,
       timeframeLabel: timeframeLabel(timeframe),
       absent: null,
@@ -296,7 +345,7 @@ function executeCountAbsencesTool(
   const presentTotals = sumKnown(parsed.map((item) => item.counts.present));
 
   return {
-    tool: "count_absences",
+    tool: "summarize_attendance",
     timeframe,
     timeframeLabel: timeframeLabel(timeframe),
     absent: absentTotals.hasKnownValues ? absentTotals.total : null,
@@ -311,22 +360,23 @@ function executeCountAbsencesTool(
   };
 }
 
-function executeCountMissedMealsTool(
+function executeSummarizeFeedingTool(
   feedingSummary: string,
   timeframe: AgentToolTimeframe,
-): CountMissedMealsResult {
+): SummarizeFeedingResult {
   const allEntries = parseSummaryEntries(feedingSummary);
   const latestDate = latestSummaryDate(allEntries);
   const scopedEntries = filterEntriesByTimeframe(allEntries, timeframe);
 
   if (!scopedEntries.length) {
     return {
-      tool: "count_missed_meals",
+      tool: "summarize_feeding",
       timeframe,
       timeframeLabel: timeframeLabel(timeframe),
       missed: null,
       completed: null,
       datesWithMissedMeals: [],
+      entries: [],
       latestDate,
       note: buildNoDataNote("feeding", timeframe, latestDate),
     };
@@ -338,12 +388,10 @@ function executeCountMissedMealsTool(
   }));
 
   const missedTotals = sumKnown(parsed.map((item) => item.counts.missed));
-  const completedTotals = sumKnown(
-    parsed.map((item) => item.counts.completed),
-  );
+  const completedTotals = sumKnown(parsed.map((item) => item.counts.completed));
 
   return {
-    tool: "count_missed_meals",
+    tool: "summarize_feeding",
     timeframe,
     timeframeLabel: timeframeLabel(timeframe),
     missed: missedTotals.hasKnownValues ? missedTotals.total : null,
@@ -354,7 +402,50 @@ function executeCountMissedMealsTool(
         date: toLongDateFromKey(item.entry.key),
         missed: item.counts.missed ?? 0,
       })),
+    entries: parsed.map((item) => ({
+      date: toLongDateFromKey(item.entry.key),
+      food: item.counts.food,
+      total: item.counts.total,
+      completed: item.counts.completed,
+      missed: item.counts.missed,
+    })),
     latestDate,
+  };
+}
+
+function executeGenerateChildReportTool(
+  attendanceSummary: string,
+  feedingSummary: string,
+  timeframe: AgentToolTimeframe,
+): GenerateChildReportResult {
+  const attendance = executeSummarizeAttendanceTool(
+    attendanceSummary,
+    timeframe,
+  );
+  const feeding = executeSummarizeFeedingTool(feedingSummary, timeframe);
+
+  const noteParts = [attendance.note, feeding.note].filter(
+    (item): item is string => Boolean(item),
+  );
+
+  return {
+    tool: "generate_child_report",
+    timeframe,
+    timeframeLabel: timeframeLabel(timeframe),
+    attendance: {
+      absent: attendance.absent,
+      present: attendance.present,
+      datesWithAbsences: attendance.datesWithAbsences,
+    },
+    feeding: {
+      missed: feeding.missed,
+      completed: feeding.completed,
+      entries: feeding.entries,
+      datesWithMissedMeals: feeding.datesWithMissedMeals,
+    },
+    latestAttendanceDate: attendance.latestDate,
+    latestFeedingDate: feeding.latestDate,
+    note: noteParts.length ? noteParts.join(" ") : undefined,
   };
 }
 
@@ -367,17 +458,25 @@ export function executeAgentTool(params: {
   const { tool, attendanceSummary, feedingSummary, timeframe } = params;
   const safeTimeframe = normalizeTimeframe(timeframe);
 
-  if (tool === "count_absences") {
-    return executeCountAbsencesTool(attendanceSummary, safeTimeframe);
+  if (tool === "summarize_attendance") {
+    return executeSummarizeAttendanceTool(attendanceSummary, safeTimeframe);
   }
 
-  return executeCountMissedMealsTool(feedingSummary, safeTimeframe);
+  if (tool === "summarize_feeding") {
+    return executeSummarizeFeedingTool(feedingSummary, safeTimeframe);
+  }
+
+  return executeGenerateChildReportTool(
+    attendanceSummary,
+    feedingSummary,
+    safeTimeframe,
+  );
 }
 
 export function renderAgentToolResult(result: AgentToolResult): string {
   if (result.note) return result.note;
 
-  if (result.tool === "count_absences") {
+  if (result.tool === "summarize_attendance") {
     if (result.absent === null) {
       return "Attendance records are available, but present/absent counts are missing, so I cannot calculate absences yet.";
     }
@@ -402,25 +501,82 @@ export function renderAgentToolResult(result: AgentToolResult): string {
     return lines.join("\n");
   }
 
-  if (result.missed === null) {
-    return "Feeding records are available, but completed/missed counts are missing, so I cannot calculate missed meals yet.";
+  if (result.tool === "summarize_feeding") {
+    if (
+      result.missed === null &&
+      result.completed === null &&
+      !result.entries.length
+    ) {
+      return "Feeding records are available, but completed/missed counts are missing, so I cannot summarize feeding yet.";
+    }
+
+    if (!result.entries.length) {
+      return "I do not have feeding details to summarize yet.";
+    }
+
+    const firstEntry = result.entries[0];
+    const fallbackFoodText = "food details are not available";
+    const firstFood = firstEntry.food ?? fallbackFoodText;
+
+    if (result.timeframe === "today") {
+      if (firstEntry.completed !== null && firstEntry.completed > 0) {
+        const statusSuffix =
+          firstEntry.missed !== null
+            ? ` Feeding status today: ${firstEntry.completed} completed, ${firstEntry.missed} missed.`
+            : "";
+        return `Your child ate ${firstFood} today.${statusSuffix}`.trim();
+      }
+
+      if (firstEntry.missed !== null && firstEntry.missed > 0) {
+        return `Feeding records for today show ${firstFood}, but the meal was marked as missed.`;
+      }
+
+      return `Feeding records for today show: ${firstFood}.`;
+    }
+
+    const lines = [
+      `Here is what your child was served ${result.timeframeLabel}:`,
+    ];
+    result.entries.forEach((entry) => {
+      const foodText = entry.food ?? fallbackFoodText;
+      const countText =
+        entry.completed !== null && entry.missed !== null
+          ? ` (completed ${entry.completed}, missed ${entry.missed})`
+          : entry.completed !== null
+            ? ` (completed ${entry.completed})`
+            : entry.missed !== null
+              ? ` (missed ${entry.missed})`
+              : "";
+      lines.push(`- ${entry.date}: ${foodText}${countText}`);
+    });
+
+    return lines.join("\n");
   }
 
-  const lines = [
-    `I found ${result.missed} ${pluralize(result.missed, "missed meal record", "missed meal records")} ${result.timeframeLabel}.`,
-  ];
-  if (result.completed !== null) {
+  const lines = [`Child report ${result.timeframeLabel}:`];
+
+  if (result.attendance.absent !== null) {
+    const presentValue = result.attendance.present ?? 0;
     lines.push(
-      `Feeding in this period: ${result.completed} completed, ${result.missed} missed.`,
+      `- Attendance: ${presentValue} present, ${result.attendance.absent} absent.`,
     );
+  } else {
+    lines.push("- Attendance: counts are not available.");
   }
-  if (result.datesWithMissedMeals.length > 0) {
-    lines.push("Dates with missed meals:");
-    result.datesWithMissedMeals.forEach((entry) => {
-      lines.push(
-        `- ${entry.date}: ${entry.missed} ${pluralize(entry.missed, "missed meal record", "missed meal records")}`,
-      );
-    });
+
+  if (result.feeding.completed !== null || result.feeding.missed !== null) {
+    lines.push(
+      `- Feeding: ${result.feeding.completed ?? 0} completed, ${result.feeding.missed ?? 0} missed.`,
+    );
+  } else {
+    lines.push("- Feeding: counts are not available.");
+  }
+
+  if (result.feeding.entries.length) {
+    const latestFood = result.feeding.entries[0]?.food;
+    if (latestFood) {
+      lines.push(`- Latest food served: ${latestFood}.`);
+    }
   }
 
   return lines.join("\n");

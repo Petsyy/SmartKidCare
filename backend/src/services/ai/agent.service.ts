@@ -11,7 +11,11 @@ type AIRole = "parent" | "teacher" | "admin";
 
 const ToolActionSchema = z.object({
   type: z.literal("tool"),
-  tool: z.enum(["count_absences", "count_missed_meals"]),
+  tool: z.enum([
+    "summarize_attendance",
+    "summarize_feeding",
+    "generate_child_report",
+  ]),
   args: z
     .object({
       timeframe: z.string().optional(),
@@ -57,12 +61,39 @@ function shouldTriggerMissedMealsAgent(lower: string): boolean {
   return mealDomain && missedIntent;
 }
 
+function shouldTriggerReportAgent(lower: string): boolean {
+  return /\b(report|summary|overview|overall|status)\b/.test(lower);
+}
+
+function shouldTriggerFoodIntakeAgent(lower: string): boolean {
+  const mealDomain = /\b(meals?|feeding|feed|food|eat|ate|eaten|served)\b/.test(
+    lower,
+  );
+  if (!mealDomain) return false;
+
+  const asksWhatWasEaten =
+    /\b(what|which)\b/.test(lower) &&
+    /\b(eat|ate|food|meal|served)\b/.test(lower);
+  const asksIfChildAte =
+    /\b(did|has)\b/.test(lower) &&
+    /\bchild\b/.test(lower) &&
+    /\b(eat|ate)\b/.test(lower);
+  const asksFoodByTime =
+    /\b(food|meal)\b/.test(lower) &&
+    /\b(today|week|recent|recently)\b/.test(lower);
+
+  return asksWhatWasEaten || asksIfChildAte || asksFoodByTime;
+}
+
 export function shouldUseAIAgent(question: string): boolean {
   const lower = question.trim().toLowerCase();
   if (!lower) return false;
 
   return (
-    shouldTriggerAbsenceAgent(lower) || shouldTriggerMissedMealsAgent(lower)
+    shouldTriggerAbsenceAgent(lower) ||
+    shouldTriggerMissedMealsAgent(lower) ||
+    shouldTriggerFoodIntakeAgent(lower) ||
+    shouldTriggerReportAgent(lower)
   );
 }
 
@@ -140,8 +171,11 @@ function parseAgentAction(rawText: string): AgentAction | null {
 
 function inferSuggestedTool(question: string): AgentToolName {
   const lower = question.toLowerCase();
-  if (shouldTriggerMissedMealsAgent(lower)) return "count_missed_meals";
-  return "count_absences";
+  if (shouldTriggerReportAgent(lower)) return "generate_child_report";
+  if (shouldTriggerAbsenceAgent(lower)) return "summarize_attendance";
+  if (shouldTriggerMissedMealsAgent(lower)) return "summarize_feeding";
+  if (shouldTriggerFoodIntakeAgent(lower)) return "summarize_feeding";
+  return "generate_child_report";
 }
 
 function inferSuggestedTimeframe(
@@ -182,13 +216,17 @@ You are the SmartKidCare planning agent.
 Return ONLY one valid JSON object with no extra text.
 
 Allowed JSON shapes:
-{"type":"tool","tool":"count_absences","args":{"timeframe":"today|week|recent"}}
-{"type":"tool","tool":"count_missed_meals","args":{"timeframe":"today|week|recent"}}
+{"type":"tool","tool":"summarize_attendance","args":{"timeframe":"today|week|recent"}}
+{"type":"tool","tool":"summarize_feeding","args":{"timeframe":"today|week|recent"}}
+{"type":"tool","tool":"generate_child_report","args":{"timeframe":"today|week|recent"}}
 {"type":"final","reply":"plain text answer"}
 
 Rules:
 - Use only provided attendance/feeding summaries.
 - Never invent counts or dates.
+- Use summarize_attendance for attendance questions.
+- Use summarize_feeding for feeding/meal questions.
+- Use generate_child_report for combined overview/report questions.
 - If tool results already exist, produce a final answer.
 - Keep final answers short and plain text.
 - Do not include markdown, code fences, or numbered lists.
@@ -284,5 +322,14 @@ export async function tryHandleAgentQuery(params: {
     return renderAgentToolResult(lastToolResult);
   }
 
-  return null;
+  const fallbackTool = inferSuggestedTool(question);
+  const fallbackTimeframe = inferSuggestedTimeframe(question);
+  const fallbackResult = executeAgentTool({
+    tool: fallbackTool,
+    timeframe: fallbackTimeframe,
+    attendanceSummary,
+    feedingSummary,
+  });
+
+  return renderAgentToolResult(fallbackResult);
 }

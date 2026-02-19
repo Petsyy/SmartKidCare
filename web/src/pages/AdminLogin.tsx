@@ -111,9 +111,7 @@ export default function AdminLogin() {
         const { status, data } = await parseApiResponse(response);
         if (!response.ok) {
           const message =
-            data?.message ||
-            data?.error ||
-            `Login failed (HTTP ${status})`;
+            data?.message || data?.error || `Login failed (HTTP ${status})`;
           throw new Error(message);
         }
 
@@ -125,7 +123,9 @@ export default function AdminLogin() {
           setMfaToken(data.mfaToken);
           setMfaEmail(data.email || null);
           setOtp("");
-          setInfo(data?.message || "A verification code was sent to your email.");
+          setInfo(
+            data?.message || "A verification code was sent to your email.",
+          );
           return;
         }
 
@@ -268,7 +268,9 @@ export default function AdminLogin() {
                     <input
                       type="text"
                       value={otp}
-                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      onChange={(e) =>
+                        setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+                      }
                       placeholder="Enter 6-digit OTP"
                       inputMode="numeric"
                       maxLength={6}
