@@ -7,6 +7,11 @@ import {
   SummarizeFeedingResult,
   GenerateChildReportResult,
 } from "./mongoAgentTools.service";
+import {
+  composeAttendanceReply,
+  composeChildReportReply,
+  composeFeedingReply,
+} from "./nlg.service";
 
 export type AgentToolTimeframe = ToolTimeframe;
 export type AgentToolName =
@@ -49,46 +54,12 @@ export async function executeAgentTool(params: {
 
 export function renderAgentToolResult(result: AgentToolResult): string {
   if (result.tool === "summarize_attendance") {
-    const {
-      present,
-      absent,
-      attendanceRate,
-      totalDays,
-      absentDates,
-      timeframe,
-    } = result;
-
-    // For "today" queries, return a direct present/absent answer.
-    if (timeframe === "today" && totalDays > 0) {
-      if (absent > 0) return "Your child was absent today.";
-      return "Yes, your child was present today.";
-    }
-
-    const lines = [
-      `Attendance: ${present} present, ${absent} absent out of ${totalDays} days.`,
-      `Attendance rate: ${attendanceRate}%`,
-    ];
-    if (absentDates.length) {
-      lines.push(`Absent dates: ${absentDates.join(", ")}`);
-    }
-    return lines.join("\n");
+    return composeAttendanceReply(result);
   }
 
   if (result.tool === "summarize_feeding") {
-    const { completed, missed, totalMeals, feedingRate, foods } = result;
-    const foodsText = foods.length ? `Foods: ${foods.join(", ")}.` : "";
-    return [
-      `Feeding: ${completed} completed, ${missed} missed out of ${totalMeals} meals.`,
-      `Feeding rate: ${feedingRate}%`,
-      foodsText,
-    ]
-      .filter(Boolean)
-      .join("\n");
+    return composeFeedingReply(result);
   }
 
-  const attendanceText = renderAgentToolResult(result.attendance);
-  const feedingText = renderAgentToolResult(result.feeding);
-  return [`Report for ${result.timeframe}:`, attendanceText, feedingText]
-    .filter(Boolean)
-    .join("\n");
+  return composeChildReportReply(result);
 }

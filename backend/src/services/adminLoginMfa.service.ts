@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { Response } from "express";
 import { IUser } from "../models/Users";
 import { sendEmail } from "./email.service";
+import { setCsrfCookie } from "../lib/csrf";
 
 export const ADMIN_LOGIN_MFA_PURPOSE = "admin_login_mfa";
 
@@ -36,6 +37,8 @@ export const setAdminAuthCookie = (res: Response, token: string) => {
     sameSite: "lax",
     maxAge: 24 * 60 * 60 * 1000,
   });
+
+  setCsrfCookie(res, token);
 };
 
 export const maskEmail = (email: string) => {

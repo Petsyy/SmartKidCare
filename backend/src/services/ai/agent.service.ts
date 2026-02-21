@@ -56,9 +56,14 @@ function shouldTriggerPresenceAgent(lower: string): boolean {
   const mentionsAttendance =
     /\battendance\b/.test(lower) || /\bcheck[- ]?in\b/.test(lower);
   const mentionsTimeframe =
-    /\btoday\b/.test(lower) || /\bweek\b/.test(lower) || /\brecent\b/.test(lower);
+    /\btoday\b/.test(lower) ||
+    /\bweek\b/.test(lower) ||
+    /\brecent\b/.test(lower);
 
-  return mentionsPresent && (mentionsAttendance || mentionsTimeframe || /\bchild\b/.test(lower));
+  return (
+    mentionsPresent &&
+    (mentionsAttendance || mentionsTimeframe || /\bchild\b/.test(lower))
+  );
 }
 
 function shouldTriggerMissedMealsAgent(lower: string): boolean {
@@ -73,9 +78,8 @@ function shouldTriggerMissedMealsAgent(lower: string): boolean {
 }
 
 function shouldTriggerReportAgent(lower: string): boolean {
-  const explicitReportIntent = /\b(report|summary|overview|overall|status)\b/.test(
-    lower,
-  );
+  const explicitReportIntent =
+    /\b(report|summary|overview|overall|status)\b/.test(lower);
   if (explicitReportIntent) return true;
 
   const hasChildSubject = /\b(child|children|kid|kids)\b/.test(lower);
@@ -110,17 +114,43 @@ function shouldTriggerFoodIntakeAgent(lower: string): boolean {
   return asksWhatWasEaten || asksIfChildAte || asksFoodByTime;
 }
 
-export function shouldUseAIAgent(question: string): boolean {
+export function detectToolForQuestion(question: string): AgentToolName | null {
   const lower = question.trim().toLowerCase();
-  if (!lower) return false;
+  const hasChildSubject = /\b(child|children|kid|kids)\b/.test(lower);
 
-  return (
+  const hasAttendanceSignal =
+    /\b(attendance|attend|present|absent|check[- ]?in|in school|came to school)\b/.test(
+      lower,
+    ) ||
     shouldTriggerAbsenceAgent(lower) ||
-    shouldTriggerPresenceAgent(lower) ||
+    shouldTriggerPresenceAgent(lower);
+
+  const hasFeedingSignal =
+    /\b(feeding|feed|food|meal|meals|eat|ate|eaten|served|lunch|snack|breakfast|dinner)\b/.test(
+      lower,
+    ) ||
     shouldTriggerMissedMealsAgent(lower) ||
-    shouldTriggerFoodIntakeAgent(lower) ||
-    shouldTriggerReportAgent(lower)
-  );
+    shouldTriggerFoodIntakeAgent(lower);
+
+  const wantsReport =
+    shouldTriggerReportAgent(lower) ||
+    /\b(how is|how are|overall|status|progress)\b/.test(lower);
+
+  // Highest priority: explicit single-domain intent should stay single-domain.
+  if (hasAttendanceSignal && !hasFeedingSignal) return "summarize_attendance";
+  if (hasFeedingSignal && !hasAttendanceSignal) return "summarize_feeding";
+
+  // If both domains are present, return combined report.
+  if (hasAttendanceSignal && hasFeedingSignal) return "generate_child_report";
+
+  // Generic child status/report query with no explicit domain.
+  if (wantsReport && hasChildSubject) return "generate_child_report";
+
+  return null;
+}
+
+export function shouldUseAIAgent(question: string): boolean {
+  return detectToolForQuestion(question) !== null;
 }
 
 function stripFences(text: string): string {
@@ -196,13 +226,7 @@ function parseAgentAction(rawText: string): AgentAction | null {
 }
 
 function inferSuggestedTool(question: string): AgentToolName {
-  const lower = question.toLowerCase();
-  if (shouldTriggerReportAgent(lower)) return "generate_child_report";
-  if (shouldTriggerPresenceAgent(lower)) return "summarize_attendance";
-  if (shouldTriggerAbsenceAgent(lower)) return "summarize_attendance";
-  if (shouldTriggerMissedMealsAgent(lower)) return "summarize_feeding";
-  if (shouldTriggerFoodIntakeAgent(lower)) return "summarize_feeding";
-  return "generate_child_report";
+  return detectToolForQuestion(question) ?? "generate_child_report";
 }
 
 function inferSuggestedTimeframe(
@@ -271,6 +295,18 @@ export async function tryHandleAgentQuery(params: {
   const { role, question, childId } = params;
 
   if (!shouldUseAIAgent(question)) return null;
+
+  // Fast path: route feeding/attendance intent directly to deterministic Mongo-backed tools.
+  const directTool = detectToolForQuestion(question);
+  if (directTool) {
+    const directTimeframe = inferSuggestedTimeframe(question);
+    const directResult = await executeAgentTool({
+      tool: directTool,
+      timeframe: directTimeframe,
+      childId,
+    });
+    return renderAgentToolResult(directResult);
+  }
 
   const normalizedRole = normalizeRole(role);
   const thoughtLog: string[] = [];
