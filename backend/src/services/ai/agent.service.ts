@@ -50,6 +50,17 @@ function shouldTriggerAbsenceAgent(lower: string): boolean {
   return hasAbsenceWord || hasAbsentCountPattern;
 }
 
+function shouldTriggerPresenceAgent(lower: string): boolean {
+  // e.g., "Was my child present today?", "Is my child present?"
+  const mentionsPresent = /\bpresent\b/.test(lower);
+  const mentionsAttendance =
+    /\battendance\b/.test(lower) || /\bcheck[- ]?in\b/.test(lower);
+  const mentionsTimeframe =
+    /\btoday\b/.test(lower) || /\bweek\b/.test(lower) || /\brecent\b/.test(lower);
+
+  return mentionsPresent && (mentionsAttendance || mentionsTimeframe || /\bchild\b/.test(lower));
+}
+
 function shouldTriggerMissedMealsAgent(lower: string): boolean {
   const mealDomain = /\b(meals?|feeding|feed|food|eat|ate|eaten)\b/.test(lower);
   const missedIntent =
@@ -62,7 +73,21 @@ function shouldTriggerMissedMealsAgent(lower: string): boolean {
 }
 
 function shouldTriggerReportAgent(lower: string): boolean {
-  return /\b(report|summary|overview|overall|status)\b/.test(lower);
+  const explicitReportIntent = /\b(report|summary|overview|overall|status)\b/.test(
+    lower,
+  );
+  if (explicitReportIntent) return true;
+
+  const hasChildSubject = /\b(child|children|kid|kids)\b/.test(lower);
+  const asksHowDoing =
+    /\bhow\b/.test(lower) &&
+    /\b(do|doing|progress|performing)\b/.test(lower) &&
+    hasChildSubject;
+  const hasTimeframe = /\b(today|week|weekly|recent|recently|month)\b/.test(
+    lower,
+  );
+
+  return asksHowDoing && hasTimeframe;
 }
 
 function shouldTriggerFoodIntakeAgent(lower: string): boolean {
@@ -91,6 +116,7 @@ export function shouldUseAIAgent(question: string): boolean {
 
   return (
     shouldTriggerAbsenceAgent(lower) ||
+    shouldTriggerPresenceAgent(lower) ||
     shouldTriggerMissedMealsAgent(lower) ||
     shouldTriggerFoodIntakeAgent(lower) ||
     shouldTriggerReportAgent(lower)
@@ -172,6 +198,7 @@ function parseAgentAction(rawText: string): AgentAction | null {
 function inferSuggestedTool(question: string): AgentToolName {
   const lower = question.toLowerCase();
   if (shouldTriggerReportAgent(lower)) return "generate_child_report";
+  if (shouldTriggerPresenceAgent(lower)) return "summarize_attendance";
   if (shouldTriggerAbsenceAgent(lower)) return "summarize_attendance";
   if (shouldTriggerMissedMealsAgent(lower)) return "summarize_feeding";
   if (shouldTriggerFoodIntakeAgent(lower)) return "summarize_feeding";
@@ -190,19 +217,10 @@ function inferSuggestedTimeframe(
 function buildAgentPrompt(params: {
   role: AIRole;
   question: string;
-  attendanceSummary: string;
-  feedingSummary: string;
   thoughtLog: string[];
   forceFinal: boolean;
 }): string {
-  const {
-    role,
-    question,
-    attendanceSummary,
-    feedingSummary,
-    thoughtLog,
-    forceFinal,
-  } = params;
+  const { role, question, thoughtLog, forceFinal } = params;
 
   const suggestedTool = inferSuggestedTool(question);
   const suggestedTimeframe = inferSuggestedTimeframe(question);
@@ -235,21 +253,10 @@ Context:
 - Role: ${role}
 - Suggested tool: ${suggestedTool}
 - Suggested timeframe: ${suggestedTimeframe}
+- Question: ${question}
+- Tool Trace: ${toolHistory}
 
-Attendance Summary:
-${attendanceSummary}
-
-Feeding Summary:
-${feedingSummary}
-
-Question:
-${question}
-
-Tool Trace:
-${toolHistory}
-
-${finalConstraint}
-`;
+${finalConstraint}`;
 }
 
 function cleanFinalReply(reply: string): string {
@@ -259,10 +266,9 @@ function cleanFinalReply(reply: string): string {
 export async function tryHandleAgentQuery(params: {
   role: string;
   question: string;
-  attendanceSummary: string;
-  feedingSummary: string;
+  childId: string;
 }): Promise<string | null> {
-  const { role, question, attendanceSummary, feedingSummary } = params;
+  const { role, question, childId } = params;
 
   if (!shouldUseAIAgent(question)) return null;
 
@@ -275,8 +281,6 @@ export async function tryHandleAgentQuery(params: {
     const prompt = buildAgentPrompt({
       role: normalizedRole,
       question,
-      attendanceSummary,
-      feedingSummary,
       thoughtLog,
       forceFinal: step > 0 && lastToolResult !== null,
     });
@@ -301,11 +305,10 @@ export async function tryHandleAgentQuery(params: {
       break;
     }
 
-    const toolResult = executeAgentTool({
+    const toolResult = await executeAgentTool({
       tool: action.tool,
       timeframe: action.args?.timeframe,
-      attendanceSummary,
-      feedingSummary,
+      childId,
     });
 
     lastToolResult = toolResult;
@@ -324,11 +327,10 @@ export async function tryHandleAgentQuery(params: {
 
   const fallbackTool = inferSuggestedTool(question);
   const fallbackTimeframe = inferSuggestedTimeframe(question);
-  const fallbackResult = executeAgentTool({
+  const fallbackResult = await executeAgentTool({
     tool: fallbackTool,
     timeframe: fallbackTimeframe,
-    attendanceSummary,
-    feedingSummary,
+    childId,
   });
 
   return renderAgentToolResult(fallbackResult);
