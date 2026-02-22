@@ -71,6 +71,7 @@ export default function ParentLayout() {
         name="chat"
         options={{
           href: null,
+          tabBarStyle: { display: "none" },
         }}
       />
       <Tabs.Screen

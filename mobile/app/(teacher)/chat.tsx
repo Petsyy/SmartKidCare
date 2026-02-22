@@ -6,8 +6,6 @@ import {
   Pressable,
   FlatList,
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
   StatusBar,
 } from "react-native";
 import {
@@ -19,14 +17,7 @@ import * as Icons from "lucide-react-native";
 import { useAuth } from "@/src/hooks/useAuth";
 import { sendAIChat } from "@/src/api/ai.api";
 import { getAttendanceHistory, getFeedingHistory } from "@/src/api/records.api";
-import {
-  buildSummary,
-  formatDateLabel,
-  resolveTeacherFollowUpMessage,
-  formatAttendanceChildren,
-  summarizeAttendanceStatuses,
-  summarizeFeedingStatuses,
-} from "@/src/components/ai-chatbot-helpers/chatHelpers";
+import { resolveTeacherFollowUpMessage } from "@/src/components/ai/aiChat";
 
 const SUGGESTIONS = [
   "Who was absent today?",
@@ -48,12 +39,7 @@ export default function TeacherChatScreen() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [contextLoading, setContextLoading] = useState(true);
-  const [attendanceSummary, setAttendanceSummary] = useState(
-    "No attendance data available.",
-  );
-  const [feedingSummary, setFeedingSummary] = useState(
-    "No feeding data available.",
-  );
+  const [childId, setChildId] = useState<string | null>(null);
   const listRef = useRef<FlatList>(null);
 
   const scrollToEnd = useCallback(() => {
@@ -84,31 +70,30 @@ export default function TeacherChatScreen() {
 
         if (cancelled) return;
 
-        setAttendanceSummary(
-          buildSummary(
-            "attendance",
-            attList,
-            (e: any) => {
-              const counts = summarizeAttendanceStatuses(e?.records ?? []);
-              const children = formatAttendanceChildren(e?.records ?? []);
-              return `${formatDateLabel(e?.date)}: total ${counts.total}, present ${counts.present}, absent ${counts.absent}${children ? ` (children: ${children})` : ""}`;
-            },
-          ),
-        );
-        setFeedingSummary(
-          buildSummary(
-            "feeding",
-            feedList,
-            (e: any) => {
-              const counts = summarizeFeedingStatuses(e?.records ?? []);
-              return `${formatDateLabel(e?.date)}: ${e?.foodServed ?? "?"} (total ${counts.total}, completed ${counts.completed}, missed ${counts.missed})`;
-            },
-          ),
-        );
+        const deriveChildId = (): string | null => {
+          const firstAttChild =
+            attList
+              .flatMap((entry: any) => entry.records ?? [])
+              .map((r: any) =>
+                typeof r.child === "object" ? r.child?._id : r.child,
+              )
+              .find(Boolean) ?? null;
+          if (firstAttChild) return String(firstAttChild);
+
+          const firstFeedChild =
+            feedList
+              .flatMap((entry: any) => entry.records ?? [])
+              .map((r: any) =>
+                typeof r.child === "object" ? r.child?._id : r.child,
+              )
+              .find(Boolean) ?? null;
+          return firstFeedChild ? String(firstFeedChild) : null;
+        };
+
+        setChildId(deriveChildId());
       } catch {
         if (!cancelled) {
-          setAttendanceSummary("No attendance data available.");
-          setFeedingSummary("No feeding data available.");
+          setChildId(null);
         }
       } finally {
         if (!cancelled) setContextLoading(false);
@@ -123,7 +108,7 @@ export default function TeacherChatScreen() {
 
   const sendMessage = useCallback(async () => {
     const text = input.trim();
-    if (!text || !token || loading) return;
+    if (!text || !token || loading || !childId) return;
     const resolvedMessage = resolveTeacherFollowUpMessage(text, messages);
 
     setInput("");
@@ -142,30 +127,11 @@ export default function TeacherChatScreen() {
     ]);
 
     try {
-      const lowerText = resolvedMessage.toLowerCase();
-
-      const needsAnalytics =
-        lowerText.includes("attendance") ||
-        lowerText.includes("feeding") ||
-        lowerText.includes("absent") ||
-        lowerText.includes("present") ||
-        lowerText.includes("summary") ||
-        lowerText.includes("how many") ||
-        lowerText.includes("records");
-
-      let payload: any = {
+      const reply = await sendAIChat(token, {
         role: "teacher",
         message: resolvedMessage,
-      };
-
-      // Attach summaries when the question is analytics-related.
-      if (needsAnalytics) {
-        payload.attendanceSummary = attendanceSummary;
-        payload.feedingSummary = feedingSummary;
-        payload.insights = [];
-      }
-
-      const reply = await sendAIChat(token, payload);
+        childId,
+      });
 
       setMessages((prev) =>
         prev.map((m) => (m.id === assistantId ? { ...m, content: reply } : m)),
@@ -185,7 +151,7 @@ export default function TeacherChatScreen() {
     } finally {
       setLoading(false);
     }
-  }, [input, loading, token, attendanceSummary, feedingSummary, messages]);
+  }, [input, loading, token, childId, messages]);
 
   const onSuggestionPress = (text: string) => {
     setInput(text);
@@ -346,11 +312,7 @@ export default function TeacherChatScreen() {
         translucent={false}
       />
 
-      <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
-      >
+      <View className="flex-1">
         {/* Header */}
         <View className="bg-teal-600 border-b border-teal-700/30">
           <View className="flex-row items-center px-4 pt-4 pb-5">
@@ -432,7 +394,7 @@ export default function TeacherChatScreen() {
             )}
           </Pressable>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   );
 }

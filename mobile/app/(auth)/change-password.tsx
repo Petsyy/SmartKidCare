@@ -17,7 +17,7 @@ import { useAuth } from "@/src/hooks/useAuth";
 import type { User } from "@/src/context/AuthContext";
 import { completeTeacherPasswordSetup } from "@/src/api/authentication.api";
 import { validatePasswordRules } from "@/src/validations/password-validation";
-import PasswordStrengthFeedback from "@/src/components/password-strength-feedback/PasswordStrengthFeedback";
+import PasswordStrengthFeedback from "@/src/components/password-feedback/PasswordStrengthFeedback";
 
 export default function ChangePasswordScreen() {
   const router = useRouter();

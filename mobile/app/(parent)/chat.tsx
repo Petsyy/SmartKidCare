@@ -6,8 +6,6 @@ import {
   Pressable,
   FlatList,
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
   StatusBar,
 } from "react-native";
 import {
@@ -18,13 +16,6 @@ import { useRouter } from "expo-router";
 import * as Icons from "lucide-react-native";
 import { useAuth } from "@/src/hooks/useAuth";
 import { sendAIChat } from "@/src/api/ai.api";
-import {
-  buildSummary,
-  formatDateLabel,
-  formatAttendanceChildren,
-  summarizeAttendanceStatuses,
-  summarizeFeedingStatuses,
-} from "@/src/components/ai-chatbot-helpers/chatHelpers";
 import { getAttendanceHistory, getFeedingHistory } from "@/src/api/records.api";
 
 const SUGGESTIONS = [
@@ -47,12 +38,7 @@ export default function ParentChatScreen() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [contextLoading, setContextLoading] = useState(true);
-  const [attendanceSummary, setAttendanceSummary] = useState(
-    "No attendance data available.",
-  );
-  const [feedingSummary, setFeedingSummary] = useState(
-    "No feeding data available.",
-  );
+  const [childId, setChildId] = useState<string | null>(null);
   const listRef = useRef<FlatList>(null);
 
   const scrollToEnd = useCallback(() => {
@@ -82,27 +68,30 @@ export default function ParentChatScreen() {
 
         if (cancelled) return;
 
-        setAttendanceSummary(
-          buildSummary("attendance", attList, (e: any) => {
-            const counts = summarizeAttendanceStatuses(e?.records ?? []);
-            const children = formatAttendanceChildren(e?.records ?? []);
-            return `${formatDateLabel(e?.date)}: total ${counts.total}, present ${counts.present}, absent ${counts.absent}${children ? ` (children: ${children})` : ""}`;
-          }),
-        );
-        setFeedingSummary(
-          buildSummary(
-            "feeding",
-            feedList,
-            (e: any) => {
-              const counts = summarizeFeedingStatuses(e?.records ?? []);
-              return `${formatDateLabel(e?.date)}: ${e?.foodServed ?? "?"} (total ${counts.total}, completed ${counts.completed}, missed ${counts.missed})`;
-            },
-          ),
-        );
+        const deriveChildId = (): string | null => {
+          const firstAttChild =
+            attList
+              .flatMap((entry: any) => entry.records ?? [])
+              .map((r: any) =>
+                typeof r.child === "object" ? r.child?._id : r.child,
+              )
+              .find(Boolean) ?? null;
+          if (firstAttChild) return String(firstAttChild);
+
+          const firstFeedChild =
+            feedList
+              .flatMap((entry: any) => entry.records ?? [])
+              .map((r: any) =>
+                typeof r.child === "object" ? r.child?._id : r.child,
+              )
+              .find(Boolean) ?? null;
+          return firstFeedChild ? String(firstFeedChild) : null;
+        };
+
+        setChildId(deriveChildId());
       } catch {
         if (!cancelled) {
-          setAttendanceSummary("No attendance data available.");
-          setFeedingSummary("No feeding data available.");
+          setChildId(null);
         }
       } finally {
         if (!cancelled) setContextLoading(false);
@@ -117,7 +106,7 @@ export default function ParentChatScreen() {
 
   const sendMessage = useCallback(async () => {
     const text = input.trim();
-    if (!text || !token || loading) return;
+    if (!text || !token || loading || !childId) return;
 
     setInput("");
     const userMsg: Message = {
@@ -138,9 +127,7 @@ export default function ParentChatScreen() {
       const reply = await sendAIChat(token, {
         role: "parent",
         message: text,
-        attendanceSummary,
-        feedingSummary,
-        insights: [],
+        childId,
       });
 
       setMessages((prev) =>
@@ -161,7 +148,7 @@ export default function ParentChatScreen() {
     } finally {
       setLoading(false);
     }
-  }, [input, loading, token, attendanceSummary, feedingSummary]);
+  }, [input, loading, token, childId]);
 
   const onSuggestionPress = (text: string) => {
     setInput(text);
@@ -320,11 +307,7 @@ export default function ParentChatScreen() {
         backgroundColor="#0D9488"
         translucent={false}
       />
-      <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
-      >
+      <View className="flex-1">
         {/* Header */}
         <View className="bg-teal-600 border-b border-teal-700/30">
           <View className="flex-row items-center px-4 pt-4 pb-5">
@@ -403,7 +386,7 @@ export default function ParentChatScreen() {
             )}
           </Pressable>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   );
 }

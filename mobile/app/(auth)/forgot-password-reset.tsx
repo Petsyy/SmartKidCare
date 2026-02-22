@@ -15,7 +15,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { ChevronLeft, Eye, EyeOff, Lock } from "lucide-react-native";
 import { resetForgotPassword } from "@/src/api/authentication.api";
 import { validatePasswordRules } from "@/src/validations/password-validation";
-import PasswordStrengthFeedback from "@/src/components/password-strength-feedback/PasswordStrengthFeedback";
+import PasswordStrengthFeedback from "@/src/components/password-feedback/PasswordStrengthFeedback";
 
 export default function ForgotPasswordResetScreen() {
   const router = useRouter();

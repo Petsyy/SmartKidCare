@@ -61,6 +61,14 @@ export default function Login() {
       });
 
       if (response.requiresPasswordChange) {
+        if (response.passwordSetupToken && response.requiresOtp === false) {
+          router.push({
+            pathname: "/(auth)/change-password",
+            params: { setupToken: response.passwordSetupToken },
+          });
+          return;
+        }
+
         router.push({
           pathname: "/(auth)/verify-otp",
           params: { email: response.email },
