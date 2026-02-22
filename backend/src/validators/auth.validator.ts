@@ -73,7 +73,51 @@ const forgotPasswordResetSchema = z.object({
 const changePasswordSchema = z.object({
   currentPassword: nonEmptyString,
   newPassword: nonEmptyString,
+  otp: nonEmptyString.optional(),
 });
+
+const changePasswordOtpRequestSchema = z.object({
+  currentPassword: nonEmptyString,
+  newPassword: nonEmptyString,
+});
+
+const updateMeSchema = z
+  .object({
+    username: nonEmptyString.optional(),
+    firstName: nonEmptyString.optional(),
+    middleName: z.string().trim().optional(),
+    lastName: nonEmptyString.optional(),
+    email: emailSchema.optional(),
+    phone: z.string().trim().optional(),
+  })
+  .refine(
+    (data) =>
+      data.username !== undefined ||
+      data.firstName !== undefined ||
+      data.middleName !== undefined ||
+      data.lastName !== undefined ||
+      data.email !== undefined ||
+      data.phone !== undefined,
+    {
+      message: "At least one field is required.",
+    },
+  );
+
+const updateAdminPreferencesSchema = z
+  .object({
+    adminMfaEnabled: z.boolean().optional(),
+    adminNotifySecurityEvents: z.boolean().optional(),
+    adminNotifySystemUpdates: z.boolean().optional(),
+  })
+  .refine(
+    (data) =>
+      data.adminMfaEnabled !== undefined ||
+      data.adminNotifySecurityEvents !== undefined ||
+      data.adminNotifySystemUpdates !== undefined,
+    {
+      message: "At least one preference is required.",
+    },
+  );
 
 const getUsersQuerySchema = z.object({
   role: z.enum(["admin", "teacher", "parent"]).optional(),
@@ -89,4 +133,9 @@ export const validateForgotPasswordRequest = validate(emailOnlySchema);
 export const validateForgotPasswordVerify = validate(otpVerifySchema);
 export const validateForgotPasswordReset = validate(forgotPasswordResetSchema);
 export const validateChangePassword = validate(changePasswordSchema);
+export const validateChangePasswordOtpRequest = validate(
+  changePasswordOtpRequestSchema,
+);
+export const validateUpdateMe = validate(updateMeSchema);
+export const validateAdminPreferences = validate(updateAdminPreferencesSchema);
 export const validateGetUsersQuery = validate(getUsersQuerySchema, "query");

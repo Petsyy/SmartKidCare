@@ -9,6 +9,28 @@ import {
   generateChildLinkCode,
 } from "../utils/generateStudentId";
 
+const generateAndAssignMissingLinkCode = async (child: any) => {
+  if (child.childLinkCode) {
+    return;
+  }
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    child.childLinkCode = generateChildLinkCode();
+    try {
+      await child.save();
+      return;
+    } catch (error: any) {
+      const isDuplicateLinkCode =
+        error?.code === 11000 && String(error?.message || "").includes("childLinkCode");
+      if (!isDuplicateLinkCode) {
+        throw error;
+      }
+    }
+  }
+
+  throw new Error("Unable to generate a unique child link code.");
+};
+
 export const createChild = async (req: Request, res: Response) => {
   try {
     const {
@@ -76,7 +98,8 @@ export const createChild = async (req: Request, res: Response) => {
     let parent = await User.findOne({ email: parentEmail });
 
     if (parent) {
-      // Parent already exists, just create the child linked to this parent
+      // Parent already exists; keep a link code for admin visibility/auditing.
+      const childLinkCode = generateChildLinkCode();
       const childData: any = {
         firstName,
         lastName,
@@ -87,6 +110,7 @@ export const createChild = async (req: Request, res: Response) => {
         schoolYear,
         status: status || "Active",
         studentId: generateStudentId(year),
+        childLinkCode,
         parent: parent._id,
       };
 
@@ -102,7 +126,7 @@ export const createChild = async (req: Request, res: Response) => {
         parentCredentials: {
           email: parentEmail,
           tempPassword: null,
-          childLinkCode: null,
+          childLinkCode,
         },
       });
     }
@@ -185,7 +209,8 @@ export const linkChildToParent = async (req: Request, res: Response) => {
     }
 
     child.parent = new mongoose.Types.ObjectId(parentId);
-    child.childLinkCode = undefined;
+    // Keep the original link code visible for admin records even after it is used.
+    // Re-linking is still blocked because linked children are rejected above.
     await child.save();
 
     // Clear the needsToConfirmLink flag when parent confirms the link
@@ -199,6 +224,18 @@ export const linkChildToParent = async (req: Request, res: Response) => {
 
 export const getChildren = async (_req: Request, res: Response) => {
   try {
+    const childrenWithoutLinkCode = await Child.find({
+      $or: [
+        { childLinkCode: { $exists: false } },
+        { childLinkCode: null },
+        { childLinkCode: "" },
+      ],
+    });
+
+    for (const child of childrenWithoutLinkCode) {
+      await generateAndAssignMissingLinkCode(child);
+    }
+
     const children = await Child.find()
       .populate("parent", "firstName lastName email phone")
       .sort({ createdAt: -1 })

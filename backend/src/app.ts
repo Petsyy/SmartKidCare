@@ -18,6 +18,13 @@ const app: Application = express();
 const limiter = rateLimit({
   windowMs: 5 * 60 * 1000,
   max: 100,
+  skip: (req) => {
+    const method = String(req.method || "").toUpperCase();
+    const hasSessionCookie = Boolean(req.cookies?.authToken);
+
+    // Prevent refresh bursts from tripping global limits for authenticated reads.
+    return method === "GET" && hasSessionCookie;
+  },
   standardHeaders: true,
   legacyHeaders: false,
 });

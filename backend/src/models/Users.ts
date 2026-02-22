@@ -18,6 +18,9 @@ export interface IUser extends Document {
   password: string;
   role: "admin" | "teacher" | "parent";
   phone?: string; // required for teacher/parent
+  adminMfaEnabled?: boolean; // admin only
+  adminNotifySecurityEvents?: boolean; // admin only
+  adminNotifySystemUpdates?: boolean; // admin only
   pushToken?: string | null;
   pushTokens?: IUserPushToken[];
   isActive: boolean;
@@ -62,6 +65,27 @@ const UserSchema: Schema = new Schema(
         return this.role !== "admin";
       },
       trim: true,
+    },
+
+    adminMfaEnabled: {
+      type: Boolean,
+      default: function (this: { role?: string }): boolean {
+        return this.role === "admin";
+      },
+    },
+
+    adminNotifySecurityEvents: {
+      type: Boolean,
+      default: function (this: { role?: string }): boolean {
+        return this.role === "admin";
+      },
+    },
+
+    adminNotifySystemUpdates: {
+      type: Boolean,
+      default: function (this: { role?: string }): boolean {
+        return this.role === "admin";
+      },
     },
 
     pushToken: {

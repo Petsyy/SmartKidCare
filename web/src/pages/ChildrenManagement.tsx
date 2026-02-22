@@ -11,7 +11,9 @@ import {
 } from "lucide-react";
 import Layout from "../components/layout/Layout";
 import AddChildModal from "../components/modals/AddChildModal";
-import EditChildModal, { type ChildForEdit } from "../components/modals/EditChildModal";
+import EditChildModal, {
+  type ChildForEdit,
+} from "../components/modals/EditChildModal";
 import { showViewChildModal } from "../utils/sweetalert.modal";
 import { useChildrenManagement } from "../hooks/useChildrenManagement";
 import { useContextMenu } from "../hooks/useContextMenu";
@@ -51,8 +53,13 @@ export default function ChildrenManagement() {
     handleDeleteChild,
   } = useChildrenManagement();
 
-  const { openMenuUserId, menuAnchorRect, menuUser: menuChild, openMenu, closeMenu } =
-    useContextMenu();
+  const {
+    openMenuUserId,
+    menuAnchorRect,
+    menuUser: menuChild,
+    openMenu,
+    closeMenu,
+  } = useContextMenu();
 
   return (
     <Layout
@@ -103,7 +110,8 @@ export default function ChildrenManagement() {
               {/* Add Child */}
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+                className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition"
+              >
                 <Plus size={16} />
                 Add Child
               </button>
@@ -129,7 +137,10 @@ export default function ChildrenManagement() {
             console.error("Student ID is required");
             return;
           }
-          const success = await handleSaveChild({ ...childData, studentId: childData.studentId });
+          const success = await handleSaveChild({
+            ...childData,
+            studentId: childData.studentId,
+          });
           if (success) {
             setIsModalOpen(false);
           }
@@ -146,7 +157,9 @@ export default function ChildrenManagement() {
         />
       )}
 
-      {openMenuUserId && menuChild && menuAnchorRect &&
+      {openMenuUserId &&
+        menuChild &&
+        menuAnchorRect &&
         createPortal(
           <div
             className="fixed py-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50"
@@ -201,7 +214,7 @@ export default function ChildrenManagement() {
               Delete Child
             </button>
           </div>,
-          document.body
+          document.body,
         )}
     </Layout>
   );

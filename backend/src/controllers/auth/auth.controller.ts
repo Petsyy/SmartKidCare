@@ -10,6 +10,7 @@ import {
   issueAdminLoginOtp,
   mapOtpDeliveryError,
   maskEmail,
+  setAdminAuthCookie,
 } from "../../services/adminLoginMfa.service";
 import { clearCsrfCookie, setCsrfCookie } from "../../lib/csrf";
 
@@ -70,6 +71,16 @@ export const login = async (req: Request, res: Response) => {
     }
 
     if (user.role === "admin") {
+      if (user.adminMfaEnabled === false) {
+        const token = signAuthToken(String(user._id), user.role);
+        setAdminAuthCookie(res, token);
+
+        const userResponse = user.toObject();
+        delete (userResponse as any).password;
+
+        return res.json({ user: userResponse });
+      }
+
       try {
         const mfaToken = await issueAdminLoginOtp(user);
         return res.json({
@@ -115,6 +126,150 @@ export const getMe = async (req: Request, res: Response) => {
     res.json({ user });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+export const updateMe = async (req: Request, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ message: "Not authenticated." });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    const {
+      username,
+      firstName,
+      middleName,
+      lastName,
+      email,
+      phone,
+    }: {
+      username?: string;
+      firstName?: string;
+      middleName?: string;
+      lastName?: string;
+      email?: string;
+      phone?: string;
+    } = req.body ?? {};
+
+    if (username !== undefined) {
+      if (user.role !== "admin") {
+        return res
+          .status(403)
+          .json({ message: "Only admin accounts can update username." });
+      }
+
+      const normalizedUsername = String(username).trim();
+      const existingByUsername = await User.findOne({
+        username: normalizedUsername,
+        _id: { $ne: user._id },
+      });
+
+      if (existingByUsername) {
+        return res.status(409).json({ message: "Username already in use." });
+      }
+
+      user.username = normalizedUsername;
+    }
+
+    if (email !== undefined) {
+      const normalizedEmail = String(email).trim().toLowerCase();
+      const existingByEmail = await User.findOne({
+        email: {
+          $regex: `^${escapeRegex(normalizedEmail)}$`,
+          $options: "i",
+        },
+        _id: { $ne: user._id },
+      });
+
+      if (existingByEmail) {
+        return res.status(409).json({ message: "Email already in use." });
+      }
+
+      user.email = normalizedEmail;
+    }
+
+    if (firstName !== undefined) {
+      user.firstName = String(firstName).trim();
+    }
+
+    if (middleName !== undefined) {
+      const normalizedMiddleName = String(middleName).trim();
+      user.middleName = normalizedMiddleName || undefined;
+    }
+
+    if (lastName !== undefined) {
+      user.lastName = String(lastName).trim();
+    }
+
+    if (phone !== undefined) {
+      const normalizedPhone = String(phone).trim();
+      user.phone = normalizedPhone || undefined;
+    }
+
+    await user.save();
+
+    const userResponse = user.toObject();
+    delete (userResponse as any).password;
+
+    return res.json({ user: userResponse });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+export const updateAdminPreferences = async (req: Request, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ message: "Not authenticated." });
+    }
+
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Admins only." });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user || user.role !== "admin") {
+      return res.status(404).json({ message: "Admin account not found." });
+    }
+
+    const {
+      adminMfaEnabled,
+      adminNotifySecurityEvents,
+      adminNotifySystemUpdates,
+    }: {
+      adminMfaEnabled?: boolean;
+      adminNotifySecurityEvents?: boolean;
+      adminNotifySystemUpdates?: boolean;
+    } = req.body ?? {};
+
+    if (typeof adminMfaEnabled === "boolean") {
+      user.adminMfaEnabled = adminMfaEnabled;
+    }
+
+    if (typeof adminNotifySecurityEvents === "boolean") {
+      user.adminNotifySecurityEvents = adminNotifySecurityEvents;
+    }
+
+    if (typeof adminNotifySystemUpdates === "boolean") {
+      user.adminNotifySystemUpdates = adminNotifySystemUpdates;
+    }
+
+    await user.save();
+
+    return res.json({
+      preferences: {
+        adminMfaEnabled: user.adminMfaEnabled !== false,
+        adminNotifySecurityEvents: user.adminNotifySecurityEvents !== false,
+        adminNotifySystemUpdates: user.adminNotifySystemUpdates !== false,
+      },
+    });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
   }
 };
 

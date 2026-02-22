@@ -1,71 +1,14 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
 import AttendanceEditModal from "../components/modals/AttendanceEditModal";
 import VerificationModal from "../components/modals/VerificationModal";
 import { useNavigate } from "react-router-dom";
 import { Search, Pencil, Link } from "lucide-react";
 import Layout from "../components/layout/Layout";
-import { API_BASE } from "../components/config/config.api";
-
-type ChildRef = {
-  _id: string;
-  firstName: string;
-  middleName?: string;
-  middle?: string;
-  middle_name?: string;
-  lastName: string;
-  studentId?: string;
-};
-
-type AttendanceApiResponse = {
-  _id: string;
-  date: string;
-  createdAt?: string;
-  updatedAt?: string;
-  teacher?: {
-    _id: string;
-    firstName: string;
-    lastName: string;
-  } | null;
-  records: Array<{
-    child: ChildRef | string;
-    status: "present" | "absent";
-    blockchainVerified?: boolean;
-  }>;
-};
-
-type AttendanceRow = {
-  id: string;
-  date: string;
-  studentId: string;
-  childName: string;
-  status: "present" | "absent";
-  teacherName: string;
-  submittedAt: string;
-  blockchainVerified: boolean;
-};
-
-type PaginatedAttendanceResponse = {
-  data: AttendanceRow[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-    hasNextPage: boolean;
-    hasPrevPage: boolean;
-  };
-};
-
-type DatePreset = "all" | "today" | "thisWeek" | "thisMonth";
-type AttendanceStatusFilter = "all" | "present" | "absent";
-type VerificationFilter = "all" | "verified" | "unverified";
-
-const formatChildName = (child?: ChildRef | null) => {
-  if (!child) return "Unknown";
-  const middleName = child.middleName ?? child.middle ?? child.middle_name;
-  const trailing = [child.firstName, middleName].filter(Boolean).join(" ");
-  return trailing ? `${child.lastName}, ${trailing}` : child.lastName;
-};
+import {
+  useAttendanceTracking,
+  type DatePreset,
+  type AttendanceStatusFilter,
+  type VerificationFilter,
+} from "../hooks/useAttendanceTracking";
 
 const formatDate = (value: string) =>
   new Date(value).toLocaleDateString("en-PH", {
@@ -89,136 +32,35 @@ const formatDateTime = (value?: string) =>
 
 export default function AttendanceTracking() {
   const navigate = useNavigate();
-  const [rows, setRows] = useState<AttendanceRow[]>([]);
-  const [search, setSearch] = useState("");
-  const [datePreset, setDatePreset] = useState<DatePreset>("all");
-  const [statusFilter, setStatusFilter] =
-    useState<AttendanceStatusFilter>("all");
-  const [verificationFilter, setVerificationFilter] =
-    useState<VerificationFilter>("all");
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [editModal, setEditModal] = useState<{
-    open: boolean;
-    row: AttendanceRow | null;
-  }>({ open: false, row: null });
-  const [verifyModal, setVerifyModal] = useState<{
-    open: boolean;
-    row: AttendanceRow | null;
-    data?: any | null;
-  }>({ open: false, row: null, data: null });
-  const [verifyLoading, setVerifyLoading] = useState(false);
-
-  const flattenAttendance = useCallback(
-    (data: AttendanceApiResponse[]): AttendanceRow[] =>
-      data.flatMap((entry) =>
-        entry.records.map((record, index) => {
-          const child = typeof record.child === "object" ? record.child : null;
-          return {
-            id: `${entry._id}-${child?._id ?? record.child ?? index}`,
-            date: entry.date,
-            studentId: child?.studentId ?? "—",
-            childName: formatChildName(child),
-            status: record.status,
-            teacherName: entry.teacher
-              ? `${entry.teacher.firstName} ${entry.teacher.lastName}`
-              : "—",
-            submittedAt: entry.updatedAt || entry.createdAt || entry.date,
-            blockchainVerified: record.blockchainVerified ?? false,
-          };
-        }),
-      ),
-    [],
-  );
-
-  const fetchAttendance = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const params = new URLSearchParams({
-        page: String(page),
-        limit: String(limit),
-      });
-      if (search.trim()) {
-        params.set("search", search.trim());
-      }
-      if (datePreset !== "all") {
-        params.set("datePreset", datePreset);
-      }
-      if (statusFilter !== "all") {
-        params.set("status", statusFilter);
-      }
-      if (verificationFilter !== "all") {
-        params.set("verification", verificationFilter);
-      }
-      const url = `${API_BASE}/records/attendance?${params.toString()}`;
-      const response = await fetch(url, {
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      const payload = await response.json().catch(() => []);
-      if (!response.ok) {
-        const message =
-          (payload as { message?: string }).message ||
-          "Failed to fetch attendance";
-        throw new Error(message);
-      }
-
-      if (Array.isArray(payload)) {
-        const data = flattenAttendance(payload as AttendanceApiResponse[]);
-        setRows(data);
-        setTotal(data.length);
-        setTotalPages(data.length > 0 ? 1 : 0);
-      } else {
-        const paginated = payload as PaginatedAttendanceResponse;
-        setRows(Array.isArray(paginated.data) ? paginated.data : []);
-        if (Number.isFinite(Number(paginated.pagination?.page))) {
-          setPage(Number(paginated.pagination.page));
-        }
-        if (Number.isFinite(Number(paginated.pagination?.limit))) {
-          setLimit(Number(paginated.pagination.limit));
-        }
-        setTotal(Number(paginated.pagination?.total ?? 0));
-        setTotalPages(Number(paginated.pagination?.totalPages ?? 0));
-      }
-    } catch (err: any) {
-      setError(err?.message || "Unable to fetch attendance");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [
-    datePreset,
-    flattenAttendance,
-    limit,
-    page,
+  const {
+    rows,
     search,
+    datePreset,
     statusFilter,
     verificationFilter,
-  ]);
-
-  useEffect(() => {
-    fetchAttendance();
-  }, [fetchAttendance]);
-
-  const rangeLabel = useMemo(() => {
-    if (total === 0 || rows.length === 0) return "0 of 0";
-    const start = (page - 1) * limit + 1;
-    const end = Math.min(page * limit, total);
-    return `${start}-${end} of ${total}`;
-  }, [limit, page, rows.length, total]);
-
-  const hasActiveFilters =
-    datePreset !== "all" ||
-    statusFilter !== "all" ||
-    verificationFilter !== "all" ||
-    search.trim().length > 0;
+    page,
+    limit,
+    totalPages,
+    isLoading,
+    error,
+    editModal,
+    verifyModal,
+    verifyLoading,
+    rangeLabel,
+    hasActiveFilters,
+    setPage,
+    setLimit,
+    updateSearch,
+    updateDatePreset,
+    updateStatusFilter,
+    updateVerificationFilter,
+    clearFilters,
+    openEditModal,
+    closeEditModal,
+    closeVerificationModal,
+    handleViewVerification,
+    handleSaveEdit,
+  } = useAttendanceTracking();
 
   return (
     <Layout
@@ -255,10 +97,7 @@ export default function AttendanceTracking() {
               <input
                 type="text"
                 value={search}
-                onChange={(event) => {
-                  setPage(1);
-                  setSearch(event.target.value);
-                }}
+                onChange={(event) => updateSearch(event.target.value)}
                 placeholder="Search by name or ID"
                 className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
@@ -282,10 +121,7 @@ export default function AttendanceTracking() {
                     <button
                       key={preset}
                       type="button"
-                      onClick={() => {
-                        setPage(1);
-                        setDatePreset(preset);
-                      }}
+                      onClick={() => updateDatePreset(preset)}
                       className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
                         isActive
                           ? "border-teal-300 bg-teal-100 text-teal-800"
@@ -301,10 +137,11 @@ export default function AttendanceTracking() {
             <div className="flex flex-wrap items-center gap-2">
               <select
                 value={statusFilter}
-                onChange={(event) => {
-                  setPage(1);
-                  setStatusFilter(event.target.value as AttendanceStatusFilter);
-                }}
+                onChange={(event) =>
+                  updateStatusFilter(
+                    event.target.value as AttendanceStatusFilter,
+                  )
+                }
                 className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
                 <option value="all">All Status</option>
@@ -313,12 +150,11 @@ export default function AttendanceTracking() {
               </select>
               <select
                 value={verificationFilter}
-                onChange={(event) => {
-                  setPage(1);
-                  setVerificationFilter(
+                onChange={(event) =>
+                  updateVerificationFilter(
                     event.target.value as VerificationFilter,
-                  );
-                }}
+                  )
+                }
                 className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
                 <option value="all">All Verification</option>
@@ -328,13 +164,7 @@ export default function AttendanceTracking() {
               <button
                 type="button"
                 disabled={!hasActiveFilters}
-                onClick={() => {
-                  setPage(1);
-                  setSearch("");
-                  setDatePreset("all");
-                  setStatusFilter("all");
-                  setVerificationFilter("all");
-                }}
+                onClick={clearFilters}
                 className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Clear
@@ -421,92 +251,15 @@ export default function AttendanceTracking() {
                       </td>
                       <td className="px-6 py-4">
                         <AttendanceRowActions
-                          onEdit={() => setEditModal({ open: true, row })}
-                          onViewVerification={async () => {
-                            setVerifyModal({ open: true, row, data: null }); // open instantly
-                            try {
-                              setVerifyLoading(true);
-                              setError(null);
-
-                              const resp = await fetch(
-                                `${API_BASE}/records/attendance/verify/${row.id}`,
-                                {
-                                  credentials: "include",
-                                  headers: {
-                                    "Content-Type": "application/json",
-                                  },
-                                },
-                              );
-
-                              const payload = await resp
-                                .json()
-                                .catch(() => null);
-                              if (!resp.ok)
-                                throw new Error(
-                                  payload?.message ||
-                                    "Failed to fetch verification",
-                                );
-
-                              setVerifyModal({
-                                open: true,
-                                row,
-                                data: payload,
-                              });
-                            } catch (err: any) {
-                              setError(
-                                err?.message || "Unable to fetch verification",
-                              );
-                              setVerifyModal({
-                                open: false,
-                                row: null,
-                                data: null,
-                              });
-                            } finally {
-                              setVerifyLoading(false);
-                            }
-                          }}
+                          onEdit={() => openEditModal(row)}
+                          onViewVerification={() => handleViewVerification(row)}
                         />
                       </td>
                       {/* Edit Modal */}
                       <AttendanceEditModal
                         open={editModal.open}
-                        onClose={() => setEditModal({ open: false, row: null })}
-                        onSave={async (status) => {
-                          if (!editModal.row) return;
-                          setIsLoading(true);
-                          setError(null);
-                          try {
-                            // PATCH endpoint: /records/attendance/:id
-                            const response = await fetch(
-                              `${API_BASE}/records/attendance/${editModal.row.id}`,
-                              {
-                                method: "PATCH",
-                                credentials: "include",
-                                headers: {
-                                  "Content-Type": "application/json",
-                                },
-                                body: JSON.stringify({ status }),
-                              },
-                            );
-                            if (!response.ok) {
-                              const payload = await response
-                                .json()
-                                .catch(() => ({}));
-                              throw new Error(
-                                payload.message ||
-                                  "Failed to update attendance",
-                              );
-                            }
-                            await fetchAttendance();
-                            setEditModal({ open: false, row: null });
-                          } catch (err: any) {
-                            setError(
-                              err?.message || "Unable to update attendance",
-                            );
-                          } finally {
-                            setIsLoading(false);
-                          }
-                        }}
+                        onClose={closeEditModal}
+                        onSave={handleSaveEdit}
                         initialStatus={editModal.row?.status || "present"}
                         childName={editModal.row?.childName || ""}
                       />
@@ -514,9 +267,7 @@ export default function AttendanceTracking() {
                       {/* Verification Modal */}
                       <VerificationModal
                         open={verifyModal.open}
-                        onClose={() =>
-                          setVerifyModal({ open: false, row: null, data: null })
-                        }
+                        onClose={closeVerificationModal}
                         loading={verifyLoading}
                         data={verifyModal.data}
                       />
