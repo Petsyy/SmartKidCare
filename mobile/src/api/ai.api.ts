@@ -5,20 +5,28 @@ export type AIRole = "parent" | "teacher" | "admin";
 export interface AIChatPayload {
   role: AIRole;
   message: string;
-  attendanceSummary?: string;
-  feedingSummary?: string;
-  insights?: string[];
+  childId: string;
 }
 
-function toLongDate(year: string, month: string, day: string): string {
-  return new Intl.DateTimeFormat("en-PH", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "Asia/Manila",
-  }).format(
-    new Date(Date.UTC(Number(year), Number(month) - 1, Number(day))),
-  );
+function toShortDate(year: string, month: string, day: string): string {
+  const monthNames = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+
+  const monthIndex = Number(month) - 1;
+  const monthName = monthNames[monthIndex] ?? month;
+  return `${monthName} ${Number(day)} ${year}`;
 }
 
 function normalizeAIReply(text: string): string {
@@ -33,7 +41,7 @@ function normalizeAIReply(text: string): string {
     .replace(/^\s*>\s+/gm, "")
     .replace(/^(\d{4}-\d{2}-\d{2}:\s.*)$/gm, "- $1")
     .replace(/\b(\d{4})-(\d{2})-(\d{2})\b/g, (_, y, m, d) =>
-      toLongDate(y, m, d),
+      toShortDate(y, m, d),
     )
     .replace(/\n{3,}/g, "\n\n")
     .trim();

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   login,
+  getCsrf,
   getMe,
   getAllUsers,
   logout,
@@ -104,8 +105,9 @@ router.post(
   validateChangePassword,
   changePassword,
 );
+router.get("/csrf", authenticateToken, getCsrf);
 router.get("/me", authenticateToken, getMe);
-router.post("/logout", logout);
+router.post("/logout", authenticateToken, logout);
 
 /**
  * Admin-only

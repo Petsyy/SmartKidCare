@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import User from "../../models/Users";
 import {
+  maybeRequireParentPasswordChange,
   maybeRequireTeacherPasswordChange,
   signAuthToken,
 } from "./password.controller";
@@ -10,6 +11,7 @@ import {
   mapOtpDeliveryError,
   maskEmail,
 } from "../../services/adminLoginMfa.service";
+import { clearCsrfCookie, setCsrfCookie } from "../../lib/csrf";
 
 const escapeRegex = (value: string) =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -63,6 +65,9 @@ export const login = async (req: Request, res: Response) => {
     if (await maybeRequireTeacherPasswordChange(user, res)) {
       return;
     }
+    if (await maybeRequireParentPasswordChange(user, res)) {
+      return;
+    }
 
     if (user.role === "admin") {
       try {
@@ -113,12 +118,30 @@ export const getMe = async (req: Request, res: Response) => {
   }
 };
 
+export const getCsrf = async (req: Request, res: Response) => {
+  try {
+    const authToken = String(req.cookies?.authToken || "");
+
+    if (!authToken) {
+      return res.status(400).json({
+        message: "CSRF token endpoint is only available for cookie sessions.",
+      });
+    }
+
+    const csrfToken = setCsrfCookie(res, authToken);
+    return res.json({ csrfToken });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
 export const logout = async (_req: Request, res: Response) => {
   res.clearCookie("authToken", {
     httpOnly: true,
     secure: false, // true in production
     sameSite: "lax",
   });
+  clearCsrfCookie(res);
 
   res.json({ message: "Logged out" });
 };

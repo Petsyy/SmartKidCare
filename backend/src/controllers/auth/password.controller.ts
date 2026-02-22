@@ -10,6 +10,7 @@ const SETUP_TOKEN_TTL = "15m";
 const RESET_TOKEN_TTL = "15m";
 
 const TEACHER_PASSWORD_SETUP_PURPOSE = "teacher_password_setup";
+const PARENT_PASSWORD_SETUP_PURPOSE = "parent_password_setup";
 const FORGOT_PASSWORD_OTP_PURPOSE = "forgot_password_otp";
 const FORGOT_PASSWORD_RESET_TOKEN_PURPOSE = "forgot_password_reset";
 
@@ -165,6 +166,30 @@ export const maybeRequireTeacherPasswordChange = async (
   return true;
 };
 
+export const maybeRequireParentPasswordChange = async (
+  user: IUser,
+  res: Response,
+): Promise<boolean> => {
+  if (user.role !== "parent" || !user.mustChangePassword) {
+    return false;
+  }
+
+  const passwordSetupToken = jwt.sign(
+    { id: user._id, purpose: PARENT_PASSWORD_SETUP_PURPOSE },
+    getJwtSecret(),
+    { expiresIn: SETUP_TOKEN_TTL },
+  );
+
+  res.json({
+    requiresPasswordChange: true,
+    requiresOtp: false,
+    email: user.email,
+    passwordSetupToken,
+    message: "Please set a new password to continue.",
+  });
+  return true;
+};
+
 export const verifyTeacherPasswordOtp = async (req: Request, res: Response) => {
   try {
     const { email, otp } = req.body;
@@ -301,13 +326,23 @@ export const completeTeacherPasswordSetup = async (
       return res.status(401).json({ message: "Invalid setup token." });
     }
 
-    if (decoded.purpose !== TEACHER_PASSWORD_SETUP_PURPOSE || !decoded.id) {
+    if (
+      decoded.purpose !== TEACHER_PASSWORD_SETUP_PURPOSE &&
+      decoded.purpose !== PARENT_PASSWORD_SETUP_PURPOSE
+    ) {
+      return res.status(401).json({ message: "Invalid setup token." });
+    }
+
+    if (!decoded.id) {
       return res.status(401).json({ message: "Invalid setup token." });
     }
 
     const user = await User.findById(decoded.id);
-    if (!user || user.role !== "teacher") {
-      return res.status(404).json({ message: "Teacher account not found." });
+    if (
+      !user ||
+      (user.role !== "teacher" && user.role !== "parent")
+    ) {
+      return res.status(404).json({ message: "User account not found." });
     }
 
     if (user.isActive === false) {

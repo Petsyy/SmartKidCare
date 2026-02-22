@@ -24,6 +24,8 @@ export interface AuthenticatedLoginResponse {
 export interface PasswordChangeChallengeResponse {
   requiresPasswordChange: true;
   email: string;
+  requiresOtp?: boolean;
+  passwordSetupToken?: string;
   message?: string;
 }
 

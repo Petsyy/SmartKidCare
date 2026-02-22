@@ -31,14 +31,11 @@ app.use(cookieParser());
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow non-browser clients and same-origin requests without Origin.
       if (!origin) {
         callback(null, true);
         return;
       }
 
-      // If FRONTEND_URL is not configured, allow all origins in development
-      // while still echoing the request origin for credentials support.
       if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
         callback(null, true);
         return;
