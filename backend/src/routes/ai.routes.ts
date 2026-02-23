@@ -2,9 +2,10 @@ import { Router } from "express";
 import { AIServiceError } from "../services/ai/gemini.service";
 import { tryHandleAgentQuery } from "../services/ai/agent.service";
 import {
-  buildAffirmativeReply,
+  buildAcknowledgementReply,
   buildGreetingReply,
   buildQuotaFallbackReply,
+  isAcknowledgement,
   isAffirmative,
   isGreeting,
 } from "../services/ai/chatReply.service";
@@ -29,9 +30,31 @@ router.post("/chat", async (req, res) => {
       });
     }
 
-    if (isAffirmative(trimmedMessage)) {
+    if (isAcknowledgement(trimmedMessage)) {
       return res.json({
-        reply: buildAffirmativeReply(String(role)),
+        reply: buildAcknowledgementReply(String(role)),
+      });
+    }
+
+    if (isAffirmative(trimmedMessage)) {
+      const followUpQuestion =
+        String(role).toLowerCase() === "parent"
+          ? "Show both attendance and feeding details for my child this week."
+          : "Show both attendance and feeding details this week.";
+
+      const affirmativeReply = await tryHandleAgentQuery({
+        role: String(role),
+        question: followUpQuestion,
+        childId: String(childId),
+      });
+
+      if (affirmativeReply) {
+        return res.json({ reply: affirmativeReply });
+      }
+
+      return res.json({
+        reply:
+          "Please ask for attendance, feeding, or both so I can summarize the records.",
       });
     }
 

@@ -1,5 +1,3 @@
-
-
 export function isGreeting(text: string): boolean {
   const normalized = text.trim().toLowerCase();
   return /^(hi|hello|hey|good morning|good afternoon|good evening)\b/.test(
@@ -8,8 +6,36 @@ export function isGreeting(text: string): boolean {
 }
 
 export function isAffirmative(text: string): boolean {
+  const normalized = text
+    .trim()
+    .toLowerCase()
+    .replace(/[.!?]+$/g, "");
+
+  const singleTokenAffirmatives = new Set([
+    "yes",
+    "y",
+    "yeah",
+    "yep",
+    "sure",
+    "ok",
+    "okay",
+  ]);
+
+  return (
+    singleTokenAffirmatives.has(normalized) ||
+    normalized === "yes please" ||
+    normalized === "sure please" ||
+    normalized === "go ahead" ||
+    normalized === "proceed"
+  );
+}
+
+export function isAcknowledgement(text: string): boolean {
   const normalized = text.trim().toLowerCase();
-  return /^(yes|y|yeah|yep|sure|ok|okay|please)\b/.test(normalized);
+  return (
+    /\b(thanks|thank you|ty|nice|great|awesome|cool)\b/.test(normalized) ||
+    /^(ok|okay|alright)[.!]?$/.test(normalized)
+  );
 }
 
 export function buildGreetingReply(role: string): string {
@@ -31,6 +57,17 @@ export function buildAffirmativeReply(role: string): string {
   }
   return "Sure. Do you want attendance, feeding, or verification insights?";
 }
+
+export function buildAcknowledgementReply(role: string): string {
+  if (role === "parent") {
+    return "You're welcome. Ask anytime about your child's attendance or feeding.";
+  }
+  if (role === "teacher") {
+    return "You're welcome. Ask anytime about attendance or feeding records.";
+  }
+  return "You're welcome. Ask anytime about attendance, feeding, or verification.";
+}
+
 // Quota fallback now generic, no summaries.
 export function buildQuotaFallbackReply(params: {
   role: string;

@@ -3,6 +3,8 @@ import {
   login,
   getCsrf,
   getMe,
+  updateMe,
+  updateAdminPreferences,
   getAllUsers,
   logout,
 } from "../controllers/auth/auth.controller";
@@ -17,6 +19,7 @@ import {
   requestForgotPasswordOtp,
   verifyForgotPasswordOtp,
   resetForgotPassword,
+  requestChangePasswordOtp,
   changePassword,
 } from "../controllers/auth/password.controller";
 import { authenticateToken } from "../middlewares/auth.middleware";
@@ -24,6 +27,8 @@ import {
   adminMfaResendCooldownLimiter,
   adminMfaSendLimiter,
   adminMfaVerifyLimiter,
+  authenticatedOtpResendCooldownLimiter,
+  authenticatedOtpSendLimiter,
   loginLimiter,
   otpResendCooldownLimiter,
   otpSendLimiter,
@@ -33,6 +38,9 @@ import {
   validateAdminMfaResend,
   validateAdminMfaVerify,
   validateChangePassword,
+  validateChangePasswordOtpRequest,
+  validateUpdateMe,
+  validateAdminPreferences,
   validateForgotPasswordRequest,
   validateForgotPasswordReset,
   validateForgotPasswordVerify,
@@ -100,6 +108,14 @@ router.post(
   resetForgotPassword,
 );
 router.post(
+  "/change-password/otp/request",
+  authenticateToken,
+  validateChangePasswordOtpRequest,
+  authenticatedOtpSendLimiter,
+  authenticatedOtpResendCooldownLimiter,
+  requestChangePasswordOtp,
+);
+router.post(
   "/change-password",
   authenticateToken,
   validateChangePassword,
@@ -107,6 +123,13 @@ router.post(
 );
 router.get("/csrf", authenticateToken, getCsrf);
 router.get("/me", authenticateToken, getMe);
+router.patch("/me", authenticateToken, validateUpdateMe, updateMe);
+router.patch(
+  "/me/preferences",
+  authenticateToken,
+  validateAdminPreferences,
+  updateAdminPreferences,
+);
 router.post("/logout", authenticateToken, logout);
 
 /**
