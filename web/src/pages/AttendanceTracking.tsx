@@ -255,22 +255,6 @@ export default function AttendanceTracking() {
                           onViewVerification={() => handleViewVerification(row)}
                         />
                       </td>
-                      {/* Edit Modal */}
-                      <AttendanceEditModal
-                        open={editModal.open}
-                        onClose={closeEditModal}
-                        onSave={handleSaveEdit}
-                        initialStatus={editModal.row?.status || "present"}
-                        childName={editModal.row?.childName || ""}
-                      />
-
-                      {/* Verification Modal */}
-                      <VerificationModal
-                        open={verifyModal.open}
-                        onClose={closeVerificationModal}
-                        loading={verifyLoading}
-                        data={verifyModal.data}
-                      />
                     </tr>
                   ))
                 )}
@@ -318,6 +302,21 @@ export default function AttendanceTracking() {
           </div>
         </div>
       </div>
+
+      <AttendanceEditModal
+        open={editModal.open}
+        onClose={closeEditModal}
+        onSave={handleSaveEdit}
+        initialStatus={editModal.row?.status || "present"}
+        childName={editModal.row?.childName || ""}
+      />
+
+      <VerificationModal
+        open={verifyModal.open}
+        onClose={closeVerificationModal}
+        loading={verifyLoading}
+        data={verifyModal.data}
+      />
     </Layout>
   );
 }

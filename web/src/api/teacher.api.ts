@@ -11,7 +11,6 @@ export interface TeacherData {
 
 export interface Teacher extends TeacherData {
   _id: string;
-  employeeId: string;
   role: 'teacher';
   status?: "Active" | "Inactive";
   verificationStatus: 'pending' | 'approved' | 'rejected';

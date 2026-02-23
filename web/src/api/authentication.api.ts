@@ -2,7 +2,6 @@ import { API_BASE } from "../components/config/config.api";
 
 export interface User {
   _id: string;
-  employeeId?: string;          // teacher only
   username?: string;            // admin only
   firstName: string;
   middleName?: string;

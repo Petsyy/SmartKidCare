@@ -39,11 +39,6 @@ export function UserTable({
       <table className="w-full">
         <thead>
           <tr className="bg-gray-50 border-b border-gray-200">
-            {activeTab === "teacher" && (
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
-                Employee ID
-              </th>
-            )}
             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
               Name
             </th>
@@ -68,7 +63,7 @@ export function UserTable({
           {isLoading && (
             <tr>
               <td
-                colSpan={activeTab === "teacher" ? 5 : 5}
+                colSpan={activeTab === "parent" ? 5 : 4}
                 className="px-6 py-10 text-center text-gray-500"
               >
                 Loading users...
@@ -79,7 +74,7 @@ export function UserTable({
           {!isLoading && users.length === 0 && (
             <tr>
               <td
-                colSpan={activeTab === "teacher" ? 5 : 5}
+                colSpan={activeTab === "parent" ? 5 : 4}
                 className="px-6 py-12 text-center text-gray-500"
               >
                 No {activeTab === "teacher" ? "teachers" : "parents"} found.
@@ -90,7 +85,7 @@ export function UserTable({
           {!isLoading && users.length > 0 && filteredUsers.length === 0 && (
             <tr>
               <td
-                colSpan={activeTab === "teacher" ? 5 : 5}
+                colSpan={activeTab === "parent" ? 5 : 4}
                 className="px-6 py-12 text-center text-gray-500"
               >
                 No {activeTab === "teacher" ? "teachers" : "parents"} match your search.
@@ -100,11 +95,6 @@ export function UserTable({
 
           {filteredUsers.map((user) => (
             <tr key={user._id} className="hover:bg-gray-50">
-              {activeTab === "teacher" && (
-                <td className="px-6 py-4 font-mono text-sm text-gray-900">
-                  {user.employeeId || "—"}
-                </td>
-              )}
               <td className="px-6 py-4 font-medium text-gray-900">
                 {user.lastName}, {user.firstName} {user.middleName}
               </td>

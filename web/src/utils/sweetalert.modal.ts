@@ -289,7 +289,6 @@ export interface ViewUser {
   firstName: string;
   lastName: string;
   email: string;
-  employeeId?: string;
   role: "admin" | "teacher" | "parent";
   isActive?: boolean;
 }
@@ -345,7 +344,6 @@ export const handleViewUser = (user: ViewUser) => {
       <div style="text-align:left;font-size:14px">
         <p><strong>Name:</strong> ${user.firstName} ${user.lastName}</p>
         <p><strong>Email:</strong> ${user.email}</p>
-        ${user.employeeId ? `<p><strong>Employee ID:</strong> ${user.employeeId}</p>` : ""}
         <p><strong>Role:</strong> ${user.role}</p>
         <p><strong>Status:</strong> ${user.isActive === false ? "Inactive" : "Active"}</p>
       </div>
