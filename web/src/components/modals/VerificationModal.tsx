@@ -82,13 +82,11 @@ export default function VerificationModal({
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 ${
         isVisible ? "opacity-100" : "opacity-0"
       } transition-opacity duration-200`}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="absolute inset-0 bg-black/20" />
-
       <div className="relative w-full max-w-lg overflow-hidden rounded-2xl bg-white">
         <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-5">
           <div className="flex items-start gap-3">

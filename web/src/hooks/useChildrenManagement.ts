@@ -164,7 +164,20 @@ export function useChildrenManagement() {
     const q = search.toLowerCase().trim();
     const name = `${child.firstName} ${child.lastName} ${child.middleName || ""}`.toLowerCase();
     const studentId = (child.studentId || "").toLowerCase();
-    return name.includes(q) || studentId.includes(q);
+    const age = String(child.age ?? "").toLowerCase();
+    const gender = (child.gender || "").toLowerCase();
+    const schoolYear = (child.schoolYear || "").toLowerCase();
+    const status = (child.status || "").toLowerCase();
+    const linkCode = (child.childLinkCode || "").toLowerCase();
+    return (
+      name.includes(q) ||
+      studentId.includes(q) ||
+      age.includes(q) ||
+      gender.includes(q) ||
+      schoolYear.includes(q) ||
+      status.includes(q) ||
+      linkCode.includes(q)
+    );
   });
 
   return {

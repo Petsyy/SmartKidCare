@@ -208,12 +208,10 @@ export default function UserManagement() {
     const fullName =
       `${user.firstName} ${user.middleName} ${user.lastName}`.toLowerCase();
     const email = user.email.toLowerCase();
-    const employeeId = (user.employeeId || "").toLowerCase();
     const phone = (user.phone || "").toLowerCase();
     return (
       fullName.includes(q) ||
       email.includes(q) ||
-      employeeId.includes(q) ||
       phone.includes(q)
     );
   });
@@ -302,27 +300,15 @@ export default function UserManagement() {
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
-                  {activeTab === "teacher" && (
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
-                      Employee ID
-                    </th>
-                  )}
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
                     Name
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
                     Email
                   </th>
-                  {activeTab === "teacher" && (
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
-                      Phone
-                    </th>
-                  )}
-                  {activeTab === "parent" && (
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
-                      Phone
-                    </th>
-                  )}
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                    Phone
+                  </th>
                   {activeTab === "parent" && (
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
                       Linked Child
@@ -341,7 +327,7 @@ export default function UserManagement() {
                 {isLoading && (
                   <tr>
                     <td
-                      colSpan={6}
+                      colSpan={activeTab === "parent" ? 6 : 5}
                       className="px-6 py-10 text-center text-gray-500"
                     >
                       Loading users...
@@ -352,7 +338,7 @@ export default function UserManagement() {
                 {!isLoading && users.length === 0 && (
                   <tr>
                     <td
-                      colSpan={6}
+                      colSpan={activeTab === "parent" ? 6 : 5}
                       className="px-6 py-12 text-center text-gray-500"
                     >
                       No {activeTab === "teacher" ? "teachers" : "parents"}{" "}
@@ -366,7 +352,7 @@ export default function UserManagement() {
                   filteredUsers.length === 0 && (
                     <tr>
                       <td
-                        colSpan={6}
+                        colSpan={activeTab === "parent" ? 6 : 5}
                         className="px-6 py-12 text-center text-gray-500"
                       >
                         No {activeTab === "teacher" ? "teachers" : "parents"}{" "}
@@ -377,27 +363,15 @@ export default function UserManagement() {
 
                 {filteredUsers.map((user) => (
                   <tr key={user._id} className="hover:bg-gray-50">
-                    {activeTab === "teacher" && (
-                      <td className="px-6 py-4 font-mono text-sm text-gray-900">
-                        {user.employeeId || "—"}
-                      </td>
-                    )}
                     <td className="px-6 py-4 font-medium text-gray-900">
                       {user.lastName}, {user.firstName} {user.middleName}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
                       {user.email}
                     </td>
-                    {activeTab === "teacher" && (
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        {user.phone || "—"}
-                      </td>
-                    )}
-                    {activeTab === "parent" && (
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        {user.phone || "—"}
-                      </td>
-                    )}
+                    <td className="px-6 py-4 text-sm text-gray-700">
+                      {user.phone || "—"}
+                    </td>
                     {activeTab === "parent" && (
                       <td className="px-6 py-4 text-sm text-gray-700">
                         {parentChildren[user._id] &&

@@ -101,12 +101,12 @@ export default function EditUserModal({ user, onClose, onUpdated, onDeleted }: P
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm"
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 bg-linear-to-r from-teal-50 to-white border-b border-gray-100">
+        <div className="flex items-center justify-between p-6 bg-teal-50 border-b border-teal-200">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-100 text-teal-600">
               <UserIcon size={20} />
@@ -139,11 +139,6 @@ export default function EditUserModal({ user, onClose, onUpdated, onDeleted }: P
               }`}>
               {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
             </span>
-            {user.employeeId && (
-              <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-mono font-medium bg-gray-100 text-gray-700">
-                {user.employeeId}
-              </span>
-            )}
           </div>
 
           {/* Editable fields */}

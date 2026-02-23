@@ -70,8 +70,8 @@ export function useUserManagement() {
     const q = searchQuery.toLowerCase().trim();
     const fullName = `${user.firstName} ${user.middleName} ${user.lastName}`.toLowerCase();
     const email = user.email.toLowerCase();
-    const employeeId = (user.employeeId || "").toLowerCase();
-    return fullName.includes(q) || email.includes(q) || employeeId.includes(q);
+    const phone = (user.phone || "").toLowerCase();
+    return fullName.includes(q) || email.includes(q) || phone.includes(q);
   });
 
   return {

@@ -234,8 +234,7 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
               </svg>
             </div>
             <p className="text-sm text-teal-700">
-              Employee ID and temporary password are generated automatically by the
-              system. The teacher will be required to change their password on first login.
+              A temporary password is generated automatically by the system. The teacher will be required to change their password on first login.
             </p>
           </div>
 

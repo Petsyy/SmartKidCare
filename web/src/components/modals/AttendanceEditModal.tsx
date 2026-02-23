@@ -31,14 +31,11 @@ export default function AttendanceEditModal({
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-200 ${
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 ${
         isVisible ? "opacity-100" : "opacity-0"
       }`}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      {/* Light Overlay (No black blur) */}
-      <div className="absolute inset-0 bg-black/20" />
-
       {/* Clean Modal (No Shadow, added subtle border for definition) */}
       <div className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white border border-gray-200">
         <div className="border-b border-gray-100 px-6 py-5">
