@@ -19,9 +19,10 @@ import { sendAIChat } from "@/src/api/ai.api";
 import { getAttendanceHistory, getFeedingHistory } from "@/src/api/records.api";
 
 const SUGGESTIONS = [
-  "Why was my child marked absent today?",
+  "Was my child present today?",
+  "How many absences did my child have last week?",
   "What did my child eat this week?",
-  "How is my child's attendance?",
+  "Summarize my child's attendance and feeding last week.",
 ];
 
 type Message = {

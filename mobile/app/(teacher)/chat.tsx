@@ -20,9 +20,10 @@ import { getAttendanceHistory, getFeedingHistory } from "@/src/api/records.api";
 import { resolveTeacherFollowUpMessage } from "@/src/components/ai/aiChat";
 
 const SUGGESTIONS = [
+  "How many children were present today?",
   "Who was absent today?",
-  "Summarize this week's feeding.",
-  "How many children were present?",
+  "What food was served today?",
+  "Summarize class attendance and feeding last week.",
 ];
 
 type Message = {

@@ -1,11 +1,21 @@
 import { z } from "zod";
 import { askGemini } from "./gemini.service";
 import {
+  summarizeAttendanceClassTool,
+  summarizeFeedingClassTool,
+  ToolTimeframe,
+} from "./mongoAgentTools.service";
+import {
+  composeAttendanceClassReply,
+  composeFeedingClassReply,
+} from "./nlg.service";
+import {
   executeAgentTool,
   renderAgentToolResult,
   AgentToolName,
   AgentToolResult,
 } from "./tools.service";
+import { AIResponseLanguage, detectResponseLanguage } from "./language.service";
 
 type AIRole = "parent" | "teacher" | "admin";
 
@@ -42,62 +52,135 @@ function normalizeRole(role: string): AIRole {
   return "parent";
 }
 
+function isClassAggregateQuestion(question: string, role: AIRole): boolean {
+  if (role !== "teacher" && role !== "admin") return false;
+  const lower = question.toLowerCase();
+  const classWords = /\b(children|class|students|pupils|kids)\b/.test(lower);
+  const attendanceWords =
+    /\b(attendance|present|absent|attendance rate|check[- ]?in)\b/.test(lower);
+  const feedingWords =
+    /\b(meals?|feeding|food|lunch|snack|breakfast|dinner)\b/.test(lower);
+  const domainWords = attendanceWords || feedingWords;
+  // Avoid false positives when explicitly saying "my child" / "anak ko".
+  const explicitSingle =
+    /\b(my child|anak ko|my kid|my student|this child)\b/.test(lower);
+  const genericChildMention = /\b(child|anak|student|kid|bata)\b/.test(lower);
+
+  return (
+    !explicitSingle &&
+    domainWords &&
+    (classWords || !genericChildMention)
+  );
+}
+
+function inferClassQuestionDomain(
+  question: string,
+): "attendance" | "feeding" | "both" {
+  const lower = question.toLowerCase();
+  const hasAttendance =
+    /\b(attendance|present|absent|check[- ]?in|pumasok|lumiban|pagdalo|pasok|pagliban)\b/.test(
+      lower,
+    );
+  const hasFeeding =
+    /\b(feeding|feed|food|meal|meals|eat|ate|eaten|pagkain|kain|kumain|kinain|ulam)\b/.test(
+      lower,
+    );
+
+  if (hasAttendance && hasFeeding) return "both";
+  if (hasFeeding) return "feeding";
+  return "attendance";
+}
+
+function inferClassTimeframe(question: string): ToolTimeframe {
+  const lower = question.toLowerCase();
+  if (
+    lower.includes("last week") ||
+    lower.includes("previous week") ||
+    lower.includes("nakaraang linggo") ||
+    lower.includes("huling linggo")
+  ) {
+    return "last_week";
+  }
+  if (lower.includes("today") || lower.includes("ngayon")) return "today";
+  if (lower.includes("week") || lower.includes("linggo")) return "week";
+  // Teacher count questions default to today when timeframe is omitted.
+  return "today";
+}
+
 function shouldTriggerAbsenceAgent(lower: string): boolean {
   const hasAbsenceWord = /\babsences?\b/.test(lower);
   const hasAbsentCountPattern =
     /\babsent\b/.test(lower) &&
     /\b(how many|count|number|total|any|have)\b/.test(lower);
-  return hasAbsenceWord || hasAbsentCountPattern;
+  const hasTagalogAbsencePattern =
+    /\b(absent|lumiban|pagliban)\b/.test(lower) &&
+    /\b(ilan|gaano karami|may)\b/.test(lower);
+  return hasAbsenceWord || hasAbsentCountPattern || hasTagalogAbsencePattern;
 }
 
 function shouldTriggerPresenceAgent(lower: string): boolean {
   // e.g., "Was my child present today?", "Is my child present?"
   const mentionsPresent = /\bpresent\b/.test(lower);
   const mentionsAttendance =
-    /\battendance\b/.test(lower) || /\bcheck[- ]?in\b/.test(lower);
+    /\battendance\b/.test(lower) ||
+    /\bcheck[- ]?in\b/.test(lower) ||
+    /\bpagdalo|pasok|pumasok\b/.test(lower);
   const mentionsTimeframe =
     /\btoday\b/.test(lower) ||
     /\bweek\b/.test(lower) ||
-    /\brecent\b/.test(lower);
+    /\brecent\b/.test(lower) ||
+    /\bngayon|linggo|kamakailan\b/.test(lower);
 
   return (
     mentionsPresent &&
-    (mentionsAttendance || mentionsTimeframe || /\bchild\b/.test(lower))
+    (mentionsAttendance ||
+      mentionsTimeframe ||
+      /\bchild|anak|bata\b/.test(lower))
   );
 }
 
 function shouldTriggerMissedMealsAgent(lower: string): boolean {
-  const mealDomain = /\b(meals?|feeding|feed|food|eat|ate|eaten)\b/.test(lower);
+  const mealDomain =
+    /\b(meals?|feeding|feed|food|eat|ate|eaten|pagkain|pakain|kain|kumain)\b/.test(
+      lower,
+    );
   const missedIntent =
     /\b(missed|skip|skipped)\b/.test(lower) ||
     lower.includes("didn't eat") ||
     lower.includes("did not eat") ||
-    lower.includes("not eat");
+    lower.includes("not eat") ||
+    lower.includes("hindi kumain") ||
+    lower.includes("di kumain");
 
   return mealDomain && missedIntent;
 }
 
 function shouldTriggerReportAgent(lower: string): boolean {
   const explicitReportIntent =
-    /\b(report|summary|overview|overall|status)\b/.test(lower);
+    /\b(report|summary|overview|overall|status|ulat|buod|kabuuan|kalagayan)\b/.test(
+      lower,
+    );
   if (explicitReportIntent) return true;
 
-  const hasChildSubject = /\b(child|children|kid|kids)\b/.test(lower);
+  const hasChildSubject = /\b(child|children|kid|kids|anak|bata)\b/.test(lower);
   const asksHowDoing =
-    /\bhow\b/.test(lower) &&
-    /\b(do|doing|progress|performing)\b/.test(lower) &&
-    hasChildSubject;
-  const hasTimeframe = /\b(today|week|weekly|recent|recently|month)\b/.test(
-    lower,
-  );
+    (/\bhow\b/.test(lower) &&
+      /\b(do|doing|progress|performing)\b/.test(lower) &&
+      hasChildSubject) ||
+    (/\bkamusta|kumusta\b/.test(lower) && hasChildSubject);
+  const hasTimeframe =
+    /\b(today|week|weekly|recent|recently|month|ngayon|linggo|buwan|kamakailan)\b/.test(
+      lower,
+    );
 
   return asksHowDoing && hasTimeframe;
 }
 
 function shouldTriggerFoodIntakeAgent(lower: string): boolean {
-  const mealDomain = /\b(meals?|feeding|feed|food|eat|ate|eaten|served)\b/.test(
-    lower,
-  );
+  const mealDomain =
+    /\b(meals?|feeding|feed|food|eat|ate|eaten|served|pagkain|kain|kumain|kinain|ulam)\b/.test(
+      lower,
+    );
   if (!mealDomain) return false;
 
   const asksWhatWasEaten =
@@ -108,25 +191,28 @@ function shouldTriggerFoodIntakeAgent(lower: string): boolean {
     /\bchild\b/.test(lower) &&
     /\b(eat|ate)\b/.test(lower);
   const asksFoodByTime =
-    /\b(food|meal)\b/.test(lower) &&
-    /\b(today|week|recent|recently)\b/.test(lower);
+    /\b(food|meal|pagkain|ulam)\b/.test(lower) &&
+    /\b(today|week|recent|recently|ngayon|linggo|kamakailan)\b/.test(lower);
+  const asksInTagalog =
+    /\b(ano|alin)\b/.test(lower) &&
+    /\b(kinain|pagkain|ulam|kumain)\b/.test(lower);
 
-  return asksWhatWasEaten || asksIfChildAte || asksFoodByTime;
+  return asksWhatWasEaten || asksIfChildAte || asksFoodByTime || asksInTagalog;
 }
 
 export function detectToolForQuestion(question: string): AgentToolName | null {
   const lower = question.trim().toLowerCase();
-  const hasChildSubject = /\b(child|children|kid|kids)\b/.test(lower);
+  const hasChildSubject = /\b(child|children|kid|kids|anak|bata)\b/.test(lower);
 
   const hasAttendanceSignal =
-    /\b(attendance|attend|present|absent|check[- ]?in|in school|came to school)\b/.test(
+    /\b(attendance|attend|present|absent|check[- ]?in|in school|came to school|pagdalo|pasok|pumasok|lumiban|pagliban)\b/.test(
       lower,
     ) ||
     shouldTriggerAbsenceAgent(lower) ||
     shouldTriggerPresenceAgent(lower);
 
   const hasFeedingSignal =
-    /\b(feeding|feed|food|meal|meals|eat|ate|eaten|served|lunch|snack|breakfast|dinner)\b/.test(
+    /\b(feeding|feed|food|meal|meals|eat|ate|eaten|served|lunch|snack|breakfast|dinner|pagkain|pakain|kain|kumain|kinain|ulam)\b/.test(
       lower,
     ) ||
     shouldTriggerMissedMealsAgent(lower) ||
@@ -134,7 +220,9 @@ export function detectToolForQuestion(question: string): AgentToolName | null {
 
   const wantsReport =
     shouldTriggerReportAgent(lower) ||
-    /\b(how is|how are|overall|status|progress)\b/.test(lower);
+    /\b(how is|how are|overall|status|progress|kamusta|kumusta|kalagayan)\b/.test(
+      lower,
+    );
 
   // Highest priority: explicit single-domain intent should stay single-domain.
   if (hasAttendanceSignal && !hasFeedingSignal) return "summarize_attendance";
@@ -231,20 +319,29 @@ function inferSuggestedTool(question: string): AgentToolName {
 
 function inferSuggestedTimeframe(
   question: string,
-): "today" | "week" | "recent" {
+): ToolTimeframe {
   const lower = question.toLowerCase();
-  if (lower.includes("today")) return "today";
-  if (lower.includes("week")) return "week";
+  if (
+    lower.includes("last week") ||
+    lower.includes("previous week") ||
+    lower.includes("nakaraang linggo") ||
+    lower.includes("huling linggo")
+  ) {
+    return "last_week";
+  }
+  if (lower.includes("today") || lower.includes("ngayon")) return "today";
+  if (lower.includes("week") || lower.includes("linggo")) return "week";
   return "recent";
 }
 
 function buildAgentPrompt(params: {
   role: AIRole;
+  language: AIResponseLanguage;
   question: string;
   thoughtLog: string[];
   forceFinal: boolean;
 }): string {
-  const { role, question, thoughtLog, forceFinal } = params;
+  const { role, language, question, thoughtLog, forceFinal } = params;
 
   const suggestedTool = inferSuggestedTool(question);
   const suggestedTimeframe = inferSuggestedTimeframe(question);
@@ -258,9 +355,9 @@ You are the SmartKidCare planning agent.
 Return ONLY one valid JSON object with no extra text.
 
 Allowed JSON shapes:
-{"type":"tool","tool":"summarize_attendance","args":{"timeframe":"today|week|recent"}}
-{"type":"tool","tool":"summarize_feeding","args":{"timeframe":"today|week|recent"}}
-{"type":"tool","tool":"generate_child_report","args":{"timeframe":"today|week|recent"}}
+{"type":"tool","tool":"summarize_attendance","args":{"timeframe":"today|week|last_week|recent"}}
+{"type":"tool","tool":"summarize_feeding","args":{"timeframe":"today|week|last_week|recent"}}
+{"type":"tool","tool":"generate_child_report","args":{"timeframe":"today|week|last_week|recent"}}
 {"type":"final","reply":"plain text answer"}
 
 Rules:
@@ -272,9 +369,11 @@ Rules:
 - If tool results already exist, produce a final answer.
 - Keep final answers short and plain text.
 - Do not include markdown, code fences, or numbered lists.
+- Use response language: ${language === "tl" ? "Tagalog" : "English"}.
 
 Context:
 - Role: ${role}
+- Language: ${language}
 - Suggested tool: ${suggestedTool}
 - Suggested timeframe: ${suggestedTimeframe}
 - Question: ${question}
@@ -290,9 +389,59 @@ function cleanFinalReply(reply: string): string {
 export async function tryHandleAgentQuery(params: {
   role: string;
   question: string;
-  childId: string;
+  childId?: string;
+  requesterId?: string;
+  language?: AIResponseLanguage;
 }): Promise<string | null> {
   const { role, question, childId } = params;
+  const language = params.language ?? detectResponseLanguage(question);
+  const normalizedRole = normalizeRole(role);
+
+  if (isClassAggregateQuestion(question, normalizedRole)) {
+    if (!params.requesterId) {
+      return language === "tl"
+        ? "Hindi matukoy ang teacher session para sa class-level summary. Pakisubukang mag-login muli."
+        : "Unable to resolve teacher session for class-level summary. Please sign in again.";
+    }
+
+    const timeframe = inferClassTimeframe(question);
+    const domain = inferClassQuestionDomain(question);
+
+    if (domain === "attendance") {
+      const classAttendance = await summarizeAttendanceClassTool(
+        params.requesterId,
+        timeframe,
+      );
+      return composeAttendanceClassReply(classAttendance, language);
+    }
+
+    if (domain === "feeding") {
+      const classFeeding = await summarizeFeedingClassTool(
+        params.requesterId,
+        timeframe,
+      );
+      return composeFeedingClassReply(classFeeding, language);
+    }
+
+    const [classAttendance, classFeeding] = await Promise.all([
+      summarizeAttendanceClassTool(params.requesterId, timeframe),
+      summarizeFeedingClassTool(params.requesterId, timeframe),
+    ]);
+
+    return [
+      composeAttendanceClassReply(classAttendance, language),
+      composeFeedingClassReply(classFeeding, language),
+    ]
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  const normalizedChildId = String(childId ?? "").trim();
+  if (!normalizedChildId) {
+    return language === "tl"
+      ? "Paki-specify ang bata na gusto mong i-check para sa attendance o feeding summary."
+      : "Please specify which child you want to check for attendance or feeding summary.";
+  }
 
   if (!shouldUseAIAgent(question)) return null;
 
@@ -303,12 +452,11 @@ export async function tryHandleAgentQuery(params: {
     const directResult = await executeAgentTool({
       tool: directTool,
       timeframe: directTimeframe,
-      childId,
+      childId: normalizedChildId,
     });
-    return renderAgentToolResult(directResult);
+    return await renderAgentToolResult(directResult, language, normalizedRole);
   }
 
-  const normalizedRole = normalizeRole(role);
   const thoughtLog: string[] = [];
   let lastToolResult: AgentToolResult | null = null;
 
@@ -316,6 +464,7 @@ export async function tryHandleAgentQuery(params: {
   for (let step = 0; step < maxSteps; step += 1) {
     const prompt = buildAgentPrompt({
       role: normalizedRole,
+      language,
       question,
       thoughtLog,
       forceFinal: step > 0 && lastToolResult !== null,
@@ -330,7 +479,11 @@ export async function tryHandleAgentQuery(params: {
     if (action.type === "final") {
       if (lastToolResult) {
         // Keep metric replies deterministic and grammatically consistent.
-        return renderAgentToolResult(lastToolResult);
+        return await renderAgentToolResult(
+          lastToolResult,
+          language,
+          normalizedRole,
+        );
       }
 
       const finalReply = cleanFinalReply(action.reply);
@@ -344,7 +497,7 @@ export async function tryHandleAgentQuery(params: {
     const toolResult = await executeAgentTool({
       tool: action.tool,
       timeframe: action.args?.timeframe,
-      childId,
+      childId: normalizedChildId,
     });
 
     lastToolResult = toolResult;
@@ -358,7 +511,7 @@ export async function tryHandleAgentQuery(params: {
   }
 
   if (lastToolResult) {
-    return renderAgentToolResult(lastToolResult);
+    return await renderAgentToolResult(lastToolResult, language, normalizedRole);
   }
 
   const fallbackTool = inferSuggestedTool(question);
@@ -366,8 +519,8 @@ export async function tryHandleAgentQuery(params: {
   const fallbackResult = await executeAgentTool({
     tool: fallbackTool,
     timeframe: fallbackTimeframe,
-    childId,
+    childId: normalizedChildId,
   });
 
-  return renderAgentToolResult(fallbackResult);
+  return await renderAgentToolResult(fallbackResult, language, normalizedRole);
 }

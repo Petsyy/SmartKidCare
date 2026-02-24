@@ -1,6 +1,7 @@
 import { Router } from "express";
+import { authenticateToken } from "../middlewares/auth.middleware";
 import { AIServiceError } from "../services/ai/gemini.service";
-import { tryHandleAgentQuery } from "../services/ai/agent.service";
+import { shouldUseAIAgent, tryHandleAgentQuery } from "../services/ai/agent.service";
 import {
   buildAcknowledgementReply,
   buildGreetingReply,
@@ -9,30 +10,35 @@ import {
   isAffirmative,
   isGreeting,
 } from "../services/ai/chatReply.service";
+import { detectResponseLanguage } from "../services/ai/language.service";
 
 const router = Router();
 
-router.post("/chat", async (req, res) => {
+router.post("/chat", authenticateToken, async (req, res) => {
   try {
-    const { role, message, childId } = req.body ?? {};
+    const { role: bodyRole, message, childId } = req.body ?? {};
+    const role = String(req.user?.role ?? bodyRole ?? "");
+    const requesterId = String(req.user?.id ?? "");
 
-    if (!role || !childId || typeof message !== "string" || !message.trim()) {
+    if (!role || !requesterId || typeof message !== "string" || !message.trim()) {
       return res.status(400).json({
-        message: "Invalid request: role, childId, and message are required.",
+        message: "Invalid request: authenticated role and message are required.",
       });
     }
 
     const trimmedMessage = message.trim();
+    const language = detectResponseLanguage(trimmedMessage);
+    const hasAgentIntent = shouldUseAIAgent(trimmedMessage);
 
-    if (isGreeting(trimmedMessage)) {
+    if (!hasAgentIntent && isGreeting(trimmedMessage)) {
       return res.json({
-        reply: buildGreetingReply(String(role)),
+        reply: buildGreetingReply(String(role), language),
       });
     }
 
-    if (isAcknowledgement(trimmedMessage)) {
+    if (!hasAgentIntent && isAcknowledgement(trimmedMessage)) {
       return res.json({
-        reply: buildAcknowledgementReply(String(role)),
+        reply: buildAcknowledgementReply(String(role), language),
       });
     }
 
@@ -43,9 +49,11 @@ router.post("/chat", async (req, res) => {
           : "Show both attendance and feeding details this week.";
 
       const affirmativeReply = await tryHandleAgentQuery({
-        role: String(role),
+        role,
         question: followUpQuestion,
-        childId: String(childId),
+        childId: childId ? String(childId) : undefined,
+        requesterId,
+        language,
       });
 
       if (affirmativeReply) {
@@ -54,14 +62,18 @@ router.post("/chat", async (req, res) => {
 
       return res.json({
         reply:
-          "Please ask for attendance, feeding, or both so I can summarize the records.",
+          language === "tl"
+            ? "Pakitanong ang attendance, feeding, o pareho para maibuod ko ang records."
+            : "Please ask for attendance, feeding, or both so I can summarize the records.",
       });
     }
 
     const agentReply = await tryHandleAgentQuery({
-      role: String(role),
+      role,
       question: trimmedMessage,
-      childId: String(childId),
+      childId: childId ? String(childId) : undefined,
+      requesterId,
+      language,
     });
     if (agentReply) {
       console.log("[AI_CHAT_PATH] agent", { message: trimmedMessage });
@@ -70,13 +82,18 @@ router.post("/chat", async (req, res) => {
 
     return res.json({
       reply:
-        "I couldn't process that request. Please ask about attendance or feeding for this child.",
+        language === "tl"
+          ? "Hindi ko naproseso ang request. Pakitanong ang attendance o feeding ng batang ito."
+          : "I couldn't process that request. Please ask about attendance or feeding for this child.",
     });
   } catch (error) {
     if (error instanceof AIServiceError && error.code === "quota_exceeded") {
+      const message = String(req.body?.message ?? "");
+      const language = detectResponseLanguage(message);
       const fallbackReply = buildQuotaFallbackReply({
         role: String(req.body?.role ?? ""),
         retryAfterSeconds: error.retryAfterSeconds,
+        language,
       });
 
       return res.json({ reply: fallbackReply });
