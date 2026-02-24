@@ -7,9 +7,14 @@
     "dev": "nodemon --watch src --exec ts-node src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "test:csrf": "node --test --require ts-node/register tests/csrf.api.test.ts",
+    "test:ai-intent": "node --test --require ts-node/register tests/ai.intentRouting.test.ts",
     "seed:records": "ts-node scripts/seedRecords.ts",
     "check-balance": "ts-node scripts/check-sepolia-balance.ts",
-    "import-dataset": "ts-node scripts/importDataset.ts"
+    "import-dataset": "ts-node scripts/importDataset.ts",
+    "sanitize-input": "ts-node scripts/sanitizeInput.ts",
+    "sanitize-input:py": "python scripts/sanitize_input.py",
+    "access-control": "ts-node scripts/accessControlDemo.ts"
   },
   "keywords": [],
   "author": "",

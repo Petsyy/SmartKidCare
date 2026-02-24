@@ -35,12 +35,14 @@ const toLocalDateKey = (value: Date = new Date()): string => {
 const formatDateLabel = (value: string): string => {
   const [year, month, day] = value.split("-").map(Number);
   const utcDate = new Date(Date.UTC(year, (month || 1) - 1, day || 1));
-  return utcDate.toLocaleDateString("en-PH", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "Asia/Manila",
-  });
+  return utcDate
+    .toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+      timeZone: "Asia/Manila",
+    })
+    .replace(/,/g, "");
 };
 
 const TYPE_UI: Record<

@@ -18,6 +18,7 @@ import { useAuth } from "@/src/hooks/useAuth";
 import { getMyChildren, Child } from "@/src/api/parent.api";
 import { getAttendanceHistory, getFeedingHistory } from "@/src/api/records.api";
 import { StatRow, ProgressBar } from "@/src/utils/dashboard-overview";
+import { replace } from "expo-router/build/global-state/routing";
 
 type StatCardProps = {
   title: string;
@@ -47,14 +48,16 @@ export default function ParentDashboard() {
   const centerName = "Child Development Center";
 
   // Dynamic date
-  const currentDate = new Date();
-  const dateLabel = currentDate.toLocaleDateString("en-PH", {
+const currentDate = new Date();
+const dateLabel = currentDate
+  .toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
     year: "numeric",
     timeZone: "Asia/Manila",
-  });
+  })
+  .replace(/,/g, "");
 
   const fetchData = async (isRefreshing = false) => {
     try {
