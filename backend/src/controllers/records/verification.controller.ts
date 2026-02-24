@@ -3,7 +3,6 @@ import Attendance from "../../models/Attendance";
 import Feeding from "../../models/Feeding";
 import {
   verifyDailyRecord,
-  getRecordMeta,
   findTxForDateHash,
 } from "../../services/blockchain.service";
 import { buildDateHash, hashData } from "../../blockchain/ethers";
@@ -79,10 +78,6 @@ export const getAttendanceVerification = async (
       attendanceHash,
       feedingHash,
     );
-    const meta = await getRecordMeta(verify.dateHash as string).catch(() => ({
-      timestamp: null,
-      recordedBy: null,
-    }));
     const reason = verify.isValid
       ? undefined
       : !feeding
@@ -92,8 +87,8 @@ export const getAttendanceVerification = async (
     res.json({
       isValid: verify.isValid,
       dateHash,
-      recordedBy: meta.recordedBy,
-      timestamp: meta.timestamp,
+      recordedBy: null,
+      timestamp: null,
       reason,
     });
   } catch (err: any) {
@@ -201,17 +196,13 @@ export const getFeedingVerification = async (req: Request, res: Response) => {
       attendanceHash,
       feedingHash,
     );
-    const meta = await getRecordMeta(verify.dateHash as string).catch(() => ({
-      timestamp: null,
-      recordedBy: null,
-    }));
     const reason = verify.isValid ? undefined : DEFAULT_VERIFY_REASON;
 
     res.json({
       isValid: verify.isValid,
       dateHash,
-      recordedBy: meta.recordedBy,
-      timestamp: meta.timestamp,
+      recordedBy: null,
+      timestamp: null,
       reason,
     });
   } catch (err: any) {

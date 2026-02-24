@@ -21,7 +21,6 @@ console.log("Active Wallet:", wallet.address);
 const abi = [
   "function storeRecord(bytes32 dateHash, bytes32 attendanceHash, bytes32 feedingHash)",
   "function verifyRecord(bytes32 dateHash, bytes32 attendanceHash, bytes32 feedingHash) view returns (bool)",
-  "function getRecordMeta(bytes32 dateHash) view returns (uint256 timestamp, address recordedBy)",
 ];
 
 export const attendanceContract = new ethers.Contract(

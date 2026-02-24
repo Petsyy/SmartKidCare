@@ -2,7 +2,7 @@ import { Router } from "express";
 import {
   recordAttendance,
   verifyAttendance,
-  fetchRecordMeta
+  fetchRecordMeta,
 } from "../controllers/blockchain.controller";
 
 const router = Router();

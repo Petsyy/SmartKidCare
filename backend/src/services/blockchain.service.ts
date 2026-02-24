@@ -10,7 +10,6 @@ import {
 let totalGasSpent = 0;
 let totalTransactions = 0;
 let startingBalance = 0;
-const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 const TX_LOOKUP_CACHE_TTL_MS = 10 * 60 * 1000;
 const txLookupCache = new Map<string, { value: string | null; expiresAt: number }>();
 let txLookupQueue: Promise<void> = Promise.resolve();
@@ -206,22 +205,6 @@ export async function verifyDailyRecord(
   );
 
   return { isValid, dateHash };
-}
-
-export async function getRecordMeta(dateHash: string) {
-  const meta: any = await attendanceContract.getRecordMeta(dateHash);
-  const timestamp =
-    meta && meta.timestamp && Number(meta.timestamp) > 0
-      ? Number(meta.timestamp)
-      : null;
-  const rawRecordedBy =
-    meta && meta.recordedBy ? String(meta.recordedBy) : null;
-  const recordedBy =
-    rawRecordedBy &&
-    rawRecordedBy.toLowerCase() !== ZERO_ADDRESS.toLowerCase()
-      ? rawRecordedBy
-      : null;
-  return { timestamp, recordedBy };
 }
 
 export async function findTxForDateHash(

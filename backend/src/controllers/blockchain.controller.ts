@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import {
   storeDailyRecord,
   verifyDailyRecord,
-  getRecordMeta,
 } from "../services/blockchain.service";
 import { buildDateHash } from "../blockchain/ethers";
 
@@ -49,8 +48,13 @@ export async function fetchRecordMeta(req: Request, res: Response) {332
   try {
     const dateKey = new Date(date).toISOString().split("T")[0];
     const dateHash = buildDateHash(childId, dateKey);
-    const result = await getRecordMeta(dateHash);
-    res.status(200).json(result);
+    return res.status(501).json({
+      message:
+        "getRecordMeta is not available on the current AttendanceFeeding contract version.",
+      dateHash,
+      recordedBy: null,
+      timestamp: null,
+    });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

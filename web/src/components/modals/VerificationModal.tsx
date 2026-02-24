@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ShieldCheck, ShieldX, ExternalLink, Copy, X } from "lucide-react";
+import { ShieldCheck, ShieldX, Copy, X } from "lucide-react";
 
 type Props = {
   open: boolean;
@@ -15,14 +15,6 @@ type Props = {
 };
 
 const EMPTY_VALUE = "-";
-const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
-
-const isUsableAddress = (value?: string | null) =>
-  Boolean(
-    value &&
-      value !== EMPTY_VALUE &&
-      String(value).toLowerCase() !== ZERO_ADDRESS.toLowerCase(),
-  );
 
 export default function VerificationModal({
   open,
@@ -38,25 +30,8 @@ export default function VerificationModal({
     if (!open) setCopiedKey(null);
   }, [open]);
 
-  const recordedOn = useMemo(() => {
-    if (!data?.timestamp) return EMPTY_VALUE;
-    return new Date(data.timestamp * 1000).toLocaleString();
-  }, [data?.timestamp]);
-
-  const signerWallet = useMemo(
-    () => (isUsableAddress(data?.recordedBy) ? String(data?.recordedBy) : null),
-    [data?.recordedBy],
-  );
-
   const dateHash = data?.dateHash || EMPTY_VALUE;
   const isValid = !!data?.isValid;
-
-  const etherscanLink = useMemo(() => {
-    if (signerWallet) {
-      return `https://sepolia.etherscan.io/address/${signerWallet}`;
-    }
-    return "#";
-  }, [signerWallet]);
 
   const statusReason = useMemo(() => {
     if (loading) return null;
@@ -149,37 +124,11 @@ export default function VerificationModal({
           </div>
 
           <div className="grid grid-cols-1 gap-3">
-            <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <div className="text-xs font-semibold tracking-wide text-gray-600">
-                    WALLET (SIGNER)
-                  </div>
-                  <div className="mt-1 break-all font-mono text-sm text-gray-900">
-                    {loading ? "Loading..." : signerWallet || EMPTY_VALUE}
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    copyToClipboard(signerWallet || EMPTY_VALUE, "wallet")
-                  }
-                  className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-50"
-                  disabled={!signerWallet}
-                  title="Copy signer wallet"
-                >
-                  <Copy size={14} />
-                  {copiedKey === "wallet" ? "Copied" : "Copy"}
-                </button>
-              </div>
-            </div>
-
             <div className="rounded-xl border border-gray-200 bg-white p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <div className="text-xs font-semibold tracking-wide text-gray-600">
-                    ON-CHAIN DATA HASH (DATE HASH)
+                    ON-CHAIN DATA HASH (INTEGRITY PROOF)
                   </div>
                   <div className="mt-1 break-all font-mono text-sm text-gray-900">
                     {loading ? "Loading..." : dateHash}
@@ -201,37 +150,16 @@ export default function VerificationModal({
 
             <div className="rounded-xl border border-gray-200 bg-white p-4">
               <div className="text-xs font-semibold tracking-wide text-gray-600">
-                RECORDED ON-CHAIN
+                CONTRACT NOTE
               </div>
-              <div className="mt-1 text-sm font-semibold text-gray-900">
-                {loading ? "Loading..." : recordedOn}
+              <div className="mt-1 text-sm text-gray-700">
+                This contract stores attendance and feeding hashes per date key.
+                Verification compares hashes for integrity checking only.
               </div>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-t border-gray-100 px-6 py-4">
-          <a
-            href={etherscanLink}
-            target="_blank"
-            rel="noreferrer"
-            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition ${
-              etherscanLink === "#"
-                ? "pointer-events-none bg-gray-200 text-gray-500"
-                : "bg-teal-600 text-white hover:bg-teal-700"
-            }`}
-          >
-            <ExternalLink size={16} />
-            View on Etherscan
-          </a>
-
-          <button
-            className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
-            onClick={onClose}
-          >
-            Close
-          </button>
-        </div>
       </div>
     </div>
   );

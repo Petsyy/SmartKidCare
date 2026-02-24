@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { z } from "zod";
 import { authenticateToken } from "../middlewares/auth.middleware";
 import { AIServiceError } from "../services/ai/gemini.service";
 import { shouldUseAIAgent, tryHandleAgentQuery } from "../services/ai/agent.service";
@@ -11,22 +12,68 @@ import {
   isGreeting,
 } from "../services/ai/chatReply.service";
 import { detectResponseLanguage } from "../services/ai/language.service";
+import {
+  AI_INPUT_LIMITS,
+  sanitizeAIChildId,
+  sanitizeAIMessageInput,
+} from "../utils/aiInputSanitizer";
 
 const router = Router();
 
-router.post("/chat", authenticateToken, async (req, res) => {
-  try {
-    const { role: bodyRole, message, childId } = req.body ?? {};
-    const role = String(req.user?.role ?? bodyRole ?? "");
-    const requesterId = String(req.user?.id ?? "");
+const aiChatRequestSchema = z.object({
+  role: z.enum(["parent", "teacher", "admin"]).optional(),
+  message: z.string().max(5000, "Message is too long."),
+  childId: z.string().optional(),
+});
 
-    if (!role || !requesterId || typeof message !== "string" || !message.trim()) {
+router.post("/chat", authenticateToken, async (req, res) => {
+  let roleForFallback = "";
+  let messageForFallback = "";
+
+  try {
+    const parsedRequest = aiChatRequestSchema.safeParse(req.body ?? {});
+    if (!parsedRequest.success) {
+      const firstIssue = parsedRequest.error.issues[0];
+      return res.status(400).json({
+        message: firstIssue?.message || "Invalid request payload.",
+      });
+    }
+
+    const {
+      role: bodyRole,
+      message: rawMessage,
+      childId: rawChildId,
+    } = parsedRequest.data;
+    const role = String(req.user?.role ?? bodyRole ?? "").trim().toLowerCase();
+    const requesterId = String(req.user?.id ?? "");
+    const message = sanitizeAIMessageInput(
+      rawMessage,
+      AI_INPUT_LIMITS.messageMaxLength,
+    );
+    const childId = sanitizeAIChildId(rawChildId);
+
+    roleForFallback = role;
+    messageForFallback = message;
+
+    if (!message) {
+      return res.status(400).json({
+        message: "Invalid request: message is empty after sanitization.",
+      });
+    }
+
+    if (rawChildId?.trim() && !childId) {
+      return res.status(400).json({
+        message: "Invalid request: childId must be a valid identifier.",
+      });
+    }
+
+    if (!role || !requesterId) {
       return res.status(400).json({
         message: "Invalid request: authenticated role and message are required.",
       });
     }
 
-    const trimmedMessage = message.trim();
+    const trimmedMessage = message;
     const language = detectResponseLanguage(trimmedMessage);
     const hasAgentIntent = shouldUseAIAgent(trimmedMessage);
 
@@ -51,7 +98,7 @@ router.post("/chat", authenticateToken, async (req, res) => {
       const affirmativeReply = await tryHandleAgentQuery({
         role,
         question: followUpQuestion,
-        childId: childId ? String(childId) : undefined,
+        childId,
         requesterId,
         language,
       });
@@ -71,7 +118,7 @@ router.post("/chat", authenticateToken, async (req, res) => {
     const agentReply = await tryHandleAgentQuery({
       role,
       question: trimmedMessage,
-      childId: childId ? String(childId) : undefined,
+      childId,
       requesterId,
       language,
     });
@@ -88,10 +135,15 @@ router.post("/chat", authenticateToken, async (req, res) => {
     });
   } catch (error) {
     if (error instanceof AIServiceError && error.code === "quota_exceeded") {
-      const message = String(req.body?.message ?? "");
+      const message =
+        messageForFallback ||
+        sanitizeAIMessageInput(
+          String(req.body?.message ?? ""),
+          AI_INPUT_LIMITS.messageMaxLength,
+        );
       const language = detectResponseLanguage(message);
       const fallbackReply = buildQuotaFallbackReply({
-        role: String(req.body?.role ?? ""),
+        role: roleForFallback || String(req.user?.role ?? req.body?.role ?? ""),
         retryAfterSeconds: error.retryAfterSeconds,
         language,
       });

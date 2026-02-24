@@ -10,6 +10,36 @@ import {
   shouldPaginate,
 } from "./records.shared";
 
+const buildSearchDateKeys = (value: unknown): string[] => {
+  if (!value) return [];
+  const raw = String(value).trim();
+  if (!raw) return [];
+
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return [raw.toLowerCase()];
+
+  const iso = parsed.toISOString();
+  const isoDateOnly = iso.slice(0, 10);
+  const localDate = parsed.toLocaleDateString("en-PH", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const localDateVerbose = parsed.toLocaleDateString("en-PH", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  return Array.from(
+    new Set([raw, iso, isoDateOnly, localDate, localDateVerbose]).values(),
+  )
+    .map((item) => String(item).toLowerCase())
+    .filter(Boolean);
+};
+
 export const getAttendanceHistory = async (req: Request, res: Response) => {
   try {
     if (!req.user?.id) {
@@ -154,9 +184,18 @@ export const getAttendanceHistory = async (req: Request, res: Response) => {
 
     const filteredRows = normalizedSearch
       ? flatRows.filter(
-          (row: any) =>
-            String(row.childName).toLowerCase().includes(normalizedSearch) ||
-            String(row.studentId).toLowerCase().includes(normalizedSearch),
+          (row: any) => {
+            const searchableDateKeys = buildSearchDateKeys(row.date);
+            return (
+              String(row.childName).toLowerCase().includes(normalizedSearch) ||
+              String(row.studentId).toLowerCase().includes(normalizedSearch) ||
+              String(row.status).toLowerCase().includes(normalizedSearch) ||
+              String(row.teacherName).toLowerCase().includes(normalizedSearch) ||
+              searchableDateKeys.some((dateKey) =>
+                dateKey.includes(normalizedSearch),
+              )
+            );
+          },
         )
       : flatRows;
 
@@ -341,10 +380,18 @@ export const getFeedingHistory = async (req: Request, res: Response) => {
 
     const filteredRows = normalizedSearch
       ? flatRows.filter(
-          (row: any) =>
-            String(row.childName).toLowerCase().includes(normalizedSearch) ||
-            String(row.studentId).toLowerCase().includes(normalizedSearch) ||
-            String(row.foodServed).toLowerCase().includes(normalizedSearch),
+          (row: any) => {
+            const searchableDateKeys = buildSearchDateKeys(row.date);
+            return (
+              String(row.childName).toLowerCase().includes(normalizedSearch) ||
+              String(row.studentId).toLowerCase().includes(normalizedSearch) ||
+              String(row.foodServed).toLowerCase().includes(normalizedSearch) ||
+              String(row.status).toLowerCase().includes(normalizedSearch) ||
+              searchableDateKeys.some((dateKey) =>
+                dateKey.includes(normalizedSearch),
+              )
+            );
+          },
         )
       : flatRows;
 

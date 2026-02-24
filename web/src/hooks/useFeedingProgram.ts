@@ -365,10 +365,11 @@ export function useFeedingProgram() {
       setVerifyModal({ open: true, row, data: null });
       setVerifyLoading(true);
       try {
+        const verificationData = await fetchVerificationData(row);
         setVerifyModal({
           open: true,
           row,
-          data: await fetchVerificationData(row),
+          data: verificationData,
         });
       } catch (err: unknown) {
         const reason =
