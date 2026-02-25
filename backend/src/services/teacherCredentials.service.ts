@@ -41,14 +41,12 @@ export const mapCredentialDeliveryError = (error: any): string => {
 type SendTeacherCredentialsEmailParams = {
   to: string;
   firstName: string;
-  employeeId: string;
   tempPassword: string;
 };
 
 export const sendTeacherCredentialsEmail = async ({
   to,
   firstName,
-  employeeId,
   tempPassword,
 }: SendTeacherCredentialsEmailParams): Promise<void> => {
   const info: any = await sendEmail({
@@ -59,7 +57,6 @@ export const sendTeacherCredentialsEmail = async ({
 Your SmartKidCare teacher account has been created.
 
 Login email: ${to}
-Employee ID: ${employeeId}
 Temporary password: ${tempPassword}
 
 You will be required to change this password on your first login.`,
@@ -68,7 +65,6 @@ You will be required to change this password on your first login.`,
         <p>Hello ${firstName},</p>
         <p>Your SmartKidCare teacher account has been created.</p>
         <p><strong>Login email:</strong> ${to}</p>
-        <p><strong>Employee ID:</strong> ${employeeId}</p>
         <p><strong>Temporary password:</strong> ${tempPassword}</p>
         <p>You will be required to change this password on your first login.</p>
       </div>

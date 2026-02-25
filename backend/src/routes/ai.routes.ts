@@ -4,11 +4,16 @@ import { authenticateToken } from "../middlewares/auth.middleware";
 import { AIServiceError } from "../services/ai/gemini.service";
 import { shouldUseAIAgent, tryHandleAgentQuery } from "../services/ai/agent.service";
 import {
+  buildConversationId,
+  writeConversationClosure,
+} from "../services/ai/aiWriter.service";
+import {
   buildAcknowledgementReply,
   buildGreetingReply,
   buildQuotaFallbackReply,
   isAcknowledgement,
   isAffirmative,
+  isConversationClosure,
   isGreeting,
 } from "../services/ai/chatReply.service";
 import { detectResponseLanguage } from "../services/ai/language.service";
@@ -75,6 +80,12 @@ router.post("/chat", authenticateToken, async (req, res) => {
 
     const trimmedMessage = message;
     const language = detectResponseLanguage(trimmedMessage);
+    const conversationId = buildConversationId({
+      requesterId,
+      role,
+      childId,
+      language,
+    });
     const hasAgentIntent = shouldUseAIAgent(trimmedMessage);
 
     if (!hasAgentIntent && isGreeting(trimmedMessage)) {
@@ -86,6 +97,18 @@ router.post("/chat", authenticateToken, async (req, res) => {
     if (!hasAgentIntent && isAcknowledgement(trimmedMessage)) {
       return res.json({
         reply: buildAcknowledgementReply(String(role), language),
+      });
+    }
+
+    if (!hasAgentIntent && isConversationClosure(trimmedMessage)) {
+      const closureReply = await writeConversationClosure({
+        role,
+        language,
+        message: trimmedMessage,
+        conversationId,
+      });
+      return res.json({
+        reply: closureReply,
       });
     }
 
@@ -101,6 +124,7 @@ router.post("/chat", authenticateToken, async (req, res) => {
         childId,
         requesterId,
         language,
+        conversationId,
       });
 
       if (affirmativeReply) {
@@ -121,9 +145,13 @@ router.post("/chat", authenticateToken, async (req, res) => {
       childId,
       requesterId,
       language,
+      conversationId,
     });
     if (agentReply) {
-      console.log("[AI_CHAT_PATH] agent", { message: trimmedMessage });
+      const accuracyMatch = agentReply.match(/(\d+(?:\.\d+)?)%/);
+      if (accuracyMatch?.[1]) {
+        console.log(`${accuracyMatch[1]}%`);
+      }
       return res.json({ reply: agentReply });
     }
 

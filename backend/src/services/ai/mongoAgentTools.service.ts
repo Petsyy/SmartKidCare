@@ -1,8 +1,9 @@
 import { Types } from "mongoose";
 import Attendance from "../../models/Attendance";
 import Feeding from "../../models/Feeding";
+import Child from "../../models/Child";
 
-export type ToolTimeframe = "today" | "week" | "last_week" | "recent";
+export type ToolTimeframe = "today" | "week" | "last_week" | "month" | "recent";
 
 export type DateRange = {
   start: Date;
@@ -12,6 +13,7 @@ export type DateRange = {
 export type SummarizeAttendanceResult = {
   tool: "summarize_attendance";
   timeframe: ToolTimeframe;
+  childName?: string;
   present: number;
   absent: number;
   totalDays: number;
@@ -22,6 +24,7 @@ export type SummarizeAttendanceResult = {
 export type SummarizeFeedingResult = {
   tool: "summarize_feeding";
   timeframe: ToolTimeframe;
+  childName?: string;
   completed: number;
   missed: number;
   totalMeals: number;
@@ -54,8 +57,28 @@ export type SummarizeFeedingClassResult = {
 export type GenerateChildReportResult = {
   tool: "generate_child_report";
   timeframe: ToolTimeframe;
+  childName?: string;
   attendance: SummarizeAttendanceResult;
   feeding: SummarizeFeedingResult;
+};
+
+export type ChildTrendPoint = {
+  periodStart: string;
+  attendanceRate: number;
+  feedingRate: number;
+  attendanceTotal: number;
+  feedingTotal: number;
+};
+
+export type SummarizeChildTrendResult = {
+  tool: "summarize_child_trend";
+  timeframe: "recent";
+  childName?: string;
+  attendanceRate: number;
+  feedingRate: number;
+  attendanceTotal: number;
+  feedingTotal: number;
+  points: ChildTrendPoint[];
 };
 
 type AttendanceRecordRow = {
@@ -149,6 +172,23 @@ function childMatches(recordChild: unknown, childId: string): boolean {
   return recordChildId(recordChild) === childId;
 }
 
+async function fetchChildDisplayName(childId: string): Promise<string | undefined> {
+  const child = await Child.findById(childId, {
+    firstName: 1,
+    lastName: 1,
+  }).lean<{
+    firstName?: string;
+    lastName?: string;
+  } | null>();
+
+  if (!child) return undefined;
+
+  const firstName = String(child.firstName ?? "").trim();
+  const lastName = String(child.lastName ?? "").trim();
+  const fullName = `${firstName} ${lastName}`.trim();
+  return fullName || undefined;
+}
+
 function safeRate(numerator: number, denominator: number): number {
   if (denominator <= 0) return 0;
   return Number(((numerator / denominator) * 100).toFixed(2));
@@ -172,6 +212,35 @@ function buildWeekRange(weekStart: Date): DateRange {
     start: weekStart,
     end: new Date(weekStart.getTime() + WEEK_MS - 1),
   };
+}
+
+function getCurrentMonthRange(todayStart: Date, offsetMinutes: number): DateRange {
+  const shiftedMs = todayStart.getTime() + offsetMinutes * MINUTE_MS;
+  const shiftedDate = new Date(shiftedMs);
+
+  const localMonthStartShifted = Date.UTC(
+    shiftedDate.getUTCFullYear(),
+    shiftedDate.getUTCMonth(),
+    1,
+    0,
+    0,
+    0,
+    0,
+  );
+
+  const nextMonthStartShifted = Date.UTC(
+    shiftedDate.getUTCFullYear(),
+    shiftedDate.getUTCMonth() + 1,
+    1,
+    0,
+    0,
+    0,
+    0,
+  );
+
+  const start = new Date(localMonthStartShifted - offsetMinutes * MINUTE_MS);
+  const end = new Date(nextMonthStartShifted - offsetMinutes * MINUTE_MS - 1);
+  return { start, end };
 }
 
 async function fetchAttendanceRows(
@@ -361,6 +430,10 @@ export async function getDateRange(timeframe: ToolTimeframe): Promise<DateRange>
     return buildWeekRange(weekStart);
   }
 
+  if (timeframe === "month") {
+    return getCurrentMonthRange(todayStart, offsetMinutes);
+  }
+
   const recentStart = new Date(todayStart);
   recentStart.setUTCDate(recentStart.getUTCDate() - (RECENT_WINDOW_DAYS - 1));
   return {
@@ -376,6 +449,7 @@ export async function summarizeAttendanceTool(
   const childObjectId = toObjectId(childId);
   const range = await getDateRange(timeframe);
   const offsetMinutes = reportTimezoneOffsetMinutes();
+  const childName = await fetchChildDisplayName(childId);
 
   const rows = await fetchAttendanceRows(range, { "records.child": childObjectId });
   const { present, absent, absentDates } = summarizeChildAttendanceRows(
@@ -389,6 +463,7 @@ export async function summarizeAttendanceTool(
   return {
     tool: "summarize_attendance",
     timeframe,
+    childName,
     present,
     absent,
     totalDays,
@@ -431,6 +506,7 @@ export async function summarizeFeedingTool(
 ): Promise<SummarizeFeedingResult> {
   const childObjectId = toObjectId(childId);
   const range = await getDateRange(timeframe);
+  const childName = await fetchChildDisplayName(childId);
 
   const rows = await fetchFeedingRows(range, { "records.child": childObjectId });
   const { completed, missed, foods } = summarizeChildFeedingRows(rows, childId);
@@ -440,6 +516,7 @@ export async function summarizeFeedingTool(
   return {
     tool: "summarize_feeding",
     timeframe,
+    childName,
     completed,
     missed,
     totalMeals,
@@ -484,8 +561,96 @@ export async function generateChildReportTool(
   return {
     tool: "generate_child_report",
     timeframe,
+    childName: attendance.childName ?? feeding.childName,
     attendance,
     feeding,
+  };
+}
+
+function weekStartKeyFromDate(date: Date, offsetMinutes: number): string {
+  const shiftedMs = date.getTime() + offsetMinutes * MINUTE_MS;
+  const shiftedDate = new Date(shiftedMs);
+  const dayOfWeek = shiftedDate.getUTCDay();
+  const daysFromMonday = (dayOfWeek + 6) % 7;
+
+  const mondayShifted = Date.UTC(
+    shiftedDate.getUTCFullYear(),
+    shiftedDate.getUTCMonth(),
+    shiftedDate.getUTCDate() - daysFromMonday,
+    0,
+    0,
+    0,
+    0,
+  );
+
+  const mondayUtc = new Date(mondayShifted - offsetMinutes * MINUTE_MS);
+  return toLocalDateKey(mondayUtc, offsetMinutes);
+}
+
+export async function summarizeChildTrendTool(
+  childId: string,
+): Promise<SummarizeChildTrendResult> {
+  const childObjectId = toObjectId(childId);
+  const range = await getDateRange("recent");
+  const offsetMinutes = reportTimezoneOffsetMinutes();
+
+  const [attendance, feeding, attendanceRows, feedingRows] = await Promise.all([
+    summarizeAttendanceTool(childId, "recent"),
+    summarizeFeedingTool(childId, "recent"),
+    fetchAttendanceRows(range, { "records.child": childObjectId }),
+    fetchFeedingRows(range, { "records.child": childObjectId }),
+  ]);
+
+  const buckets = new Map<
+    string,
+    { present: number; absent: number; completed: number; missed: number }
+  >();
+
+  const ensureBucket = (key: string) => {
+    if (!buckets.has(key)) {
+      buckets.set(key, { present: 0, absent: 0, completed: 0, missed: 0 });
+    }
+    return buckets.get(key)!;
+  };
+
+  attendanceRows.forEach((row) => {
+    const bucket = ensureBucket(weekStartKeyFromDate(row.date, offsetMinutes));
+    row.records.forEach((record) => {
+      if (!childMatches(record.child, childId)) return;
+      if (record.status === "present") bucket.present += 1;
+      if (record.status === "absent") bucket.absent += 1;
+    });
+  });
+
+  feedingRows.forEach((row) => {
+    const bucket = ensureBucket(weekStartKeyFromDate(row.date, offsetMinutes));
+    row.records.forEach((record) => {
+      if (!childMatches(record.child, childId)) return;
+      if (record.status === "completed") bucket.completed += 1;
+      if (record.status === "missed") bucket.missed += 1;
+    });
+  });
+
+  const points = [...buckets.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .slice(-5)
+    .map(([periodStart, value]) => ({
+      periodStart,
+      attendanceRate: safeRate(value.present, value.present + value.absent),
+      feedingRate: safeRate(value.completed, value.completed + value.missed),
+      attendanceTotal: value.present + value.absent,
+      feedingTotal: value.completed + value.missed,
+    }));
+
+  return {
+    tool: "summarize_child_trend",
+    timeframe: "recent",
+    childName: attendance.childName ?? feeding.childName,
+    attendanceRate: attendance.attendanceRate,
+    feedingRate: feeding.feedingRate,
+    attendanceTotal: attendance.totalDays,
+    feedingTotal: feeding.totalMeals,
+    points,
   };
 }
 

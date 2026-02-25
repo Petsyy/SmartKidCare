@@ -22,6 +22,10 @@ test("routes attendance intent to summarize_attendance", () => {
     detectToolForQuestion("How is my child's attendance?"),
     "summarize_attendance",
   );
+  assert.equal(
+    detectToolForQuestion("On which dates was my child absent this month?"),
+    "summarize_attendance",
+  );
 });
 
 test("routes feeding intent to summarize_feeding", () => {
@@ -53,6 +57,22 @@ test("routes mixed/report intent to generate_child_report", () => {
   assert.equal(
     detectToolForQuestion("Give me an overall status of my child"),
     "generate_child_report",
+  );
+  assert.equal(
+    detectToolForQuestion("What is my child's current risk level, and why?"),
+    "generate_child_report",
+  );
+  assert.equal(
+    detectToolForQuestion(
+      "Can you show a short trend for my child over the last 30 days?",
+    ),
+    "generate_child_report",
+  );
+  assert.equal(
+    detectToolForQuestion(
+      "Is my child's attendance improving compared to last week?",
+    ),
+    "summarize_attendance",
   );
 });
 

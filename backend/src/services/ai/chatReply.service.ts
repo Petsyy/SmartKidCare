@@ -8,6 +8,9 @@ const GREETING_PATTERN =
 const ACKNOWLEDGEMENT_PATTERN =
   /^(thanks|thanks a lot|thank you|thank you so much|ty|salamat|salamat po|ok|okay|alright|got it|noted|sige|sige po)[.!?]*$/;
 
+const CONVERSATION_CLOSURE_PATTERN =
+  /^(no(?:pe)?\s*(?:,)?\s*(?:thank\s*you|thanks)|not now(?:\s*(?:,)?\s*(?:thank\s*you|thanks))?|hindi na(?:\s*(?:,)?\s*salamat)?|ayoko na(?:\s*(?:,)?\s*salamat)?)\s*[.!?]*$/;
+
 const TRAILING_PUNCTUATION_PATTERN = /[.!?]+$/g;
 
 const SINGLE_TOKEN_AFFIRMATIVES = new Set([
@@ -85,6 +88,25 @@ const ACKNOWLEDGEMENT_REPLIES: RoleReplyTable = {
   },
 };
 
+const CLOSURE_REPLIES: RoleReplyTable = {
+  en: {
+    parent:
+      "No problem. Thanks for asking. Ask me anytime about your child's attendance or feeding.",
+    teacher:
+      "No problem. Thanks for asking. Ask me anytime about attendance or feeding records.",
+    admin:
+      "No problem. Thanks for asking. Ask me anytime about attendance, feeding, or verification insights.",
+  },
+  tl: {
+    parent:
+      "Walang problema. Salamat sa pagtatanong. Magtanong ka lang anumang oras tungkol sa attendance o feeding ng anak mo.",
+    teacher:
+      "Walang problema. Salamat sa pagtatanong. Magtanong ka lang anumang oras tungkol sa attendance o feeding records.",
+    admin:
+      "Walang problema. Salamat sa pagtatanong. Magtanong ka lang anumang oras tungkol sa attendance, feeding, o verification insights.",
+  },
+};
+
 function normalizeMessage(text: string): string {
   return text.trim().toLowerCase().replace(/\s+/g, " ");
 }
@@ -128,6 +150,11 @@ export function isAcknowledgement(text: string): boolean {
   return ACKNOWLEDGEMENT_PATTERN.test(normalized);
 }
 
+export function isConversationClosure(text: string): boolean {
+  const normalized = normalizeMessage(text);
+  return CONVERSATION_CLOSURE_PATTERN.test(normalized);
+}
+
 export function buildGreetingReply(
   role: string,
   language: AIResponseLanguage = "en",
@@ -147,6 +174,13 @@ export function buildAcknowledgementReply(
   language: AIResponseLanguage = "en",
 ): string {
   return pickReply(ACKNOWLEDGEMENT_REPLIES, role, language);
+}
+
+export function buildConversationClosureReply(
+  role: string,
+  language: AIResponseLanguage = "en",
+): string {
+  return pickReply(CLOSURE_REPLIES, role, language);
 }
 
 // Quota fallback now generic, no summaries.

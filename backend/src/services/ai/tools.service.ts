@@ -7,12 +7,6 @@ import {
   SummarizeFeedingResult,
   GenerateChildReportResult,
 } from "./mongoAgentTools.service";
-import {
-  composeAttendanceReply,
-  composeChildReportReply,
-  composeFeedingReply,
-} from "./nlg.service";
-import { AIResponseLanguage } from "./language.service";
 
 export type AgentToolTimeframe = ToolTimeframe;
 export type AgentToolName =
@@ -35,6 +29,8 @@ function normalizeTimeframe(value?: string): AgentToolTimeframe {
   if (normalized.includes("nakaraang linggo")) return "last_week";
   if (normalized.includes("huling linggo")) return "last_week";
   if (normalized.includes("today")) return "today";
+  if (normalized.includes("month")) return "month";
+  if (normalized.includes("buwan")) return "month";
   if (normalized.includes("week")) return "week";
   return "recent";
 }
@@ -56,20 +52,4 @@ export async function executeAgentTool(params: {
   }
 
   return generateChildReportMongo(childId, safeTimeframe);
-}
-
-export async function renderAgentToolResult(
-  result: AgentToolResult,
-  language: AIResponseLanguage = "en",
-  role: string = "parent",
-): Promise<string> {
-  if (result.tool === "summarize_attendance") {
-    return composeAttendanceReply(result, undefined, language, role);
-  }
-
-  if (result.tool === "summarize_feeding") {
-    return composeFeedingReply(result, undefined, language, role);
-  }
-
-  return composeChildReportReply(result, undefined, language, role);
 }

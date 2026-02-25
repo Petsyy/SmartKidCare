@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import User from "../models/Users";
-import { generateEmployeeId } from "../utils/generateEmployeeId";
 import Child from "../models/Child";
 import {
   isValidEmailAddress,
@@ -32,13 +31,10 @@ export const createTeacher = async (req: Request, res: Response) => {
       return res.status(409).json({ message: "Email already in use" });
     }
 
-    const employeeId = await generateEmployeeId();
-
     const tempPassword = Math.random().toString(36).slice(-8).toUpperCase();
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
     const teacher = await User.create({
-      employeeId,
       firstName,
       middleName,
       lastName,
@@ -59,7 +55,6 @@ export const createTeacher = async (req: Request, res: Response) => {
       await sendTeacherCredentialsEmail({
         to: normalizedEmail,
         firstName: teacher.firstName,
-        employeeId: teacher.employeeId || employeeId,
         tempPassword,
       });
     } catch (error: any) {

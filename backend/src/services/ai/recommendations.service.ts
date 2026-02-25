@@ -331,15 +331,16 @@ async function generateRecommendationWording(params: {
   insight: InsightBlock;
   metrics: string;
   directives: RecommendationDirective[];
+  deterministic?: boolean;
 }): Promise<string[]> {
-  const { domain, language, insight, metrics } = params;
+  const { domain, language, insight, metrics, deterministic = false } = params;
   const directives = uniqueDirectives(params.directives);
   if (!directives.length) return [];
 
   const fallbackRecommendations = directives.map((directive) =>
     directiveFallback(directive, language),
   );
-  if (!isAIRecommendationsEnabled()) {
+  if (deterministic || !isAIRecommendationsEnabled()) {
     return unique(fallbackRecommendations);
   }
 
@@ -371,6 +372,7 @@ export async function recommendForAttendance(
   result: SummarizeAttendanceResult,
   insight?: InsightBlock,
   language: AIResponseLanguage = "en",
+  options?: { deterministic?: boolean },
 ): Promise<string[]> {
   const evaluated = insight ?? analyzeAttendanceInsight(result);
   const directives: RecommendationDirective[] = [];
@@ -384,6 +386,7 @@ export async function recommendForAttendance(
       insight: evaluated,
       metrics,
       directives,
+      deterministic: options?.deterministic,
     });
   }
 
@@ -410,6 +413,7 @@ export async function recommendForAttendance(
     insight: evaluated,
     metrics,
     directives,
+    deterministic: options?.deterministic,
   });
 }
 
@@ -417,6 +421,7 @@ export async function recommendForFeeding(
   result: SummarizeFeedingResult,
   insight?: InsightBlock,
   language: AIResponseLanguage = "en",
+  options?: { deterministic?: boolean },
 ): Promise<string[]> {
   const evaluated = insight ?? analyzeFeedingInsight(result);
   const directives: RecommendationDirective[] = [];
@@ -430,6 +435,7 @@ export async function recommendForFeeding(
       insight: evaluated,
       metrics,
       directives,
+      deterministic: options?.deterministic,
     });
   }
 
@@ -459,6 +465,7 @@ export async function recommendForFeeding(
     insight: evaluated,
     metrics,
     directives,
+    deterministic: options?.deterministic,
   });
 }
 
@@ -466,10 +473,15 @@ export async function recommendForChildReport(
   result: GenerateChildReportResult,
   insight: ChildReportInsight,
   language: AIResponseLanguage = "en",
+  options?: { deterministic?: boolean },
 ): Promise<string[]> {
   const [attendanceRecommendations, feedingRecommendations] = await Promise.all([
-    recommendForAttendance(result.attendance, insight.attendance, language),
-    recommendForFeeding(result.feeding, insight.feeding, language),
+    recommendForAttendance(result.attendance, insight.attendance, language, {
+      deterministic: options?.deterministic,
+    }),
+    recommendForFeeding(result.feeding, insight.feeding, language, {
+      deterministic: options?.deterministic,
+    }),
   ]);
 
   return unique([...attendanceRecommendations, ...feedingRecommendations]);

@@ -1,52 +1,23 @@
-import { z } from "zod";
-import { askGemini } from "./gemini.service";
 import {
+  summarizeAttendanceTool,
   summarizeAttendanceClassTool,
+  summarizeChildTrendTool,
   summarizeFeedingClassTool,
   ToolTimeframe,
 } from "./mongoAgentTools.service";
-import {
-  composeAttendanceClassReply,
-  composeFeedingClassReply,
-} from "./nlg.service";
-import {
-  executeAgentTool,
-  renderAgentToolResult,
-  AgentToolName,
-  AgentToolResult,
-} from "./tools.service";
+import { executeAgentTool, AgentToolName } from "./tools.service";
 import { AIResponseLanguage, detectResponseLanguage } from "./language.service";
+import {
+  AttendanceComparisonResult,
+  buildConversationId,
+  ClassReportResult,
+  writeToolNarrative,
+} from "./aiWriter.service";
 
 type AIRole = "parent" | "teacher" | "admin";
 
-const ToolActionSchema = z.object({
-  type: z.literal("tool"),
-  tool: z.enum([
-    "summarize_attendance",
-    "summarize_feeding",
-    "generate_child_report",
-  ]),
-  args: z
-    .object({
-      timeframe: z.string().optional(),
-    })
-    .optional(),
-});
-
-const FinalActionSchema = z.object({
-  type: z.literal("final"),
-  reply: z.string().min(1),
-});
-
-const AgentActionSchema = z.discriminatedUnion("type", [
-  ToolActionSchema,
-  FinalActionSchema,
-]);
-
-type AgentAction = z.infer<typeof AgentActionSchema>;
-
 function normalizeRole(role: string): AIRole {
-  const normalized = role.toLowerCase();
+  const normalized = String(role).trim().toLowerCase();
   if (normalized === "teacher") return "teacher";
   if (normalized === "admin") return "admin";
   return "parent";
@@ -61,16 +32,11 @@ function isClassAggregateQuestion(question: string, role: AIRole): boolean {
   const feedingWords =
     /\b(meals?|feeding|food|lunch|snack|breakfast|dinner)\b/.test(lower);
   const domainWords = attendanceWords || feedingWords;
-  // Avoid false positives when explicitly saying "my child" / "anak ko".
   const explicitSingle =
     /\b(my child|anak ko|my kid|my student|this child)\b/.test(lower);
   const genericChildMention = /\b(child|anak|student|kid|bata)\b/.test(lower);
 
-  return (
-    !explicitSingle &&
-    domainWords &&
-    (classWords || !genericChildMention)
-  );
+  return !explicitSingle && domainWords && (classWords || !genericChildMention);
 }
 
 function inferClassQuestionDomain(
@@ -102,8 +68,8 @@ function inferClassTimeframe(question: string): ToolTimeframe {
     return "last_week";
   }
   if (lower.includes("today") || lower.includes("ngayon")) return "today";
+  if (lower.includes("month") || lower.includes("buwan")) return "month";
   if (lower.includes("week") || lower.includes("linggo")) return "week";
-  // Teacher count questions default to today when timeframe is omitted.
   return "today";
 }
 
@@ -119,7 +85,6 @@ function shouldTriggerAbsenceAgent(lower: string): boolean {
 }
 
 function shouldTriggerPresenceAgent(lower: string): boolean {
-  // e.g., "Was my child present today?", "Is my child present?"
   const mentionsPresent = /\bpresent\b/.test(lower);
   const mentionsAttendance =
     /\battendance\b/.test(lower) ||
@@ -200,6 +165,26 @@ function shouldTriggerFoodIntakeAgent(lower: string): boolean {
   return asksWhatWasEaten || asksIfChildAte || asksFoodByTime || asksInTagalog;
 }
 
+function isAttendanceComparisonQuestion(question: string): boolean {
+  const lower = question.toLowerCase();
+  const hasAttendance = /\b(attendance|present|absent|pagdalo|pasok|lumiban)\b/.test(
+    lower,
+  );
+  const asksComparison =
+    /\b(improv|compare|comparison|versus|vs)\b/.test(lower) &&
+    /\b(last week|previous week|this week|week)\b/.test(lower);
+  return hasAttendance && asksComparison;
+}
+
+function isTrendQuestion(question: string): boolean {
+  const lower = question.toLowerCase();
+  return (
+    /\b(trend|last 30 days|30 days)\b/.test(lower) ||
+    (/\b(month|monthly|buwan)\b/.test(lower) &&
+      /\b(trend|graph|history)\b/.test(lower))
+  );
+}
+
 export function detectToolForQuestion(question: string): AgentToolName | null {
   const lower = question.trim().toLowerCase();
   const hasChildSubject = /\b(child|children|kid|kids|anak|bata)\b/.test(lower);
@@ -218,22 +203,26 @@ export function detectToolForQuestion(question: string): AgentToolName | null {
     shouldTriggerMissedMealsAgent(lower) ||
     shouldTriggerFoodIntakeAgent(lower);
 
+  const asksRiskLevel =
+    /\b(risk|risk level|high risk|medium risk|low risk)\b/.test(lower) ||
+    (/\bwhy\b/.test(lower) && /\brisk\b/.test(lower));
+  const asksTrend =
+    /\b(trend|30 days|last 30 days|monthly|month|buwan)\b/.test(lower) ||
+    (/\bcompare|comparison\b/.test(lower) &&
+      /\b(last week|this week|previous week|week)\b/.test(lower));
+
   const wantsReport =
     shouldTriggerReportAgent(lower) ||
+    asksRiskLevel ||
+    asksTrend ||
     /\b(how is|how are|overall|status|progress|kamusta|kumusta|kalagayan)\b/.test(
       lower,
     );
 
-  // Highest priority: explicit single-domain intent should stay single-domain.
   if (hasAttendanceSignal && !hasFeedingSignal) return "summarize_attendance";
   if (hasFeedingSignal && !hasAttendanceSignal) return "summarize_feeding";
-
-  // If both domains are present, return combined report.
   if (hasAttendanceSignal && hasFeedingSignal) return "generate_child_report";
-
-  // Generic child status/report query with no explicit domain.
   if (wantsReport && hasChildSubject) return "generate_child_report";
-
   return null;
 }
 
@@ -241,86 +230,16 @@ export function shouldUseAIAgent(question: string): boolean {
   return detectToolForQuestion(question) !== null;
 }
 
-function stripFences(text: string): string {
-  return text
-    .trim()
-    .replace(/^```json\s*/i, "")
-    .replace(/^```\s*/i, "")
-    .replace(/\s*```$/, "")
-    .trim();
-}
-
-function extractFirstJsonObject(text: string): string | null {
-  const source = stripFences(text);
-  const start = source.indexOf("{");
-  if (start < 0) return null;
-
-  let depth = 0;
-  let inString = false;
-  let escaped = false;
-
-  for (let i = start; i < source.length; i += 1) {
-    const ch = source[i];
-
-    if (inString) {
-      if (escaped) {
-        escaped = false;
-      } else if (ch === "\\") {
-        escaped = true;
-      } else if (ch === '"') {
-        inString = false;
-      }
-      continue;
-    }
-
-    if (ch === '"') {
-      inString = true;
-      continue;
-    }
-
-    if (ch === "{") {
-      depth += 1;
-      continue;
-    }
-
-    if (ch === "}") {
-      depth -= 1;
-      if (depth === 0) {
-        return source.slice(start, i + 1);
-      }
-    }
-  }
-
-  return null;
-}
-
-function parseAgentAction(rawText: string): AgentAction | null {
-  const direct = stripFences(rawText);
-  const candidates = [direct, extractFirstJsonObject(rawText)].filter(
-    (item): item is string => Boolean(item),
-  );
-
-  for (const candidate of candidates) {
-    try {
-      const parsed = JSON.parse(candidate);
-      const validated = AgentActionSchema.safeParse(parsed);
-      if (validated.success) return validated.data;
-    } catch {
-      // no-op
-    }
-  }
-
-  return null;
-}
-
 function inferSuggestedTool(question: string): AgentToolName {
   return detectToolForQuestion(question) ?? "generate_child_report";
 }
 
-function inferSuggestedTimeframe(
-  question: string,
-): ToolTimeframe {
+function inferSuggestedTimeframe(question: string): ToolTimeframe {
   const lower = question.toLowerCase();
+  if (lower.includes("last 30 days") || lower.includes("30 days")) return "recent";
+  if (lower.includes("monthly") || lower.includes("month") || lower.includes("buwan")) {
+    return "month";
+  }
   if (
     lower.includes("last week") ||
     lower.includes("previous week") ||
@@ -334,56 +253,22 @@ function inferSuggestedTimeframe(
   return "recent";
 }
 
-function buildAgentPrompt(params: {
+function resolveConversationId(params: {
+  requesterId?: string;
   role: AIRole;
+  childId?: string;
   language: AIResponseLanguage;
-  question: string;
-  thoughtLog: string[];
-  forceFinal: boolean;
+  conversationId?: string;
 }): string {
-  const { role, language, question, thoughtLog, forceFinal } = params;
+  const provided = String(params.conversationId ?? "").trim();
+  if (provided) return provided;
 
-  const suggestedTool = inferSuggestedTool(question);
-  const suggestedTimeframe = inferSuggestedTimeframe(question);
-  const toolHistory = thoughtLog.length ? thoughtLog.join("\n") : "None";
-  const finalConstraint = forceFinal
-    ? "IMPORTANT: You already have tool output. Return type='final' now."
-    : "";
-
-  return `
-You are the SmartKidCare planning agent.
-Return ONLY one valid JSON object with no extra text.
-
-Allowed JSON shapes:
-{"type":"tool","tool":"summarize_attendance","args":{"timeframe":"today|week|last_week|recent"}}
-{"type":"tool","tool":"summarize_feeding","args":{"timeframe":"today|week|last_week|recent"}}
-{"type":"tool","tool":"generate_child_report","args":{"timeframe":"today|week|last_week|recent"}}
-{"type":"final","reply":"plain text answer"}
-
-Rules:
-- Use only provided attendance/feeding summaries.
-- Never invent counts or dates.
-- Use summarize_attendance for attendance questions.
-- Use summarize_feeding for feeding/meal questions.
-- Use generate_child_report for combined overview/report questions.
-- If tool results already exist, produce a final answer.
-- Keep final answers short and plain text.
-- Do not include markdown, code fences, or numbered lists.
-- Use response language: ${language === "tl" ? "Tagalog" : "English"}.
-
-Context:
-- Role: ${role}
-- Language: ${language}
-- Suggested tool: ${suggestedTool}
-- Suggested timeframe: ${suggestedTimeframe}
-- Question: ${question}
-- Tool Trace: ${toolHistory}
-
-${finalConstraint}`;
-}
-
-function cleanFinalReply(reply: string): string {
-  return reply.replace(/\r\n/g, "\n").trim();
+  return buildConversationId({
+    requesterId: params.requesterId,
+    role: params.role,
+    childId: params.childId,
+    language: params.language,
+  });
 }
 
 export async function tryHandleAgentQuery(params: {
@@ -392,135 +277,131 @@ export async function tryHandleAgentQuery(params: {
   childId?: string;
   requesterId?: string;
   language?: AIResponseLanguage;
+  conversationId?: string;
 }): Promise<string | null> {
-  const { role, question, childId } = params;
-  const language = params.language ?? detectResponseLanguage(question);
-  const normalizedRole = normalizeRole(role);
+  const language = params.language ?? detectResponseLanguage(params.question);
+  const normalizedRole = normalizeRole(params.role);
+  const normalizedChildId = String(params.childId ?? "").trim();
+  const conversationId = resolveConversationId({
+    requesterId: params.requesterId,
+    role: normalizedRole,
+    childId: normalizedChildId,
+    language,
+    conversationId: params.conversationId,
+  });
 
-  if (isClassAggregateQuestion(question, normalizedRole)) {
+  if (isClassAggregateQuestion(params.question, normalizedRole)) {
     if (!params.requesterId) {
       return language === "tl"
         ? "Hindi matukoy ang teacher session para sa class-level summary. Pakisubukang mag-login muli."
         : "Unable to resolve teacher session for class-level summary. Please sign in again.";
     }
 
-    const timeframe = inferClassTimeframe(question);
-    const domain = inferClassQuestionDomain(question);
+    const timeframe = inferClassTimeframe(params.question);
+    const domain = inferClassQuestionDomain(params.question);
 
     if (domain === "attendance") {
-      const classAttendance = await summarizeAttendanceClassTool(
-        params.requesterId,
-        timeframe,
-      );
-      return composeAttendanceClassReply(classAttendance, language);
+      const result = await summarizeAttendanceClassTool(params.requesterId, timeframe);
+      return writeToolNarrative({
+        result,
+        role: normalizedRole,
+        question: params.question,
+        language,
+        conversationId,
+      });
     }
 
     if (domain === "feeding") {
-      const classFeeding = await summarizeFeedingClassTool(
-        params.requesterId,
-        timeframe,
-      );
-      return composeFeedingClassReply(classFeeding, language);
+      const result = await summarizeFeedingClassTool(params.requesterId, timeframe);
+      return writeToolNarrative({
+        result,
+        role: normalizedRole,
+        question: params.question,
+        language,
+        conversationId,
+      });
     }
 
-    const [classAttendance, classFeeding] = await Promise.all([
+    const [attendance, feeding] = await Promise.all([
       summarizeAttendanceClassTool(params.requesterId, timeframe),
       summarizeFeedingClassTool(params.requesterId, timeframe),
     ]);
+    const result: ClassReportResult = {
+      tool: "generate_class_report",
+      timeframe,
+      attendance,
+      feeding,
+    };
 
-    return [
-      composeAttendanceClassReply(classAttendance, language),
-      composeFeedingClassReply(classFeeding, language),
-    ]
-      .filter(Boolean)
-      .join("\n");
+    return writeToolNarrative({
+      result,
+      role: normalizedRole,
+      question: params.question,
+      language,
+      conversationId,
+    });
   }
 
-  const normalizedChildId = String(childId ?? "").trim();
+  if (!shouldUseAIAgent(params.question)) {
+    return null;
+  }
+
   if (!normalizedChildId) {
     return language === "tl"
       ? "Paki-specify ang bata na gusto mong i-check para sa attendance o feeding summary."
       : "Please specify which child you want to check for attendance or feeding summary.";
   }
 
-  if (!shouldUseAIAgent(question)) return null;
-
-  // Fast path: route feeding/attendance intent directly to deterministic Mongo-backed tools.
-  const directTool = detectToolForQuestion(question);
-  if (directTool) {
-    const directTimeframe = inferSuggestedTimeframe(question);
-    const directResult = await executeAgentTool({
-      tool: directTool,
-      timeframe: directTimeframe,
-      childId: normalizedChildId,
-    });
-    return await renderAgentToolResult(directResult, language, normalizedRole);
-  }
-
-  const thoughtLog: string[] = [];
-  let lastToolResult: AgentToolResult | null = null;
-
-  const maxSteps = 3;
-  for (let step = 0; step < maxSteps; step += 1) {
-    const prompt = buildAgentPrompt({
+  if (isTrendQuestion(params.question)) {
+    const trendResult = await summarizeChildTrendTool(normalizedChildId);
+    return writeToolNarrative({
+      result: trendResult,
       role: normalizedRole,
+      question: params.question,
       language,
-      question,
-      thoughtLog,
-      forceFinal: step > 0 && lastToolResult !== null,
+      conversationId,
     });
-
-    const raw = await askGemini(prompt);
-    const action = parseAgentAction(raw);
-    if (!action) {
-      break;
-    }
-
-    if (action.type === "final") {
-      if (lastToolResult) {
-        // Keep metric replies deterministic and grammatically consistent.
-        return await renderAgentToolResult(
-          lastToolResult,
-          language,
-          normalizedRole,
-        );
-      }
-
-      const finalReply = cleanFinalReply(action.reply);
-      if (finalReply) {
-        // No tool call was made; let deterministic handlers decide wording.
-        break;
-      }
-      break;
-    }
-
-    const toolResult = await executeAgentTool({
-      tool: action.tool,
-      timeframe: action.args?.timeframe,
-      childId: normalizedChildId,
-    });
-
-    lastToolResult = toolResult;
-    thoughtLog.push(
-      JSON.stringify({
-        tool: action.tool,
-        timeframe: action.args?.timeframe ?? "recent",
-        result: toolResult,
-      }),
-    );
   }
 
-  if (lastToolResult) {
-    return await renderAgentToolResult(lastToolResult, language, normalizedRole);
+  if (isAttendanceComparisonQuestion(params.question)) {
+    const [currentWeek, lastWeek] = await Promise.all([
+      summarizeAttendanceTool(normalizedChildId, "week"),
+      summarizeAttendanceTool(normalizedChildId, "last_week"),
+    ]);
+
+    const comparisonResult: AttendanceComparisonResult = {
+      tool: "summarize_attendance_comparison",
+      timeframe: "week",
+      childName: currentWeek.childName ?? lastWeek.childName,
+      currentWeek,
+      lastWeek,
+      deltaRate: Number(
+        (currentWeek.attendanceRate - lastWeek.attendanceRate).toFixed(2),
+      ),
+    };
+
+    return writeToolNarrative({
+      result: comparisonResult,
+      role: normalizedRole,
+      question: params.question,
+      language,
+      conversationId,
+    });
   }
 
-  const fallbackTool = inferSuggestedTool(question);
-  const fallbackTimeframe = inferSuggestedTimeframe(question);
-  const fallbackResult = await executeAgentTool({
-    tool: fallbackTool,
-    timeframe: fallbackTimeframe,
+  const tool = inferSuggestedTool(params.question);
+  const timeframe = inferSuggestedTimeframe(params.question);
+  const result = await executeAgentTool({
+    tool,
+    timeframe,
     childId: normalizedChildId,
   });
 
-  return await renderAgentToolResult(fallbackResult, language, normalizedRole);
+  return writeToolNarrative({
+    result,
+    role: normalizedRole,
+    question: params.question,
+    language,
+    conversationId,
+  });
 }

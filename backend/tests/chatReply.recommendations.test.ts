@@ -3,9 +3,11 @@ import { test } from "node:test";
 import { shouldUseAIAgent } from "../src/services/ai/agent.service";
 import {
   buildAcknowledgementReply,
+  buildConversationClosureReply,
   buildGreetingReply,
   buildQuotaFallbackReply,
   isAcknowledgement,
+  isConversationClosure,
   isGreeting,
 } from "../src/services/ai/chatReply.service";
 import {
@@ -75,6 +77,19 @@ test("reply builders normalize role casing", () => {
   assert.match(
     buildQuotaFallbackReply({ role: "PaReNt", language: "en" }),
     /your child's attendance or feeding/i,
+  );
+});
+
+test("conversation closure handles no-thanks variants", () => {
+  assert.equal(isConversationClosure("No, thank you!"), true);
+  assert.equal(isConversationClosure("No thanks"), true);
+  assert.equal(isConversationClosure("hindi na, salamat"), true);
+  assert.equal(isConversationClosure("Not now, thanks."), true);
+  assert.equal(isConversationClosure("No, show attendance"), false);
+
+  assert.match(
+    buildConversationClosureReply("PARENT", "en"),
+    /ask me anytime/i,
   );
 });
 
