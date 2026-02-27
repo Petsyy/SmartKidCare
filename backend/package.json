@@ -14,7 +14,11 @@
     "import-dataset": "ts-node scripts/importDataset.ts",
     "sanitize-input": "ts-node scripts/sanitizeInput.ts",
     "sanitize-input:py": "python scripts/sanitize_input.py",
-    "access-control": "ts-node scripts/accessControlDemo.ts"
+    "access-control": "ts-node scripts/accessControlDemo.ts",
+    "test:core-feature:1": "ts-node scripts/coreFeature1AuthTestCases.ts",
+    "test:core-feature:2": "ts-node scripts/coreFeature2JwtSessionTestCases.ts",
+    "test:core-feature:3": "ts-node scripts/coreFeature3RbacTestCases.ts",
+    "test:core-feature:4": "ts-node scripts/coreFeature4DataSecurityTestCases.ts"
   },
   "keywords": [],
   "author": "",

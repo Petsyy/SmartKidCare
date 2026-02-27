@@ -202,7 +202,7 @@ export default function RecordAttendance() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
+    <SafeAreaView className="flex-1 bg-emerald-50" edges={["bottom"]}>
       <StatusBar
         barStyle="light-content"
         translucent
@@ -231,15 +231,19 @@ export default function RecordAttendance() {
         {/* Read-Only Banner */}
         {isReadOnly && (
           <View className="px-6 pt-4 pb-5">
-            <View className="bg-teal-50 border-2 border-teal-300 rounded-lg p-4 flex-row items-center">
-              <CheckCircle2 size={24} color="#14B8A6" />
-              <View className="flex-1 ml-3">
-                <Text className="text-base font-bold text-teal-800">
-                  Successfully Submitted
-                </Text>
-                <Text className="text-sm text-teal-700 mt-1">
-                  Attendance for today were successfully submitted.
-                </Text>
+            <View className="rounded-2xl border border-teal-200 bg-teal-50 p-4 shadow-sm">
+              <View className="flex-row items-center">
+                <View className="h-10 w-10 items-center justify-center rounded-xl bg-teal-100">
+                  <CheckCircle2 size={22} color="#0F766E" />
+                </View>
+                <View className="ml-3 flex-1">
+                  <Text className="text-lg font-bold text-teal-900">
+                    Successfully Submitted
+                  </Text>
+                  <Text className="mt-1 text-base text-teal-800">
+                    Attendance for today were successfully submitted.
+                  </Text>
+                </View>
               </View>
             </View>
           </View>
@@ -248,28 +252,30 @@ export default function RecordAttendance() {
         {/* Blockchain Confirmation Banner */}
         {blockchainData && blockchainData.successes.length > 0 && (
           <View className="px-6 pb-5">
-            <View className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
-              <View className="flex-row items-center mb-2">
-                <Lock size={20} color="#3B82F6" />
-                <Text className="text-base font-bold text-blue-800 ml-2">
+            <View className="rounded-2xl border border-blue-200 bg-blue-50 p-4 shadow-sm">
+              <View className="mb-3 flex-row items-center">
+                <View className="h-9 w-9 items-center justify-center rounded-lg bg-blue-100">
+                  <Lock size={18} color="#1D4ED8" />
+                </View>
+                <Text className="ml-2 text-lg font-bold text-blue-900">
                   Saved on Blockchain
                 </Text>
               </View>
-              <Text className="text-sm text-blue-700 mb-2">
-                Records secured with blockchain verification
+              <Text className="mb-3 text-base text-blue-800">
+                Records secured with blockchain verification.
               </Text>
-              <View className="bg-blue-100 p-3 rounded-lg">
-                <Text className="text-xs font-semibold text-blue-900 mb-1">
-                  Transaction Hash:
+              <View className="rounded-xl border border-blue-100 bg-white/90 p-3">
+                <Text className="mb-1 text-sm font-semibold uppercase tracking-wide text-blue-900">
+                  Transaction Hash
                 </Text>
                 <Text
-                  className="text-xs text-blue-800 font-mono"
+                  className="text-sm text-blue-800 font-mono"
                   numberOfLines={1}
                   ellipsizeMode="middle"
                 >
                   {blockchainData.successes[0].result.txHash}
                 </Text>
-                <Text className="text-xs text-blue-600 mt-2">
+                <Text className="mt-2 text-sm text-blue-700">
                   {blockchainData.successes.length} record
                   {blockchainData.successes.length > 1 ? "s" : ""} verified
                 </Text>
@@ -281,32 +287,71 @@ export default function RecordAttendance() {
         {/* Stats Cards */}
         <View className="px-6 pb-5 pt-4">
           <View className="flex-row justify-between gap-3">
-            <View className="flex-1 bg-white p-3 rounded-xl shadow-sm border border-gray-100">
+            <View
+              className="flex-1 rounded-2xl border border-gray-200 bg-white p-3"
+              style={{
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.06,
+                shadowRadius: 4,
+                elevation: 2,
+              }}
+            >
               <View className="flex-row items-center">
-                <Users size={18} color="#6B7280" />
-                <Text className="ml-2 text-xs text-gray-600">Total</Text>
+                <View className="h-8 w-8 items-center justify-center rounded-lg bg-gray-100">
+                  <Users size={16} color="#4B5563" />
+                </View>
+                <Text className="ml-2 text-sm font-semibold uppercase tracking-wide text-gray-600">
+                  Total
+                </Text>
               </View>
-              <Text className="text-xl font-bold text-gray-800 mt-1">
+              <Text className="mt-2 text-3xl font-black text-gray-800">
                 {stats.total}
               </Text>
             </View>
 
-            <View className="flex-1 bg-teal-50 p-3 rounded-xl shadow-sm border border-teal-100">
+            <View
+              className="flex-1 rounded-2xl border border-teal-200 bg-teal-50 p-3"
+              style={{
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.06,
+                shadowRadius: 4,
+                elevation: 2,
+              }}
+            >
               <View className="flex-row items-center">
-                <CheckCircle2 size={18} color="#14B8A6" />
-                <Text className="ml-2 text-xs text-teal-700">Present</Text>
+                <View className="h-8 w-8 items-center justify-center rounded-lg bg-teal-100">
+                  <CheckCircle2 size={16} color="#0F766E" />
+                </View>
+                <Text className="ml-2 text-sm font-semibold uppercase tracking-wide text-teal-700">
+                  Present
+                </Text>
               </View>
-              <Text className="text-xl font-bold text-teal-700 mt-1">
+              <Text className="mt-2 text-3xl font-black text-teal-700">
                 {stats.present}
               </Text>
             </View>
 
-            <View className="flex-1 bg-red-50 p-3 rounded-xl shadow-sm border border-red-100">
+            <View
+              className="flex-1 rounded-2xl border border-red-200 bg-red-50 p-3"
+              style={{
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.06,
+                shadowRadius: 4,
+                elevation: 2,
+              }}
+            >
               <View className="flex-row items-center">
-                <XCircle size={18} color="#EF4444" />
-                <Text className="ml-2 text-xs text-red-700">Absent</Text>
+                <View className="h-8 w-8 items-center justify-center rounded-lg bg-red-100">
+                  <XCircle size={16} color="#B91C1C" />
+                </View>
+                <Text className="ml-2 text-sm font-semibold uppercase tracking-wide text-red-700">
+                  Absent
+                </Text>
               </View>
-              <Text className="text-xl font-bold text-red-700 mt-1">
+              <Text className="mt-2 text-3xl font-black text-red-700">
                 {stats.absent}
               </Text>
             </View>
@@ -319,20 +364,34 @@ export default function RecordAttendance() {
             <View className="flex-row gap-2">
               <Pressable
                 onPress={markAllPresent}
-                className="flex-1 bg-teal-500 py-2.5 rounded-lg flex-row items-center justify-center"
+                className="flex-1 flex-row items-center justify-center rounded-xl border border-emerald-600 bg-emerald-600 py-3 active:opacity-85"
+                style={{
+                  shadowColor: "#059669",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.2,
+                  shadowRadius: 4,
+                  elevation: 2,
+                }}
               >
                 <CheckCircle2 size={16} color="white" />
-                <Text className="text-white font-semibold text-sm ml-1">
+                <Text className="ml-1.5 text-base font-semibold text-white">
                   Mark All Present
                 </Text>
               </Pressable>
 
               <Pressable
                 onPress={markAllAbsent}
-                className="flex-1 bg-gray-500 py-2.5 rounded-lg flex-row items-center justify-center"
+                className="flex-1 flex-row items-center justify-center rounded-xl border border-slate-600 bg-slate-600 py-3 active:opacity-85"
+                style={{
+                  shadowColor: "#334155",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.2,
+                  shadowRadius: 4,
+                  elevation: 2,
+                }}
               >
                 <XCircle size={16} color="white" />
-                <Text className="text-white font-semibold text-sm ml-1">
+                <Text className="ml-1.5 text-base font-semibold text-white">
                   Mark All Absent
                 </Text>
               </Pressable>
@@ -342,11 +401,20 @@ export default function RecordAttendance() {
 
         {/* Search Bar */}
         <View className="px-6 pb-5">
-          <View className="flex-row items-center bg-white px-4 py-3 rounded-lg border border-gray-200">
-            <Search size={20} color="#9CA3AF" />
+          <View
+            className="flex-row items-center rounded-2xl border border-gray-200 bg-white px-4 py-3.5"
+            style={{
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.05,
+              shadowRadius: 3,
+              elevation: 1,
+            }}
+          >
+            <Search size={20} color="#6B7280" />
             <TextInput
-              className="flex-1 ml-3 text-base text-gray-800"
-              placeholder="Search child name..."
+              className="flex-1 ml-3 text-lg text-gray-800"
+              placeholder="Search by child name or student ID"
               placeholderTextColor="#9CA3AF"
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -357,9 +425,9 @@ export default function RecordAttendance() {
         {/* Children List */}
         <View className="px-6">
           {filteredChildren.length === 0 ? (
-            <View className="items-center justify-center py-12">
+            <View className="items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white py-12">
               <Users size={48} color="#D1D5DB" />
-              <Text className="text-gray-500 mt-4 text-center">
+              <Text className="mt-4 text-center text-gray-500">
                 {searchQuery
                   ? "No children found matching your search"
                   : "No children enrolled yet"}
@@ -371,58 +439,61 @@ export default function RecordAttendance() {
                 key={item._id}
                 onPress={() => !isReadOnly && toggleAttendance(item._id)}
                 disabled={isReadOnly}
-                className={`mb-3 rounded-xl overflow-hidden border-2 ${
+                className={`mb-3 overflow-hidden rounded-2xl border ${
                   attendance[item._id]
-                    ? "bg-teal-50 border-teal-400"
-                    : "bg-white border-gray-200"
+                    ? "border-teal-200 bg-teal-50"
+                    : "border-gray-200 bg-white"
                 } ${isReadOnly ? "opacity-90" : ""}`}
                 style={{
                   shadowColor: "#000",
                   shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.1,
+                  shadowOpacity: 0.08,
                   shadowRadius: 4,
-                  elevation: 3,
+                  elevation: 2,
                 }}
               >
                 <View className="flex-row items-center p-4">
-                  {/* Avatar Circle */}
                   <View
-                    className={`w-12 h-12 rounded-full items-center justify-center ${
-                      attendance[item._id] ? "bg-teal-500" : "bg-gray-300"
+                    className={`h-12 w-12 items-center justify-center rounded-full ${
+                      attendance[item._id] ? "bg-teal-600" : "bg-gray-400"
                     }`}
                   >
-                    <Text className="text-white font-bold text-lg">
+                    <Text className="text-xl font-bold text-white">
                       {item.firstName.charAt(0)}
                       {item.lastName.charAt(0)}
                     </Text>
                   </View>
 
-                  {/* Child Info */}
-                  <View className="flex-1 ml-4">
+                  <View className="ml-4 flex-1">
                     <Text className="text-lg font-bold text-gray-800">
-                      {item.lastName}, {item.firstName}{item.middleName ? ` ${item.middleName}` : ""}
+                      {item.lastName}, {item.firstName}
+                      {item.middleName ? ` ${item.middleName}` : ""}
                     </Text>
-                    <Text className="text-sm text-gray-600 mt-0.5">
+                    <Text className="mt-0.5 text-base text-gray-600">
                       {item.studentId}
                     </Text>
+                    <View
+                      className={`mt-2 self-start rounded-full px-2.5 py-1 ${
+                        attendance[item._id] ? "bg-teal-100" : "bg-gray-100"
+                      }`}
+                    >
+                      <Text
+                        className={`text-sm font-semibold ${
+                          attendance[item._id]
+                            ? "text-teal-700"
+                            : "text-gray-600"
+                        }`}
+                      >
+                        {attendance[item._id] ? "Present" : "Absent"}
+                      </Text>
+                    </View>
                   </View>
 
-                  {/* Status Icon */}
-                  <View>
+                  <View className="items-center">
                     {attendance[item._id] ? (
-                      <View className="items-center">
-                        <CheckCircle2 size={32} color="#14B8A6" />
-                        <Text className="text-teal-600 font-bold text-sm mt-1">
-                          Present
-                        </Text>
-                      </View>
+                      <CheckCircle2 size={30} color="#0F766E" />
                     ) : (
-                      <View className="items-center">
-                        <XCircle size={32} color="#9CA3AF" />
-                        <Text className="text-gray-500 font-medium text-sm mt-1">
-                          Absent
-                        </Text>
-                      </View>
+                      <XCircle size={30} color="#9CA3AF" />
                     )}
                   </View>
                 </View>
@@ -436,23 +507,23 @@ export default function RecordAttendance() {
       </ScrollView>
 
       {/* Submit Button */}
-      <View className="absolute bottom-0 left-0 right-0 px-6 py-4 bg-white border-t border-gray-200">
+      <View className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white/95 px-6 py-4">
         <Pressable
           onPress={handleSubmit}
           android_ripple={{ color: "transparent" }}
-          className="bg-teal-600 py-4 rounded-xl items-center justify-center"
+          className="items-center justify-center rounded-2xl bg-emerald-600 py-4 active:opacity-90"
           style={({ pressed }) => [
             {
-              shadowColor: "#14B8A6",
+              shadowColor: "#059669",
               shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.3,
+              shadowOpacity: 0.28,
               shadowRadius: 8,
               elevation: 5,
-              opacity: 1,
+              opacity: pressed ? 0.9 : 1,
             },
           ]}
         >
-          <Text className="text-white text-lg font-bold">
+          <Text className="text-xl font-bold text-white">
             {isReadOnly ? "View Feeding Record" : "Submit Attendance"}
           </Text>
         </Pressable>

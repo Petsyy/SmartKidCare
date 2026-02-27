@@ -10,6 +10,7 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import {
   SafeAreaView,
   useSafeAreaInsets,
@@ -34,7 +35,7 @@ const toLocalDateKey = (value: Date = new Date()): string => {
 type StatCardProps = {
   title: string;
   value: string | number;
-  variant?: "blue" | "green" | "white";
+  variant?: "blue" | "green" | "amber" | "white";
   icon: React.ReactNode;
 };
 
@@ -300,8 +301,8 @@ export default function TeacherDashboard() {
             <StatCard
               title="Absent Today"
               value={absentToday}
-              icon={<Icons.UserX size={24} color="#374151" />}
-              variant="white"
+              icon={<Icons.UserX size={24} color="#C2410C" />}
+              variant="amber"
             />
           </View>
           <View className="flex-1">
@@ -400,7 +401,7 @@ export default function TeacherDashboard() {
       {/* Floating AI Chat button */}
       <Pressable
         onPress={() => router.push("/(teacher)/chat")}
-        className="absolute right-4 h-16 w-16 items-center justify-center rounded-full bg-teal-600 active:opacity-90"
+        className="absolute right-4 h-16 w-16 overflow-hidden rounded-full active:opacity-90"
         style={{
           bottom: fabBottom,
           shadowColor: "#000",
@@ -410,7 +411,14 @@ export default function TeacherDashboard() {
           elevation: 6,
         }}
       >
-        <Icons.MessageCircle size={28} color="white" />
+        <LinearGradient
+          colors={["#14b8a6", "#0f766e"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          className="h-full w-full items-center justify-center"
+        >
+          <Icons.MessageCircle size={28} color="white" />
+        </LinearGradient>
       </Pressable>
     </SafeAreaView>
   );
@@ -423,24 +431,30 @@ function StatCard({ title, value, variant = "white", icon }: StatCardProps) {
       ? "bg-sky-50 border-sky-100"
       : variant === "green"
         ? "bg-emerald-50 border-emerald-100"
-        : "bg-white border-gray-100";
+        : variant === "amber"
+          ? "bg-orange-50 border-orange-100"
+          : "bg-white border-gray-100";
 
   const iconWrap =
     variant === "blue"
       ? "bg-sky-100"
       : variant === "green"
         ? "bg-emerald-100"
-        : "bg-gray-100";
-
-  const iconColor =
-    variant === "blue"
-      ? "#0284C7"
-      : variant === "green"
-        ? "#059669"
-        : "#374151";
+        : variant === "amber"
+          ? "bg-orange-100"
+          : "bg-gray-100";
 
   return (
-    <View className={`rounded-3xl border p-4 ${styles} shadow-sm`}>
+    <View
+      className={`rounded-3xl border p-4 ${styles}`}
+      style={{
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 4,
+        elevation: 2,
+      }}
+    >
       <View className="flex-row items-start gap-3">
         <View
           className={`h-12 w-12 items-center justify-center rounded-2xl ${iconWrap}`}
@@ -463,7 +477,7 @@ function ActionCard({ title, subtitle, icon, onPress }: ActionCardProps) {
   return (
     <Pressable
       onPress={onPress}
-      className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm active:opacity-70 active:scale-95"
+      className="rounded-3xl border border-emerald-100 bg-emerald-50/40 p-5 shadow-sm active:opacity-70 active:scale-95"
       style={{
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },

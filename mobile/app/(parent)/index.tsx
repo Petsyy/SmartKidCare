@@ -23,7 +23,7 @@ import { replace } from "expo-router/build/global-state/routing";
 type StatCardProps = {
   title: string;
   value: string | number;
-  variant?: "blue" | "green" | "white";
+  variant?: "blue" | "green" | "white" | "amber";
   icon: React.ReactNode;
 };
 
@@ -48,16 +48,16 @@ export default function ParentDashboard() {
   const centerName = "Child Development Center";
 
   // Dynamic date
-const currentDate = new Date();
-const dateLabel = currentDate
-  .toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "Asia/Manila",
-  })
-  .replace(/,/g, "");
+  const currentDate = new Date();
+  const dateLabel = currentDate
+    .toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+      timeZone: "Asia/Manila",
+    })
+    .replace(/,/g, "");
 
   const fetchData = async (isRefreshing = false) => {
     try {
@@ -456,10 +456,10 @@ const dateLabel = currentDate
               <Text className="text-teal-600 font-semibold">
                 {stats.mealsCompleted + stats.mealsMissed > 0
                   ? Math.round(
-                    (stats.mealsCompleted /
-                      (stats.mealsCompleted + stats.mealsMissed)) *
-                    100,
-                  )
+                      (stats.mealsCompleted /
+                        (stats.mealsCompleted + stats.mealsMissed)) *
+                        100,
+                    )
                   : 0}
                 %
               </Text>
@@ -469,10 +469,10 @@ const dateLabel = currentDate
                 percent={
                   stats.mealsCompleted + stats.mealsMissed > 0
                     ? Math.round(
-                      (stats.mealsCompleted /
-                        (stats.mealsCompleted + stats.mealsMissed)) *
-                      100,
-                    )
+                        (stats.mealsCompleted /
+                          (stats.mealsCompleted + stats.mealsMissed)) *
+                          100,
+                      )
                     : 0
                 }
               />
@@ -552,22 +552,25 @@ const dateLabel = currentDate
 /* ---------------- Components ---------------- */
 function StatCard({ title, value, variant = "white", icon }: StatCardProps) {
   const styles =
-    variant === "blue"
-      ? "bg-sky-50 border-sky-100"
-      : variant === "green"
-        ? "bg-emerald-50 border-emerald-100"
-        : "bg-white border-gray-100";
+    variant === "green"
+      ? "bg-emerald-50 border-emerald-100"
+      : "bg-white border-gray-100";
 
   const iconWrap =
-    variant === "blue"
-      ? "bg-sky-100"
-      : variant === "green"
-        ? "bg-emerald-100"
-        : "bg-gray-100";
+    variant === "green"
+      ? "bg-emerald-100"
+      : "bg-gray-100";
 
   return (
     <View
-      className={`rounded-3xl border p-4 ${styles} shadow-sm min-h-[120px]`}
+      className={`rounded-3xl border p-4 min-h-[120px] ${styles}`}
+      style={{
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 4,
+        elevation: 2,
+      }}
     >
       <View className="flex-row items-start gap-3">
         <View
@@ -591,7 +594,7 @@ function ActionCard({ title, subtitle, icon, onPress }: ActionCardProps) {
   return (
     <Pressable
       onPress={onPress}
-      className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm active:opacity-70 active:scale-95"
+      className="rounded-3xl border border-emerald-100 bg-emerald-50/40 p-5 shadow-sm active:opacity-70 active:scale-95"
       style={{
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },

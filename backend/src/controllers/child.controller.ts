@@ -21,7 +21,8 @@ const generateAndAssignMissingLinkCode = async (child: any) => {
       return;
     } catch (error: any) {
       const isDuplicateLinkCode =
-        error?.code === 11000 && String(error?.message || "").includes("childLinkCode");
+        error?.code === 11000 &&
+        String(error?.message || "").includes("childLinkCode");
       if (!isDuplicateLinkCode) {
         throw error;
       }
@@ -29,6 +30,33 @@ const generateAndAssignMissingLinkCode = async (child: any) => {
   }
 
   throw new Error("Unable to generate a unique child link code.");
+};
+
+const resolveTeacherId = async (
+  value: unknown,
+): Promise<mongoose.Types.ObjectId | null> => {
+  const normalizedTeacherId = String(value ?? "").trim();
+  if (!normalizedTeacherId) {
+    return null;
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(normalizedTeacherId)) {
+    throw new Error("invalid_teacher_id");
+  }
+
+  const teacher = await User.findOne({
+    _id: normalizedTeacherId,
+    role: "teacher",
+    isActive: true,
+  })
+    .select("_id")
+    .lean();
+
+  if (!teacher) {
+    throw new Error("teacher_not_found");
+  }
+
+  return new mongoose.Types.ObjectId(normalizedTeacherId);
 };
 
 export const createChild = async (req: Request, res: Response) => {
@@ -43,6 +71,7 @@ export const createChild = async (req: Request, res: Response) => {
       enrollmentDate,
       schoolYear,
       status,
+      teacherId,
       parentFirstName,
       parentMiddleName,
       parentLastName,
@@ -56,6 +85,21 @@ export const createChild = async (req: Request, res: Response) => {
 
     if (!firstName || !lastName || !dateOfBirth || !enrollmentDate) {
       return res.status(400).json({ message: "Missing required child fields" });
+    }
+
+    let resolvedTeacherId: mongoose.Types.ObjectId | null = null;
+    try {
+      resolvedTeacherId = await resolveTeacherId(teacherId);
+    } catch (error: any) {
+      if (error?.message === "invalid_teacher_id") {
+        return res.status(400).json({ message: "Invalid teacher ID" });
+      }
+      if (error?.message === "teacher_not_found") {
+        return res
+          .status(404)
+          .json({ message: "Teacher not found or inactive" });
+      }
+      throw error;
     }
 
     const existingChild = await Child.findOne({
@@ -86,6 +130,7 @@ export const createChild = async (req: Request, res: Response) => {
         childLinkCode: req.body.childLinkCode || generateChildLinkCode(),
       };
       if (middleName) childData.middleName = middleName;
+      if (resolvedTeacherId) childData.teacher = resolvedTeacherId;
 
       const child = await Child.create(childData);
       return res.status(201).json({
@@ -113,6 +158,7 @@ export const createChild = async (req: Request, res: Response) => {
         childLinkCode,
         parent: parent._id,
       };
+      if (resolvedTeacherId) childData.teacher = resolvedTeacherId;
 
       // Only add middleName if it exists
       if (middleName) {
@@ -133,7 +179,9 @@ export const createChild = async (req: Request, res: Response) => {
 
     // Create new parent
     if (!parentPhone) {
-      return res.status(400).json({ message: "Missing required parent phone number" });
+      return res
+        .status(400)
+        .json({ message: "Missing required parent phone number" });
     }
     const tempPassword = Math.random().toString(36).slice(-8).toUpperCase();
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
@@ -163,6 +211,7 @@ export const createChild = async (req: Request, res: Response) => {
       studentId: generateStudentId(year),
       childLinkCode,
     };
+    if (resolvedTeacherId) childData.teacher = resolvedTeacherId;
 
     // Only add middleName if it exists
     if (middleName) {
@@ -222,22 +271,38 @@ export const linkChildToParent = async (req: Request, res: Response) => {
   }
 };
 
-export const getChildren = async (_req: Request, res: Response) => {
+export const getChildren = async (req: Request, res: Response) => {
   try {
-    const childrenWithoutLinkCode = await Child.find({
-      $or: [
-        { childLinkCode: { $exists: false } },
-        { childLinkCode: null },
-        { childLinkCode: "" },
-      ],
-    });
-
-    for (const child of childrenWithoutLinkCode) {
-      await generateAndAssignMissingLinkCode(child);
+    if (!req.user?.id) {
+      return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const children = await Child.find()
+    const role = req.user.role;
+    const query: Record<string, unknown> = {};
+
+    if (role === "admin") {
+      const childrenWithoutLinkCode = await Child.find({
+        $or: [
+          { childLinkCode: { $exists: false } },
+          { childLinkCode: null },
+          { childLinkCode: "" },
+        ],
+      });
+
+      for (const child of childrenWithoutLinkCode) {
+        await generateAndAssignMissingLinkCode(child);
+      }
+    } else if (role === "teacher") {
+      query.teacher = req.user.id;
+    } else if (role === "parent") {
+      query.parent = req.user.id;
+    } else {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    const children = await Child.find(query)
       .populate("parent", "firstName lastName email phone")
+      .populate("teacher", "firstName middleName lastName email phone")
       .sort({ createdAt: -1 })
       .lean();
 
@@ -257,6 +322,7 @@ export const getMyChildren = async (req: Request, res: Response) => {
     }
 
     const children = await Child.find({ parent: req.user.id })
+      .populate("teacher", "firstName middleName lastName email phone")
       .sort({ createdAt: -1 })
       .lean();
 
@@ -269,6 +335,10 @@ export const getMyChildren = async (req: Request, res: Response) => {
 // Get single child by ID with parent info
 export const getChildById = async (req: Request, res: Response) => {
   try {
+    if (!req.user?.id) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     const id = req.params.id as string;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -277,10 +347,25 @@ export const getChildById = async (req: Request, res: Response) => {
 
     const child = await Child.findById(id)
       .populate("parent", "firstName lastName email phone")
+      .populate("teacher", "firstName middleName lastName email phone")
       .lean();
 
     if (!child) {
       return res.status(404).json({ message: "Child not found" });
+    }
+
+    if (
+      req.user.role === "teacher" &&
+      String((child as any).teacher?._id || "") !== req.user.id
+    ) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    if (
+      req.user.role === "parent" &&
+      String((child as any).parent?._id || "") !== req.user.id
+    ) {
+      return res.status(403).json({ message: "Forbidden" });
     }
 
     res.json(child);
@@ -311,6 +396,8 @@ export const updateChild = async (req: Request, res: Response) => {
       status,
       regenerateLinkCode,
       unlinkParent,
+      teacherId,
+      unlinkTeacher,
     } = req.body;
 
     if (firstName !== undefined) child.firstName = firstName;
@@ -329,10 +416,30 @@ export const updateChild = async (req: Request, res: Response) => {
       child.childLinkCode = generateChildLinkCode();
     }
 
+    if (unlinkTeacher === true) {
+      child.teacher = undefined;
+    } else if (teacherId !== undefined) {
+      try {
+        const resolvedTeacherId = await resolveTeacherId(teacherId);
+        child.teacher = resolvedTeacherId || undefined;
+      } catch (error: any) {
+        if (error?.message === "invalid_teacher_id") {
+          return res.status(400).json({ message: "Invalid teacher ID" });
+        }
+        if (error?.message === "teacher_not_found") {
+          return res
+            .status(404)
+            .json({ message: "Teacher not found or inactive" });
+        }
+        throw error;
+      }
+    }
+
     await child.save();
 
     const updated = await Child.findById(child._id)
       .populate("parent", "firstName lastName email phone")
+      .populate("teacher", "firstName middleName lastName email phone")
       .lean();
 
     res.json(updated);

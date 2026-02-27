@@ -279,15 +279,22 @@ export async function dispatchTeacherNotificationsV1(
     };
   }
 
-  const activeChildren = await Child.find({ status: "Active" })
-    .select("_id")
-    .lean();
-  const activeChildIds = new Set(
-    activeChildren.map((child: any) => String(child._id)),
-  );
-  const expectedChildCount = activeChildIds.size;
-
   const teacherIds = teachers.map((teacher: any) => String(teacher._id));
+
+  const activeChildren = await Child.find({
+    status: "Active",
+    teacher: { $in: teacherIds },
+  })
+    .select("_id teacher")
+    .lean();
+  const activeChildIdsByTeacher = new Map<string, Set<string>>();
+  for (const child of activeChildren as any[]) {
+    const teacherId = String(child.teacher || "");
+    if (!teacherId) continue;
+    const set = activeChildIdsByTeacher.get(teacherId) ?? new Set<string>();
+    set.add(String(child._id));
+    activeChildIdsByTeacher.set(teacherId, set);
+  }
 
   const [attendanceEntries, feedingEntries] = await Promise.all([
     Attendance.find({
@@ -342,6 +349,19 @@ export async function dispatchTeacherNotificationsV1(
     const sent: TeacherNotificationType[] = [];
     const attendance = attendanceByTeacher.get(teacherId);
     const feeding = feedingByTeacher.get(teacherId);
+    const activeChildIds = activeChildIdsByTeacher.get(teacherId) ?? new Set<string>();
+    const expectedChildCount = activeChildIds.size;
+
+    if (expectedChildCount === 0) {
+      details.push({
+        teacherId,
+        teacherName,
+        sent: [],
+        skipped: "No assigned active children",
+      });
+      continue;
+    }
+
     const drafts = buildTeacherNotificationDrafts({
       attendance,
       feeding,
@@ -439,13 +459,26 @@ export async function getTeacherNotificationsFeed(params: {
     "Teacher";
   const hasPushToken = extractUserPushTokens(teacher).length > 0;
 
-  const activeChildren = await Child.find({ status: "Active" })
+  const activeChildren = await Child.find({
+    status: "Active",
+    teacher: teacherId,
+  })
     .select("_id")
     .lean();
   const activeChildIds = new Set(
     activeChildren.map((child: any) => String(child._id)),
   );
   const expectedChildCount = activeChildIds.size;
+
+  if (expectedChildCount === 0) {
+    return {
+      date: dateKey,
+      teacherId,
+      teacherName,
+      hasPushToken,
+      notifications: [],
+    };
+  }
 
   const [attendance, feeding] = await Promise.all([
     Attendance.findOne({

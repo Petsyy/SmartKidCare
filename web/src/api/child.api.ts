@@ -10,6 +10,7 @@ export type CreateChildPayload = {
   enrollmentDate: string;
   schoolYear: string;
   status: string;
+  teacherId?: string;
   parentFirstName: string;
   parentLastName: string;
   parentMiddleName?: string;
@@ -54,6 +55,8 @@ export const updateChild = async (
     status?: string;
     regenerateLinkCode?: boolean;
     unlinkParent?: boolean;
+    teacherId?: string | null;
+    unlinkTeacher?: boolean;
   }
 ) => {
   const res = await fetch(`${API_BASE}/children/${childId}`, {

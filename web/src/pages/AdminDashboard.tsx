@@ -16,18 +16,6 @@ import { Users, Calendar, Utensils, AlertCircle, Clock } from "lucide-react";
 import Layout from "../components/layout/Layout";
 import { useAdminDashboard } from "../hooks/useAdminDashboard";
 
-const formatDateKey = (key: string) => {
-  if (!key) return "";
-  const [year, month, day] = key.split("-").map(Number);
-  if (!year || !month || !day) return key;
-  return new Intl.DateTimeFormat("en-PH", {
-    month: "short",
-    day: "2-digit",
-    year: "numeric",
-    timeZone: "Asia/Manila",
-  }).format(new Date(year, month - 1, day));
-};
-
 const StatCard = ({
   title,
   value,
@@ -77,7 +65,7 @@ const StatCard = ({
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const { stats, chartData, pieData, recentActivities, isLoading, dateMeta } =
+  const { stats, chartData, pieData, recentActivities, isLoading } =
     useAdminDashboard();
 
   return (
@@ -111,14 +99,9 @@ export default function AdminDashboard() {
                 color="blue"
               />
               <StatCard
-                title="Today's Attendance Rate"
+                title="Attendance Rate"
                 value={`${stats.todayAttendanceRate}%`}
-                subtitle={
-                  dateMeta.attendanceKey &&
-                  dateMeta.attendanceKey !== dateMeta.todayKey
-                    ? `Present on ${formatDateKey(dateMeta.attendanceKey)}`
-                    : "Present today"
-                }
+                subtitle="Across all attendance records"
                 trend={{ value: "↑ 2%", isUp: true }}
                 icon={Calendar}
                 color="teal"
@@ -126,12 +109,7 @@ export default function AdminDashboard() {
               <StatCard
                 title="Lunch Feeding Compliance"
                 value={`${stats.todayFeedingRate}%`}
-                subtitle={
-                  dateMeta.feedingKey &&
-                  dateMeta.feedingKey !== dateMeta.todayKey
-                    ? `Children fed on ${formatDateKey(dateMeta.feedingKey)}`
-                    : "Children fed"
-                }
+                subtitle="Across all feeding records"
                 trend={{
                   value: stats.todayFeedingRate >= 70 ? "↑ 3%" : "↓ 3%",
                   isUp: stats.todayFeedingRate >= 70,
@@ -142,7 +120,7 @@ export default function AdminDashboard() {
               <StatCard
                 title="System Alerts"
                 value={String(stats.todayExceptions)}
-                subtitle="Requires attention"
+                subtitle="Across all attendance and feeding records"
                 icon={AlertCircle}
                 color="rose"
               />
@@ -219,15 +197,11 @@ export default function AdminDashboard() {
               <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
                 <div className="mb-4">
                   <h3 className="text-lg font-semibold text-gray-900">
-                    Today's Attendance Status
+                    Attendance Status Distribution
                   </h3>
                   <p className="text-sm text-gray-500">
-                    {dateMeta.attendanceKey &&
-                    dateMeta.attendanceKey !== dateMeta.todayKey
-                      ? `No records for today. Showing latest from ${formatDateKey(
-                          dateMeta.attendanceKey,
-                        )}`
-                      : "Distribution of present vs absent students"}
+                    Distribution of present vs absent students across all
+                    records
                   </p>
                 </div>
 

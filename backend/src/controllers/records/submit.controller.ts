@@ -1,11 +1,69 @@
 import { Request, Response } from "express";
 import Attendance from "../../models/Attendance";
 import Feeding from "../../models/Feeding";
+import Child from "../../models/Child";
 import {
   notifyAttendanceSubmitted,
   notifyFeedingSubmitted,
 } from "../../services/notifications/recordEventNotification.service";
 import { queueBlockchainSync } from "./records.shared";
+
+const resolveChildId = (value: unknown): string => {
+  if (value && typeof value === "object") {
+    const asObject = value as { _id?: unknown };
+    if (asObject._id) return String(asObject._id).trim();
+  }
+  return String(value ?? "").trim();
+};
+
+const validateTeacherChildAssignments = async (
+  teacherId: string,
+  rawRecords: any[],
+): Promise<any[] | null> => {
+  const normalizedRecords = rawRecords.map((record: any) => ({
+    ...record,
+    child: resolveChildId(record?.child),
+  }));
+
+  const hasMissingChildId = normalizedRecords.some(
+    (record: any) => !String(record.child || "").trim(),
+  );
+  if (hasMissingChildId) {
+    return null;
+  }
+
+  const childIds = Array.from(
+    new Set(
+      normalizedRecords
+        .map((record: any) => String(record.child || "").trim())
+        .filter(Boolean),
+    ),
+  );
+
+  if (!childIds.length) {
+    return null;
+  }
+
+  const assignedChildren = await Child.find({
+    _id: { $in: childIds },
+    teacher: teacherId,
+  })
+    .select("_id")
+    .lean();
+
+  const assignedChildIdSet = new Set(
+    assignedChildren.map((child: any) => String(child._id)),
+  );
+  const hasUnauthorizedChild = childIds.some(
+    (childId) => !assignedChildIdSet.has(childId),
+  );
+
+  if (hasUnauthorizedChild) {
+    return null;
+  }
+
+  return normalizedRecords;
+};
 
 export const submitFeeding = async (req: Request, res: Response) => {
   try {
@@ -21,6 +79,17 @@ export const submitFeeding = async (req: Request, res: Response) => {
         .json({ message: "Date, food served, and records are required" });
     }
 
+    const normalizedRecords = await validateTeacherChildAssignments(
+      req.user.id,
+      records as any[],
+    );
+    if (!normalizedRecords) {
+      return res.status(403).json({
+        message:
+          "One or more children are not assigned to this teacher. Submission rejected.",
+      });
+    }
+
     const feedingDate = new Date(date);
     feedingDate.setHours(0, 0, 0, 0);
 
@@ -30,7 +99,7 @@ export const submitFeeding = async (req: Request, res: Response) => {
     });
 
     if (existingFeeding) {
-      const newRecords = records as any[];
+      const newRecords = normalizedRecords as any[];
 
       const oldRecordMap = new Map(
         existingFeeding.records.map((r: any) => [String(r.child), r]),
@@ -71,14 +140,14 @@ export const submitFeeding = async (req: Request, res: Response) => {
       date: feedingDate,
       teacher: req.user.id,
       foodServed,
-      records,
+      records: normalizedRecords,
     });
 
     queueBlockchainSync(req.user.id, feedingDate);
     void notifyFeedingSubmitted({
       date: feedingDate,
       foodServed,
-      records: records as Array<{
+      records: normalizedRecords as Array<{
         child: unknown;
         status: "completed" | "missed";
       }>,
@@ -108,6 +177,17 @@ export const submitAttendance = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Date and records are required" });
     }
 
+    const normalizedRecords = await validateTeacherChildAssignments(
+      req.user.id,
+      records as any[],
+    );
+    if (!normalizedRecords) {
+      return res.status(403).json({
+        message:
+          "One or more children are not assigned to this teacher. Submission rejected.",
+      });
+    }
+
     const attendanceDate = new Date(date);
     attendanceDate.setHours(0, 0, 0, 0);
 
@@ -117,7 +197,7 @@ export const submitAttendance = async (req: Request, res: Response) => {
     });
 
     if (existingAttendance) {
-      const newRecords = records as any[];
+      const newRecords = normalizedRecords as any[];
 
       const oldRecordMap = new Map(
         existingAttendance.records.map((r: any) => [String(r.child), r]),
@@ -155,13 +235,13 @@ export const submitAttendance = async (req: Request, res: Response) => {
     const attendance = await Attendance.create({
       date: attendanceDate,
       teacher: req.user.id,
-      records,
+      records: normalizedRecords,
     });
 
     queueBlockchainSync(req.user.id, attendanceDate);
     void notifyAttendanceSubmitted({
       date: attendanceDate,
-      records: records as Array<{
+      records: normalizedRecords as Array<{
         child: unknown;
         status: "present" | "absent";
       }>,

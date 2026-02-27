@@ -260,58 +260,59 @@ export default function RecordFeeding() {
       <Pressable
         onPress={() => !interactionDisabled && toggleChildFeeding(child._id)}
         disabled={interactionDisabled}
-        className={`mx-6 mb-3 rounded-xl overflow-hidden border-2 ${
+        className={`mx-6 mb-3 overflow-hidden rounded-2xl border ${
           !feedingStatus[child._id]
-            ? "bg-teal-50 border-teal-400"
-            : "bg-white border-gray-200"
+            ? "border-teal-200 bg-teal-50"
+            : "border-gray-200 bg-white"
         } ${interactionDisabled ? "opacity-90" : ""}`}
         style={{
           shadowColor: "#000",
           shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.1,
+          shadowOpacity: 0.08,
           shadowRadius: 4,
-          elevation: 3,
+          elevation: 2,
         }}
       >
         <View className="flex-row items-center p-4">
           <View
-            className={`w-12 h-12 rounded-full items-center justify-center mr-4 ${
-              !feedingStatus[child._id] ? "bg-teal-500" : "bg-gray-300"
+            className={`mr-4 h-12 w-12 items-center justify-center rounded-full ${
+              !feedingStatus[child._id] ? "bg-teal-600" : "bg-gray-400"
             }`}
           >
-            <Text className="text-white font-bold text-lg">
+            <Text className="text-xl font-bold text-white">
               {child.firstName.charAt(0)}
               {child.lastName.charAt(0)}
             </Text>
           </View>
 
           <View className="flex-1">
-            <View className="flex-row items-center">
-              <Text className="text-lg font-bold text-gray-800">
-                {child.lastName}, {child.firstName}
-                {child.middleName ? ` ${child.middleName}` : ""}
+            <Text className="text-lg font-bold text-gray-800">
+              {child.lastName}, {child.firstName}
+              {child.middleName ? ` ${child.middleName}` : ""}
+            </Text>
+            <Text className="mt-0.5 text-base text-gray-600">
+              {child.studentId || `${child.age} years old - ${child.gender}`}
+            </Text>
+            <View
+              className={`mt-2 self-start rounded-full px-2.5 py-1 ${
+                !feedingStatus[child._id] ? "bg-teal-100" : "bg-gray-100"
+              }`}
+            >
+              <Text
+                className={`text-sm font-semibold ${
+                  !feedingStatus[child._id] ? "text-teal-700" : "text-gray-600"
+                }`}
+              >
+                {!feedingStatus[child._id] ? "Completed" : "Missed"}
               </Text>
             </View>
-            <Text className="text-sm text-gray-600 mt-0.5">
-              {child.studentId || `${child.age} years old • ${child.gender}`}
-            </Text>
           </View>
 
-          <View>
+          <View className="items-center">
             {!feedingStatus[child._id] ? (
-              <View className="items-center">
-                <CheckCircle size={32} color="#14B8A6" />
-                <Text className="text-teal-600 font-bold text-sm mt-1">
-                  Completed
-                </Text>
-              </View>
+              <CheckCircle size={30} color="#0F766E" />
             ) : (
-              <View className="items-center">
-                <X size={32} color="#9CA3AF" />
-                <Text className="text-gray-500 font-medium text-sm mt-1">
-                  Missed
-                </Text>
-              </View>
+              <X size={30} color="#9CA3AF" />
             )}
           </View>
         </View>
@@ -324,15 +325,19 @@ export default function RecordFeeding() {
     <>
       {isReadOnly && (
         <View className="px-6 pt-4 pb-5">
-          <View className="bg-teal-50 border-2 border-teal-300 rounded-lg p-4 flex-row items-center">
-            <CheckCircle size={24} color="#14B8A6" />
-            <View className="flex-1 ml-3">
-              <Text className="text-base font-bold text-teal-800">
-                Successfully Submitted
-              </Text>
-              <Text className="text-sm text-teal-700 mt-1">
-                Feeding for today were successfully submitted.
-              </Text>
+          <View className="rounded-2xl border border-teal-200 bg-teal-50 p-4 shadow-sm">
+            <View className="flex-row items-center">
+              <View className="h-10 w-10 items-center justify-center rounded-xl bg-teal-100">
+                <CheckCircle size={22} color="#0F766E" />
+              </View>
+              <View className="ml-3 flex-1">
+                <Text className="text-lg font-bold text-teal-900">
+                  Successfully Submitted
+                </Text>
+                <Text className="mt-1 text-base text-teal-800">
+                  Feeding for today were successfully submitted.
+                </Text>
+              </View>
             </View>
           </View>
         </View>
@@ -340,28 +345,30 @@ export default function RecordFeeding() {
 
       {blockchainData && blockchainData.successes.length > 0 && (
         <View className="px-6 pb-5">
-          <View className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
-            <View className="flex-row items-center mb-2">
-              <Lock size={20} color="#3B82F6" />
-              <Text className="text-base font-bold text-blue-800 ml-2">
+          <View className="rounded-2xl border border-blue-200 bg-blue-50 p-4 shadow-sm">
+            <View className="mb-3 flex-row items-center">
+              <View className="h-9 w-9 items-center justify-center rounded-lg bg-blue-100">
+                <Lock size={18} color="#1D4ED8" />
+              </View>
+              <Text className="ml-2 text-lg font-bold text-blue-900">
                 Saved on Blockchain
               </Text>
             </View>
-            <Text className="text-sm text-blue-700 mb-2">
-              Records secured with blockchain verification
+            <Text className="mb-3 text-base text-blue-800">
+              Records secured with blockchain verification.
             </Text>
-            <View className="bg-blue-100 p-3 rounded-lg">
-              <Text className="text-xs font-semibold text-blue-900 mb-1">
-                Transaction Hash:
+            <View className="rounded-xl border border-blue-100 bg-white/90 p-3">
+              <Text className="mb-1 text-sm font-semibold uppercase tracking-wide text-blue-900">
+                Transaction Hash
               </Text>
               <Text
-                className="text-xs text-blue-800 font-mono"
+                className="text-sm text-blue-800 font-mono"
                 numberOfLines={1}
                 ellipsizeMode="middle"
               >
                 {blockchainData.successes[0].result.txHash}
               </Text>
-              <Text className="text-xs text-blue-600 mt-2">
+              <Text className="text-sm text-blue-600 mt-2">
                 {blockchainData.successes.length} record
                 {blockchainData.successes.length > 1 ? "s" : ""} verified on
                 blockchain
@@ -372,17 +379,17 @@ export default function RecordFeeding() {
       )}
 
       <View className="px-6 pb-5 py-4">
-        <View className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <View className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
           <View className="flex-row items-start mb-2">
             <Check size={16} color="#10B981" className="mt-0.5" />
-            <Text className="ml-2 text-sm text-gray-800 flex-1">
+            <Text className="ml-2 text-base text-gray-800 flex-1">
               <Text className="font-semibold">Completed</Text> - child consumed
               the lunch meal as observed by the teacher
             </Text>
           </View>
           <View className="flex-row items-start">
             <X size={16} color="#EF4444" className="mt-0.5" />
-            <Text className="ml-2 text-sm text-gray-800 flex-1">
+            <Text className="ml-2 text-base text-gray-800 flex-1">
               <Text className="font-semibold">Missed</Text> - child did not eat,
               refused food, or was not present during lunch
             </Text>
@@ -391,18 +398,25 @@ export default function RecordFeeding() {
       </View>
 
       <View className="px-6 pb-5">
-        <Text className="text-base font-medium text-gray-700 mb-2">
+        <Text className="text-lg font-medium text-gray-700 mb-2">
           Food Served (Menu) <Text className="text-red-500">*</Text>
         </Text>
         <Pressable
           onPress={() => !interactionDisabled && setShowMenuModal(true)}
           disabled={interactionDisabled}
-          className={`flex-row items-center justify-between bg-white border border-gray-300 rounded-lg px-4 py-3 ${
+          className={`flex-row items-center justify-between rounded-2xl border border-gray-200 bg-white px-4 py-3.5 ${
             interactionDisabled ? "opacity-75" : ""
           }`}
+          style={{
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.05,
+            shadowRadius: 3,
+            elevation: 1,
+          }}
         >
           <Text
-            className={`text-base ${foodServed ? "text-gray-800" : "text-gray-400"}`}
+            className={`text-lg font-medium ${foodServed ? "text-gray-800" : "text-gray-400"}`}
           >
             {foodServed || "Select food menu"}
           </Text>
@@ -411,23 +425,72 @@ export default function RecordFeeding() {
       </View>
 
       <View className="px-6 pb-5">
-        <View className="flex-row gap-3">
-          <View className="flex-1 bg-teal-50 p-3 rounded-xl shadow-sm border border-teal-100">
+        <View className="flex-row gap-2">
+          <View
+            className="flex-1 rounded-2xl border border-gray-200 bg-white p-3"
+            style={{
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.06,
+              shadowRadius: 4,
+              elevation: 2,
+            }}
+          >
             <View className="flex-row items-center">
-              <CheckCircle size={18} color="#14B8A6" />
-              <Text className="ml-2 text-xs text-teal-700">Completed</Text>
+              <View className="h-8 w-8 items-center justify-center rounded-lg bg-gray-100">
+                <Check size={16} color="#4B5563" />
+              </View>
+              <Text className="ml-2 text-sm font-semibold uppercase tracking-wide text-gray-600">
+                Total
+              </Text>
             </View>
-            <Text className="text-xl font-bold text-teal-700 mt-1">
+            <Text className="mt-2 text-3xl font-black text-gray-800">
+              {stats.total}
+            </Text>
+          </View>
+
+          <View
+            className="flex-1 rounded-2xl border border-teal-200 bg-teal-50 p-3"
+            style={{
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.06,
+              shadowRadius: 4,
+              elevation: 2,
+            }}
+          >
+            <View className="flex-row items-center">
+              <View className="h-8 w-8 items-center justify-center rounded-lg bg-teal-100">
+                <CheckCircle size={16} color="#0F766E" />
+              </View>
+              <Text className="ml-2 text-sm font-semibold uppercase tracking-wide text-teal-700">
+                Completed
+              </Text>
+            </View>
+            <Text className="mt-2 text-3xl font-black text-teal-700">
               {stats.fed}
             </Text>
           </View>
 
-          <View className="flex-1 bg-red-50 p-3 rounded-xl shadow-sm border border-red-100">
+          <View
+            className="flex-1 rounded-2xl border border-red-200 bg-red-50 p-3"
+            style={{
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.06,
+              shadowRadius: 4,
+              elevation: 2,
+            }}
+          >
             <View className="flex-row items-center">
-              <X size={18} color="#EF4444" />
-              <Text className="ml-2 text-xs text-red-700">Missed</Text>
+              <View className="h-8 w-8 items-center justify-center rounded-lg bg-red-100">
+                <X size={16} color="#B91C1C" />
+              </View>
+              <Text className="ml-2 text-sm font-semibold uppercase tracking-wide text-red-700">
+                Missed
+              </Text>
             </View>
-            <Text className="text-xl font-bold text-red-700 mt-1">
+            <Text className="mt-2 text-3xl font-black text-red-700">
               {stats.missed}
             </Text>
           </View>
@@ -435,11 +498,20 @@ export default function RecordFeeding() {
       </View>
 
       <View className="px-6 pb-5">
-        <View className="flex-row items-center bg-white border border-gray-200 rounded-lg px-4 py-3">
-          <Search size={20} color="#9CA3AF" />
+        <View
+          className="flex-row items-center rounded-2xl border border-gray-200 bg-white px-4 py-3.5"
+          style={{
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.05,
+            shadowRadius: 3,
+            elevation: 1,
+          }}
+        >
+          <Search size={20} color="#6B7280" />
           <TextInput
-            className="flex-1 ml-3 text-base text-gray-800"
-            placeholder="Search child name"
+            className="flex-1 ml-3 text-lg text-gray-800"
+            placeholder="Search by child name or student ID"
             placeholderTextColor="#9CA3AF"
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -452,12 +524,21 @@ export default function RecordFeeding() {
           <Pressable
             onPress={markAllAsCompleted}
             disabled={isSubmitting}
-            className={`flex-row items-center justify-center px-4 py-2.5 rounded-lg ${
-              isSubmitting ? "bg-teal-300" : "bg-teal-500"
+            className={`flex-row items-center justify-center rounded-xl border px-4 py-3 ${
+              isSubmitting
+                ? "border-emerald-300 bg-emerald-300"
+                : "border-emerald-600 bg-emerald-600 active:opacity-85"
             }`}
+            style={{
+              shadowColor: "#059669",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.2,
+              shadowRadius: 4,
+              elevation: 2,
+            }}
           >
             <CheckCircle size={16} color="white" />
-            <Text className="ml-2 text-white text-sm font-semibold">
+            <Text className="ml-2 text-base font-semibold text-white">
               Mark All as Completed
             </Text>
           </Pressable>
@@ -468,7 +549,7 @@ export default function RecordFeeding() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 justify-center items-center">
+      <SafeAreaView className="flex-1 bg-emerald-50 justify-center items-center">
         <ActivityIndicator size="large" color="#14B8A6" />
         <Text className="mt-4 text-gray-600">Loading children...</Text>
       </SafeAreaView>
@@ -477,7 +558,7 @@ export default function RecordFeeding() {
 
   if (children.length === 0) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50">
+      <SafeAreaView className="flex-1 bg-emerald-50">
         <View className="bg-white px-6 pt-4 pb-3">
           <Pressable onPress={() => router.back()}>
             <ChevronLeft size={24} color="#1F2937" />
@@ -485,7 +566,7 @@ export default function RecordFeeding() {
         </View>
         <View className="flex-1 items-center justify-center px-6">
           <CheckCircle size={64} color="#D1D5DB" />
-          <Text className="text-xl font-bold text-gray-800 mt-4">
+          <Text className="text-2xl font-bold text-gray-800 mt-4">
             No Present Children
           </Text>
           <Text className="text-center text-gray-600 mt-2">
@@ -503,7 +584,7 @@ export default function RecordFeeding() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
+    <SafeAreaView className="flex-1 bg-emerald-50" edges={["bottom"]}>
       <StatusBar
         barStyle="light-content"
         translucent
@@ -537,9 +618,9 @@ export default function RecordFeeding() {
         ListHeaderComponent={headerSection}
         ListEmptyComponent={
           searchQuery ? (
-            <View className="items-center justify-center py-8">
+            <View className="mx-6 items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white py-10">
               <Search size={48} color="#D1D5DB" />
-              <Text className="text-gray-700 font-semibold text-lg mt-4">
+              <Text className="mt-4 text-xl font-semibold text-gray-700">
                 No child found
               </Text>
               <Text className="text-gray-500 text-center mt-2">
@@ -550,9 +631,9 @@ export default function RecordFeeding() {
         }
         ListFooterComponent={
           <View className="px-6 pb-4">
-            <View className="flex-row items-start bg-teal-50 border border-teal-200 rounded-lg p-3 mt-2">
+            <View className="mt-2 flex-row items-start rounded-2xl border border-teal-200 bg-teal-50 p-3.5">
               <CheckCircle size={16} color="#14B8A6" className="mt-0.5" />
-              <Text className="ml-2 text-sm text-gray-700 flex-1">
+              <Text className="ml-2 text-base text-gray-700 flex-1">
                 Feeding records are teacher-observed, teacher-confirmed, and
                 securely stored
               </Text>
@@ -568,14 +649,14 @@ export default function RecordFeeding() {
         onRequestClose={() => setShowMenuModal(false)}
       >
         <View className="flex-1 bg-black/50 justify-end">
-          <View className="bg-white rounded-t-3xl">
+          <View className="rounded-t-3xl bg-white">
             <View className="p-6 border-b border-gray-200">
               <View className="flex-row items-center justify-between">
-                <Text className="text-xl font-bold text-gray-800">
+                <Text className="text-2xl font-bold text-gray-800">
                   Select Food Menu
                 </Text>
                 <Pressable onPress={() => setShowMenuModal(false)}>
-                  <Text className="text-teal-600 font-semibold text-base">
+                  <Text className="text-lg font-semibold text-teal-600">
                     Close
                   </Text>
                 </Pressable>
@@ -591,9 +672,17 @@ export default function RecordFeeding() {
                       setFoodServed(food);
                       setShowMenuModal(false);
                     }}
-                    className="px-6 py-4 border-b border-gray-100 active:bg-gray-50"
+                    className={`border-b px-6 py-4 active:bg-gray-50 ${
+                      foodServed === food ? "border-teal-100 bg-teal-50" : "border-gray-100"
+                    }`}
                   >
-                    <Text className="text-base text-gray-800">{food}</Text>
+                    <Text
+                      className={`text-lg ${
+                        foodServed === food ? "font-semibold text-teal-700" : "text-gray-800"
+                      }`}
+                    >
+                      {food}
+                    </Text>
                   </Pressable>
                 )}
               />
@@ -602,25 +691,25 @@ export default function RecordFeeding() {
         </View>
       </Modal>
 
-      <View className="absolute bottom-0 left-0 right-0 px-6 py-4 bg-white border-t border-gray-200">
+      <View className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white/95 px-6 py-4">
         <Pressable
           onPress={handleSubmit}
           disabled={isSubmitting}
           android_ripple={{ color: "transparent" }}
-          className={`py-4 rounded-xl items-center justify-center ${
-            isSubmitting ? "bg-teal-400" : "bg-teal-600"
+          className={`items-center justify-center rounded-2xl py-4 ${
+            isSubmitting ? "bg-emerald-400" : "bg-emerald-600 active:opacity-90"
           }`}
           style={{
-            shadowColor: "#14B8A6",
+            shadowColor: "#059669",
             shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.3,
+            shadowOpacity: 0.28,
             shadowRadius: 8,
             elevation: 5,
           }}
         >
           <View className="flex-row items-center">
             {isSubmitting && <ActivityIndicator color="#FFFFFF" size="small" />}
-            <Text className={`text-white text-lg font-bold ${isSubmitting ? "ml-2" : ""}`}>
+            <Text className={`text-white text-xl font-bold ${isSubmitting ? "ml-2" : ""}`}>
               {isReadOnly
                 ? "Back to Dashboard"
                 : isSubmitting
@@ -633,3 +722,4 @@ export default function RecordFeeding() {
     </SafeAreaView>
   );
 }
+

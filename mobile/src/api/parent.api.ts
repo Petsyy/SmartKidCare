@@ -12,6 +12,7 @@ export interface Child {
   status: string;
   enrollmentDate: string;
   dateOfBirth?: string;
+
   parent?: {
     phone: any;
     _id: string;
@@ -19,6 +20,15 @@ export interface Child {
     lastName: string;
     email: string;
     phoneNumber?: string;
+  };
+
+  teacher?: {
+    _id: string;
+    firstName: string;
+    middleName?: string;
+    lastName: string;
+    email: string;
+    phone?: string; // 🔥 ADD THIS
   };
 }
 
@@ -84,7 +94,10 @@ export const linkChild = async (
   return data;
 };
 
-export const getChildById = async (token: string, childId: string): Promise<Child> => {
+export const getChildById = async (
+  token: string,
+  childId: string,
+): Promise<Child> => {
   if (!token) throw new Error("No authentication token");
 
   const response = await fetch(`${API_BASE_URL}/api/children/${childId}`, {

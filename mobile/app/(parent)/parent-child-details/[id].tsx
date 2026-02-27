@@ -204,7 +204,7 @@ export default function ParentChildDetailsScreen() {
 
   const status = getChildStatus();
   const fullName = `${child.firstName} ${child.middleName ? child.middleName + " " : ""}${child.lastName}`;
-  const teacher = attendanceRecord?.teacher || feedingRecord?.teacher;
+  const teacher = child.teacher;
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
@@ -416,7 +416,7 @@ export default function ParentChildDetailsScreen() {
                 <InfoRow
                   icon={<Phone size={20} color="#6B7280" />}
                   label="Contact Number"
-                  value={teacher.phone || "Not available"}
+                  value={teacher.phone && teacher.phone.trim() !== "" ? teacher.phone : "Not available"}
                 />
               </View>
             </View>

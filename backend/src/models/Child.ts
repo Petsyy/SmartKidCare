@@ -26,6 +26,11 @@ const ChildSchema = new mongoose.Schema(
       ref: "User",
       default: null,
     },
+    teacher: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
   },
   { timestamps: true }
 );

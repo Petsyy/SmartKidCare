@@ -1,4 +1,5 @@
 import { Expo, ExpoPushMessage, ExpoPushTicket } from "expo-server-sdk";
+import Users from "../../models/Users";
 
 const expo = new Expo({
   accessToken: process.env.EXPO_ACCESS_TOKEN || undefined,
@@ -88,20 +89,41 @@ export async function sendExpoPushNotifications(
   }
 
   let rejectedByTicket = 0;
-  tickets.forEach((ticket) => {
+  for (let i = 0; i < tickets.length; i++) {
+    const ticket = tickets[i];
+
     if (ticket.status === "error") {
       rejectedByTicket += 1;
+
       const detailCode =
         typeof (ticket.details as any)?.error === "string"
           ? (ticket.details as any).error
           : null;
+
+      const token = messages[i]?.to as string;
+
       errors.push(
         detailCode
           ? `${ticket.message} (${detailCode})`
           : ticket.message || "Expo rejected one push notification.",
       );
+
+      if (detailCode === "DeviceNotRegistered") {
+        console.log("Removing invalid token:", token);
+
+        await Users.updateMany(
+          { "pushTokens.token": token },
+          { $pull: { pushTokens: { token } } },
+        );
+
+        // Optional: also clear legacy field
+        await Users.updateMany(
+          { pushToken: token },
+          { $unset: { pushToken: "" } },
+        );
+      }
     }
-  });
+  }
 
   const accepted = tickets.filter((ticket) => ticket.status === "ok").length;
   const rejected = invalidTokens.length + rejectedByTicket + chunkFailures;

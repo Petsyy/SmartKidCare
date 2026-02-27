@@ -49,7 +49,7 @@ export default function ParentLayout() {
       <Tabs.Screen
         name="children"
         options={{
-          title: "Children",
+          title: "My Child",
           tabBarIcon: ({ color, size }) => <Users color={color} size={size} />,
         }}
       />

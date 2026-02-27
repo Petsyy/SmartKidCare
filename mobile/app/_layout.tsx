@@ -1,14 +1,18 @@
 import "@/global.css";
 import { Stack } from "expo-router";
-import { useEffect } from "react";
 import { ActivityIndicator, LogBox, Platform, View } from "react-native";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
 import { AuthProvider } from "@/src/context/AuthContext";
 import { useAuth } from "@/src/hooks/useAuth";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { configureReanimatedLogger, ReanimatedLogLevel } from "react-native-reanimated";
+import {
+  configureReanimatedLogger,
+  ReanimatedLogLevel,
+} from "react-native-reanimated";
 import { registerPushToken } from "@/src/api/notifications.api";
+import * as SecureStore from "expo-secure-store";
+import { useEffect, useRef } from "react";
 
 configureReanimatedLogger({
   level: ReanimatedLogLevel.warn,
@@ -26,60 +30,99 @@ Notifications.setNotificationHandler({
 
 function LayoutContent() {
   const { user, role, token, loading } = useAuth();
+  const isRegisteringRef = useRef(false);
 
   useEffect(() => {
     if (!user || !token) return;
     if (Platform.OS === "web") return;
+    if (isRegisteringRef.current) return;
+
+    isRegisteringRef.current = true;
 
     const registerToken = async () => {
       try {
-        const permission = await Notifications.getPermissionsAsync();
-        let finalStatus = permission.status;
+        const { status } = await Notifications.getPermissionsAsync();
+        let finalStatus = status;
 
-        if (finalStatus !== "granted") {
-          const requested = await Notifications.requestPermissionsAsync();
-          finalStatus = requested.status;
+        if (status !== "granted") {
+          const request = await Notifications.requestPermissionsAsync();
+          finalStatus = request.status;
         }
 
-        if (finalStatus !== "granted") {
-          console.warn("Push permission not granted.");
-          return;
-        }
+        if (finalStatus !== "granted") return;
 
         const projectId =
           Constants.expoConfig?.extra?.eas?.projectId ||
           Constants.easConfig?.projectId;
 
-        if (!projectId) {
-          console.warn("Missing Expo EAS projectId for push registration.");
-          return;
+        if (!projectId) return;
+
+        const { data: expoPushToken } =
+          await Notifications.getExpoPushTokenAsync({ projectId });
+
+        const savedToken = await SecureStore.getItemAsync("expoPushToken");
+
+        if (savedToken !== expoPushToken) {
+          await registerPushToken(token, {
+            pushToken: expoPushToken,
+            platform:
+              Platform.OS === "ios"
+                ? "ios"
+                : Platform.OS === "android"
+                  ? "android"
+                  : undefined,
+            deviceName: Constants.deviceName ?? null,
+            appOwnership: Constants.appOwnership ?? null,
+          });
+
+          await SecureStore.setItemAsync("expoPushToken", expoPushToken);
         }
-
-        const pushToken = (
-          await Notifications.getExpoPushTokenAsync({ projectId })
-        ).data;
-
-        await registerPushToken(token, {
-          pushToken,
-          platform:
-            Platform.OS === "ios"
-              ? "ios"
-              : Platform.OS === "android"
-                ? "android"
-                : "unknown",
-          deviceName: Constants.deviceName ?? null,
-          appOwnership: Constants.appOwnership ?? null,
-        });
       } catch (error: any) {
-        console.warn(
-          "Push token registration failed:",
-          error?.message || String(error),
-        );
+        console.warn("Push registration failed:", error?.message || error);
+      } finally {
+        isRegisteringRef.current = false;
       }
     };
 
-    void registerToken();
-  }, [token, user]);
+    registerToken();
+  }, [user, token]);
+
+  useEffect(() => {
+    const subscription = Notifications.addPushTokenListener(
+      async (tokenData) => {
+        const newToken = tokenData.data;
+
+        if (!newToken.startsWith("ExponentPushToken")) {
+          console.log("Ignoring non-Expo token refresh:", newToken);
+          return;
+        }
+
+        const savedToken = await SecureStore.getItemAsync("expoPushToken");
+
+        if (savedToken !== newToken && user && token) {
+          try {
+            await registerPushToken(token, {
+              pushToken: newToken,
+              platform:
+                Platform.OS === "ios"
+                  ? "ios"
+                  : Platform.OS === "android"
+                    ? "android"
+                    : undefined,
+              deviceName: Constants.deviceName ?? null,
+              appOwnership: Constants.appOwnership ?? null,
+            });
+
+            await SecureStore.setItemAsync("expoPushToken", newToken);
+          } catch (err: any) {
+            console.warn("Token refresh sync failed:", err?.message || err);
+          }
+        }
+      },
+    );
+
+    return () => subscription.remove();
+  }, [user, token]);
 
   if (loading) {
     return (
