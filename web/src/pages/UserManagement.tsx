@@ -28,7 +28,9 @@ import {
   getParentChildren,
   toggleUserStatus,
   resetUserPassword,
+  deleteUser,
 } from "../api/admin.api";
+import Swal from "sweetalert2";
 import { createChild } from "../api/child.api";
 import EditUserModal from "../components/modals/EditUserModal";
 
@@ -157,6 +159,34 @@ export default function UserManagement() {
     } catch (err: any) {
       showErrorModal(err.message || "Failed to add child");
       throw err;
+    }
+  };
+
+  const handleDeleteUser = async (user: User) => {
+    const result = await Swal.fire({
+      title: "Delete User?",
+      text: `Are you sure you want to delete ${user.firstName} ${user.lastName}? This action cannot be undone.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#DC2626",
+      cancelButtonColor: "#6B7280",
+      confirmButtonText: "Yes, delete",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      await deleteUser(user._id);
+      await Swal.fire({
+        title: "Deleted",
+        text: "User has been deleted",
+        icon: "success",
+        confirmButtonColor: "#0D9488",
+      });
+      fetchUsers();
+    } catch (err: any) {
+      showErrorModal(err.message || "Failed to delete user");
     }
   };
 
@@ -531,6 +561,25 @@ export default function UserManagement() {
             >
               <Power size={14} />
               {menuUser.isActive === false ? "Activate" : "Deactivate"}
+            </button>
+            <button
+              onClick={() => {
+                closeMenu();
+                handleDeleteUser(menuUser);
+              }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3" />
+              </svg>
+              Delete user
             </button>
           </div>,
           document.body,

@@ -33,6 +33,13 @@ export type Child = {
   dateOfBirth?: string | Date;
   childLinkCode?: string;
   parent?: { firstName: string; lastName: string; email: string } | null;
+  teacher?: {
+    _id: string;
+    firstName: string;
+    middleName?: string;
+    lastName: string;
+    email?: string;
+  } | null;
 };
 
 export default function ChildrenManagement() {

@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { X, User as UserIcon, Trash2, Save } from "lucide-react";
+import { X, User as UserIcon, Save } from "lucide-react";
 import Swal from "sweetalert2";
 import { type User } from "../../api/authentication.api";
-import { updateUser, deleteUser } from "../../api/admin.api";
+import { updateUser } from "../../api/admin.api";
 import { showErrorModal } from "../../utils/sweetalert.modal";
 
 type Props = {
@@ -12,7 +12,7 @@ type Props = {
   onDeleted: () => Promise<void> | void;
 };
 
-export default function EditUserModal({ user, onClose, onUpdated, onDeleted }: Props) {
+export default function EditUserModal({ user, onClose, onUpdated }: Props) {
   const [form, setForm] = useState({
     firstName: user.firstName,
     middleName: user.middleName,
@@ -34,7 +34,13 @@ export default function EditUserModal({ user, onClose, onUpdated, onDeleted }: P
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.firstName || !form.middleName || !form.lastName || !form.email || !form.phone) {
+    if (
+      !form.firstName ||
+      !form.middleName ||
+      !form.lastName ||
+      !form.email ||
+      !form.phone
+    ) {
       Swal.fire({
         title: "Missing Fields",
         text: "Please fill all required fields",
@@ -60,40 +66,6 @@ export default function EditUserModal({ user, onClose, onUpdated, onDeleted }: P
       await onUpdated();
     } catch (error: any) {
       showErrorModal(error.message || "Failed to update user");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    const result = await Swal.fire({
-      title: "Delete User?",
-      text: `Are you sure you want to delete ${user.firstName} ${user.lastName}? This action cannot be undone.`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#DC2626",
-      cancelButtonColor: "#6B7280",
-      confirmButtonText: "Yes, delete",
-      cancelButtonText: "Cancel",
-    });
-
-    if (!result.isConfirmed) return;
-
-    setLoading(true);
-    try {
-      await deleteUser(user._id);
-
-      Swal.fire({
-        title: "Deleted",
-        text: "User has been deleted",
-        icon: "success",
-        confirmButtonColor: "#0D9488",
-      });
-
-      onClose();
-      await onDeleted();
-    } catch (error: any) {
-      showErrorModal(error.message || "Failed to delete user");
     } finally {
       setLoading(false);
     }
@@ -131,12 +103,15 @@ export default function EditUserModal({ user, onClose, onUpdated, onDeleted }: P
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Read-only info */}
           <div className="flex flex-wrap gap-3">
-            <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold ${user.role === "teacher"
-                ? "bg-blue-100 text-blue-800"
-                : user.role === "parent"
-                  ? "bg-green-100 text-green-800"
-                  : "bg-purple-100 text-purple-800"
-              }`}>
+            <span
+              className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold ${
+                user.role === "teacher"
+                  ? "bg-blue-100 text-blue-800"
+                  : user.role === "parent"
+                    ? "bg-green-100 text-green-800"
+                    : "bg-purple-100 text-purple-800"
+              }`}
+            >
               {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
             </span>
           </div>
@@ -220,16 +195,7 @@ export default function EditUserModal({ user, onClose, onUpdated, onDeleted }: P
           </div>
 
           {/* Buttons */}
-          <div className="flex flex-col-reverse sm:flex-row gap-3 justify-between pt-6 border-t border-gray-100">
-            <button
-              type="button"
-              onClick={handleDelete}
-              disabled={loading}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-red-600 font-medium border border-red-200 bg-red-50 hover:bg-red-100 transition disabled:opacity-50"
-            >
-              <Trash2 size={16} />
-              Delete User
-            </button>
+          <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
             <div className="flex gap-3 sm:flex-row-reverse">
               <button
                 type="submit"

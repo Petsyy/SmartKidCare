@@ -7,6 +7,7 @@ import {
   type AddTeacherFormErrors,
   validateAddTeacherField,
   validateAddTeacherForm,
+  sanitizePhoneInput,
 } from "../../utils/formValidation";
 
 type Props = {
@@ -40,7 +41,9 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
+    const { name } = e.target;
+    const rawValue = e.target.value;
+    const value = name === "phone" ? sanitizePhoneInput(rawValue) : rawValue;
     const field = name as AddTeacherField;
     const nextForm = {
       ...form,
@@ -130,6 +133,7 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
                     onChange={handleInputChange}
                     onBlur={() => handleFieldBlur("firstName")}
                     placeholder="Enter first name"
+                    maxLength={50}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                     required
                   />
@@ -148,6 +152,7 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
                     onChange={handleInputChange}
                     onBlur={() => handleFieldBlur("middleName")}
                     placeholder="Enter middle name"
+                    maxLength={50}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                     required
                   />
@@ -166,6 +171,7 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
                     onChange={handleInputChange}
                     onBlur={() => handleFieldBlur("lastName")}
                     placeholder="Enter last name"
+                    maxLength={50}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                     required
                   />
@@ -206,7 +212,7 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
                   value={form.phone}
                   onChange={handleInputChange}
                   onBlur={() => handleFieldBlur("phone")}
-                  placeholder="+63 912 345 6789"
+                  placeholder="09123456789"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                   required
                 />

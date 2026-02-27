@@ -158,44 +158,12 @@ export function useAdminDashboard() {
         ? attendancePayload
         : [];
       const feedingArray = Array.isArray(feedingPayload) ? feedingPayload : [];
-      const todayAttendanceArray = attendanceArray.filter(
-        (entry: any) => getRecordDateKey(entry.date) === todayKey,
-      );
-      const todayFeedingArray = feedingArray.filter(
-        (entry: any) => getRecordDateKey(entry.date) === todayKey,
-      );
-      const todayAttendanceCount = todayAttendanceArray.reduce(
-        (sum: number, entry: any) =>
-          sum + (Array.isArray(entry?.records) ? entry.records.length : 0),
-        0,
-      );
-      const todayFeedingCount = todayFeedingArray.reduce(
-        (sum: number, entry: any) =>
-          sum + (Array.isArray(entry?.records) ? entry.records.length : 0),
-        0,
-      );
       const latestAttendanceKey = getLatestDateKey(attendanceArray);
       const latestFeedingKey = getLatestDateKey(feedingArray);
-      const attendanceKey =
-        todayAttendanceCount > 0 ? todayKey : latestAttendanceKey || todayKey;
-      const feedingKey =
-        todayFeedingCount > 0 ? todayKey : latestFeedingKey || todayKey;
-      const effectiveAttendanceArray =
-        todayAttendanceCount > 0
-          ? todayAttendanceArray
-          : attendanceArray.filter(
-              (entry: any) => getRecordDateKey(entry.date) === attendanceKey,
-            );
-      const effectiveFeedingArray =
-        todayFeedingCount > 0
-          ? todayFeedingArray
-          : feedingArray.filter(
-              (entry: any) => getRecordDateKey(entry.date) === feedingKey,
-            );
       setDateMeta({
         todayKey,
-        attendanceKey,
-        feedingKey,
+        attendanceKey: latestAttendanceKey || todayKey,
+        feedingKey: latestFeedingKey || todayKey,
       });
       const weekAttendanceArray = attendanceArray.filter((entry: any) => {
         const entryKey = getRecordDateKey(entry.date);
@@ -219,32 +187,32 @@ export function useAdminDashboard() {
         (u: any) => u.role === "teacher",
       ).length;
 
-      let todayAttTotal = 0;
-      let todayAttPresent = 0;
-      effectiveAttendanceArray.forEach((entry: any) => {
+      let allAttTotal = 0;
+      let allAttPresent = 0;
+      attendanceArray.forEach((entry: any) => {
         entry.records?.forEach((record: any) => {
-          todayAttTotal += 1;
-          if (record.status === "present") todayAttPresent += 1;
+          allAttTotal += 1;
+          if (record.status === "present") allAttPresent += 1;
         });
       });
 
-      let todayFeedTotal = 0;
-      let todayFeedCompleted = 0;
-      effectiveFeedingArray.forEach((entry: any) => {
+      let allFeedTotal = 0;
+      let allFeedCompleted = 0;
+      feedingArray.forEach((entry: any) => {
         entry.records?.forEach((record: any) => {
-          todayFeedTotal += 1;
-          if (record.status === "completed") todayFeedCompleted += 1;
+          allFeedTotal += 1;
+          if (record.status === "completed") allFeedCompleted += 1;
         });
       });
 
-      const todayAttendanceRate = todayAttTotal
-        ? Math.round((todayAttPresent / todayAttTotal) * 100)
+      const todayAttendanceRate = allAttTotal
+        ? Math.round((allAttPresent / allAttTotal) * 100)
         : 0;
-      const todayFeedingRate = todayFeedTotal
-        ? Math.round((todayFeedCompleted / todayFeedTotal) * 100)
+      const todayFeedingRate = allFeedTotal
+        ? Math.round((allFeedCompleted / allFeedTotal) * 100)
         : 0;
       const todayExceptions =
-        todayAttTotal - todayAttPresent + (todayFeedTotal - todayFeedCompleted);
+        allAttTotal - allAttPresent + (allFeedTotal - allFeedCompleted);
 
       setStats({
         totalChildren,
@@ -297,12 +265,12 @@ export function useAdminDashboard() {
       const pieChartData: PieDataPoint[] = [
         {
           name: "Present",
-          value: todayAttPresent,
+          value: allAttPresent,
           color: "#10b981",
         },
         {
           name: "Absent",
-          value: todayAttTotal - todayAttPresent,
+          value: allAttTotal - allAttPresent,
           color: "#f43f5e",
         },
       ];

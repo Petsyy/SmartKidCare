@@ -20,6 +20,7 @@ export type ChildFormData = {
   studentId: string;
   schoolYear: string;
   dateOfBirth?: string;
+  teacherId?: string;
 };
 
 export function useChildrenManagement() {
@@ -163,20 +164,29 @@ export function useChildrenManagement() {
     if (!search.trim()) return true;
     const q = search.toLowerCase().trim();
     const name = `${child.firstName} ${child.lastName} ${child.middleName || ""}`.toLowerCase();
+    const nameLastFirstMiddle = [child.lastName, child.firstName, child.middleName]
+      .filter((value) => String(value || "").trim().length > 0)
+      .join(", ")
+      .toLowerCase();
     const studentId = (child.studentId || "").toLowerCase();
     const age = String(child.age ?? "").toLowerCase();
     const gender = (child.gender || "").toLowerCase();
     const schoolYear = (child.schoolYear || "").toLowerCase();
     const status = (child.status || "").toLowerCase();
     const linkCode = (child.childLinkCode || "").toLowerCase();
+    const teacherName = child.teacher
+      ? `${child.teacher.firstName} ${child.teacher.middleName || ""} ${child.teacher.lastName}`.toLowerCase()
+      : "";
     return (
       name.includes(q) ||
+      nameLastFirstMiddle.includes(q) ||
       studentId.includes(q) ||
       age.includes(q) ||
       gender.includes(q) ||
       schoolYear.includes(q) ||
       status.includes(q) ||
-      linkCode.includes(q)
+      linkCode.includes(q) ||
+      teacherName.includes(q)
     );
   });
 

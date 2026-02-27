@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { updateChild } from "../../api/child.api";
+import { getUsers, type User } from "../../api/authentication.api";
 import {
   type AddChildForParentField,
   type AddChildForParentFormErrors,
@@ -22,6 +23,13 @@ export type ChildForEdit = {
   enrollmentDate: string | Date;
   schoolYear: string;
   studentId?: string;
+  teacher?: {
+    _id: string;
+    firstName: string;
+    middleName?: string;
+    lastName: string;
+    email?: string;
+  } | null;
 };
 
 type Props = {
@@ -62,12 +70,43 @@ const getInitialForm = (child: ChildForEdit): AddChildForParentFormValues => ({
 export default function EditChildModal({ child, onClose, onUpdated }: Props) {
   const [form, setForm] = useState<AddChildForParentFormValues>(() => getInitialForm(child));
   const [errors, setErrors] = useState<AddChildForParentFormErrors>({});
+  const [teachers, setTeachers] = useState<User[]>([]);
+  const [selectedTeacherId, setSelectedTeacherId] = useState(
+    String(child.teacher?._id || ""),
+  );
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setForm(getInitialForm(child));
     setErrors({});
+    setSelectedTeacherId(String(child.teacher?._id || ""));
   }, [child]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadTeachers = async () => {
+      try {
+        const teacherUsers = await getUsers({ role: "teacher" });
+        if (!isMounted) return;
+        setTeachers(
+          teacherUsers.filter(
+            (teacher) => teacher.role === "teacher" && teacher.isActive !== false,
+          ),
+        );
+      } catch (error) {
+        if (!isMounted) return;
+        console.error("Failed to load teachers:", error);
+        setTeachers([]);
+      }
+    };
+
+    void loadTeachers();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const setFieldError = (
     field: AddChildForParentField,
@@ -138,6 +177,7 @@ export default function EditChildModal({ child, onClose, onUpdated }: Props) {
         gender: form.gender,
         enrollmentDate: form.enrollmentDate,
         schoolYear: form.schoolYear,
+        teacherId: selectedTeacherId || null,
       });
       onUpdated(updated);
       onClose();
@@ -307,6 +347,25 @@ export default function EditChildModal({ child, onClose, onUpdated }: Props) {
                 <p className="mt-1 text-xs text-red-600">{errors.schoolYear}</p>
               )}
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Assigned Teacher
+            </label>
+            <select
+              value={selectedTeacherId}
+              onChange={(e) => setSelectedTeacherId(e.target.value)}
+              className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            >
+              <option value="">Unassigned</option>
+              {teachers.map((teacher) => (
+                <option key={teacher._id} value={teacher._id}>
+                  {teacher.lastName}, {teacher.firstName}
+                  {teacher.middleName ? ` ${teacher.middleName}` : ""}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="flex gap-3 justify-end pt-6 border-t border-gray-100">
