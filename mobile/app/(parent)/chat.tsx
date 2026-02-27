@@ -17,6 +17,11 @@ import * as Icons from "lucide-react-native";
 import { useAuth } from "@/src/hooks/useAuth";
 import { sendAIChat } from "@/src/api/ai.api";
 import { getAttendanceHistory, getFeedingHistory } from "@/src/api/records.api";
+import {
+  extractAIRiskLevel,
+  getAIRiskBadgeStyle,
+  removeAIRiskLevelLine,
+} from "@/src/components/ai/aiChat";
 
 const SUGGESTIONS = [
   "Was my child present today?",
@@ -155,9 +160,57 @@ export default function ParentChatScreen() {
     setInput(text);
   };
 
+  const renderAssistantContent = (text: string) => {
+    const lines = text.split(/\r?\n/);
+    return (
+      <View className="gap-1">
+        {lines.map((line, index) => {
+          const trimmed = line.trim();
+          if (!trimmed) {
+            return <View key={`spacer-${index}`} style={{ height: 8 }} />;
+          }
+
+          const bulletMatch = trimmed.match(/^[-*•]\s+(.*)$/);
+          if (bulletMatch?.[1]) {
+            return (
+              <View
+                key={`bullet-${index}`}
+                className="flex-row items-start gap-2"
+              >
+                <Text className="text-[15px] text-gray-800" style={{ lineHeight: 22 }}>
+                  •
+                </Text>
+                <Text className="flex-1 text-[15px] text-gray-800" style={{ lineHeight: 22 }}>
+                  {bulletMatch[1]}
+                </Text>
+              </View>
+            );
+          }
+
+          const isSection = /^(Suggested Actions|Follow-up):/i.test(trimmed);
+          return (
+            <Text
+              key={`line-${index}`}
+              className={`text-[15px] text-gray-800 ${isSection ? "mt-1 font-semibold" : ""}`}
+              style={{ lineHeight: 22 }}
+            >
+              {trimmed}
+            </Text>
+          );
+        })}
+      </View>
+    );
+  };
+
   const renderItem = ({ item }: { item: Message }) => {
     const isUser = item.role === "user";
     const isLoading = item.role === "assistant" && !item.content && loading;
+    const riskLevel =
+      !isUser && !isLoading ? extractAIRiskLevel(item.content) : null;
+    const displayContent = riskLevel
+      ? removeAIRiskLevelLine(item.content)
+      : item.content;
+    const riskBadgeStyle = riskLevel ? getAIRiskBadgeStyle(riskLevel) : null;
 
     return (
       <View
@@ -209,13 +262,41 @@ export default function ParentChatScreen() {
               </Text>
             </View>
           ) : (
-            <Text
-              className={`text-[15px] ${isUser ? "text-white" : "text-gray-800"}`}
-              style={{ lineHeight: 22 }}
-              selectable
-            >
-              {item.content}
-            </Text>
+            <>
+              {!isUser && riskBadgeStyle && (
+                <View
+                  className="mb-2.5 self-start rounded-full border px-3 py-1"
+                  style={{
+                    borderColor: riskBadgeStyle.borderColor,
+                    backgroundColor: riskBadgeStyle.backgroundColor,
+                  }}
+                >
+                  <View className="flex-row items-center gap-1.5">
+                    <View
+                      className="h-2.5 w-2.5 rounded-full"
+                      style={{ backgroundColor: riskBadgeStyle.dotColor }}
+                    />
+                    <Text
+                      className="text-xs font-semibold"
+                      style={{ color: riskBadgeStyle.textColor }}
+                    >
+                      {riskBadgeStyle.label}
+                    </Text>
+                  </View>
+                </View>
+              )}
+              {isUser ? (
+                <Text
+                  className="text-[15px] text-white"
+                  style={{ lineHeight: 22 }}
+                  selectable
+                >
+                  {displayContent}
+                </Text>
+              ) : (
+                <View>{renderAssistantContent(displayContent)}</View>
+              )}
+            </>
           )}
         </View>
         {isUser && (

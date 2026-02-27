@@ -3,6 +3,63 @@ export type ChatMessageLike = {
   content: string;
 };
 
+export type AIRiskLevel = "LOW" | "MEDIUM" | "HIGH";
+
+export type AIRiskBadgeStyle = {
+  label: string;
+  borderColor: string;
+  backgroundColor: string;
+  textColor: string;
+  dotColor: string;
+};
+
+const RISK_LEVEL_LINE_REGEX = /^\s*Risk Level\s*:\s*(LOW|MEDIUM|HIGH)\s*$/im;
+const RISK_LEVEL_LINE_REMOVE_REGEX =
+  /^\s*Risk Level\s*:\s*(LOW|MEDIUM|HIGH)\s*$/gim;
+
+const RISK_BADGE_STYLES: Record<AIRiskLevel, AIRiskBadgeStyle> = {
+  LOW: {
+    label: "Low Risk",
+    borderColor: "#86efac",
+    backgroundColor: "#f0fdf4",
+    textColor: "#166534",
+    dotColor: "#22c55e",
+  },
+  MEDIUM: {
+    label: "Medium Risk",
+    borderColor: "#fcd34d",
+    backgroundColor: "#fffbeb",
+    textColor: "#92400e",
+    dotColor: "#f59e0b",
+  },
+  HIGH: {
+    label: "High Risk",
+    borderColor: "#fca5a5",
+    backgroundColor: "#fef2f2",
+    textColor: "#991b1b",
+    dotColor: "#ef4444",
+  },
+};
+
+export function extractAIRiskLevel(text: string): AIRiskLevel | null {
+  const match = text.match(RISK_LEVEL_LINE_REGEX);
+  if (!match?.[1]) return null;
+
+  const normalized = match[1].toUpperCase();
+  if (normalized === "LOW") return "LOW";
+  if (normalized === "MEDIUM") return "MEDIUM";
+  if (normalized === "HIGH") return "HIGH";
+  return null;
+}
+
+export function removeAIRiskLevelLine(text: string): string {
+  return text.replace(RISK_LEVEL_LINE_REMOVE_REGEX, "").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+export function getAIRiskBadgeStyle(level: AIRiskLevel): AIRiskBadgeStyle {
+  return RISK_BADGE_STYLES[level];
+}
+
 export function formatDateLabel(value: unknown): string {
   if (typeof value !== "string" || !value.trim()) return "?";
   const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);

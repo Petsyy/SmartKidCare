@@ -1,4 +1,9 @@
 import { API_BASE_URL } from "../config/config.api";
+import {
+  AI_INPUT_LIMITS,
+  sanitizeAIChildId,
+  sanitizeAIMessageInput,
+} from "../utils/aiInputSanitizer";
 
 export type AIRole = "parent" | "teacher" | "admin";
 
@@ -65,6 +70,18 @@ export const sendAIChat = async (
   payload: AIChatPayload,
 ): Promise<string> => {
   if (!token) throw new Error("No authentication token");
+  const sanitizedMessage = sanitizeAIMessageInput(
+    payload.message,
+    AI_INPUT_LIMITS.messageMaxLength,
+  );
+  if (!sanitizedMessage) {
+    throw new Error("Please enter a valid message.");
+  }
+
+  const sanitizedChildId = sanitizeAIChildId(payload.childId);
+  if (!sanitizedChildId) {
+    throw new Error("Invalid child reference.");
+  }
 
   const response = await fetch(`${API_BASE_URL}/api/ai/chat`, {
     method: "POST",
@@ -72,7 +89,11 @@ export const sendAIChat = async (
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      ...payload,
+      message: sanitizedMessage,
+      childId: sanitizedChildId,
+    }),
   });
 
   const data = await response.json().catch(() => ({}));

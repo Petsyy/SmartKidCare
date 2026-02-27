@@ -84,7 +84,8 @@ export const showTeacherCredentialsModal = (
 ) => {
   const deliveryMessage = emailDelivery?.sent
     ? `Credentials have been sent to <strong>${emailDelivery.to}</strong>.`
-    : emailDelivery?.message || "Email delivery failed. Share credentials manually.";
+    : emailDelivery?.message ||
+      "Email delivery failed. Share credentials manually.";
 
   return Swal.fire({
     title: "Teacher Account Created Successfully",
@@ -366,6 +367,12 @@ export interface ViewChild {
   enrollmentDate?: string;
   childLinkCode?: string;
   parent?: { firstName: string; lastName: string; email: string } | null;
+  teacher?: {
+    firstName: string;
+    middleName?: string;
+    lastName: string;
+    email?: string;
+  } | null;
 }
 
 export const showChangeChildStatusModal = async (
@@ -439,6 +446,9 @@ export const showViewChildModal = (child: ViewChild) => {
   const parentInfo = child.parent
     ? `${child.parent.firstName} ${child.parent.lastName} (${child.parent.email})`
     : "Not linked";
+  const teacherInfo = child.teacher
+    ? `${child.teacher.firstName}${child.teacher.middleName ? ` ${child.teacher.middleName}` : ""} ${child.teacher.lastName}${child.teacher.email ? ` (${child.teacher.email})` : ""}`
+    : "Unassigned";
   const linkCodeDisplay = child.childLinkCode
     ? `<span style="font-family:monospace;background:#F3F4F6;padding:6px 10px;border-radius:6px">${child.childLinkCode}</span>`
     : '<span style="color:#6B7280">—</span>';
@@ -477,6 +487,10 @@ export const showViewChildModal = (child: ViewChild) => {
         <div style="margin-bottom:16px">
           <div style="color:#6B7280;font-size:12px;font-weight:500;margin-bottom:4px;text-transform:uppercase">Parent</div>
           <div>${parentInfo}</div>
+        </div>
+        <div style="margin-bottom:16px">
+          <div style="color:#6B7280;font-size:12px;font-weight:500;margin-bottom:4px;text-transform:uppercase">Teacher</div>
+          <div>${teacherInfo}</div>
         </div>
         <div>
           <div style="color:#6B7280;font-size:12px;font-weight:500;margin-bottom:4px;text-transform:uppercase">Link Code</div>

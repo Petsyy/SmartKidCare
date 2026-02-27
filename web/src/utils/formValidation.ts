@@ -1,9 +1,25 @@
+import { z } from "zod";
+
 type FieldErrors<T extends string> = Partial<Record<T, string>>;
 
 const NAME_REGEX = /^[A-Za-z][A-Za-z .'-]*$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_REGEX = /^[0-9+\-\s()]+$/;
 const SCHOOL_YEAR_REGEX = /^(\d{4})-(\d{4})$/;
+
+const PHILIPPINE_PHONE_SCHEMA = z
+  .string()
+  .trim()
+  .refine((value) => value.length > 0, {
+    message: "Phone number is required.",
+  })
+  .refine((value) => {
+    const digitsOnly = value.replace(/\D/g, "");
+    if (/^09\d{9}$/.test(digitsOnly)) return true;
+    if (/^639\d{9}$/.test(digitsOnly)) return true;
+    return false;
+  }, {
+    message: "Phone number must be a valid phone number.",
+  });
 
 const trimValue = (value: string) => value.trim();
 
@@ -22,7 +38,8 @@ const validateName = (
     label,
     required = true,
     minLength = 1,
-  }: { label: string; required?: boolean; minLength?: number },
+    maxLength = 50,
+  }: { label: string; required?: boolean; minLength?: number; maxLength?: number },
 ) => {
   const cleanValue = trimValue(value);
 
@@ -32,6 +49,10 @@ const validateName = (
 
   if (cleanValue.length < minLength) {
     return `${label} must be at least ${minLength} character${minLength > 1 ? "s" : ""}.`;
+  }
+
+  if (maxLength && cleanValue.length > maxLength) {
+    return `${label} must be at most ${maxLength} characters long.`;
   }
 
   if (!NAME_REGEX.test(cleanValue)) {
@@ -68,16 +89,20 @@ const validatePhone = (
     return required ? `${label} is required.` : undefined;
   }
 
-  if (!PHONE_REGEX.test(cleanValue)) {
-    return `${label} contains invalid characters.`;
-  }
-
-  const digitsOnly = cleanValue.replace(/\D/g, "");
-  if (digitsOnly.length < 10 || digitsOnly.length > 15) {
-    return `${label} must be 10 to 15 digits.`;
+  const result = PHILIPPINE_PHONE_SCHEMA.safeParse(cleanValue);
+  if (!result.success) {
+    return `${label} must be a valid phone number.`;
   }
 
   return undefined;
+};
+
+export const sanitizePhoneInput = (value: string): string => {
+  const digitsOnly = String(value || "").replace(/\D/g, "");
+  if (digitsOnly.startsWith("63")) {
+    return digitsOnly.slice(0, 12);
+  }
+  return digitsOnly.slice(0, 11);
 };
 
 const validateDateOfBirth = (value: string) => {
@@ -158,11 +183,23 @@ export const validateAddTeacherField = (
 ) => {
   switch (field) {
     case "firstName":
-      return validateName(form.firstName, { label: "First name", minLength: 2 });
+      return validateName(form.firstName, {
+        label: "First name",
+        minLength: 2,
+        maxLength: 50,
+      });
     case "middleName":
-      return validateName(form.middleName, { label: "Middle name", minLength: 1 });
+      return validateName(form.middleName, {
+        label: "Middle name",
+        minLength: 1,
+        maxLength: 50,
+      });
     case "lastName":
-      return validateName(form.lastName, { label: "Last name", minLength: 2 });
+      return validateName(form.lastName, {
+        label: "Last name",
+        minLength: 2,
+        maxLength: 50,
+      });
     case "email":
       return validateEmail(form.email, { label: "Email" });
     case "phone":
@@ -217,15 +254,24 @@ export const validateAddChildField = (
 ) => {
   switch (field) {
     case "firstName":
-      return validateName(form.firstName, { label: "First name", minLength: 2 });
+      return validateName(form.firstName, {
+        label: "First name",
+        minLength: 2,
+        maxLength: 50,
+      });
     case "middleName":
       return validateName(form.middleName, {
         label: "Middle name",
         required: false,
         minLength: 1,
+        maxLength: 50,
       });
     case "lastName":
-      return validateName(form.lastName, { label: "Last name", minLength: 2 });
+      return validateName(form.lastName, {
+        label: "Last name",
+        minLength: 2,
+        maxLength: 50,
+      });
     case "dateOfBirth":
       return validateDateOfBirth(form.dateOfBirth);
     case "gender":
@@ -239,18 +285,21 @@ export const validateAddChildField = (
         label: "Parent first name",
         required: options.requireParentInfo,
         minLength: 2,
+        maxLength: 50,
       });
     case "parentMiddleName":
       return validateName(form.parentMiddleName, {
         label: "Parent middle name",
         required: false,
         minLength: 1,
+        maxLength: 50,
       });
     case "parentLastName":
       return validateName(form.parentLastName, {
         label: "Parent last name",
         required: options.requireParentInfo,
         minLength: 2,
+        maxLength: 50,
       });
     case "parentEmail":
       return validateEmail(form.parentEmail, {
@@ -317,15 +366,24 @@ export const validateAddChildForParentField = (
 ) => {
   switch (field) {
     case "firstName":
-      return validateName(form.firstName, { label: "First name", minLength: 2 });
+      return validateName(form.firstName, {
+        label: "First name",
+        minLength: 2,
+        maxLength: 50,
+      });
     case "middleName":
       return validateName(form.middleName, {
         label: "Middle name",
         required: false,
         minLength: 1,
+        maxLength: 50,
       });
     case "lastName":
-      return validateName(form.lastName, { label: "Last name", minLength: 2 });
+      return validateName(form.lastName, {
+        label: "Last name",
+        minLength: 2,
+        maxLength: 50,
+      });
     case "dateOfBirth":
       return validateDateOfBirth(form.dateOfBirth);
     case "gender":
