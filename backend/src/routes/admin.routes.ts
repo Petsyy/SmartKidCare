@@ -7,7 +7,7 @@ import {
   getParentChildren,
   updateUserProfile,
   deleteUser,
-} from "../controllers/admin.controller";
+} from "../controllers/admin/admin.controller";
 
 const router = Router();
 

@@ -7,7 +7,7 @@ import {
   getMyChildren,
   linkChildToParent,
   updateChild,
-} from "../controllers/child.controller";
+} from "../controllers/child/child.controller";
 import { authenticateToken } from "../middlewares/auth.middleware";
 
 const router = express.Router();

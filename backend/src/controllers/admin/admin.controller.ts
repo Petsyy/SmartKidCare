@@ -1,13 +1,13 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
-import User from "../models/Users";
-import Child from "../models/Child";
+import User from "../../models/Users";
+import Child from "../../models/Child";
 import {
   isValidEmailAddress,
   mapCredentialDeliveryError,
   sendTeacherCredentialsEmail,
-} from "../services/notifications/teacherCredentials.service";
+} from "../../services/notifications/teacherCredentials.service";
 
 export const createTeacher = async (req: Request, res: Response) => {
   try {

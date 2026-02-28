@@ -2,12 +2,12 @@ import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import { Request, Response } from "express";
 
-import Child from "../models/Child";
-import User from "../models/Users";
+import Child from "../../models/Child";
+import User from "../../models/Users";
 import {
   generateStudentId,
   generateChildLinkCode,
-} from "../utils/generateStudentId";
+} from "../../utils/generateStudentId";
 
 const generateAndAssignMissingLinkCode = async (child: any) => {
   if (child.childLinkCode) {
