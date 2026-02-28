@@ -10,7 +10,7 @@ import {
   getAttendanceVerification,
   getFeedingVerification,
   getTxForDateHash,
-} from "../controllers/records.controller";
+} from "../controllers";
 import { authenticateToken } from "../middlewares/auth.middleware";
 
 const router = express.Router();

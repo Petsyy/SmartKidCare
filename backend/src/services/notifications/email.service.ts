@@ -1,4 +1,4 @@
-import { transporter } from "../lib/mailer";
+import { transporter } from "../../lib/mailer";
 
 type SendEmailParams = {
   to: string;

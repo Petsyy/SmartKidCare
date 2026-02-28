@@ -3,7 +3,7 @@ import {
   recordAttendance,
   verifyAttendance,
   fetchRecordMeta,
-} from "../controllers/blockchain.controller";
+} from "../controllers/blockchain/blockchain.controller";
 
 const router = Router();
 

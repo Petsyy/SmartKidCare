@@ -4,7 +4,7 @@ import {
   hashData,
   wallet,
   provider,
-} from "../blockchain/ethers";
+} from "../../blockchain/ethers";
 
 // Track cumulative gas costs during runtime
 let totalGasSpent = 0;

@@ -10,7 +10,7 @@ import {
   maskEmail,
   setAdminAuthCookie,
   verifyAdminMfaToken,
-} from "../../services/adminLoginMfa.service";
+} from "../../services/auth/adminLoginMfa.service";
 
 export const verifyAdminLoginMfa = async (req: Request, res: Response) => {
   try {

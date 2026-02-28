@@ -11,7 +11,7 @@ import {
   mapOtpDeliveryError,
   maskEmail,
   setAdminAuthCookie,
-} from "../../services/adminLoginMfa.service";
+} from "../../services/auth/adminLoginMfa.service";
 import { clearCsrfCookie, setCsrfCookie } from "../../lib/csrf";
 
 const escapeRegex = (value: string) =>

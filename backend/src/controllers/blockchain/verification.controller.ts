@@ -4,7 +4,7 @@ import Feeding from "../../models/Feeding";
 import {
   verifyDailyRecord,
   findTxForDateHash,
-} from "../../services/blockchain.service";
+} from "../../services/blockchain/blockchain.service";
 import { buildDateHash, hashData } from "../../blockchain/ethers";
 import { toDateKey } from "../../utils/recordUtilities";
 import { DEFAULT_VERIFY_REASON, EDIT_REANCHOR_REASON } from "./records.shared";

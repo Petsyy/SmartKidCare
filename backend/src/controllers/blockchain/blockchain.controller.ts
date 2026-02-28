@@ -2,8 +2,8 @@ import { Request, Response } from "express";
 import {
   storeDailyRecord,
   verifyDailyRecord,
-} from "../services/blockchain.service";
-import { buildDateHash } from "../blockchain/ethers";
+} from "../../services/blockchain/blockchain.service";
+import { buildDateHash } from "../../blockchain/ethers";
 
 export async function recordAttendance(req: Request, res: Response) {
   const { childId, date, attendance, feeding } = req.body;

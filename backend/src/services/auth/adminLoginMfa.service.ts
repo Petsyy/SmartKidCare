@@ -1,9 +1,9 @@
 import { createHash, randomInt } from "crypto";
 import jwt from "jsonwebtoken";
 import { Response } from "express";
-import { IUser } from "../models/Users";
-import { sendEmail } from "./email.service";
-import { setCsrfCookie } from "../lib/csrf";
+import { IUser } from "../../models/Users";
+import { sendEmail } from "../notifications/email.service";
+import { setCsrfCookie } from "../../lib/csrf";
 
 export const ADMIN_LOGIN_MFA_PURPOSE = "admin_login_mfa";
 

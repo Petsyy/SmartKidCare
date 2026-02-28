@@ -34,7 +34,10 @@ const MULTI_TOKEN_AFFIRMATIVES = new Set([
   "sige po",
 ]);
 
-type RoleReplyTable = Record<AIResponseLanguage, Record<NormalizedRole, string>>;
+type RoleReplyTable = Record<
+  AIResponseLanguage,
+  Record<NormalizedRole, string>
+>;
 
 const GREETING_REPLIES: RoleReplyTable = {
   en: {
@@ -73,7 +76,8 @@ const AFFIRMATIVE_REPLIES: RoleReplyTable = {
 
 const ACKNOWLEDGEMENT_REPLIES: RoleReplyTable = {
   en: {
-    parent: "You're welcome. Ask anytime about your child's attendance or feeding.",
+    parent:
+      "You're welcome. Ask anytime about your child's attendance or feeding.",
     teacher: "You're welcome. Ask anytime about attendance or feeding records.",
     admin:
       "You're welcome. Ask anytime about attendance, feeding, or verification.",
@@ -138,7 +142,10 @@ export function isGreeting(text: string): boolean {
 }
 
 export function isAffirmative(text: string): boolean {
-  const normalized = normalizeMessage(text).replace(TRAILING_PUNCTUATION_PATTERN, "");
+  const normalized = normalizeMessage(text).replace(
+    TRAILING_PUNCTUATION_PATTERN,
+    "",
+  );
   return (
     SINGLE_TOKEN_AFFIRMATIVES.has(normalized) ||
     MULTI_TOKEN_AFFIRMATIVES.has(normalized)

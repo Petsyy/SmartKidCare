@@ -4,7 +4,7 @@ import Feeding from "../models/Feeding";
 import {
   storeDailyRecord,
   getWalletBalance,
-} from "../services/blockchain.service";
+} from "../services/blockchain/blockchain.service";
 
 export const toDateKey = (date: Date) => date.toISOString().split("T")[0];
 
