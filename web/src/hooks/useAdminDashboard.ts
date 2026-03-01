@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { API_BASE } from "../components/config/config.api";
+import { API_BASE } from "@/components/config/config.api";
 
 export type DashboardStats = {
   totalChildren: number;

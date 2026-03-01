@@ -1,14 +1,14 @@
 import { useNavigate } from "react-router-dom";
 import { Search, Link, Pencil } from "lucide-react";
-import Layout from "../components/layout/Layout";
-import VerificationModal from "../components/modals/VerificationModal";
-import FeedingEditModal from "../components/modals/FeedingEditModal";
+import Layout from "@/components/layout/Layout";
+import VerificationModal from "@/components/modals/verification/VerificationModal";
+import FeedingEditModal from "@/components/modals/feeding/FeedingEditModal";
 import {
   useFeedingProgram,
   type DatePreset,
   type FeedingStatusFilter,
   type VerificationFilter,
-} from "../hooks/useFeedingProgram";
+} from "@/hooks/useFeedingProgram";
 
 const formatDate = (value: string) =>
   new Date(value).toLocaleDateString("en-PH", {

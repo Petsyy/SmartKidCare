@@ -5,7 +5,7 @@ import {
   requestChangePasswordOtp,
   updateAdminPreferences,
   updateCurrentUser,
-} from "../api/settings.api";
+} from "@/api/settings.api";
 
 export type AdminProfileForm = {
   username: string;

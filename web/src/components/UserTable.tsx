@@ -1,5 +1,5 @@
 import { Eye, Pencil, Users, MoreVertical } from "lucide-react";
-import { type User } from "../api/authentication.api";
+import { type User } from "@/api/authentication.api";
 
 interface Child {
   _id: string;

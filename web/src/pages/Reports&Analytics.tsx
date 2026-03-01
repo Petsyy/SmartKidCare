@@ -24,11 +24,11 @@ import {
   RefreshCw,
   Clock,
 } from "lucide-react";
-import Layout from "../components/layout/Layout";
+import Layout from "@/components/layout/Layout";
 import {
   useReportAnalytics,
   type ReportDatePreset,
-} from "../hooks/useReportAnalytics";
+} from "@/hooks/useReportAnalytics";
 
 const PRESET_OPTIONS: Array<{ value: ReportDatePreset; label: string }> = [
   { value: "7d", label: "Last 7 Days" },

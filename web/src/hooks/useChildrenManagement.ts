@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { type Child } from "../pages/ChildrenManagement";
+import { type Child } from "@/pages/ChildrenManagement";
 import Swal from "sweetalert2";
 import {
   createChild,

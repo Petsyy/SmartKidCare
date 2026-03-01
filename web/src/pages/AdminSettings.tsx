@@ -15,12 +15,12 @@ import {
   type AdminPreferencesForm,
   type AdminProfileForm,
   useAdminSettings,
-} from "../hooks/useAdminSettings";
-import { useAdminPassword2FA } from "../hooks/useAdminPassword2FA";
+} from "@/hooks/useAdminSettings";
+import { useAdminPassword2FA } from "@/hooks/useAdminPassword2FA";
 import {
   showAdminPasswordChangedModal,
   showAdminProfileSavedModal,
-} from "../utils/sweetalert.modal";
+} from "@/utils/sweetalert.modal";
 
 type SettingsSectionId = "profile" | "security" | "preferences";
 

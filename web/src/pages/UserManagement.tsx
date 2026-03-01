@@ -12,10 +12,10 @@ import {
   Search,
   Baby,
 } from "lucide-react";
-import { getUsers, type User } from "../api/authentication.api";
-import AddTeacherModal from "../components/modals/AddTeacherModal";
-import AddChildForParentModal from "../components/modals/AddChildForParentModal";
-import Layout from "../components/layout/Layout";
+import { getUsers, type User } from "@/api/authentication.api";
+import AddTeacherModal from "@/components/modals/user/AddTeacherModal";
+import AddChildForParentModal from "@/components/modals/child/AddChildForParentModal";
+import Layout from "@/components/layout/Layout";
 import {
   handleViewUser,
   showErrorModal,
@@ -23,16 +23,16 @@ import {
   showToggleUserStatusModal,
   showToggleUserStatusSuccessModal,
   showLinkedChildrenModal,
-} from "../utils/sweetalert.modal";
+} from "@/utils/sweetalert.modal";
 import {
   getParentChildren,
   toggleUserStatus,
   resetUserPassword,
   deleteUser,
-} from "../api/admin.api";
+} from "@/api/admin.api";
 import Swal from "sweetalert2";
-import { createChild } from "../api/child.api";
-import EditUserModal from "../components/modals/EditUserModal";
+import { createChild } from "@/api/child.api";
+import EditUserModal from "@/components/modals/user/EditUserModal";
 
 interface Child {
   _id: string;

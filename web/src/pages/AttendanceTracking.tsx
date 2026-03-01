@@ -1,14 +1,14 @@
-import AttendanceEditModal from "../components/modals/AttendanceEditModal";
-import VerificationModal from "../components/modals/VerificationModal";
+import AttendanceEditModal from "@/components/modals/attendance/AttendanceEditModal";
+import VerificationModal from "@/components/modals/verification/VerificationModal";
 import { useNavigate } from "react-router-dom";
 import { Search, Pencil, Link } from "lucide-react";
-import Layout from "../components/layout/Layout";
+import Layout from "@/components/layout/Layout";
 import {
   useAttendanceTracking,
   type DatePreset,
   type AttendanceStatusFilter,
   type VerificationFilter,
-} from "../hooks/useAttendanceTracking";
+} from "@/hooks/useAttendanceTracking";
 
 const formatDate = (value: string) =>
   new Date(value).toLocaleDateString("en-PH", {

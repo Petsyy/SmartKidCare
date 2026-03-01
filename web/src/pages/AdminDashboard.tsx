@@ -13,8 +13,8 @@ import {
   Cell,
 } from "recharts";
 import { Users, Calendar, Utensils, AlertCircle, Clock } from "lucide-react";
-import Layout from "../components/layout/Layout";
-import { useAdminDashboard } from "../hooks/useAdminDashboard";
+import Layout from "@/components/layout/Layout";
+import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 
 const StatCard = ({
   title,

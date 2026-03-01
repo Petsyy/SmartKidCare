@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { UserIcon, Lock, AlertCircle } from "lucide-react";
-import { API_BASE } from "../components/config/config.api";
+import { API_BASE } from "@/components/config/config.api";
 
 type ApiResponse = {
   status: number;

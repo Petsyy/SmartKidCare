@@ -9,15 +9,15 @@ import {
   ToggleLeft,
   Trash2,
 } from "lucide-react";
-import Layout from "../components/layout/Layout";
-import AddChildModal from "../components/modals/AddChildModal";
+import Layout from "@/components/layout/Layout";
+import AddChildModal from "@/components/modals/child/AddChildModal";
 import EditChildModal, {
   type ChildForEdit,
-} from "../components/modals/EditChildModal";
-import { showViewChildModal } from "../utils/sweetalert.modal";
-import { useChildrenManagement } from "../hooks/useChildrenManagement";
-import { useContextMenu } from "../hooks/useContextMenu";
-import { ChildrenTable } from "../components/ChildrenTable";
+} from "@/components/modals/child/EditChildModal";
+import { showViewChildModal } from "@/utils/sweetalert.modal";
+import { useChildrenManagement } from "@/hooks/useChildrenManagement";
+import { useContextMenu } from "@/hooks/useContextMenu";
+import { ChildrenTable } from "@/components/ChildrenTable";
 
 export type Child = {
   _id: string;

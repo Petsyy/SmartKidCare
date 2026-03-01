@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
-import { getUsers, type User } from "../api/authentication.api";
-import { getParentChildren, toggleUserStatus, resetUserPassword } from "../api/admin.api";
+import { getUsers, type User } from "@/api/authentication.api";
+import { getParentChildren, toggleUserStatus, resetUserPassword } from "@/api/admin.api";
 import {
   showErrorModal,
   showResetPasswordModal,
   showToggleUserStatusModal,
   showToggleUserStatusSuccessModal,
   showLinkedChildrenModal,
-} from "../utils/sweetalert.modal";
+} from "@/utils/sweetalert.modal";
 
 export function useUserManagement() {
   const [activeTab, setActiveTab] = useState<"teacher" | "parent">("teacher");
