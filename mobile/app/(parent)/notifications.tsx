@@ -298,7 +298,7 @@ export default function NotificationsScreen() {
 
           {!isLoading && !error && visibleItems.length > 0 ? (
             <View className="mt-4">
-              {visibleItems.map((item) => {
+              {visibleItems.map((item, index) => {
                 const ui = TYPE_UI[item.type];
                 const Icon = ui.icon;
                 const isRead = Boolean(readIds[item.id]);
@@ -307,57 +307,70 @@ export default function NotificationsScreen() {
                   <Pressable
                     key={item.id}
                     onPress={() => markAsRead(item.id)}
-                    className={`mb-3 rounded-2xl border p-4 ${
-                      isRead
-                        ? "border-gray-200 bg-white"
-                        : "border-teal-100 bg-teal-50"
+                    className={`mb-3 rounded-2xl border p-5 transition-all ${
+                      isRead ? "border-gray-200 bg-white" : "border-teal-200 bg-white"
                     }`}
                     style={{
                       borderLeftWidth: 5,
                       borderLeftColor: ui.accent,
                       shadowColor: "#0F766E",
-                      shadowOpacity: isRead ? 0.04 : 0.1,
-                      shadowRadius: 10,
-                      shadowOffset: { width: 0, height: 2 },
-                      elevation: 2,
+                      shadowOpacity: isRead ? 0.05 : 0.12,
+                      shadowRadius: 12,
+                      shadowOffset: { width: 0, height: 3 },
+                      elevation: isRead ? 1 : 3,
+                      opacity: isRead ? 0.8 : 1,
                     }}
                   >
                     <View className="flex-row items-start">
                       <View
-                        className="mr-3 h-12 w-12 items-center justify-center rounded-full"
+                        className="mr-4 h-14 w-14 items-center justify-center rounded-2xl flex-shrink-0"
                         style={{ backgroundColor: ui.iconBg }}
                       >
-                        <Icon size={22} color={ui.iconColor} />
+                        <Icon size={24} color={ui.iconColor} strokeWidth={1.5} />
                       </View>
 
                       <View className="flex-1">
-                        <View className="flex-row items-start justify-between">
-                          <View className="flex-1 pr-3">
-                            <Text className="text-xl font-extrabold text-gray-900">
-                              {item.title || ui.fallbackTitle}
-                            </Text>
+                        <View className="flex-row items-start justify-between gap-2">
+                          <View className="flex-1">
+                            <View className="flex-row items-center gap-2">
+                              <Text className="text-lg font-bold text-gray-900">
+                                {item.title || ui.fallbackTitle}
+                              </Text>
+                              {!isRead && (
+                                <View
+                                  className="h-2 w-2 rounded-full flex-shrink-0"
+                                  style={{ backgroundColor: ui.accent }}
+                                />
+                              )}
+                            </View>
                           </View>
                           {!isRead ? (
-                            <View className="mt-1 h-2.5 w-2.5 rounded-full bg-teal-600" />
+                            <View
+                              className="mt-1.5 h-3 w-3 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: ui.accent }}
+                            />
                           ) : (
-                            <CheckCircle2 size={16} color="#16A34A" />
+                            <CheckCircle2 size={18} color="#16A34A" strokeWidth={1.5} />
                           )}
                         </View>
 
-                        <Text className="mt-2 text-base leading-6 text-gray-800">
+                        <Text className="mt-3 text-base leading-6 text-gray-700">
                           {item.message}
                         </Text>
 
                         <View className="mt-3 flex-row items-center justify-between">
-                          <Text className="text-sm font-semibold text-gray-500">
-                            {item.timeLabel}
-                          </Text>
-                          <Text
-                            className={`text-xs font-semibold ${
-                              isRead ? "text-emerald-600" : "text-teal-700"
-                            }`}
+                          <View
+                            className="px-3 py-1.5 rounded-full"
+                            style={{
+                              backgroundColor: ui.iconBg,
+                            }}
                           >
-                            {isRead ? "Read" : "Unread"}
+                            <Text className="text-xs font-semibold" style={{ color: ui.iconColor }}>
+                              {item.timeLabel}
+                            </Text>
+                          </View>
+                          <Text className="text-xs text-gray-400">
+                            {index + 1} of {visibleItems.length}
                           </Text>
                         </View>
                       </View>
