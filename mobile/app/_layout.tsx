@@ -91,9 +91,8 @@ function LayoutContent() {
     const subscription = Notifications.addPushTokenListener(
       async (tokenData) => {
         const newToken = tokenData.data;
-
+        
         if (!newToken.startsWith("ExponentPushToken")) {
-          console.log("Ignoring non-Expo token refresh:", newToken);
           return;
         }
 
@@ -152,6 +151,7 @@ export default function RootLayout() {
     LogBox.ignoreLogs([
       "SafeAreaView has been deprecated and will be removed in a future release.",
       "[Reanimated] Reduced motion setting is enabled on this device.",
+      "Ignoring non-Expo token refresh:",
     ]);
   }, []);
 

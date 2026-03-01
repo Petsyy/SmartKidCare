@@ -8,7 +8,10 @@ import {
   TextInput,
   StatusBar,
 } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useAuthContext } from "../../src/context/AuthContext";
 import { getParentProfile } from "@/src/api/parent.api";
@@ -99,20 +102,17 @@ export default function ProfileScreen() {
 
     setPasswordLoading(true);
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/auth/change-password`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            currentPassword,
-            newPassword,
-          }),
+      const response = await fetch(`${API_BASE_URL}/api/auth/change-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
+        body: JSON.stringify({
+          currentPassword,
+          newPassword,
+        }),
+      });
 
       const data = await response.json();
 
@@ -135,7 +135,11 @@ export default function ProfileScreen() {
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
-        <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+        <StatusBar
+          barStyle="light-content"
+          translucent
+          backgroundColor="transparent"
+        />
         <View className="flex-1 items-center justify-center">
           <View className="w-8 h-8 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" />
         </View>
@@ -148,7 +152,11 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      <StatusBar
+        barStyle="light-content"
+        translucent
+        backgroundColor="transparent"
+      />
 
       {/* Header */}
       <View

@@ -128,10 +128,23 @@ export const getParentProfile = async (token: string) => {
     },
   });
 
-  const data = await response.json();
+  const raw = await response.text();
+  let data: any = null;
+
+  try {
+    data = raw ? JSON.parse(raw) : null;
+  } catch {
+    data = null;
+  }
 
   if (!response.ok) {
-    throw new Error(data.message || "Failed to fetch parent profile");
+    throw new Error(
+      data?.message || raw || "Failed to fetch parent profile",
+    );
+  }
+
+  if (!data?.user) {
+    throw new Error("Invalid profile response from server");
   }
 
   return data.user;

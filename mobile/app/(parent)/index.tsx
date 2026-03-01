@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useRouter, useFocusEffect } from "expo-router";
 import {
   View,
@@ -16,9 +16,13 @@ import {
 import * as Icons from "lucide-react-native";
 import { useAuth } from "@/src/hooks/useAuth";
 import { getMyChildren, Child } from "@/src/api/parent.api";
-import { getAttendanceHistory, getFeedingHistory } from "@/src/api/records.api";
+import {
+  getAttendanceHistory,
+  getFeedingHistory,
+  getTodayAttendance,
+  getTodayFeeding,
+} from "@/src/api/records.api";
 import { StatRow, ProgressBar } from "@/src/utils/dashboard-overview";
-import { replace } from "expo-router/build/global-state/routing";
 
 type StatCardProps = {
   title: string;
@@ -45,55 +49,71 @@ export default function ParentDashboard() {
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
   const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
   const [feedingRecords, setFeedingRecords] = useState<any[]>([]);
+  const [todayAttendanceRecord, setTodayAttendanceRecord] = useState<any>(null);
+  const [todayFeedingRecord, setTodayFeedingRecord] = useState<any>(null);
   const centerName = "Child Development Center";
 
   // Dynamic date
   const currentDate = new Date();
-  const dateLabel = currentDate
-    .toLocaleDateString("en-US", {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-      timeZone: "Asia/Manila",
-    })
-    .replace(/,/g, "");
+  const dateParts = new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "Asia/Manila",
+  }).formatToParts(currentDate);
 
-  const fetchData = async (isRefreshing = false) => {
-    try {
-      if (!isRefreshing) setLoading(true);
-      setError(null);
+  const weekday =
+    dateParts.find((part) => part.type === "weekday")?.value ?? "";
+  const month = dateParts.find((part) => part.type === "month")?.value ?? "";
+  const day = dateParts.find((part) => part.type === "day")?.value ?? "";
+  const year = dateParts.find((part) => part.type === "year")?.value ?? "";
 
-      if (token) {
-        const data = await getMyChildren(token);
-        setChildren(data);
+  const dateLabel = `${weekday} ${month}, ${day} ${year}`.trim();
 
-        // Set first child as selected if none selected
-        if (!selectedChildId && data.length > 0) {
-          setSelectedChildId(data[0]._id);
+  const fetchData = React.useCallback(
+    async (isRefreshing = false) => {
+      try {
+        if (!isRefreshing) setLoading(true);
+        setError(null);
+
+        if (token) {
+          const data = await getMyChildren(token);
+          setChildren(data);
+
+          // Set first child as selected if none selected
+          if (!selectedChildId && data.length > 0) {
+            setSelectedChildId(data[0]._id);
+          }
+
+          // Fetch attendance and feeding records
+          const [attendance, feeding, todayAttendance, todayFeeding] =
+            await Promise.all([
+              getAttendanceHistory(token),
+              getFeedingHistory(token),
+              getTodayAttendance(token).catch(() => null),
+              getTodayFeeding(token).catch(() => null),
+            ]);
+
+          setAttendanceRecords(attendance);
+          setFeedingRecords(feeding);
+          setTodayAttendanceRecord(todayAttendance);
+          setTodayFeedingRecord(todayFeeding);
         }
-
-        // Fetch attendance and feeding records
-        const [attendance, feeding] = await Promise.all([
-          getAttendanceHistory(token),
-          getFeedingHistory(token),
-        ]);
-
-        setAttendanceRecords(attendance);
-        setFeedingRecords(feeding);
+      } catch (err: any) {
+        setError(err?.message || "Failed to load children");
+      } finally {
+        setLoading(false);
+        if (isRefreshing) setRefreshing(false);
       }
-    } catch (err: any) {
-      setError(err?.message || "Failed to load children");
-    } finally {
-      setLoading(false);
-      if (isRefreshing) setRefreshing(false);
-    }
-  };
+    },
+    [token, selectedChildId],
+  );
 
   useFocusEffect(
     React.useCallback(() => {
       fetchData();
-    }, [token]),
+    }, [fetchData]),
   );
 
   const onRefresh = () => {
@@ -126,12 +146,12 @@ export default function ParentDashboard() {
   const childAge = child?.age ?? "-";
   const childGender = child?.gender ? child.gender : "-";
   const enrolledText = child?.enrollmentDate
-    ? new Date(child.enrollmentDate).toLocaleDateString("en-PH", {
-        month: "short",
+    ? new Intl.DateTimeFormat("en-US", {
+        month: "long",
         day: "numeric",
         year: "numeric",
         timeZone: "Asia/Manila",
-      })
+      }).format(new Date(child.enrollmentDate))
     : "-";
 
   // Calculate statistics for the selected child
@@ -189,6 +209,62 @@ export default function ParentDashboard() {
       mealsMissed,
     };
   }, [child, attendanceRecords, feedingRecords]);
+
+  const totalChildren = useMemo(() => children.length, [children.length]);
+
+  const presentToday = useMemo(() => {
+    if (
+      !todayAttendanceRecord?.records ||
+      !Array.isArray(todayAttendanceRecord.records)
+    ) {
+      return 0;
+    }
+
+    const linkedChildIds = new Set(children.map((item) => item._id));
+    return todayAttendanceRecord.records.filter((record: any) => {
+      const childId =
+        typeof record?.child === "object"
+          ? String(record?.child?._id)
+          : String(record?.child);
+      return linkedChildIds.has(childId) && record?.status === "present";
+    }).length;
+  }, [todayAttendanceRecord, children]);
+
+  const absentToday = useMemo(() => {
+    if (
+      !todayAttendanceRecord?.records ||
+      !Array.isArray(todayAttendanceRecord.records)
+    ) {
+      return 0;
+    }
+
+    const linkedChildIds = new Set(children.map((item) => item._id));
+    return todayAttendanceRecord.records.filter((record: any) => {
+      const childId =
+        typeof record?.child === "object"
+          ? String(record?.child?._id)
+          : String(record?.child);
+      return linkedChildIds.has(childId) && record?.status === "absent";
+    }).length;
+  }, [todayAttendanceRecord, children]);
+
+  const feedingDoneToday = useMemo(() => {
+    if (
+      !todayFeedingRecord?.records ||
+      !Array.isArray(todayFeedingRecord.records)
+    ) {
+      return 0;
+    }
+
+    const linkedChildIds = new Set(children.map((item) => item._id));
+    return todayFeedingRecord.records.filter((record: any) => {
+      const childId =
+        typeof record?.child === "object"
+          ? String(record?.child?._id)
+          : String(record?.child);
+      return linkedChildIds.has(childId) && record?.status === "completed";
+    }).length;
+  }, [todayFeedingRecord, children]);
 
   if (loading) {
     return (
@@ -267,10 +343,10 @@ export default function ParentDashboard() {
         className="bg-teal-600 px-5 pb-5"
       >
         <Text className="text-3xl font-extrabold text-white">
-          Today's Overview
+          Today&apos;s Overview
         </Text>
         <Text className="text-lg text-teal-100 mt-1">
-          Here's your child's dashboard
+          Here&apos;s your child&apos;s dashboard
         </Text>
       </View>
 
@@ -342,18 +418,18 @@ export default function ParentDashboard() {
         <View className="mb-6 flex-row gap-4">
           <View className="flex-1">
             <StatCard
-              title="Present"
-              value={stats.present}
-              icon={<Icons.UserCheck size={24} color="#059669" />}
-              variant="green"
+              title="Total Children"
+              value={totalChildren}
+              icon={<Icons.Users size={24} color="#0284C7" />}
+              variant="blue"
             />
           </View>
           <View className="flex-1">
             <StatCard
-              title="Absent"
-              value={stats.absent}
-              icon={<Icons.UserX size={24} color="#374151" />}
-              variant="white"
+              title="Present Today"
+              value={presentToday}
+              icon={<Icons.UserCheck size={24} color="#059669" />}
+              variant="green"
             />
           </View>
         </View>
@@ -361,18 +437,18 @@ export default function ParentDashboard() {
         <View className="mb-7 flex-row gap-4">
           <View className="flex-1">
             <StatCard
-              title="Meals Completed"
-              value={stats.mealsCompleted}
-              icon={<Icons.UtensilsCrossed size={24} color="#059669" />}
-              variant="green"
+              title="Absent Today"
+              value={absentToday}
+              icon={<Icons.UserX size={24} color="#C2410C" />}
+              variant="amber"
             />
           </View>
           <View className="flex-1">
             <StatCard
-              title="Meals Missed"
-              value={stats.mealsMissed}
-              icon={<Icons.X size={24} color="#EF4444" />}
-              variant="white"
+              title="Feeding Done"
+              value={feedingDoneToday}
+              icon={<Icons.UtensilsCrossed size={24} color="#059669" />}
+              variant="green"
             />
           </View>
         </View>
@@ -552,18 +628,26 @@ export default function ParentDashboard() {
 /* ---------------- Components ---------------- */
 function StatCard({ title, value, variant = "white", icon }: StatCardProps) {
   const styles =
-    variant === "green"
-      ? "bg-emerald-50 border-emerald-100"
-      : "bg-white border-gray-100";
+    variant === "blue"
+      ? "bg-sky-50 border-sky-100"
+      : variant === "green"
+        ? "bg-emerald-50 border-emerald-100"
+        : variant === "amber"
+          ? "bg-orange-50 border-orange-100"
+          : "bg-white border-gray-100";
 
   const iconWrap =
-    variant === "green"
-      ? "bg-emerald-100"
-      : "bg-gray-100";
+    variant === "blue"
+      ? "bg-sky-100"
+      : variant === "green"
+        ? "bg-emerald-100"
+        : variant === "amber"
+          ? "bg-orange-100"
+          : "bg-gray-100";
 
   return (
     <View
-      className={`rounded-3xl border p-4 min-h-[120px] ${styles}`}
+      className={`rounded-3xl border p-4 ${styles}`}
       style={{
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },

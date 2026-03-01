@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, ChevronDown, ChevronRight } from 'lucide-react-native';
+import { ChevronLeft, ChevronDown, ChevronRight, UtensilsCrossed, X, Calendar, User } from 'lucide-react-native';
 import { getMyChildren, Child } from '@/src/api/parent.api';
 import { getFeedingHistory } from '@/src/api/records.api';
 import { useAuth } from '@/src/hooks/useAuth';
@@ -210,18 +210,45 @@ export default function ViewFeedingDetails() {
             days.push(
                 <Pressable
                     key={`day-${day}`}
-                    className="w-[14.28%] p-2"
+                    className="w-[14.28%] p-1"
                     onPress={() => {
                         setSelectedDay(day);
                         setShowDayModal(true);
                     }}
+                    android_ripple={{ color: '#14B8A6', radius: 24 }}
                 >
-                    <View className={`items-center justify-center h-10 rounded-full ${isToday ? 'border-2 border-teal-500' : ''}`}>
-                        <Text className={`text-base ${isToday ? 'font-bold text-teal-600' : 'text-gray-700'}`}>
+                    <View className={`items-center justify-center h-12 rounded-xl mx-0.5 ${
+                        status === "Completed"
+                            ? "bg-green-100"
+                            : status === "Missed"
+                              ? "bg-purple-100"
+                              : isToday
+                                ? "bg-teal-50"
+                                : ""
+                    } ${isToday ? 'border-2 border-teal-500' : ''}`}
+                        style={{
+                            shadowColor: status ? "#000" : "transparent",
+                            shadowOffset: { width: 0, height: 1 },
+                            shadowOpacity: status ? 0.1 : 0,
+                            shadowRadius: 2,
+                            elevation: status ? 2 : 0,
+                        }}
+                    >
+                        <Text className={`text-base font-semibold ${
+                            isToday
+                                ? 'text-teal-600'
+                                : status === 'Completed'
+                                  ? 'text-green-700'
+                                  : status === 'Missed'
+                                    ? 'text-purple-700'
+                                    : 'text-gray-500'
+                        }`}>
                             {day}
                         </Text>
                         {status && (
-                            <View className={`w-1.5 h-1.5 rounded-full mt-0.5 ${getStatusColor(status)}`} />
+                            <View className={`w-2 h-2 rounded-full mt-1 ${
+                                status === 'Completed' ? 'bg-green-600' : 'bg-purple-600'
+                            }`} />
                         )}
                     </View>
                 </Pressable>
@@ -347,14 +374,15 @@ export default function ViewFeedingDetails() {
 
                     {/* Legend */}
                     <View className="mt-6 pt-4 border-t border-gray-100">
-                        <View className="flex-row flex-wrap">
-                            <View className="flex-row items-center mr-4 mb-2">
-                                <View className="w-2 h-2 rounded-full bg-green-500 mr-2" />
-                                <Text className="text-sm text-gray-600">Completed</Text>
+                        <Text className="text-sm font-semibold text-gray-700 mb-3">Legend</Text>
+                        <View className="flex-row flex-wrap gap-3">
+                            <View className="flex-row items-center bg-green-50 px-3 py-2 rounded-lg">
+                                <View className="w-3 h-3 rounded-full bg-green-500 mr-2" />
+                                <Text className="text-sm font-medium text-gray-700">Completed</Text>
                             </View>
-                            <View className="flex-row items-center mb-2">
-                                <View className="w-2 h-2 rounded-full bg-purple-500 mr-2" />
-                                <Text className="text-sm text-gray-600">Missed</Text>
+                            <View className="flex-row items-center bg-purple-50 px-3 py-2 rounded-lg">
+                                <View className="w-3 h-3 rounded-full bg-purple-500 mr-2" />
+                                <Text className="text-sm font-medium text-gray-700">Missed</Text>
                             </View>
                         </View>
                     </View>
@@ -365,15 +393,21 @@ export default function ViewFeedingDetails() {
                     <Text className="text-lg font-semibold text-gray-800 mb-4">Monthly Summary</Text>
                     <View className="flex-row flex-wrap">
                         <View className="w-[48%] mr-[4%] mb-4">
-                            <View className="bg-green-50 rounded-lg p-4 items-center">
+                            <View className="bg-green-50 rounded-lg p-4 items-start border-l-4 border-green-500">
                                 <Text className="text-3xl font-bold text-green-700">{summary.completed}</Text>
-                                <Text className="text-base text-green-600 mt-1">Completed</Text>
+                                <View className="flex-row items-center mt-2">
+                                    <UtensilsCrossed size={16} color="#059669" />
+                                    <Text className="text-base text-green-600 ml-2">Completed</Text>
+                                </View>
                             </View>
                         </View>
                         <View className="w-[48%]">
-                            <View className="bg-purple-50 rounded-lg p-4 items-center">
+                            <View className="bg-purple-50 rounded-lg p-4 items-start border-l-4 border-purple-500">
                                 <Text className="text-3xl font-bold text-purple-700">{summary.missed}</Text>
-                                <Text className="text-base text-purple-600 mt-1">Missed</Text>
+                                <View className="flex-row items-center mt-2">
+                                    <X size={16} color="#9333EA" />
+                                    <Text className="text-base text-purple-600 ml-2">Missed</Text>
+                                </View>
                             </View>
                         </View>
                     </View>
@@ -395,7 +429,7 @@ export default function ViewFeedingDetails() {
             </ScrollView>
             <Modal
                 visible={showDayModal}
-                animationType="fade"
+                animationType="none"
                 transparent={true}
                 onRequestClose={() => setShowDayModal(false)}
             >
@@ -411,51 +445,138 @@ export default function ViewFeedingDetails() {
                             timeZone: 'Asia/Manila',
                         })
                         : 'Not available';
+                    
+                    const getSelectedDateLabel = () => {
+                        if (!selectedDay) return "";
+                        const date = new Date(
+                            currentDate.getFullYear(),
+                            currentDate.getMonth(),
+                            selectedDay,
+                        );
+                        return date.toLocaleDateString("en-PH", {
+                            month: "long",
+                            day: "numeric",
+                            year: "numeric",
+                            timeZone: "Asia/Manila",
+                        });
+                    };
 
                     return (
-                        <View className="flex-1 bg-black/50 items-center justify-center px-6">
-                            <View className="w-full rounded-2xl bg-white p-6">
-                                <View className="flex-row items-center justify-between mb-4">
-                                    <View>
-                                        <Text className="text-lg font-bold text-gray-900">
-                                            Feeding Details
-                                        </Text>
+                        <View className="flex-1 bg-black/60 items-center justify-center px-6">
+                            <View className="w-full rounded-3xl bg-white p-6"
+                                style={{
+                                    shadowColor: "#000",
+                                    shadowOffset: { width: 0, height: 8 },
+                                    shadowOpacity: 0.3,
+                                    shadowRadius: 16,
+                                    elevation: 10,
+                                }}
+                            >
+                                <View className="flex-row items-center justify-between mb-5">
+                                    <View className="flex-row items-center">
+                                        <View className="h-12 w-12 items-center justify-center rounded-2xl bg-teal-50 mr-3">
+                                            <UtensilsCrossed size={24} color="#14B8A6" />
+                                        </View>
+                                        <View>
+                                            <Text className="text-xl font-bold text-gray-900">
+                                                {getSelectedDateLabel()}
+                                            </Text>
+                                            <Text className="text-sm text-gray-500 mt-0.5">Feeding Details</Text>
+                                        </View>
                                     </View>
-                                    <Pressable
-                                        onPress={() => setShowDayModal(false)}
-                                        className="px-3 py-2"
-                                    >
-                                        <Text className="text-teal-600 font-semibold">Close</Text>
-                                    </Pressable>
                                 </View>
 
-                                <View className="bg-gray-50 rounded-2xl p-4">
-                                    <Text className="text-sm text-gray-500 mb-2">Status</Text>
-                                    <Text className="text-xl font-bold text-gray-900">
-                                        {selectedDay ? getStatusForDay(selectedDay) || 'Not recorded' : 'Not recorded'}
-                                    </Text>
+                                <View className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-5 border border-gray-100">
+                                    <View className="bg-white rounded-xl p-4 mb-3"
+                                        style={{
+                                            shadowColor: "#000",
+                                            shadowOffset: { width: 0, height: 1 },
+                                            shadowOpacity: 0.05,
+                                            shadowRadius: 2,
+                                            elevation: 1,
+                                        }}
+                                    >
+                                        <Text className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider">Status</Text>
+                                        <View className={`inline-flex px-4 py-2 rounded-full ${
+                                            dayDetails?.status === "Completed"
+                                                ? "bg-green-100"
+                                                : dayDetails?.status === "Missed"
+                                                  ? "bg-purple-100"
+                                                  : "bg-gray-100"
+                                        }`}
+                                            style={{ alignSelf: "flex-start" }}
+                                        >
+                                            <Text className={`text-base font-bold ${
+                                                dayDetails?.status === "Completed"
+                                                    ? "text-green-700"
+                                                    : dayDetails?.status === "Missed"
+                                                      ? "text-purple-700"
+                                                      : "text-gray-700"
+                                            }`}>
+                                                {selectedDay ? getStatusForDay(selectedDay) || 'Not recorded' : 'Not recorded'}
+                                            </Text>
+                                        </View>
+                                    </View>
 
-                                    <View className="mt-4">
-                                        <Text className="text-sm text-gray-500 mb-1">Food Served</Text>
-                                        <Text className="text-base font-semibold text-gray-800">
+                                    <View className="bg-white rounded-xl p-4 mb-3"
+                                        style={{
+                                            shadowColor: "#000",
+                                            shadowOffset: { width: 0, height: 1 },
+                                            shadowOpacity: 0.05,
+                                            shadowRadius: 2,
+                                            elevation: 1,
+                                        }}
+                                    >
+                                        <Text className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider">Food Served</Text>
+                                        <Text className="text-base font-bold text-gray-800">
                                             {dayDetails?.foodServed || 'Not specified'}
                                         </Text>
                                     </View>
 
-                                    <View className="mt-4">
-                                        <Text className="text-sm text-gray-500 mb-1">Teacher</Text>
-                                        <Text className="text-base font-semibold text-gray-800">
+                                    <View className="bg-white rounded-xl p-4 mb-3"
+                                        style={{
+                                            shadowColor: "#000",
+                                            shadowOffset: { width: 0, height: 1 },
+                                            shadowOpacity: 0.05,
+                                            shadowRadius: 2,
+                                            elevation: 1,
+                                        }}
+                                    >
+                                        <Text className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider">Teacher</Text>
+                                        <Text className="text-base font-bold text-gray-800">
                                             {dayDetails?.teacherName || 'Not available'}
                                         </Text>
                                     </View>
 
-                                    <View className="mt-3">
-                                        <Text className="text-sm text-gray-500 mb-1">Recorded</Text>
-                                        <Text className="text-base font-semibold text-gray-800">
+                                    <View className="bg-white rounded-xl p-4"
+                                        style={{
+                                            shadowColor: "#000",
+                                            shadowOffset: { width: 0, height: 1 },
+                                            shadowOpacity: 0.05,
+                                            shadowRadius: 2,
+                                            elevation: 1,
+                                        }}
+                                    >
+                                        <Text className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider">Recorded At</Text>
+                                        <Text className="text-base font-bold text-gray-800">
                                             {recordedLabel}
                                         </Text>
                                     </View>
                                 </View>
+
+                                <Pressable
+                                    onPress={() => setShowDayModal(false)}
+                                    className="mt-5 bg-teal-600 rounded-xl py-4 active:opacity-80"
+                                    style={{
+                                        shadowColor: "#14B8A6",
+                                        shadowOffset: { width: 0, height: 2 },
+                                        shadowOpacity: 0.3,
+                                        shadowRadius: 4,
+                                        elevation: 3,
+                                    }}
+                                >
+                                    <Text className="text-white font-bold text-center text-base">Close</Text>
+                                </Pressable>
                             </View>
                         </View>
                     );

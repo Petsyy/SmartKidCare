@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import { askGemini } from "../services/ai/gemini.service";
-import { AIChatRequest } from "../types/ai.types";
+import { askGemini } from "../../services/ai/gemini.service";
+import { AIChatRequest } from "../../types/ai.types";
 
 function isGreeting(message: string) {
   const greetings = ["hello", "hi", "hey"];
@@ -20,7 +20,7 @@ export async function aiChatController(req: Request, res: Response) {
     if (isGreeting(message)) {
       return res.status(200).json({
         reply:
-          "Hello 👋 You can ask about a child's attendance, feeding status, or record verification.",
+          "Hello, you can ask about a child's attendance, feeding status, or record verification.",
       });
     }
 

@@ -43,12 +43,8 @@ export default function Onboarding() {
   const flatListRef = useRef<FlatList>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const handleScroll = (
-    event: NativeSyntheticEvent<NativeScrollEvent>
-  ) => {
-    const index = Math.round(
-      event.nativeEvent.contentOffset.x / width
-    );
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const index = Math.round(event.nativeEvent.contentOffset.x / width);
     setCurrentIndex(index);
   };
 
@@ -77,10 +73,7 @@ export default function Onboarding() {
         onScroll={handleScroll}
         scrollEventThrottle={16}
         renderItem={({ item }) => (
-          <View
-            style={{ width }}
-            className="items-center justify-center px-6"
-          >
+          <View style={{ width }} className="items-center justify-center px-6">
             <Image
               source={item.image}
               className="w-64 h-64 rounded-2xl mb-8"
@@ -120,7 +113,7 @@ export default function Onboarding() {
               activeOpacity={0.85}
             >
               <LinearGradient
-                colors={['#10b981', '#059669']}
+                colors={["#10b981", "#059669"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 className="w-full py-4 items-center justify-center"

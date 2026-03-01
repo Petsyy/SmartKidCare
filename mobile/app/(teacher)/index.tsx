@@ -98,13 +98,21 @@ export default function TeacherDashboard() {
 
   // Dynamic date
   const currentDate = new Date();
-  const dateLabel = currentDate.toLocaleDateString("en-PH", {
+  const dateParts = new Intl.DateTimeFormat("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
     year: "numeric",
     timeZone: "Asia/Manila",
-  });
+  }).formatToParts(currentDate);
+
+  const weekday =
+    dateParts.find((part) => part.type === "weekday")?.value ?? "";
+  const month = dateParts.find((part) => part.type === "month")?.value ?? "";
+  const day = dateParts.find((part) => part.type === "day")?.value ?? "";
+  const year = dateParts.find((part) => part.type === "year")?.value ?? "";
+
+  const dateLabel = `${weekday} ${month}, ${day} ${year}`.trim();
 
   const fetchData = async (isRefreshing = false) => {
     try {
