@@ -112,7 +112,7 @@ export default function ReportAnalytics() {
   return (
     <Layout
       activeItem="reports"
-      breadcrumbs={["Admin", "Report & Analytics"]}
+      breadcrumbs={["Admin", "Reports & Analytics"]}
       onNavigate={(path) => navigate(`/${path}`)}
     >
       <div className="space-y-6 p-8">
@@ -121,8 +121,7 @@ export default function ReportAnalytics() {
             Reports & Analytics
           </h1>
           <p className="text-sm text-gray-500">
-            Performance reports for attendance, feeding, and exception
-            trends.
+            Performance reports for attendance, feeding, and exception trends.
           </p>
         </div>
 

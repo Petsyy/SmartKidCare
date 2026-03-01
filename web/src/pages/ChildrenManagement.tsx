@@ -139,7 +139,7 @@ export default function ChildrenManagement() {
       <AddChildModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSave={async (childData) => {
+        onSave={async (childData, files) => {
           if (!childData.studentId) {
             console.error("Student ID is required");
             return;
@@ -147,7 +147,7 @@ export default function ChildrenManagement() {
           const success = await handleSaveChild({
             ...childData,
             studentId: childData.studentId,
-          });
+          }, files);
           if (success) {
             setIsModalOpen(false);
           }

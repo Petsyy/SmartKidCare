@@ -41,7 +41,13 @@ export type InitialParent = {
 type AddChildModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: ChildFormData) => void;
+  onSave: (
+    data: ChildFormData,
+    files: {
+      birthCertificate: File;
+      parentId: File;
+    },
+  ) => void;
   isLoading?: boolean;
   initialParent?: InitialParent | null;
 };
@@ -79,8 +85,12 @@ export default function AddChildModal({
   }>({});
   const [fieldErrors, setFieldErrors] = useState<AddChildFormErrors>({});
   const [currentStep, setCurrentStep] = useState(1);
+  const [birthCertificateFile, setBirthCertificateFile] = useState<File | null>(
+    null,
+  );
+  const [parentIdFile, setParentIdFile] = useState<File | null>(null);
 
-  const totalSteps = initialParent ? 2 : 3;
+  const totalSteps = initialParent ? 3 : 4;
 
   useEffect(() => {
     let isMounted = true;
@@ -91,7 +101,8 @@ export default function AddChildModal({
         if (!isMounted) return;
         setTeachers(
           teacherUsers.filter(
-            (teacher) => teacher.role === "teacher" && teacher.isActive !== false,
+            (teacher) =>
+              teacher.role === "teacher" && teacher.isActive !== false,
           ),
         );
       } catch (error) {
@@ -191,7 +202,13 @@ export default function AddChildModal({
         ? ["firstName", "middleName", "lastName", "dateOfBirth", "gender"]
         : step === 2
           ? ["enrollmentDate", "schoolYear"]
-          : ["parentFirstName", "parentMiddleName", "parentLastName", "parentEmail", "parentPhone"];
+          : [
+              "parentFirstName",
+              "parentMiddleName",
+              "parentLastName",
+              "parentEmail",
+              "parentPhone",
+            ];
 
     const nextFieldErrors: AddChildFormErrors = { ...fieldErrors };
 
@@ -310,6 +327,11 @@ export default function AddChildModal({
       return;
     }
 
+    if (!birthCertificateFile || !parentIdFile) {
+      alert("Please upload the required documents before submitting.");
+      return;
+    }
+
     // Run full form validation including phone rules.
     const addChildValues = buildAddChildValues(formData);
 
@@ -325,13 +347,18 @@ export default function AddChildModal({
     const studentId = generateStudentId(formData.enrollmentDate);
     const childLinkCode = generateChildLinkCode();
 
-    onSave({
-      ...formData,
-      teacherId: formData.teacherId?.trim() || undefined,
-      studentId,
-      childLinkCode,
-    });
-
+    onSave(
+      {
+        ...formData,
+        teacherId: formData.teacherId?.trim() || undefined,
+        studentId,
+        childLinkCode,
+      },
+      {
+        birthCertificate: birthCertificateFile,
+        parentId: parentIdFile!,
+      },
+    );
   };
 
   if (!isOpen) return null;
@@ -365,53 +392,35 @@ export default function AddChildModal({
         {/* Progress Indicator */}
         <div className="px-6 pt-4">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex-1 flex items-center">
-              <div className="flex flex-col items-center flex-1">
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${currentStep === 1
-                      ? "bg-teal-600 text-white"
-                      : currentStep > 1
-                        ? "bg-teal-100 text-teal-700"
-                        : "bg-gray-100 text-gray-500"
-                    }`}
-                >
-                  1
-                </div>
-                <span className="mt-1 text-xs text-gray-700">Child Info</span>
-              </div>
-              <div className="flex-1 h-px mx-2 bg-gray-200" />
-              <div className="flex flex-col items-center flex-1">
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${currentStep === 2
-                      ? "bg-teal-600 text-white"
-                      : currentStep > 2
-                        ? "bg-teal-100 text-teal-700"
-                        : "bg-gray-100 text-gray-500"
-                    }`}
-                >
-                  2
-                </div>
-                <span className="mt-1 text-xs text-gray-700">Enrollment</span>
-              </div>
-              {!initialParent && (
-                <>
-                  <div className="flex-1 h-px mx-2 bg-gray-200" />
+            {(initialParent
+              ? ["Child Info", "Enrollment", "Documents"]
+              : ["Child Info", "Enrollment", "Parent Info", "Documents"]
+            ).map((label, index, arr) => {
+              const stepNumber = index + 1;
+
+              return (
+                <div key={label} className="flex-1 flex items-center">
                   <div className="flex flex-col items-center flex-1">
                     <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${currentStep === 3
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+                        currentStep === stepNumber
                           ? "bg-teal-600 text-white"
-                          : "bg-gray-100 text-gray-500"
-                        }`}
+                          : currentStep > stepNumber
+                            ? "bg-teal-100 text-teal-700"
+                            : "bg-gray-100 text-gray-500"
+                      }`}
                     >
-                      3
+                      {stepNumber}
                     </div>
-                    <span className="mt-1 text-xs text-gray-700">
-                      Parent Info
-                    </span>
+                    <span className="mt-1 text-xs text-gray-700">{label}</span>
                   </div>
-                </>
-              )}
-            </div>
+
+                  {index < arr.length - 1 && (
+                    <div className="flex-1 h-px mx-2 bg-gray-200" />
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -727,6 +736,70 @@ export default function AddChildModal({
                       {fieldErrors.parentPhone}
                     </p>
                   )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 4 — Documents Upload */}
+          {currentStep === 4 && (
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900 mb-2">
+                Required Documents
+              </h3>
+              <p className="text-sm text-gray-500 mb-4">
+                Upload clear scanned copies of the required documents. These
+                will be securely stored in cloud storage and hashed for
+                blockchain verification.
+              </p>
+
+              <div className="space-y-6">
+                {/* Child Document */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Birth Certificate <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={(e) =>
+                      setBirthCertificateFile(e.target.files?.[0] || null)
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    required
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Accepted formats: PDF, JPG, PNG. Max size: 5MB.
+                  </p>
+                </div>
+
+                {/* Parent Document */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Parent Valid Government ID{" "}
+                    <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={(e) =>
+                      setParentIdFile(e.target.files?.[0] || null)
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    required
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Accepted formats: PDF, JPG, PNG. Max size: 5MB.
+                  </p>
+                </div>
+
+                {/* Confirmation Checkbox */}
+                <div className="flex items-start gap-2">
+                  <input type="checkbox" required className="mt-1" />
+                  <p className="text-sm text-gray-600">
+                    I confirm that the uploaded documents were verified against
+                    the original physical copies.
+                  </p>
                 </div>
               </div>
             </div>

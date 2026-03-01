@@ -61,6 +61,10 @@ export default function UserManagement() {
     {},
   );
 
+  const MAX_TEACHERS = 2;
+  const teacherCount = activeTab === "teacher" ? users.length : 0;
+  const isTeacherLimitReached = teacherCount >= MAX_TEACHERS;
+
   const openMenu = (user: User, buttonEl: HTMLButtonElement) => {
     setMenuUser(user);
     setOpenMenuUserId(user._id);
@@ -138,21 +142,24 @@ export default function UserManagement() {
   ) => {
     try {
       const p = data.parent;
-      await createChild({
-        firstName: data.firstName,
-        middleName: data.middleName || undefined,
-        lastName: data.lastName,
-        dateOfBirth: data.dateOfBirth,
-        age: data.age,
-        gender: data.gender,
-        enrollmentDate: data.enrollmentDate,
-        schoolYear: data.schoolYear,
-        status: "Active",
-        parentFirstName: p.firstName,
-        parentLastName: p.lastName,
-        parentMiddleName: p.middleName || undefined,
-        parentEmail: p.email,
-      });
+      await createChild(
+        {
+          firstName: data.firstName,
+          middleName: data.middleName || undefined,
+          lastName: data.lastName,
+          dateOfBirth: data.dateOfBirth,
+          age: data.age,
+          gender: data.gender,
+          enrollmentDate: data.enrollmentDate,
+          schoolYear: data.schoolYear,
+          status: "Active",
+          parentFirstName: p.firstName,
+          parentLastName: p.lastName,
+          parentMiddleName: p.middleName || undefined,
+          parentEmail: p.email,
+        },
+        {},
+      );
       setShowAddChildModal(false);
       setSelectedParentForChild(null);
       fetchUsers(); // Refresh to update the linked children
@@ -239,11 +246,7 @@ export default function UserManagement() {
       `${user.firstName} ${user.middleName} ${user.lastName}`.toLowerCase();
     const email = user.email.toLowerCase();
     const phone = (user.phone || "").toLowerCase();
-    return (
-      fullName.includes(q) ||
-      email.includes(q) ||
-      phone.includes(q)
-    );
+    return fullName.includes(q) || email.includes(q) || phone.includes(q);
   });
 
   return (
@@ -316,8 +319,17 @@ export default function UserManagement() {
               </div>
               {activeTab === "teacher" && (
                 <button
-                  onClick={() => setShowAddTeacherModal(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition shrink-0"
+                  onClick={() => {
+                    if (!isTeacherLimitReached) {
+                      setShowAddTeacherModal(true);
+                    }
+                  }}
+                  disabled={isTeacherLimitReached}
+                  className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition shrink-0 ${
+                    isTeacherLimitReached
+                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      : "bg-teal-600 text-white hover:bg-teal-700"
+                  }`}
                 >
                   <Plus size={16} />
                   Add Teacher
@@ -577,7 +589,11 @@ export default function UserManagement() {
                 stroke="currentColor"
                 strokeWidth={2}
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"
+                />
               </svg>
               Delete user
             </button>

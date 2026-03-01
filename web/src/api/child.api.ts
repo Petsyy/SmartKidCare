@@ -18,15 +18,35 @@ export type CreateChildPayload = {
   parentPhone?: string;
 };
 
-export const createChild = async (payload: CreateChildPayload) => {
+export const createChild = async (
+  payload: CreateChildPayload,
+  files: {
+    birthCertificate?: File;
+    parentId?: File;
+  },
+) => {
+  const formData = new FormData();
+
+  (Object.keys(payload) as (keyof CreateChildPayload)[]).forEach((key) => {
+    const value = payload[key];
+    if (value !== undefined && value !== null) {
+      formData.append(key, String(value));
+    }
+  });
+
+  if (files.birthCertificate) {
+    formData.append("birthCertificate", files.birthCertificate);
+  }
+  if (files.parentId) {
+    formData.append("parentId", files.parentId);
+  }
+
   const res = await fetch(`${API_BASE}/children`, {
     method: "POST",
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
+    body: formData,
   });
+
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || "Failed to create child");
   return data;
@@ -57,7 +77,7 @@ export const updateChild = async (
     unlinkParent?: boolean;
     teacherId?: string | null;
     unlinkTeacher?: boolean;
-  }
+  },
 ) => {
   const res = await fetch(`${API_BASE}/children/${childId}`, {
     method: "PATCH",

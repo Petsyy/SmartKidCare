@@ -4,7 +4,7 @@ import UserManagement from "./pages/UserManagement";
 import ChildrenManagement from "./pages/ChildrenManagement";
 import AttendanceTracking from "./pages/AttendanceTracking";
 import FeedingProgram from "./pages/FeedingProgram";
-import ReportAnalytics from "./pages/ReportAnalytics";
+import ReportAnalytics from "./pages/Reports&Analytics";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminSettings from "./pages/AdminSettings";
 import ProtectedRoute from "./components/auth/ProtectedRoute";

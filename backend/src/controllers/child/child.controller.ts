@@ -8,6 +8,33 @@ import {
   generateStudentId,
   generateChildLinkCode,
 } from "../../utils/generateStudentId";
+import { uploadToCloudinary } from "../../utils/uploadToCloudinary";
+
+const attachUploadedDocuments = (
+  childData: any,
+  birthUpload: any,
+  parentUpload: any,
+) => {
+  if (!birthUpload && !parentUpload) {
+    return;
+  }
+
+  childData.documents = {};
+
+  if (birthUpload) {
+    childData.documents.birthCertificate = {
+      url: birthUpload.secure_url,
+      publicId: birthUpload.public_id,
+    };
+  }
+
+  if (parentUpload) {
+    childData.documents.parentId = {
+      url: parentUpload.secure_url,
+      publicId: parentUpload.public_id,
+    };
+  }
+};
 
 const generateAndAssignMissingLinkCode = async (child: any) => {
   if (child.childLinkCode) {
@@ -60,7 +87,68 @@ const resolveTeacherId = async (
 };
 
 export const createChild = async (req: Request, res: Response) => {
+  console.log("[createChild] Request debug", {
+    contentType: req.headers["content-type"],
+    hasReqFiles: Boolean(req.files),
+    filesType: typeof req.files,
+    filesKeys: req.files ? Object.keys(req.files) : [],
+    bodyKeys: Object.keys(req.body || {}),
+  });
+
+  const files = req.files as
+    | {
+        [fieldname: string]: Express.Multer.File[];
+      }
+    | undefined;
+
+  const birthFile = files?.birthCertificate?.[0];
+  const parentIdFile = files?.parentId?.[0];
+
+  console.log("[createChild] Incoming document files", {
+    hasBirthCertificate: Boolean(birthFile),
+    birthCertificate: birthFile
+      ? {
+          originalname: birthFile.originalname,
+          mimetype: birthFile.mimetype,
+          size: birthFile.size,
+        }
+      : null,
+    hasParentId: Boolean(parentIdFile),
+    parentId: parentIdFile
+      ? {
+          originalname: parentIdFile.originalname,
+          mimetype: parentIdFile.mimetype,
+          size: parentIdFile.size,
+        }
+      : null,
+  });
+
   try {
+    let birthUpload: any = null;
+    let parentUpload: any = null;
+
+    if (birthFile) {
+      birthUpload = await uploadToCloudinary(
+        birthFile.buffer,
+        "child-records/birth-certificates",
+      );
+      console.log("[createChild] Birth certificate uploaded", {
+        publicId: birthUpload?.public_id,
+        secureUrl: birthUpload?.secure_url,
+      });
+    }
+
+    if (parentIdFile) {
+      parentUpload = await uploadToCloudinary(
+        parentIdFile.buffer,
+        "child-records/parent-ids",
+      );
+      console.log("[createChild] Parent ID uploaded", {
+        publicId: parentUpload?.public_id,
+        secureUrl: parentUpload?.secure_url,
+      });
+    }
+
     const {
       firstName,
       middleName,
@@ -115,7 +203,6 @@ export const createChild = async (req: Request, res: Response) => {
     const year = new Date(enrollmentDate).getFullYear();
     const hasParentInfo = parentFirstName && parentLastName && parentEmail;
 
-    // Create child without parent (parent can link later via childLinkCode)
     if (!hasParentInfo) {
       const childData: any = {
         firstName,
@@ -129,10 +216,13 @@ export const createChild = async (req: Request, res: Response) => {
         studentId: req.body.studentId || generateStudentId(year),
         childLinkCode: req.body.childLinkCode || generateChildLinkCode(),
       };
+
       if (middleName) childData.middleName = middleName;
       if (resolvedTeacherId) childData.teacher = resolvedTeacherId;
+      attachUploadedDocuments(childData, birthUpload, parentUpload);
 
       const child = await Child.create(childData);
+
       return res.status(201).json({
         child,
         parentCredentials: null,
@@ -159,6 +249,7 @@ export const createChild = async (req: Request, res: Response) => {
         parent: parent._id,
       };
       if (resolvedTeacherId) childData.teacher = resolvedTeacherId;
+      attachUploadedDocuments(childData, birthUpload, parentUpload);
 
       // Only add middleName if it exists
       if (middleName) {
@@ -212,6 +303,8 @@ export const createChild = async (req: Request, res: Response) => {
       childLinkCode,
     };
     if (resolvedTeacherId) childData.teacher = resolvedTeacherId;
+    
+    attachUploadedDocuments(childData, birthUpload, parentUpload);
 
     // Only add middleName if it exists
     if (middleName) {
@@ -230,6 +323,11 @@ export const createChild = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error("Create child error:", error);
+    console.error("[createChild] Document upload context", {
+      hasBirthCertificate: Boolean(birthFile),
+      hasParentId: Boolean(parentIdFile),
+      message: error?.message,
+    });
     res.status(500).json({
       message: "Server error",
       error: error.message,

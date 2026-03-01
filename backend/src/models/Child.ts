@@ -31,8 +31,19 @@ const ChildSchema = new mongoose.Schema(
       ref: "User",
       default: null,
     },
+
+    documents: {
+      birthCertificate: {
+        url: String,
+        publicId: String,
+      },
+      parentId: {
+        url: String,
+        publicId: String,
+      },
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export default mongoose.model("Child", ChildSchema);

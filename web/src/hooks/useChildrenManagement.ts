@@ -1,8 +1,12 @@
 import { useState, useEffect } from "react";
 import { type Child } from "../pages/ChildrenManagement";
 import Swal from "sweetalert2";
-import { deleteChild, getChildren, updateChild } from "../api/child.api";
-import { API_BASE } from "../components/config/config.api";
+import {
+  createChild,
+  deleteChild,
+  getChildren,
+  updateChild,
+} from "../api/child.api";
 import {
   showErrorModal,
   showChangeChildStatusModal,
@@ -13,14 +17,21 @@ import {
 
 export type ChildFormData = {
   firstName: string;
-  middleName?: string;
+  middleName: string;
   lastName: string;
-  gender: string;
-  age: number | string;
-  studentId: string;
+  dateOfBirth: string;
+  age: string | number;
+  gender: "male" | "female";
+  enrollmentDate: string;
   schoolYear: string;
-  dateOfBirth?: string;
+  parentLastName: string;
+  parentFirstName: string;
+  parentMiddleName: string;
+  parentEmail: string;
+  parentPhone: string;
   teacherId?: string;
+  studentId: string;
+  childLinkCode?: string;
 };
 
 export function useChildrenManagement() {
@@ -45,35 +56,35 @@ export function useChildrenManagement() {
     fetchChildren();
   }, []);
 
-  const handleSaveChild = async (childData: ChildFormData) => {
+  const handleSaveChild = async (
+    childData: ChildFormData,
+    files?: {
+      birthCertificate?: File | null;
+      parentId?: File | null;
+    },
+  ) => {
     try {
-      const res = await fetch(`${API_BASE}/children`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      const data = await createChild(
+        {
           ...childData,
           status: "Active",
-        }),
-      });
-
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        throw new Error((data as { message?: string }).message || "Failed to save child");
-      }
-
-      const { child, parentCredentials } = data;
+        },
+        {
+          birthCertificate: files?.birthCertificate ?? undefined,
+          parentId: files?.parentId ?? undefined,
+        },
+      );
 
       await fetchChildren();
 
-      if (parentCredentials) {
+      if (data.parentCredentials) {
         const creds = {
-          email: parentCredentials.email ?? "",
-          password: parentCredentials.tempPassword ?? "",
-          childLinkCode: parentCredentials.childLinkCode ?? child?.childLinkCode ?? null,
+          email: data.parentCredentials.email ?? "",
+          password: data.parentCredentials.tempPassword ?? "",
+          childLinkCode:
+            data.parentCredentials.childLinkCode ??
+            data.child?.childLinkCode ??
+            null,
         };
         setTimeout(() => showParentCredentialsModal(creds), 350);
       }
@@ -81,8 +92,9 @@ export function useChildrenManagement() {
       return true;
     } catch (error) {
       console.error("Failed to save child:", error);
-      const errorMessage = error instanceof Error ? error.message : "Failed to save child";
-      showErrorModal(errorMessage);
+      showErrorModal(
+        error instanceof Error ? error.message : "Failed to save child",
+      );
       return false;
     }
   };
@@ -90,12 +102,14 @@ export function useChildrenManagement() {
   const handleChangeStatus = async (child: Child) => {
     const newStatus = await showChangeChildStatusModal(
       `${child.firstName} ${child.lastName}`,
-      child.status
+      child.status,
     );
     if (!newStatus) return;
     try {
       const updated = await updateChild(child._id, { status: newStatus });
-      setChildren((prev) => prev.map((c) => (c._id === child._id ? updated : c)));
+      setChildren((prev) =>
+        prev.map((c) => (c._id === child._id ? updated : c)),
+      );
     } catch (err: any) {
       showErrorModal(err.message || "Failed to update status");
     }
@@ -103,14 +117,22 @@ export function useChildrenManagement() {
 
   const handleRegenerateLinkCode = async (child: Child) => {
     if (child.parent) {
-      showErrorModal("Cannot regenerate link code: child is linked to a parent. Unlink first.");
+      showErrorModal(
+        "Cannot regenerate link code: child is linked to a parent. Unlink first.",
+      );
       return;
     }
-    const ok = await showRegenerateLinkCodeConfirm(`${child.firstName} ${child.lastName}`);
+    const ok = await showRegenerateLinkCodeConfirm(
+      `${child.firstName} ${child.lastName}`,
+    );
     if (!ok) return;
     try {
-      const updated = await updateChild(child._id, { regenerateLinkCode: true });
-      setChildren((prev) => prev.map((c) => (c._id === child._id ? updated : c)));
+      const updated = await updateChild(child._id, {
+        regenerateLinkCode: true,
+      });
+      setChildren((prev) =>
+        prev.map((c) => (c._id === child._id ? updated : c)),
+      );
     } catch (err: any) {
       showErrorModal(err.message || "Failed to regenerate link code");
     }
@@ -121,11 +143,15 @@ export function useChildrenManagement() {
       showErrorModal("Child has no linked parent.");
       return;
     }
-    const ok = await showUnlinkParentConfirm(`${child.firstName} ${child.lastName}`);
+    const ok = await showUnlinkParentConfirm(
+      `${child.firstName} ${child.lastName}`,
+    );
     if (!ok) return;
     try {
       const updated = await updateChild(child._id, { unlinkParent: true });
-      setChildren((prev) => prev.map((c) => (c._id === child._id ? updated : c)));
+      setChildren((prev) =>
+        prev.map((c) => (c._id === child._id ? updated : c)),
+      );
     } catch (err: any) {
       showErrorModal(err.message || "Failed to unlink parent");
     }
@@ -163,8 +189,13 @@ export function useChildrenManagement() {
   const filteredChildren = children.filter((child) => {
     if (!search.trim()) return true;
     const q = search.toLowerCase().trim();
-    const name = `${child.firstName} ${child.lastName} ${child.middleName || ""}`.toLowerCase();
-    const nameLastFirstMiddle = [child.lastName, child.firstName, child.middleName]
+    const name =
+      `${child.firstName} ${child.lastName} ${child.middleName || ""}`.toLowerCase();
+    const nameLastFirstMiddle = [
+      child.lastName,
+      child.firstName,
+      child.middleName,
+    ]
       .filter((value) => String(value || "").trim().length > 0)
       .join(", ")
       .toLowerCase();
