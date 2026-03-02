@@ -10,7 +10,6 @@ import {
 import {
   showErrorModal,
   showChangeChildStatusModal,
-  showRegenerateLinkCodeConfirm,
   showUnlinkParentConfirm,
   showParentCredentialsModal,
 } from "../utils/sweetalert.modal";
@@ -31,7 +30,6 @@ export type ChildFormData = {
   parentPhone: string;
   teacherId?: string;
   studentId: string;
-  childLinkCode?: string;
 };
 
 export function useChildrenManagement() {
@@ -81,10 +79,6 @@ export function useChildrenManagement() {
         const creds = {
           email: data.parentCredentials.email ?? "",
           password: data.parentCredentials.tempPassword ?? "",
-          childLinkCode:
-            data.parentCredentials.childLinkCode ??
-            data.child?.childLinkCode ??
-            null,
         };
         setTimeout(() => showParentCredentialsModal(creds), 350);
       }
@@ -112,29 +106,6 @@ export function useChildrenManagement() {
       );
     } catch (err: any) {
       showErrorModal(err.message || "Failed to update status");
-    }
-  };
-
-  const handleRegenerateLinkCode = async (child: Child) => {
-    if (child.parent) {
-      showErrorModal(
-        "Cannot regenerate link code: child is linked to a parent. Unlink first.",
-      );
-      return;
-    }
-    const ok = await showRegenerateLinkCodeConfirm(
-      `${child.firstName} ${child.lastName}`,
-    );
-    if (!ok) return;
-    try {
-      const updated = await updateChild(child._id, {
-        regenerateLinkCode: true,
-      });
-      setChildren((prev) =>
-        prev.map((c) => (c._id === child._id ? updated : c)),
-      );
-    } catch (err: any) {
-      showErrorModal(err.message || "Failed to regenerate link code");
     }
   };
 
@@ -204,7 +175,6 @@ export function useChildrenManagement() {
     const gender = (child.gender || "").toLowerCase();
     const schoolYear = (child.schoolYear || "").toLowerCase();
     const status = (child.status || "").toLowerCase();
-    const linkCode = (child.childLinkCode || "").toLowerCase();
     const teacherName = child.teacher
       ? `${child.teacher.firstName} ${child.teacher.middleName || ""} ${child.teacher.lastName}`.toLowerCase()
       : "";
@@ -216,7 +186,6 @@ export function useChildrenManagement() {
       gender.includes(q) ||
       schoolYear.includes(q) ||
       status.includes(q) ||
-      linkCode.includes(q) ||
       teacherName.includes(q)
     );
   });
@@ -231,7 +200,6 @@ export function useChildrenManagement() {
     fetchChildren,
     handleSaveChild,
     handleChangeStatus,
-    handleRegenerateLinkCode,
     handleUnlinkParent,
     handleDeleteChild,
   };

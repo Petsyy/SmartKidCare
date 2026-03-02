@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { View, ActivityIndicator } from "react-native";
 import { useAuth } from "@/src/hooks/useAuth";
 import { getMyChildren } from "@/src/api/parent.api";
-import LinkChildCode from "./LinkChildCode";
 
 type Props = {
   children: React.ReactNode;
@@ -39,15 +38,6 @@ export default function ParentGate({ children }: Props) {
         <ActivityIndicator size="large" color="#0d9488" />
       </View>
     );
-  }
-
-  // Force link code confirmation if newly created parent account
-  if (user?.needsToConfirmLink) {
-    return <LinkChildCode onLinked={fetchChildren} />;
-  }
-
-  if (!childrenList || childrenList.length === 0) {
-    return <LinkChildCode onLinked={fetchChildren} />;
   }
 
   return <>{children}</>;

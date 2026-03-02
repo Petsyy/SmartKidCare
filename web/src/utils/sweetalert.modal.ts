@@ -1,18 +1,13 @@
-import Swal from "sweetalert2";
+﻿import Swal from "sweetalert2";
 
 export interface ParentCredentials {
   email: string;
   password: string;
-  childLinkCode?: string | null;
   message?: string;
 }
 
 export const showParentCredentialsModal = (credentials: ParentCredentials) => {
   const isNewParent = Boolean(credentials.password);
-  const linkCodeDisplay = credentials.childLinkCode
-    ? `<span style="font-family: monospace; background: #f3f4f6; padding: 4px 8px; border-radius: 4px;">${credentials.childLinkCode}</span>`
-    : "<span style='color: #6b7280;'>N/A (child linked to this account)</span>";
-
   const passwordBlock = isNewParent
     ? `<p style="margin-bottom: 12px;"><strong>Temporary password:</strong><br><span style="font-family: monospace; background: #f3f4f6; padding: 6px 10px; border-radius: 4px; display: inline-block; margin-top: 4px;">${credentials.password}</span></p>`
     : "<p style='margin-bottom: 12px; color: #6b7280;'><strong>Password:</strong> No new password — parent already has an account.</p>";
@@ -26,7 +21,6 @@ export const showParentCredentialsModal = (credentials: ParentCredentials) => {
     html: `<div style="text-align: left; padding: 20px;">
       <p style="margin-bottom: 12px;"><strong>Email:</strong><br><span style="font-family: monospace; background: #f3f4f6; padding: 6px 10px; border-radius: 4px; display: inline-block; margin-top: 4px;">${credentials.email}</span></p>
       ${passwordBlock}
-      <p style="margin-bottom: 12px;"><strong>Child link code:</strong><br>${linkCodeDisplay}</p>
       <p style="color: #666; margin-top: 16px; font-size: 14px;">${footerText}</p>
     </div>`,
     icon: "success",
@@ -354,27 +348,6 @@ export const handleViewUser = (user: ViewUser) => {
   });
 };
 
-export interface ViewChild {
-  _id?: string;
-  firstName: string;
-  middleName?: string;
-  lastName: string;
-  studentId?: string;
-  age: string | number;
-  gender: string;
-  schoolYear?: string;
-  status?: string;
-  enrollmentDate?: string;
-  childLinkCode?: string;
-  parent?: { firstName: string; lastName: string; email: string } | null;
-  teacher?: {
-    firstName: string;
-    middleName?: string;
-    lastName: string;
-    email?: string;
-  } | null;
-}
-
 export const showChangeChildStatusModal = async (
   childName: string,
   currentStatus: string,
@@ -403,28 +376,12 @@ export const showChangeChildStatusModal = async (
   return result.isConfirmed ? result.value : null;
 };
 
-export const showRegenerateLinkCodeConfirm = async (
-  childName: string,
-): Promise<boolean> => {
-  const result = await Swal.fire({
-    title: "Regenerate Link Code?",
-    text: `A new link code will be generated for ${childName}. The previous code will no longer work. Share the new code with the parent.`,
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonColor: "#0D9488",
-    cancelButtonColor: "#6B7280",
-    confirmButtonText: "Yes, regenerate",
-    cancelButtonText: "Cancel",
-  });
-  return result.isConfirmed;
-};
-
 export const showUnlinkParentConfirm = async (
   childName: string,
 ): Promise<boolean> => {
   const result = await Swal.fire({
     title: "Unlink Parent?",
-    text: `Remove the parent association for ${childName}? A new link code will be generated so a different parent can link to this child.`,
+    text: `Remove the parent association for ${childName}?`,
     icon: "warning",
     showCancelButton: true,
     confirmButtonColor: "#DC2626",
@@ -435,71 +392,3 @@ export const showUnlinkParentConfirm = async (
   return result.isConfirmed;
 };
 
-export const showViewChildModal = (child: ViewChild) => {
-  const fullName = `${child.lastName}, ${child.firstName}${child.middleName ? ` ${child.middleName}` : ""}`;
-  const statusBadgeColor =
-    child.status === "Active"
-      ? "background:#D1FAE5;color:#065F46"
-      : child.status === "Inactive"
-        ? "background:#FEE2E2;color:#B91C1C"
-        : "background:#FEF3C7;color:#92400E";
-  const parentInfo = child.parent
-    ? `${child.parent.firstName} ${child.parent.lastName} (${child.parent.email})`
-    : "Not linked";
-  const teacherInfo = child.teacher
-    ? `${child.teacher.firstName}${child.teacher.middleName ? ` ${child.teacher.middleName}` : ""} ${child.teacher.lastName}${child.teacher.email ? ` (${child.teacher.email})` : ""}`
-    : "Unassigned";
-  const linkCodeDisplay = child.childLinkCode
-    ? `<span style="font-family:monospace;background:#F3F4F6;padding:6px 10px;border-radius:6px">${child.childLinkCode}</span>`
-    : '<span style="color:#6B7280">—</span>';
-  const enrollmentDate = child.enrollmentDate
-    ? new Date(child.enrollmentDate).toLocaleDateString()
-    : "—";
-
-  Swal.fire({
-    title: "Child Details",
-    html: `
-      <div style="text-align:left;font-size:14px;padding:8px 0">
-        <div style="margin-bottom:16px">
-          <div style="color:#6B7280;font-size:12px;font-weight:500;margin-bottom:4px;text-transform:uppercase">Name</div>
-          <div style="font-weight:600;font-size:16px">${fullName}</div>
-        </div>
-        <div style="margin-bottom:16px">
-          <div style="color:#6B7280;font-size:12px;font-weight:500;margin-bottom:4px;text-transform:uppercase">Student ID</div>
-          <span style="font-family:monospace;background:#F3F4F6;padding:6px 10px;border-radius:6px">${child.studentId || "—"}</span>
-        </div>
-        <div style="margin-bottom:16px">
-          <div style="color:#6B7280;font-size:12px;font-weight:500;margin-bottom:4px;text-transform:uppercase">Age / Gender</div>
-          <div>${child.age} years · ${String(child.gender).charAt(0).toUpperCase() + String(child.gender).slice(1)}</div>
-        </div>
-        <div style="margin-bottom:16px">
-          <div style="color:#6B7280;font-size:12px;font-weight:500;margin-bottom:4px;text-transform:uppercase">School Year</div>
-          <div>${child.schoolYear || "—"}</div>
-        </div>
-        <div style="margin-bottom:16px">
-          <div style="color:#6B7280;font-size:12px;font-weight:500;margin-bottom:4px;text-transform:uppercase">Enrollment Date</div>
-          <div>${enrollmentDate}</div>
-        </div>
-        <div style="margin-bottom:16px">
-          <div style="color:#6B7280;font-size:12px;font-weight:500;margin-bottom:6px;text-transform:uppercase">Status</div>
-          <span style="padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;${statusBadgeColor}">${child.status || "Active"}</span>
-        </div>
-        <div style="margin-bottom:16px">
-          <div style="color:#6B7280;font-size:12px;font-weight:500;margin-bottom:4px;text-transform:uppercase">Parent</div>
-          <div>${parentInfo}</div>
-        </div>
-        <div style="margin-bottom:16px">
-          <div style="color:#6B7280;font-size:12px;font-weight:500;margin-bottom:4px;text-transform:uppercase">Teacher</div>
-          <div>${teacherInfo}</div>
-        </div>
-        <div>
-          <div style="color:#6B7280;font-size:12px;font-weight:500;margin-bottom:4px;text-transform:uppercase">Link Code</div>
-          ${linkCodeDisplay}
-        </div>
-      </div>
-    `,
-    confirmButtonText: "Close",
-    confirmButtonColor: "#0D9488",
-    width: "420px",
-  });
-};

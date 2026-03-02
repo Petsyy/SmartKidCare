@@ -72,28 +72,6 @@ export const getAllChildren = async (token: string): Promise<Child[]> => {
   return Array.isArray(data) ? data : [];
 };
 
-export const linkChild = async (
-  token: string,
-  childLinkCode: string,
-): Promise<{ message: string; child: Child }> => {
-  const response = await fetch(`${API_BASE_URL}/api/children/link`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ childLinkCode: childLinkCode.trim().toUpperCase() }),
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || "Failed to link child");
-  }
-
-  return data;
-};
-
 export const getChildById = async (
   token: string,
   childId: string,

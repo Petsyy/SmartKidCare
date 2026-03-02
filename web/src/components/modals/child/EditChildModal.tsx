@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
-import { updateChild } from "../../api/child.api";
-import { getUsers, type User } from "../../api/authentication.api";
+import { updateChild } from "@/api/child.api";
+import { getUsers, type User } from "@/api/authentication.api";
 import {
   type AddChildForParentField,
   type AddChildForParentFormErrors,
   type AddChildForParentFormValues,
   validateAddChildForParentField,
   validateAddChildForParentForm,
-} from "../../utils/formValidation";
+} from "@/utils/formValidation";
 
 const schoolYears = ["2024-2025", "2025-2026", "2026-2027"];
 

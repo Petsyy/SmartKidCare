@@ -8,7 +8,10 @@ import {
   TextInput,
   Pressable,
 } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Child } from "@/src/api/parent.api";
 import { getChildren } from "@/src/api/teacher.api";
@@ -39,7 +42,7 @@ export default function ChildScreen() {
   const retryLoad = () => {
     setError(null);
     setLoading(true);
-    setRefreshKey(prev => prev + 1);
+    setRefreshKey((prev) => prev + 1);
   };
 
   useEffect(() => {
@@ -76,22 +79,26 @@ export default function ChildScreen() {
     // Check attendance
     if (attendanceRecord?.records) {
       const attendanceEntry = attendanceRecord.records.find(
-        (r: any) => (r.child._id || r.child) === childId
+        (r: any) => (r.child._id || r.child) === childId,
       );
       if (attendanceEntry) {
-        attendance = attendanceEntry.status === "present" ? "Present" : "Absent";
-        lastUpdated = new Date(attendanceRecord.createdAt).toLocaleTimeString("en-PH", {
-          hour: "2-digit",
-          minute: "2-digit",
-          timeZone: "Asia/Manila",
-        });
+        attendance =
+          attendanceEntry.status === "present" ? "Present" : "Absent";
+        lastUpdated = new Date(attendanceRecord.createdAt).toLocaleTimeString(
+          "en-PH",
+          {
+            hour: "2-digit",
+            minute: "2-digit",
+            timeZone: "Asia/Manila",
+          },
+        );
       }
     }
 
     // Check feeding
     if (feedingRecord?.records) {
       const feedingEntry = feedingRecord.records.find(
-        (r: any) => (r.child._id || r.child) === childId
+        (r: any) => (r.child._id || r.child) === childId,
       );
       if (feedingEntry) {
         feeding = feedingEntry.status === "completed" ? "Finished" : "Missed";
@@ -107,20 +114,26 @@ export default function ChildScreen() {
 
     const query = searchQuery.toLowerCase();
     return children.filter((child) => {
-      const fullName = `${child.firstName} ${child.middleName || ""} ${child.lastName}`.toLowerCase();
+      const fullName =
+        `${child.firstName} ${child.middleName || ""} ${child.lastName}`.toLowerCase();
       const studentId = child.studentId.toLowerCase();
       return fullName.includes(query) || studentId.includes(query);
     });
   }, [children, searchQuery]);
 
-
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
-        <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+        <StatusBar
+          barStyle="light-content"
+          translucent
+          backgroundColor="transparent"
+        />
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#14B8A6" />
-          <Text className="mt-4 text-lg text-gray-600 font-medium">Loading children...</Text>
+          <Text className="mt-4 text-lg text-gray-600 font-medium">
+            Loading children...
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -129,7 +142,11 @@ export default function ChildScreen() {
   if (error) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
-        <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+        <StatusBar
+          barStyle="light-content"
+          translucent
+          backgroundColor="transparent"
+        />
         <View className="flex-1 items-center justify-center px-6">
           <View className="w-24 h-24 rounded-full bg-red-100 items-center justify-center mb-6">
             <AlertCircle size={48} color="#EF4444" />
@@ -144,7 +161,7 @@ export default function ChildScreen() {
             onPress={retryLoad}
             className="bg-teal-600 px-8 py-4 rounded-xl"
             style={{
-              shadowColor: '#14B8A6',
+              shadowColor: "#14B8A6",
               shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.2,
               shadowRadius: 4,
@@ -160,7 +177,11 @@ export default function ChildScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      <StatusBar
+        barStyle="light-content"
+        translucent
+        backgroundColor="transparent"
+      />
 
       {/* HEADER */}
       <View
@@ -222,40 +243,10 @@ export default function ChildScreen() {
                     No Children Enrolled Yet
                   </Text>
                   <Text className="text-lg text-gray-600 text-center mb-8 leading-6">
-                    There are currently no children enrolled in your class.{"\n"}
+                    There are currently no children enrolled in your class.
+                    {"\n"}
                     Children will appear here once they are added by the admin.
                   </Text>
-
-                  {/* Info Cards */}
-                  <View className="w-full space-y-3">
-                    <View className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex-row items-start">
-                      <View className="w-10 h-10 rounded-full bg-blue-100 items-center justify-center mr-3">
-                        <UserPlus size={20} color="#3B82F6" />
-                      </View>
-                      <View className="flex-1">
-                        <Text className="text-lg font-semibold text-blue-900 mb-1">
-                          Waiting for Enrollment
-                        </Text>
-                        <Text className="text-base text-blue-700">
-                          Contact your administrator to add children to your class roster.
-                        </Text>
-                      </View>
-                    </View>
-
-                    <View className="bg-teal-50 border border-teal-200 rounded-xl p-4 flex-row items-start">
-                      <View className="w-10 h-10 rounded-full bg-teal-100 items-center justify-center mr-3">
-                        <Users size={20} color="#14B8A6" />
-                      </View>
-                      <View className="flex-1">
-                        <Text className="text-lg font-semibold text-teal-900 mb-1">
-                          What You Can Do
-                        </Text>
-                        <Text className="text-base text-teal-700">
-                          Once children are enrolled, you'll be able to record attendance, feeding, and view their details.
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
                 </>
               )}
             </View>
@@ -264,16 +255,24 @@ export default function ChildScreen() {
               {filteredChildren.map((child, index) => {
                 const status = getChildStatus(child._id);
                 return (
-                  <View key={child._id} className={index < filteredChildren.length - 1 ? "mb-4" : ""}>
+                  <View
+                    key={child._id}
+                    className={
+                      index < filteredChildren.length - 1 ? "mb-4" : ""
+                    }
+                  >
                     <ChildCard
-                      name={`${child.firstName} ${child.middleName ? child.middleName + " " : ""
-                        }${child.lastName}`}
+                      name={`${child.firstName} ${
+                        child.middleName ? child.middleName + " " : ""
+                      }${child.lastName}`}
                       age={child.age}
                       gender={child.gender}
                       attendance={status.attendance}
                       feeding={status.feeding}
                       lastUpdated={status.lastUpdated}
-                      onPress={() => router.push(`/(teacher)/child-details/${child._id}`)}
+                      onPress={() =>
+                        router.push(`/(teacher)/child-details/${child._id}`)
+                      }
                     />
                   </View>
                 );

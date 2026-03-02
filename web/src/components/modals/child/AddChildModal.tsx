@@ -1,14 +1,23 @@
-import { useState, useEffect } from "react";
-import { X } from "lucide-react";
-import { validateDateFields } from "../../utils/childDateValidation";
-import { getUsers, type User } from "../../api/authentication.api";
+import { useState, useEffect, useRef } from "react";
+import {
+  X,
+  UploadCloud,
+  FileText,
+  CheckCircle2,
+  AlertCircle,
+  Trash2,
+} from "lucide-react";
+import { getUsers, type User } from "@/api/authentication.api";
 import {
   type AddChildFormErrors,
   type AddChildFormValues,
-  validateAddChildField,
   validateAddChildForm,
   sanitizePhoneInput,
-} from "../../utils/formValidation";
+  buildAddChildValuesFromForm,
+  validateChildField,
+  validateChildStep,
+  validateDateFields,
+} from "@/utils/formValidation";
 
 export type ChildFormData = {
   firstName: string;
@@ -28,7 +37,6 @@ export type ChildFormData = {
   teacherId?: string;
 
   studentId?: string;
-  childLinkCode?: string;
 };
 
 export type InitialParent = {
@@ -70,6 +78,21 @@ const initialFormData: ChildFormData = {
   teacherId: "",
 };
 
+const MAX_DOCUMENT_SIZE = 5 * 1024 * 1024;
+const ALLOWED_DOCUMENT_TYPES = ["application/pdf", "image/jpeg", "image/png"];
+
+const formatFileSize = (bytes: number) => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+};
+
+const getFileExtension = (name: string) => {
+  const parts = String(name || "").split(".");
+  if (parts.length <= 1) return "FILE";
+  return String(parts.pop() || "FILE").toUpperCase();
+};
+
 export default function AddChildModal({
   isOpen,
   onClose,
@@ -89,8 +112,17 @@ export default function AddChildModal({
     null,
   );
   const [parentIdFile, setParentIdFile] = useState<File | null>(null);
+  const [documentErrors, setDocumentErrors] = useState<{
+    birthCertificate?: string;
+    parentId?: string;
+    confirmation?: string;
+  }>({});
+  const [documentsConfirmed, setDocumentsConfirmed] = useState(false);
+  const birthCertificateInputRef = useRef<HTMLInputElement | null>(null);
+  const parentIdInputRef = useRef<HTMLInputElement | null>(null);
 
   const totalSteps = initialParent ? 3 : 4;
+  const documentsStep = initialParent ? 3 : 4;
 
   useEffect(() => {
     let isMounted = true;
@@ -125,6 +157,10 @@ export default function AddChildModal({
       setFormData(initialFormData);
       setDateErrors({});
       setCurrentStep(1);
+      setBirthCertificateFile(null);
+      setParentIdFile(null);
+      setDocumentErrors({});
+      setDocumentsConfirmed(false);
     } else if (initialParent) {
       setFormData({
         ...initialFormData,
@@ -134,9 +170,17 @@ export default function AddChildModal({
         parentEmail: initialParent.email,
       });
       setDateErrors({});
+      setBirthCertificateFile(null);
+      setParentIdFile(null);
+      setDocumentErrors({});
+      setDocumentsConfirmed(false);
     } else {
       setFormData(initialFormData);
       setDateErrors({});
+      setBirthCertificateFile(null);
+      setParentIdFile(null);
+      setDocumentErrors({});
+      setDocumentsConfirmed(false);
     }
   }, [isOpen, initialParent]);
 
@@ -144,10 +188,6 @@ export default function AddChildModal({
     const year = new Date(enrollmentDate).getFullYear();
     const random = Math.floor(100000 + Math.random() * 900000);
     return `CDC-${year}-${random}`;
-  };
-
-  const generateChildLinkCode = () => {
-    return Math.random().toString(36).substring(2, 8).toUpperCase();
   };
 
   const calculateAge = (dob: string) => {
@@ -178,62 +218,30 @@ export default function AddChildModal({
     return !nextErrors.dateOfBirth && !nextErrors.enrollmentDate;
   };
 
-  const buildAddChildValues = (data: ChildFormData): AddChildFormValues => ({
-    firstName: data.firstName,
-    middleName: data.middleName,
-    lastName: data.lastName,
-    dateOfBirth: data.dateOfBirth,
-    age: data.age,
-    gender: data.gender,
-    enrollmentDate: data.enrollmentDate,
-    schoolYear: data.schoolYear,
-    parentLastName: data.parentLastName,
-    parentFirstName: data.parentFirstName,
-    parentMiddleName: data.parentMiddleName,
-    parentEmail: data.parentEmail,
-    parentPhone: data.parentPhone,
-  });
-
   const validateStep = (step: number, data: ChildFormData): boolean => {
-    const addChildValues = buildAddChildValues(data);
-    const requireParentInfo = !initialParent;
-    const stepFields: (keyof AddChildFormValues)[] =
-      step === 1
-        ? ["firstName", "middleName", "lastName", "dateOfBirth", "gender"]
-        : step === 2
-          ? ["enrollmentDate", "schoolYear"]
-          : [
-              "parentFirstName",
-              "parentMiddleName",
-              "parentLastName",
-              "parentEmail",
-              "parentPhone",
-            ];
+    const addChildValues = buildAddChildValuesFromForm(data);
+    const { isValid, errors } = validateChildStep(
+      step,
+      addChildValues,
+      dateErrors,
+      { requireParentInfo: !initialParent },
+      fieldErrors,
+    );
+    setFieldErrors(errors);
+    return isValid;
+  };
 
-    const nextFieldErrors: AddChildFormErrors = { ...fieldErrors };
-
-    for (const field of stepFields) {
-      const error = validateAddChildField(field, addChildValues, {
-        requireParentInfo,
-      });
-      if (error) {
-        nextFieldErrors[field] = error;
-      } else {
-        delete nextFieldErrors[field];
-      }
-    }
-
-    setFieldErrors(nextFieldErrors);
-
-    if (step === 1 && dateErrors.dateOfBirth) {
-      return false;
-    }
-
-    if (step === 2 && dateErrors.enrollmentDate) {
-      return false;
-    }
-
-    return Object.keys(nextFieldErrors).length === 0;
+  const setFieldValidationError = (
+    field: keyof AddChildFormValues,
+    data: ChildFormData,
+  ) => {
+    const error = validateChildField(field, buildAddChildValuesFromForm(data), {
+      requireParentInfo: !initialParent,
+    });
+    setFieldErrors((prev: AddChildFormErrors) => ({
+      ...prev,
+      [field]: error,
+    }));
   };
 
   const handleInputChange = (
@@ -264,38 +272,22 @@ export default function AddChildModal({
         applyDateValidation(updatedData);
       }
 
-      // Run per-field validation for parent-related fields when typing.
-      if (
-        name === "parentFirstName" ||
-        name === "parentMiddleName" ||
-        name === "parentLastName" ||
-        name === "parentEmail" ||
-        name === "parentPhone"
-      ) {
-        const addChildValues: AddChildFormValues = {
-          firstName: updatedData.firstName,
-          middleName: updatedData.middleName,
-          lastName: updatedData.lastName,
-          dateOfBirth: updatedData.dateOfBirth,
-          age: updatedData.age,
-          gender: updatedData.gender,
-          enrollmentDate: updatedData.enrollmentDate,
-          schoolYear: updatedData.schoolYear,
-          parentLastName: updatedData.parentLastName,
-          parentFirstName: updatedData.parentFirstName,
-          parentMiddleName: updatedData.parentMiddleName,
-          parentEmail: updatedData.parentEmail,
-          parentPhone: updatedData.parentPhone,
-        };
-        const error = validateAddChildField(
-          name as keyof AddChildFormValues,
-          addChildValues,
-          { requireParentInfo: !initialParent },
-        );
-        setFieldErrors((prev) => ({
-          ...prev,
-          [name]: error,
-        }));
+      const validationFields = new Set<keyof AddChildFormValues>([
+        "firstName",
+        "middleName",
+        "lastName",
+        "dateOfBirth",
+        "enrollmentDate",
+        "schoolYear",
+        "teacherId",
+        "parentFirstName",
+        "parentMiddleName",
+        "parentLastName",
+        "parentEmail",
+        "parentPhone",
+      ]);
+      if (validationFields.has(name as keyof AddChildFormValues)) {
+        setFieldValidationError(name as keyof AddChildFormValues, updatedData);
       }
 
       return updatedData;
@@ -314,10 +306,73 @@ export default function AddChildModal({
   };
 
   const handleGenderChange = (gender: "male" | "female") => {
-    setFormData((prev) => ({
+    setFormData((prev) => {
+      const updatedData = {
+        ...prev,
+        gender,
+      };
+      setFieldValidationError("gender", updatedData);
+      return updatedData;
+    });
+  };
+
+  const validateDocumentFile = (file: File | null): string | null => {
+    if (!file) return "File is required.";
+
+    if (!ALLOWED_DOCUMENT_TYPES.includes(file.type)) {
+      return "Only PDF, JPG, and PNG files are allowed.";
+    }
+
+    if (file.size > MAX_DOCUMENT_SIZE) {
+      return "File size must be 5MB or below.";
+    }
+
+    return null;
+  };
+
+  const handleDocumentChange = (
+    type: "birthCertificate" | "parentId",
+    file: File | null,
+  ) => {
+    const error = validateDocumentFile(file);
+
+    if (type === "birthCertificate") {
+      setBirthCertificateFile(file);
+      setDocumentErrors((prev) => ({
+        ...prev,
+        birthCertificate: error || undefined,
+      }));
+      return;
+    }
+
+    setParentIdFile(file);
+    setDocumentErrors((prev) => ({
       ...prev,
-      gender,
+      parentId: error || undefined,
     }));
+  };
+
+  const removeDocument = (type: "birthCertificate" | "parentId") => {
+    if (type === "birthCertificate") {
+      setBirthCertificateFile(null);
+      setDocumentErrors((prev) => ({
+        ...prev,
+        birthCertificate: "Birth Certificate is required.",
+      }));
+      if (birthCertificateInputRef.current) {
+        birthCertificateInputRef.current.value = "";
+      }
+      return;
+    }
+
+    setParentIdFile(null);
+    setDocumentErrors((prev) => ({
+      ...prev,
+      parentId: "Parent ID is required.",
+    }));
+    if (parentIdInputRef.current) {
+      parentIdInputRef.current.value = "";
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -327,13 +382,23 @@ export default function AddChildModal({
       return;
     }
 
-    if (!birthCertificateFile || !parentIdFile) {
-      alert("Please upload the required documents before submitting.");
+    const birthError = validateDocumentFile(birthCertificateFile);
+    const parentError = validateDocumentFile(parentIdFile);
+    const confirmationError = documentsConfirmed
+      ? undefined
+      : "Please confirm that uploaded documents were verified.";
+
+    if (birthError || parentError || confirmationError) {
+      setDocumentErrors({
+        birthCertificate: birthError || undefined,
+        parentId: parentError || undefined,
+        confirmation: confirmationError,
+      });
       return;
     }
 
     // Run full form validation including phone rules.
-    const addChildValues = buildAddChildValues(formData);
+    const addChildValues = buildAddChildValuesFromForm(formData);
 
     const errors = validateAddChildForm(addChildValues, {
       requireParentInfo: !initialParent,
@@ -345,18 +410,16 @@ export default function AddChildModal({
     }
 
     const studentId = generateStudentId(formData.enrollmentDate);
-    const childLinkCode = generateChildLinkCode();
 
     onSave(
       {
         ...formData,
         teacherId: formData.teacherId?.trim() || undefined,
         studentId,
-        childLinkCode,
       },
       {
-        birthCertificate: birthCertificateFile,
-        parentId: parentIdFile!,
+        birthCertificate: birthCertificateFile as File,
+        parentId: parentIdFile as File,
       },
     );
   };
@@ -444,11 +507,23 @@ export default function AddChildModal({
                       name="firstName"
                       value={formData.firstName}
                       onChange={handleInputChange}
+                      onBlur={() =>
+                        setFieldValidationError("firstName", formData)
+                      }
                       placeholder="Enter first name"
                       maxLength={50}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+                        fieldErrors.firstName
+                          ? "border-red-300 focus:ring-red-200"
+                          : "border-gray-300 focus:ring-teal-500"
+                      }`}
                       required
                     />
+                    {fieldErrors.firstName && (
+                      <p className="mt-1 text-xs text-red-600">
+                        {fieldErrors.firstName}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -459,10 +534,22 @@ export default function AddChildModal({
                       name="middleName"
                       value={formData.middleName}
                       onChange={handleInputChange}
+                      onBlur={() =>
+                        setFieldValidationError("middleName", formData)
+                      }
                       placeholder="Enter middle name"
                       maxLength={50}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+                        fieldErrors.middleName
+                          ? "border-red-300 focus:ring-red-200"
+                          : "border-gray-300 focus:ring-teal-500"
+                      }`}
                     />
+                    {fieldErrors.middleName && (
+                      <p className="mt-1 text-xs text-red-600">
+                        {fieldErrors.middleName}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -473,11 +560,23 @@ export default function AddChildModal({
                       name="lastName"
                       value={formData.lastName}
                       onChange={handleInputChange}
+                      onBlur={() =>
+                        setFieldValidationError("lastName", formData)
+                      }
                       placeholder="Enter last name"
                       maxLength={50}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+                        fieldErrors.lastName
+                          ? "border-red-300 focus:ring-red-200"
+                          : "border-gray-300 focus:ring-teal-500"
+                      }`}
                       required
                     />
+                    {fieldErrors.lastName && (
+                      <p className="mt-1 text-xs text-red-600">
+                        {fieldErrors.lastName}
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -493,14 +592,21 @@ export default function AddChildModal({
                         name="dateOfBirth"
                         value={formData.dateOfBirth}
                         onChange={handleInputChange}
+                        onBlur={() =>
+                          setFieldValidationError("dateOfBirth", formData)
+                        }
                         max={todayDate}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+                          fieldErrors.dateOfBirth || dateErrors.dateOfBirth
+                            ? "border-red-300 focus:ring-red-200"
+                            : "border-gray-300 focus:ring-teal-500"
+                        }`}
                         required
                       />
                     </div>
-                    {dateErrors.dateOfBirth && (
+                    {(fieldErrors.dateOfBirth || dateErrors.dateOfBirth) && (
                       <p className="mt-1 text-xs text-red-600">
-                        {dateErrors.dateOfBirth}
+                        {fieldErrors.dateOfBirth || dateErrors.dateOfBirth}
                       </p>
                     )}
                   </div>
@@ -549,6 +655,11 @@ export default function AddChildModal({
                       <span className="text-sm text-gray-700">Female</span>
                     </label>
                   </div>
+                  {fieldErrors.gender && (
+                    <p className="mt-1 text-xs text-red-600">
+                      {fieldErrors.gender}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -572,14 +683,23 @@ export default function AddChildModal({
                       name="enrollmentDate"
                       value={formData.enrollmentDate}
                       onChange={handleInputChange}
+                      onBlur={() =>
+                        setFieldValidationError("enrollmentDate", formData)
+                      }
                       min={formData.dateOfBirth || undefined}
                       max={todayDate}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+                        fieldErrors.enrollmentDate || dateErrors.enrollmentDate
+                          ? "border-red-300 focus:ring-red-200"
+                          : "border-gray-300 focus:ring-teal-500"
+                      }`}
                       required
                     />
-                    {dateErrors.enrollmentDate && (
+                    {(fieldErrors.enrollmentDate ||
+                      dateErrors.enrollmentDate) && (
                       <p className="mt-1 text-xs text-red-600">
-                        {dateErrors.enrollmentDate}
+                        {fieldErrors.enrollmentDate ||
+                          dateErrors.enrollmentDate}
                       </p>
                     )}
                   </div>
@@ -592,20 +712,37 @@ export default function AddChildModal({
                       name="schoolYear"
                       value={formData.schoolYear}
                       readOnly
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 focus:outline-none"
+                      onBlur={() =>
+                        setFieldValidationError("schoolYear", formData)
+                      }
+                      className={`w-full px-4 py-2 border rounded-lg bg-gray-50 text-gray-700 focus:outline-none ${
+                        fieldErrors.schoolYear
+                          ? "border-red-300"
+                          : "border-gray-300"
+                      }`}
                     />
+                    {fieldErrors.schoolYear && (
+                      <p className="mt-1 text-xs text-red-600">
+                        {fieldErrors.schoolYear}
+                      </p>
+                    )}
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Assigned Teacher
+                    Assigned Teacher <span className="text-red-500">*</span>
                   </label>
                   <select
                     name="teacherId"
                     value={formData.teacherId || ""}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    onBlur={() => setFieldValidationError("teacherId", formData)}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+                      fieldErrors.teacherId
+                        ? "border-red-300 focus:ring-red-200"
+                        : "border-gray-300 focus:ring-teal-500"
+                    }`}
                   >
                     <option value="">Unassigned</option>
                     {teachers.map((teacher) => (
@@ -615,6 +752,11 @@ export default function AddChildModal({
                       </option>
                     ))}
                   </select>
+                  {fieldErrors.teacherId && (
+                    <p className="mt-1 text-xs text-red-600">
+                      {fieldErrors.teacherId}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -632,7 +774,6 @@ export default function AddChildModal({
               </p>
 
               <div className="space-y-4">
-                {/* Last Name, First Name, Middle Name */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -741,66 +882,269 @@ export default function AddChildModal({
             </div>
           )}
 
-          {/* Step 4 — Documents Upload */}
-          {currentStep === 4 && (
-            <div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-2">
-                Required Documents
-              </h3>
-              <p className="text-sm text-gray-500 mb-4">
-                Upload clear scanned copies of the required documents. These
-                will be securely stored in cloud storage and hashed for
-                blockchain verification.
-              </p>
+          {/* Documents Upload */}
+          {currentStep === documentsStep && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                  Required Documents
+                </h3>
+                <p className="text-sm text-gray-500">
+                  Upload clear scanned copies for verification. Only PDF, JPG,
+                  and PNG are allowed. Maximum file size: 5MB each.
+                </p>
+              </div>
 
-              <div className="space-y-6">
-                {/* Child Document */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Birth Certificate <span className="text-red-500">*</span>
-                  </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+                <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-4 flex flex-col">
+                  <div className="flex items-start justify-between gap-3 mb-3 min-h-11.5">
+                    <p className="text-[15px] font-semibold text-gray-900 leading-5 pr-2">
+                      Birth Certificate <span className="text-red-500">*</span>
+                    </p>
+                    {birthCertificateFile ? (
+                      <span className="shrink-0 inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full">
+                        <CheckCircle2 size={12} />
+                        Uploaded
+                      </span>
+                    ) : (
+                      <span className="shrink-0 inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-100 px-2 py-1 rounded-full">
+                        <AlertCircle size={12} />
+                        Required
+                      </span>
+                    )}
+                  </div>
+
                   <input
+                    ref={birthCertificateInputRef}
                     type="file"
                     accept=".pdf,.jpg,.jpeg,.png"
                     onChange={(e) =>
-                      setBirthCertificateFile(e.target.files?.[0] || null)
+                      handleDocumentChange(
+                        "birthCertificate",
+                        e.target.files?.[0] || null,
+                      )
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    required
+                    className="hidden"
                   />
-                  <p className="mt-1 text-xs text-gray-500">
-                    Accepted formats: PDF, JPG, PNG. Max size: 5MB.
-                  </p>
+
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => birthCertificateInputRef.current?.click()}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        birthCertificateInputRef.current?.click();
+                      }
+                    }}
+                    className="w-full rounded-lg border-2 border-dashed border-teal-300 bg-white px-4 py-4 text-left transition hover:border-teal-500 hover:bg-teal-50 mt-auto cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+                  >
+                    {!birthCertificateFile ? (
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-md bg-teal-100 text-teal-700">
+                          <UploadCloud size={18} />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">
+                            Choose a file
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            PDF, JPG, PNG up to 5MB
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <p className="text-sm font-medium text-gray-800">
+                          Replace file
+                        </p>
+
+                        <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                            <div className="min-w-0 flex-1 flex items-start gap-2.5">
+                              <span className="shrink-0 mt-0.5 text-gray-500">
+                                <FileText size={14} />
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                <p
+                                  className="text-sm font-medium text-gray-800 wrap-break-word leading-5"
+                                  title={birthCertificateFile.name}
+                                >
+                                  {birthCertificateFile.name}
+                                </p>
+                                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">
+                                  <span>
+                                    {formatFileSize(birthCertificateFile.size)}
+                                  </span>
+                                  <span className="text-gray-300">|</span>
+                                  <span>
+                                    {getFileExtension(
+                                      birthCertificateFile.name,
+                                    )}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeDocument("birthCertificate");
+                              }}
+                              className="inline-flex items-center gap-1 self-start text-xs text-rose-600 hover:text-rose-700 cursor-pointer sm:ml-3"
+                            >
+                              <Trash2 size={12} />
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  {documentErrors.birthCertificate && (
+                    <p className="mt-2 text-xs text-red-600 min-h-4.5">
+                      {documentErrors.birthCertificate}
+                    </p>
+                  )}
                 </div>
 
-                {/* Parent Document */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Parent Valid Government ID{" "}
-                    <span className="text-red-500">*</span>
-                  </label>
+                <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-4 flex flex-col">
+                  <div className="flex items-start justify-between gap-3 mb-3 min-h-11.5">
+                    <p className="text-[15px] font-semibold text-gray-900 leading-5 pr-2">
+                      Parent Valid Government ID{" "}
+                      <span className="text-red-500">*</span>
+                    </p>
+                    {parentIdFile ? (
+                      <span className="shrink-0 inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full">
+                        <CheckCircle2 size={12} />
+                        Uploaded
+                      </span>
+                    ) : (
+                      <span className="shrink-0 inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-100 px-2 py-1 rounded-full">
+                        <AlertCircle size={12} />
+                        Required
+                      </span>
+                    )}
+                  </div>
+
                   <input
+                    ref={parentIdInputRef}
                     type="file"
                     accept=".pdf,.jpg,.jpeg,.png"
                     onChange={(e) =>
-                      setParentIdFile(e.target.files?.[0] || null)
+                      handleDocumentChange(
+                        "parentId",
+                        e.target.files?.[0] || null,
+                      )
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    required
+                    className="hidden"
                   />
-                  <p className="mt-1 text-xs text-gray-500">
-                    Accepted formats: PDF, JPG, PNG. Max size: 5MB.
-                  </p>
-                </div>
 
-                {/* Confirmation Checkbox */}
-                <div className="flex items-start gap-2">
-                  <input type="checkbox" required className="mt-1" />
-                  <p className="text-sm text-gray-600">
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => parentIdInputRef.current?.click()}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        parentIdInputRef.current?.click();
+                      }
+                    }}
+                    className="w-full rounded-lg border-2 border-dashed border-teal-300 bg-white px-4 py-4 text-left transition hover:border-teal-500 hover:bg-teal-50 mt-auto cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+                  >
+                    {!parentIdFile ? (
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-md bg-teal-100 text-teal-700">
+                          <UploadCloud size={18} />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">
+                            Choose a file
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            PDF, JPG, PNG up to 5MB
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <p className="text-sm font-medium text-gray-800">
+                          Replace file
+                        </p>
+
+                        <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                            <div className="min-w-0 flex-1 flex items-start gap-2.5">
+                              <span className="shrink-0 mt-0.5 text-gray-500">
+                                <FileText size={14} />
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                <p
+                                  className="text-sm font-medium text-gray-800 wrap-break-word leading-5"
+                                  title={parentIdFile.name}
+                                >
+                                  {parentIdFile.name}
+                                </p>
+                                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">
+                                  <span>
+                                    {formatFileSize(parentIdFile.size)}
+                                  </span>
+                                  <span className="text-gray-300">|</span>
+                                  <span>
+                                    {getFileExtension(parentIdFile.name)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeDocument("parentId");
+                              }}
+                              className="inline-flex items-center gap-1 self-start text-xs text-rose-600 hover:text-rose-700 cursor-pointer sm:ml-3"
+                            >
+                              <Trash2 size={12} />
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {documentErrors.parentId && (
+                    <p className="mt-2 text-xs text-red-600 min-h-4.5">
+                      {documentErrors.parentId}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={documentsConfirmed}
+                    onChange={(e) => {
+                      setDocumentsConfirmed(e.target.checked);
+                      setDocumentErrors((prev) => ({
+                        ...prev,
+                        confirmation: undefined,
+                      }));
+                    }}
+                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                  />
+                  <span className="text-sm leading-6 text-gray-700">
                     I confirm that the uploaded documents were verified against
                     the original physical copies.
+                  </span>
+                </label>
+                {documentErrors.confirmation && (
+                  <p className="mt-2 text-xs text-red-600">
+                    {documentErrors.confirmation}
                   </p>
-                </div>
+                )}
               </div>
             </div>
           )}
@@ -817,8 +1161,13 @@ export default function AddChildModal({
               </svg>
             </div>
             <p className="text-sm text-teal-700">
-              Student ID and Child Link Code are generated automatically by the
-              system after saving.
+              Student IDs are auto-generated based on enrollment year and a
+              random number. For example, a child enrolled in 2024 might receive
+              an ID like{" "}
+              <span className="font-mono bg-teal-100 px-1 rounded">
+                CDC-2024-123456
+              </span>
+              .
             </p>
           </div>
 
@@ -830,27 +1179,19 @@ export default function AddChildModal({
                   type="button"
                   onClick={handlePrevStep}
                   disabled={isLoading}
-                  className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition disabled:opacity-50"
+                  className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition disabled:opacity-50 cursor-pointer"
                 >
                   Back
                 </button>
               )}
             </div>
             <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={isLoading}
-                className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition disabled:opacity-50"
-              >
-                Cancel
-              </button>
               {currentStep < totalSteps ? (
                 <button
                   type="button"
                   onClick={handleNextStep}
                   disabled={isLoading}
-                  className="px-6 py-2 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition disabled:opacity-50"
+                  className="px-6 py-2 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition disabled:opacity-50 cursor-pointer"
                 >
                   Next
                 </button>
@@ -858,7 +1199,7 @@ export default function AddChildModal({
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="px-6 py-2 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition disabled:opacity-50"
+                  className="px-6 py-2 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition disabled:opacity-50 cursor-pointer"
                 >
                   {isLoading ? "Saving..." : "Save Child"}
                 </button>

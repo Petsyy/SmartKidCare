@@ -1,4 +1,4 @@
-import { Copy, Eye, Pencil, MoreVertical } from "lucide-react";
+import { Eye, Pencil, MoreVertical } from "lucide-react";
 import { type Child } from "../pages/ChildrenManagement";
 
 interface ChildrenTableProps {
@@ -45,9 +45,6 @@ export function ChildrenTable({
               Assigned Teacher
             </th>
             <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
-              Link Code
-            </th>
-            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
               Actions
             </th>
           </tr>
@@ -57,7 +54,7 @@ export function ChildrenTable({
           {isLoading ? (
             <tr>
               <td
-                colSpan={9}
+                colSpan={8}
                 className="px-6 py-10 text-center text-sm text-gray-500"
               >
                 Loading students...
@@ -66,7 +63,7 @@ export function ChildrenTable({
           ) : children.length === 0 ? (
             <tr>
               <td
-                colSpan={9}
+                colSpan={8}
                 className="px-6 py-10 text-center text-sm text-gray-500"
               >
                 No children records found.
@@ -75,7 +72,7 @@ export function ChildrenTable({
           ) : filteredChildren.length === 0 ? (
             <tr>
               <td
-                colSpan={9}
+                colSpan={8}
                 className="px-6 py-10 text-center text-sm text-gray-500"
               >
                 No students match your search.
@@ -116,29 +113,6 @@ export function ChildrenTable({
                   {child.teacher
                     ? `${child.teacher.lastName}, ${child.teacher.firstName}${child.teacher.middleName ? ` ${child.teacher.middleName}` : ""}`
                     : "Unassigned"}
-                </td>
-                <td className="px-6 py-4">
-                  {child.childLinkCode ? (
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-sm text-gray-900">
-                        {child.childLinkCode}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          navigator.clipboard.writeText(
-                            child.childLinkCode ?? "",
-                          );
-                        }}
-                        className="p-1 rounded hover:bg-gray-200 text-gray-500 hover:text-gray-700"
-                        title="Copy link code"
-                      >
-                        <Copy size={14} />
-                      </button>
-                    </div>
-                  ) : (
-                    <span className="text-gray-400">—</span>
-                  )}
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex flex-wrap items-center gap-1.5">

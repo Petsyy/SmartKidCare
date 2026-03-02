@@ -61,6 +61,26 @@ export const getChildren = async () => {
   return data;
 };
 
+export const getChildDocumentUrl = async (
+  childId: string,
+  documentType: "birth-certificate" | "parent-id",
+) => {
+  const res = await fetch(
+    `${API_BASE}/children/${childId}/documents/${documentType}/url`,
+    {
+      credentials: "include",
+    },
+  );
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || "Failed to fetch document URL");
+  return data as {
+    url: string;
+    expiresInSeconds: number;
+    documentType: "birthCertificate" | "parentId";
+  };
+};
+
 export const updateChild = async (
   childId: string,
   updates: {

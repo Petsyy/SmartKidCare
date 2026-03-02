@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { X } from "lucide-react";
-import { createTeacher } from "../../api/teacher.api";
-import { showTeacherCredentialsModal, showErrorModal } from "../../utils/sweetalert.modal";
+import { createTeacher } from "@/api/teacher.api";
+import { showTeacherCredentialsModal, showErrorModal } from "@/utils/sweetalert.modal";
 import {
   type AddTeacherField,
   type AddTeacherFormErrors,
   validateAddTeacherField,
   validateAddTeacherForm,
   sanitizePhoneInput,
-} from "../../utils/formValidation";
+} from "@/utils/formValidation";
 
 type Props = {
   onClose: () => void;
@@ -29,7 +29,7 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
 
   const setFieldError = (field: AddTeacherField, nextForm = form) => {
     const error = validateAddTeacherField(field, nextForm);
-    setErrors((prev) => {
+    setErrors((prev: AddTeacherFormErrors) => {
       const next = { ...prev };
       if (error) {
         next[field] = error;

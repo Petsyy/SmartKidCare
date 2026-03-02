@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { X, User as UserIcon, Save } from "lucide-react";
 import Swal from "sweetalert2";
-import { type User } from "../../api/authentication.api";
-import { updateUser } from "../../api/admin.api";
-import { showErrorModal } from "../../utils/sweetalert.modal";
+import { type User } from "@/api/authentication.api";
+import { updateUser } from "@/api/admin.api";
+import { showErrorModal } from "@/utils/sweetalert.modal";
 
 type Props = {
   user: User;
