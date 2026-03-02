@@ -4,8 +4,8 @@ import {
   deleteChild,
   getChildren,
   getChildById,
+  getChildDocumentSignedUrl,
   getMyChildren,
-  linkChildToParent,
   updateChild,
 } from "../controllers/child/child.controller";
 import { authenticateToken } from "../middlewares/auth.middleware";
@@ -15,10 +15,10 @@ const router = express.Router();
 
 router.get("/", authenticateToken, getChildren);
 router.get("/my-children", authenticateToken, getMyChildren);
+router.get("/:id/documents/:documentType/url", authenticateToken, getChildDocumentSignedUrl);
 router.get("/:id", authenticateToken, getChildById);
 router.patch("/:id", authenticateToken, updateChild);
 router.delete("/:id", authenticateToken, deleteChild);
-router.post("/link", authenticateToken, linkChildToParent);
 
 router.post(
   "/",

@@ -1,47 +1,59 @@
 import cloudinary from "../config/cloudinary";
-import { UploadApiResponse } from "cloudinary";
+import { randomUUID } from "crypto";
 
-export const uploadToCloudinary = (
+export interface UploadResult {
+  publicId: string;
+  resourceType: string;
+  format: string;
+  bytes: number;
+}
+
+export const uploadToCloudinary = async (
   buffer: Buffer,
   folder: string,
-): Promise<UploadApiResponse> => {
-  console.log("[uploadToCloudinary] Upload started", {
-    folder,
-    bufferSize: buffer.length,
-  });
+  mimetype: string,
+  originalName?: string,
+): Promise<UploadResult> => {
+  const resourceType = mimetype === "application/pdf" ? "raw" : "image";
+  const inferredExtension = String(originalName || "")
+    .split(".")
+    .pop()
+    ?.trim()
+    .toLowerCase();
+  const extension =
+    inferredExtension ||
+    (mimetype === "application/pdf"
+      ? "pdf"
+      : mimetype === "image/png"
+        ? "png"
+        : "jpg");
+
+  const uniqueFileName = randomUUID();
+  const publicId =
+    resourceType === "raw" ? `${uniqueFileName}.${extension}` : uniqueFileName;
 
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       {
         folder,
-        asset_folder: folder,
-        resource_type: "auto", // IMPORTANT for PDF + images
+        public_id: publicId,
+        resource_type: resourceType,
+        type: "authenticated",
+        overwrite: false,
+        invalidate: true,
+        filename_override: originalName,
       },
       (error, result) => {
-        if (error) {
-          console.error("[uploadToCloudinary] Upload failed", {
-            folder,
-            message: error.message,
-            http_code: (error as any).http_code,
-            name: error.name,
-          });
-          reject(error);
-        } else {
-          if (!result) {
-            reject(new Error("Cloudinary upload did not return a result"));
-            return;
-          }
-
-          console.log("[uploadToCloudinary] Upload success", {
-            folder,
-            publicId: result.public_id,
-            assetFolder: (result as any).asset_folder,
-            secureUrl: result.secure_url,
-            resourceType: result.resource_type,
-          });
-
-          resolve(result as UploadApiResponse);
+        if (error || !result) {
+          return reject(error || new Error("Upload failed"));
         }
+
+        resolve({
+          publicId: result.public_id,
+          resourceType: result.resource_type,
+          format: result.format || extension,
+          bytes: result.bytes,
+        });
       },
     );
 

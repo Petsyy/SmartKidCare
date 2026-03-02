@@ -4,16 +4,19 @@ import { Request, Response } from "express";
 
 import Child from "../../models/Child";
 import User from "../../models/Users";
+import { generateStudentId } from "../../utils/generateStudentId";
+import { generateSecureUrl } from "../../utils/generateSecureUrl";
 import {
-  generateStudentId,
-  generateChildLinkCode,
-} from "../../utils/generateStudentId";
-import { uploadToCloudinary } from "../../utils/uploadToCloudinary";
+  uploadToCloudinary,
+  UploadResult,
+} from "../../utils/uploadToCloudinary";
+
+type ChildDocumentKey = "birthCertificate" | "parentId";
 
 const attachUploadedDocuments = (
   childData: any,
-  birthUpload: any,
-  parentUpload: any,
+  birthUpload: UploadResult | null,
+  parentUpload: UploadResult | null,
 ) => {
   if (!birthUpload && !parentUpload) {
     return;
@@ -23,40 +26,62 @@ const attachUploadedDocuments = (
 
   if (birthUpload) {
     childData.documents.birthCertificate = {
-      url: birthUpload.secure_url,
-      publicId: birthUpload.public_id,
+      publicId: birthUpload.publicId,
+      resourceType: birthUpload.resourceType,
+      format: birthUpload.format,
     };
   }
 
   if (parentUpload) {
     childData.documents.parentId = {
-      url: parentUpload.secure_url,
-      publicId: parentUpload.public_id,
+      publicId: parentUpload.publicId,
+      resourceType: parentUpload.resourceType,
+      format: parentUpload.format,
     };
   }
 };
 
-const generateAndAssignMissingLinkCode = async (child: any) => {
-  if (child.childLinkCode) {
-    return;
+const ensureCanAccessChild = (child: any, req: Request): boolean => {
+  if (!req.user?.id) {
+    return false;
   }
 
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    child.childLinkCode = generateChildLinkCode();
-    try {
-      await child.save();
-      return;
-    } catch (error: any) {
-      const isDuplicateLinkCode =
-        error?.code === 11000 &&
-        String(error?.message || "").includes("childLinkCode");
-      if (!isDuplicateLinkCode) {
-        throw error;
-      }
-    }
+  if (req.user.role === "admin") {
+    return true;
   }
 
-  throw new Error("Unable to generate a unique child link code.");
+  if (req.user.role === "teacher") {
+    return String(child?.teacher?._id || child?.teacher || "") === req.user.id;
+  }
+
+  if (req.user.role === "parent") {
+    return String(child?.parent?._id || child?.parent || "") === req.user.id;
+  }
+
+  return false;
+};
+
+const resolveDocumentField = (value: string): ChildDocumentKey | null => {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+  if (
+    normalized === "birth-certificate" ||
+    normalized === "birth_certificate" ||
+    normalized === "birthcertificate"
+  ) {
+    return "birthCertificate";
+  }
+
+  if (
+    normalized === "parent-id" ||
+    normalized === "parent_id" ||
+    normalized === "parentid"
+  ) {
+    return "parentId";
+  }
+
+  return null;
 };
 
 const resolveTeacherId = async (
@@ -124,17 +149,20 @@ export const createChild = async (req: Request, res: Response) => {
   });
 
   try {
-    let birthUpload: any = null;
-    let parentUpload: any = null;
+    let birthUpload: UploadResult | null = null;
+    let parentUpload: UploadResult | null = null;
 
     if (birthFile) {
       birthUpload = await uploadToCloudinary(
         birthFile.buffer,
         "child-records/birth-certificates",
+        birthFile.mimetype,
+        birthFile.originalname,
       );
       console.log("[createChild] Birth certificate uploaded", {
-        publicId: birthUpload?.public_id,
-        secureUrl: birthUpload?.secure_url,
+        publicId: birthUpload?.publicId,
+        resourceType: birthUpload?.resourceType,
+        format: birthUpload?.format,
       });
     }
 
@@ -142,10 +170,13 @@ export const createChild = async (req: Request, res: Response) => {
       parentUpload = await uploadToCloudinary(
         parentIdFile.buffer,
         "child-records/parent-ids",
+        parentIdFile.mimetype,
+        parentIdFile.originalname,
       );
       console.log("[createChild] Parent ID uploaded", {
-        publicId: parentUpload?.public_id,
-        secureUrl: parentUpload?.secure_url,
+        publicId: parentUpload?.publicId,
+        resourceType: parentUpload?.resourceType,
+        format: parentUpload?.format,
       });
     }
 
@@ -214,7 +245,6 @@ export const createChild = async (req: Request, res: Response) => {
         schoolYear: schoolYear || "2024-2025",
         status: status || "Active",
         studentId: req.body.studentId || generateStudentId(year),
-        childLinkCode: req.body.childLinkCode || generateChildLinkCode(),
       };
 
       if (middleName) childData.middleName = middleName;
@@ -233,8 +263,6 @@ export const createChild = async (req: Request, res: Response) => {
     let parent = await User.findOne({ email: parentEmail });
 
     if (parent) {
-      // Parent already exists; keep a link code for admin visibility/auditing.
-      const childLinkCode = generateChildLinkCode();
       const childData: any = {
         firstName,
         lastName,
@@ -245,7 +273,6 @@ export const createChild = async (req: Request, res: Response) => {
         schoolYear,
         status: status || "Active",
         studentId: generateStudentId(year),
-        childLinkCode,
         parent: parent._id,
       };
       if (resolvedTeacherId) childData.teacher = resolvedTeacherId;
@@ -263,7 +290,6 @@ export const createChild = async (req: Request, res: Response) => {
         parentCredentials: {
           email: parentEmail,
           tempPassword: null,
-          childLinkCode,
         },
       });
     }
@@ -289,7 +315,6 @@ export const createChild = async (req: Request, res: Response) => {
       needsToConfirmLink: true,
     });
 
-    const childLinkCode = generateChildLinkCode();
     const childData: any = {
       firstName,
       lastName,
@@ -300,10 +325,10 @@ export const createChild = async (req: Request, res: Response) => {
       schoolYear,
       status: status || "Active",
       studentId: generateStudentId(year),
-      childLinkCode,
+      parent: parent._id,
     };
     if (resolvedTeacherId) childData.teacher = resolvedTeacherId;
-    
+
     attachUploadedDocuments(childData, birthUpload, parentUpload);
 
     // Only add middleName if it exists
@@ -318,7 +343,6 @@ export const createChild = async (req: Request, res: Response) => {
       parentCredentials: {
         email: parentEmail,
         tempPassword,
-        childLinkCode,
       },
     });
   } catch (error: any) {
@@ -336,39 +360,6 @@ export const createChild = async (req: Request, res: Response) => {
   }
 };
 
-export const linkChildToParent = async (req: Request, res: Response) => {
-  try {
-    const { childLinkCode } = req.body;
-    if (!req.user) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-
-    const parentId = req.user.id;
-
-    const child = await Child.findOne({ childLinkCode });
-
-    if (!child) {
-      return res.status(404).json({ message: "Invalid link code" });
-    }
-
-    if (child.parent) {
-      return res.status(400).json({ message: "Child already linked" });
-    }
-
-    child.parent = new mongoose.Types.ObjectId(parentId);
-    // Keep the original link code visible for admin records even after it is used.
-    // Re-linking is still blocked because linked children are rejected above.
-    await child.save();
-
-    // Clear the needsToConfirmLink flag when parent confirms the link
-    await User.findByIdAndUpdate(parentId, { needsToConfirmLink: false });
-
-    res.json({ message: "Child linked successfully", child });
-  } catch (error: any) {
-    res.status(500).json({ message: "Linking failed", error: error.message });
-  }
-};
-
 export const getChildren = async (req: Request, res: Response) => {
   try {
     if (!req.user?.id) {
@@ -379,17 +370,7 @@ export const getChildren = async (req: Request, res: Response) => {
     const query: Record<string, unknown> = {};
 
     if (role === "admin") {
-      const childrenWithoutLinkCode = await Child.find({
-        $or: [
-          { childLinkCode: { $exists: false } },
-          { childLinkCode: null },
-          { childLinkCode: "" },
-        ],
-      });
-
-      for (const child of childrenWithoutLinkCode) {
-        await generateAndAssignMissingLinkCode(child);
-      }
+      // Admins see all children
     } else if (role === "teacher") {
       query.teacher = req.user.id;
     } else if (role === "parent") {
@@ -452,23 +433,70 @@ export const getChildById = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Child not found" });
     }
 
-    if (
-      req.user.role === "teacher" &&
-      String((child as any).teacher?._id || "") !== req.user.id
-    ) {
-      return res.status(403).json({ message: "Forbidden" });
-    }
-
-    if (
-      req.user.role === "parent" &&
-      String((child as any).parent?._id || "") !== req.user.id
-    ) {
+    if (!ensureCanAccessChild(child, req)) {
       return res.status(403).json({ message: "Forbidden" });
     }
 
     res.json(child);
   } catch {
     res.status(500).json({ message: "Failed to fetch child details" });
+  }
+};
+
+export const getChildDocumentSignedUrl = async (
+  req: Request,
+  res: Response,
+) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const childId = String(req.params.id || "");
+    if (!mongoose.Types.ObjectId.isValid(childId)) {
+      return res.status(400).json({ message: "Invalid child ID" });
+    }
+
+    const documentField = resolveDocumentField(String(req.params.documentType));
+    if (!documentField) {
+      return res.status(400).json({ message: "Invalid document type" });
+    }
+
+    const child = await Child.findById(childId)
+      .populate("parent", "_id")
+      .populate("teacher", "_id")
+      .select("documents parent teacher")
+      .lean();
+
+    if (!child) {
+      return res.status(404).json({ message: "Child not found" });
+    }
+
+    if (!ensureCanAccessChild(child, req)) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    const doc = (child as any)?.documents?.[documentField];
+    if (!doc?.publicId || !doc?.resourceType) {
+      return res.status(404).json({ message: "Document not found" });
+    }
+
+    const signedUrl = generateSecureUrl(
+      String(doc.publicId),
+      String(doc.resourceType),
+      doc?.format ? String(doc.format) : undefined,
+    );
+
+    return res.status(200).json({
+      url: signedUrl,
+      expiresInSeconds: 60,
+      documentType: documentField,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      message: "Failed to generate document URL",
+      error: error?.message,
+    });
   }
 };
 
@@ -492,7 +520,6 @@ export const updateChild = async (req: Request, res: Response) => {
       gender,
       schoolYear,
       status,
-      regenerateLinkCode,
       unlinkParent,
       teacherId,
       unlinkTeacher,
@@ -509,9 +536,6 @@ export const updateChild = async (req: Request, res: Response) => {
 
     if (unlinkParent === true) {
       child.parent = undefined;
-      child.childLinkCode = generateChildLinkCode();
-    } else if (regenerateLinkCode === true && !child.parent) {
-      child.childLinkCode = generateChildLinkCode();
     }
 
     if (unlinkTeacher === true) {

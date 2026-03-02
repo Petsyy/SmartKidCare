@@ -14,11 +14,7 @@
     "import-dataset": "ts-node scripts/importDataset.ts",
     "sanitize-input": "ts-node scripts/sanitizeInput.ts",
     "sanitize-input:py": "python scripts/sanitize_input.py",
-    "access-control": "ts-node scripts/accessControlDemo.ts",
-    "test:core-feature:1": "ts-node scripts/coreFeature1AuthTestCases.ts",
-    "test:core-feature:2": "ts-node scripts/coreFeature2JwtSessionTestCases.ts",
-    "test:core-feature:3": "ts-node scripts/coreFeature3RbacTestCases.ts",
-    "test:core-feature:4": "ts-node scripts/coreFeature4DataSecurityTestCases.ts"
+    "access-control": "ts-node scripts/accessControlDemo.ts"
   },
   "keywords": [],
   "author": "",
@@ -28,6 +24,7 @@
     "@google/generative-ai": "^0.24.1",
     "axios": "^1.13.5",
     "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.9.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.4",
@@ -40,7 +37,9 @@
     "jws": "^4.0.1",
     "mongoose": "^9.1.4",
     "morgan": "^1.10.1",
+    "multer": "^2.1.0",
     "nodemailer": "^8.0.1",
+    "streamifier": "^0.1.1",
     "xlsx": "^0.18.5",
     "zod": "^4.3.6"
   },
@@ -51,8 +50,10 @@
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/morgan": "^1.9.10",
+    "@types/multer": "^2.0.0",
     "@types/node": "^25.2.2",
     "@types/nodemailer": "^7.0.10",
+    "@types/streamifier": "^0.1.2",
     "nodemon": "^3.1.11",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"

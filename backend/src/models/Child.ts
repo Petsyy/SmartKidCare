@@ -19,7 +19,6 @@ const ChildSchema = new mongoose.Schema(
     },
 
     studentId: { type: String, unique: true },
-    childLinkCode: { type: String, unique: true, sparse: true },
 
     parent: {
       type: mongoose.Schema.Types.ObjectId,
@@ -34,12 +33,14 @@ const ChildSchema = new mongoose.Schema(
 
     documents: {
       birthCertificate: {
-        url: String,
         publicId: String,
+        resourceType: String,
+        format: String,
       },
       parentId: {
-        url: String,
         publicId: String,
+        resourceType: String,
+        format: String,
       },
     },
   },

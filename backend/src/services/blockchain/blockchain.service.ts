@@ -11,7 +11,10 @@ let totalGasSpent = 0;
 let totalTransactions = 0;
 let startingBalance = 0;
 const TX_LOOKUP_CACHE_TTL_MS = 10 * 60 * 1000;
-const txLookupCache = new Map<string, { value: string | null; expiresAt: number }>();
+const txLookupCache = new Map<
+  string,
+  { value: string | null; expiresAt: number }
+>();
 let txLookupQueue: Promise<void> = Promise.resolve();
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -33,14 +36,18 @@ const isRateLimitedError = (error: any): boolean => {
   return Number(error?.code) === -32005;
 };
 
-async function withRpcRetry<T>(fn: () => Promise<T>, maxRetries = 5): Promise<T> {
+async function withRpcRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries = 5,
+): Promise<T> {
   let attempt = 0;
   while (true) {
     try {
       return await fn();
     } catch (error: any) {
       if (!isRateLimitedError(error) || attempt >= maxRetries) throw error;
-      const delayMs = Math.min(4000, 250 * 2 ** attempt) + Math.floor(Math.random() * 150);
+      const delayMs =
+        Math.min(4000, 250 * 2 ** attempt) + Math.floor(Math.random() * 150);
       await sleep(delayMs);
       attempt += 1;
     }
