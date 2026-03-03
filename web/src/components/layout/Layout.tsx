@@ -9,17 +9,19 @@ type LayoutProps = {
   breadcrumbs?: string[];
 };
 
-export default function Layout({ children, activeItem, onNavigate, breadcrumbs }: LayoutProps) {
+export default function Layout({
+  children,
+  activeItem,
+  onNavigate,
+  breadcrumbs,
+}: LayoutProps) {
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-50 transition-colors dark:bg-slate-950">
       <Sidebar activeItem={activeItem} onNavigate={onNavigate} />
-      <main className="ml-60 flex-1 flex flex-col">
+      <main className="ml-60 flex flex-1 flex-col">
         <Header breadcrumbs={breadcrumbs} />
-        <div className="flex-1">
-          {children}
-        </div>
+        <div className="flex-1">{children}</div>
       </main>
     </div>
-    
   );
 }

@@ -429,16 +429,16 @@ export default function AddChildModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto dark:bg-slate-900">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
+        <div className="flex items-center justify-between p-6 border-b dark:border-slate-700">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-50">
               {initialParent
                 ? "Add Child for Existing Parent"
                 : "Add Child Record"}
             </h2>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-500 dark:text-slate-400">
               {initialParent
                 ? `Linking new child to ${initialParent.firstName} ${initialParent.lastName} (${initialParent.email})`
                 : "Encode child information from existing enrollment records"}
@@ -446,7 +446,7 @@ export default function AddChildModal({
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition"
+            className="text-gray-400 hover:text-gray-600 transition dark:text-slate-500 dark:hover:text-slate-300"
           >
             <X size={24} />
           </button>
@@ -469,17 +469,17 @@ export default function AddChildModal({
                         currentStep === stepNumber
                           ? "bg-teal-600 text-white"
                           : currentStep > stepNumber
-                            ? "bg-teal-100 text-teal-700"
-                            : "bg-gray-100 text-gray-500"
+                            ? "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300"
+                            : "bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-slate-400"
                       }`}
                     >
                       {stepNumber}
                     </div>
-                    <span className="mt-1 text-xs text-gray-700">{label}</span>
+                    <span className="mt-1 text-xs text-gray-700 dark:text-slate-300">{label}</span>
                   </div>
 
                   {index < arr.length - 1 && (
-                    <div className="flex-1 h-px mx-2 bg-gray-200" />
+                    <div className="flex-1 h-px mx-2 bg-gray-200 dark:bg-slate-700" />
                   )}
                 </div>
               );
@@ -488,18 +488,18 @@ export default function AddChildModal({
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-6 space-y-6 dark:bg-slate-900">
           {/* Step 1 — Child Information */}
           {currentStep === 1 && (
             <div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-4 dark:text-slate-50">
                 Child Information
               </h3>
               <div className="space-y-4">
                 {/* First, Middle, Last Name */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">
                       First Name <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -512,7 +512,7 @@ export default function AddChildModal({
                       }
                       placeholder="Enter first name"
                       maxLength={50}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600 ${
                         fieldErrors.firstName
                           ? "border-red-300 focus:ring-red-200"
                           : "border-gray-300 focus:ring-teal-500"
@@ -520,13 +520,13 @@ export default function AddChildModal({
                       required
                     />
                     {fieldErrors.firstName && (
-                      <p className="mt-1 text-xs text-red-600">
+                      <p className="mt-1 text-xs text-red-600 dark:text-red-400">
                         {fieldErrors.firstName}
                       </p>
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">
                       Middle Name <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -539,20 +539,20 @@ export default function AddChildModal({
                       }
                       placeholder="Enter middle name"
                       maxLength={50}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600 ${
                         fieldErrors.middleName
                           ? "border-red-300 focus:ring-red-200"
                           : "border-gray-300 focus:ring-teal-500"
                       }`}
                     />
                     {fieldErrors.middleName && (
-                      <p className="mt-1 text-xs text-red-600">
+                      <p className="mt-1 text-xs text-red-600 dark:text-red-400">
                         {fieldErrors.middleName}
                       </p>
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">
                       Last Name <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -565,7 +565,7 @@ export default function AddChildModal({
                       }
                       placeholder="Enter last name"
                       maxLength={50}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600 ${
                         fieldErrors.lastName
                           ? "border-red-300 focus:ring-red-200"
                           : "border-gray-300 focus:ring-teal-500"
@@ -573,7 +573,7 @@ export default function AddChildModal({
                       required
                     />
                     {fieldErrors.lastName && (
-                      <p className="mt-1 text-xs text-red-600">
+                      <p className="mt-1 text-xs text-red-600 dark:text-red-400">
                         {fieldErrors.lastName}
                       </p>
                     )}
@@ -583,7 +583,7 @@ export default function AddChildModal({
                 {/* Date of Birth and Age */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">
                       Date of Birth <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
@@ -596,7 +596,7 @@ export default function AddChildModal({
                           setFieldValidationError("dateOfBirth", formData)
                         }
                         max={todayDate}
-                        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+                        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600 ${
                           fieldErrors.dateOfBirth || dateErrors.dateOfBirth
                             ? "border-red-300 focus:ring-red-200"
                             : "border-gray-300 focus:ring-teal-500"
@@ -605,13 +605,13 @@ export default function AddChildModal({
                       />
                     </div>
                     {(fieldErrors.dateOfBirth || dateErrors.dateOfBirth) && (
-                      <p className="mt-1 text-xs text-red-600">
+                      <p className="mt-1 text-xs text-red-600 dark:text-red-400">
                         {fieldErrors.dateOfBirth || dateErrors.dateOfBirth}
                       </p>
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">
                       Age
                     </label>
                     <input
@@ -621,14 +621,14 @@ export default function AddChildModal({
                       readOnly
                       onChange={handleInputChange}
                       placeholder="Auto-calculated"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
                     />
                   </div>
                 </div>
 
                 {/* Gender */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-3 dark:text-slate-300">
                     Gender <span className="text-red-500">*</span>
                   </label>
                   <div className="flex gap-6">
@@ -641,7 +641,7 @@ export default function AddChildModal({
                         onChange={() => handleGenderChange("male")}
                         className="w-4 h-4"
                       />
-                      <span className="text-sm text-gray-700">Male</span>
+                      <span className="text-sm text-gray-700 dark:text-slate-300">Male</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
@@ -652,11 +652,11 @@ export default function AddChildModal({
                         onChange={() => handleGenderChange("female")}
                         className="w-4 h-4"
                       />
-                      <span className="text-sm text-gray-700">Female</span>
+                      <span className="text-sm text-gray-700 dark:text-slate-300">Female</span>
                     </label>
                   </div>
                   {fieldErrors.gender && (
-                    <p className="mt-1 text-xs text-red-600">
+                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">
                       {fieldErrors.gender}
                     </p>
                   )}
@@ -668,14 +668,14 @@ export default function AddChildModal({
           {/* Step 2 — Enrollment Details */}
           {currentStep === 2 && (
             <div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-4 dark:text-slate-50">
                 Enrollment Details
               </h3>
               <div className="space-y-4">
                 {/* Enrollment Date and School Year */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">
                       Enrollment Date <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -688,7 +688,7 @@ export default function AddChildModal({
                       }
                       min={formData.dateOfBirth || undefined}
                       max={todayDate}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600 ${
                         fieldErrors.enrollmentDate || dateErrors.enrollmentDate
                           ? "border-red-300 focus:ring-red-200"
                           : "border-gray-300 focus:ring-teal-500"
@@ -697,14 +697,14 @@ export default function AddChildModal({
                     />
                     {(fieldErrors.enrollmentDate ||
                       dateErrors.enrollmentDate) && (
-                      <p className="mt-1 text-xs text-red-600">
+                      <p className="mt-1 text-xs text-red-600 dark:text-red-400">
                         {fieldErrors.enrollmentDate ||
                           dateErrors.enrollmentDate}
                       </p>
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">
                       School Year <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -715,14 +715,14 @@ export default function AddChildModal({
                       onBlur={() =>
                         setFieldValidationError("schoolYear", formData)
                       }
-                      className={`w-full px-4 py-2 border rounded-lg bg-gray-50 text-gray-700 focus:outline-none ${
+                      className={`w-full px-4 py-2 border rounded-lg bg-gray-50 text-gray-700 focus:outline-none dark:bg-slate-700 dark:text-slate-400 dark:border-slate-600 ${
                         fieldErrors.schoolYear
                           ? "border-red-300"
                           : "border-gray-300"
                       }`}
                     />
                     {fieldErrors.schoolYear && (
-                      <p className="mt-1 text-xs text-red-600">
+                      <p className="mt-1 text-xs text-red-600 dark:text-red-400">
                         {fieldErrors.schoolYear}
                       </p>
                     )}
@@ -730,7 +730,7 @@ export default function AddChildModal({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">
                     Assigned Teacher <span className="text-red-500">*</span>
                   </label>
                   <select
@@ -738,7 +738,7 @@ export default function AddChildModal({
                     value={formData.teacherId || ""}
                     onChange={handleInputChange}
                     onBlur={() => setFieldValidationError("teacherId", formData)}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600 ${
                       fieldErrors.teacherId
                         ? "border-red-300 focus:ring-red-200"
                         : "border-gray-300 focus:ring-teal-500"
@@ -753,7 +753,7 @@ export default function AddChildModal({
                     ))}
                   </select>
                   {fieldErrors.teacherId && (
-                    <p className="mt-1 text-xs text-red-600">
+                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">
                       {fieldErrors.teacherId}
                     </p>
                   )}
@@ -765,10 +765,10 @@ export default function AddChildModal({
           {/* Step 3 — Parent Information (skipped when parent is pre-selected) */}
           {!initialParent && currentStep === 3 && (
             <div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-2">
+              <h3 className="text-sm font-semibold text-gray-900 mb-2 dark:text-slate-50">
                 Parent / Guardian Information
               </h3>
-              <p className="text-sm text-gray-500 mb-4">
+              <p className="text-sm text-gray-500 mb-4 dark:text-slate-400">
                 To add another child for an existing parent, enter their email
                 address. The child will be linked automatically.
               </p>
@@ -776,7 +776,7 @@ export default function AddChildModal({
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">
                       First Name <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -786,18 +786,18 @@ export default function AddChildModal({
                       onChange={handleInputChange}
                       placeholder="Enter first name"
                       maxLength={50}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
                       required
                     />
                     {fieldErrors.parentFirstName && (
-                      <p className="mt-1 text-xs text-red-600">
+                      <p className="mt-1 text-xs text-red-600 dark:text-red-400">
                         {fieldErrors.parentFirstName}
                       </p>
                     )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">
                       Middle Name <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -807,18 +807,18 @@ export default function AddChildModal({
                       onChange={handleInputChange}
                       placeholder="Enter middle name"
                       maxLength={50}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
                       required
                     />
                     {fieldErrors.parentMiddleName && (
-                      <p className="mt-1 text-xs text-red-600">
+                      <p className="mt-1 text-xs text-red-600 dark:text-red-400">
                         {fieldErrors.parentMiddleName}
                       </p>
                     )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">
                       Last Name
                     </label>
                     <input
@@ -828,10 +828,10 @@ export default function AddChildModal({
                       onChange={handleInputChange}
                       placeholder="Enter last name"
                       maxLength={50}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
                     />
                     {fieldErrors.parentLastName && (
-                      <p className="mt-1 text-xs text-red-600">
+                      <p className="mt-1 text-xs text-red-600 dark:text-red-400">
                         {fieldErrors.parentLastName}
                       </p>
                     )}
@@ -839,7 +839,7 @@ export default function AddChildModal({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">
                     Parent Email (Login Credential){" "}
                     <span className="text-red-500">*</span>
                   </label>
@@ -849,18 +849,18 @@ export default function AddChildModal({
                     value={formData.parentEmail}
                     onChange={handleInputChange}
                     placeholder="parent@email.com"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
                     required
                   />
                   {fieldErrors.parentEmail && (
-                    <p className="mt-1 text-xs text-red-600">
+                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">
                       {fieldErrors.parentEmail}
                     </p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">
                     Parent Phone Number <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -869,11 +869,11 @@ export default function AddChildModal({
                     value={formData.parentPhone}
                     onChange={handleInputChange}
                     placeholder="09123456789"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
                     required
                   />
                   {fieldErrors.parentPhone && (
-                    <p className="mt-1 text-xs text-red-600">
+                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">
                       {fieldErrors.parentPhone}
                     </p>
                   )}
@@ -886,28 +886,28 @@ export default function AddChildModal({
           {currentStep === documentsStep && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                <h3 className="text-sm font-semibold text-gray-900 mb-1 dark:text-slate-50">
                   Required Documents
                 </h3>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 dark:text-slate-400">
                   Upload clear scanned copies for verification. Only PDF, JPG,
                   and PNG are allowed. Maximum file size: 5MB each.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
-                <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-4 flex flex-col">
+                <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-4 flex flex-col dark:border-slate-700 dark:bg-slate-700/30">
                   <div className="flex items-start justify-between gap-3 mb-3 min-h-11.5">
-                    <p className="text-[15px] font-semibold text-gray-900 leading-5 pr-2">
+                    <p className="text-[15px] font-semibold text-gray-900 leading-5 pr-2 dark:text-slate-50">
                       Birth Certificate <span className="text-red-500">*</span>
                     </p>
                     {birthCertificateFile ? (
-                      <span className="shrink-0 inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full">
+                      <span className="shrink-0 inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full dark:text-emerald-300 dark:bg-emerald-900/30">
                         <CheckCircle2 size={12} />
                         Uploaded
                       </span>
                     ) : (
-                      <span className="shrink-0 inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-100 px-2 py-1 rounded-full">
+                      <span className="shrink-0 inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-100 px-2 py-1 rounded-full dark:text-amber-300 dark:bg-amber-900/30">
                         <AlertCircle size={12} />
                         Required
                       </span>
@@ -937,46 +937,46 @@ export default function AddChildModal({
                         birthCertificateInputRef.current?.click();
                       }
                     }}
-                    className="w-full rounded-lg border-2 border-dashed border-teal-300 bg-white px-4 py-4 text-left transition hover:border-teal-500 hover:bg-teal-50 mt-auto cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+                    className="w-full rounded-lg border-2 border-dashed border-teal-300 bg-white px-4 py-4 text-left transition hover:border-teal-500 hover:bg-teal-50 mt-auto cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:bg-slate-900 dark:border-teal-700/50 dark:hover:bg-slate-700/50"
                   >
                     {!birthCertificateFile ? (
                       <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-md bg-teal-100 text-teal-700">
+                        <div className="p-2 rounded-md bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">
                           <UploadCloud size={18} />
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-800">
+                          <p className="text-sm font-medium text-gray-800 dark:text-slate-50">
                             Choose a file
                           </p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-gray-500 dark:text-slate-400">
                             PDF, JPG, PNG up to 5MB
                           </p>
                         </div>
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        <p className="text-sm font-medium text-gray-800">
+                        <p className="text-sm font-medium text-gray-800 dark:text-slate-50">
                           Replace file
                         </p>
 
-                        <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                        <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 dark:border-slate-600 dark:bg-slate-700/50">
                           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                             <div className="min-w-0 flex-1 flex items-start gap-2.5">
-                              <span className="shrink-0 mt-0.5 text-gray-500">
+                              <span className="shrink-0 mt-0.5 text-gray-500 dark:text-slate-400">
                                 <FileText size={14} />
                               </span>
                               <div className="min-w-0 flex-1">
                                 <p
-                                  className="text-sm font-medium text-gray-800 wrap-break-word leading-5"
+                                  className="text-sm font-medium text-gray-800 wrap-break-word leading-5 dark:text-slate-50"
                                   title={birthCertificateFile.name}
                                 >
                                   {birthCertificateFile.name}
                                 </p>
-                                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">
+                                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500 dark:text-slate-400">
                                   <span>
                                     {formatFileSize(birthCertificateFile.size)}
                                   </span>
-                                  <span className="text-gray-300">|</span>
+                                  <span className="text-gray-300 dark:text-slate-600">|</span>
                                   <span>
                                     {getFileExtension(
                                       birthCertificateFile.name,
@@ -991,7 +991,7 @@ export default function AddChildModal({
                                 e.stopPropagation();
                                 removeDocument("birthCertificate");
                               }}
-                              className="inline-flex items-center gap-1 self-start text-xs text-rose-600 hover:text-rose-700 cursor-pointer sm:ml-3"
+                              className="inline-flex items-center gap-1 self-start text-xs text-rose-600 hover:text-rose-700 cursor-pointer sm:ml-3 dark:text-rose-400 dark:hover:text-rose-300"
                             >
                               <Trash2 size={12} />
                               Remove
@@ -1002,25 +1002,25 @@ export default function AddChildModal({
                     )}
                   </div>
                   {documentErrors.birthCertificate && (
-                    <p className="mt-2 text-xs text-red-600 min-h-4.5">
+                    <p className="mt-2 text-xs text-red-600 min-h-4.5 dark:text-red-400">
                       {documentErrors.birthCertificate}
                     </p>
                   )}
                 </div>
 
-                <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-4 flex flex-col">
+                <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-4 flex flex-col dark:border-slate-700 dark:bg-slate-700/30">
                   <div className="flex items-start justify-between gap-3 mb-3 min-h-11.5">
-                    <p className="text-[15px] font-semibold text-gray-900 leading-5 pr-2">
+                    <p className="text-[15px] font-semibold text-gray-900 leading-5 pr-2 dark:text-slate-50">
                       Parent Valid Government ID{" "}
                       <span className="text-red-500">*</span>
                     </p>
                     {parentIdFile ? (
-                      <span className="shrink-0 inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full">
+                      <span className="shrink-0 inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full dark:text-emerald-300 dark:bg-emerald-900/30">
                         <CheckCircle2 size={12} />
                         Uploaded
                       </span>
                     ) : (
-                      <span className="shrink-0 inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-100 px-2 py-1 rounded-full">
+                      <span className="shrink-0 inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-100 px-2 py-1 rounded-full dark:text-amber-300 dark:bg-amber-900/30">
                         <AlertCircle size={12} />
                         Required
                       </span>
@@ -1050,46 +1050,46 @@ export default function AddChildModal({
                         parentIdInputRef.current?.click();
                       }
                     }}
-                    className="w-full rounded-lg border-2 border-dashed border-teal-300 bg-white px-4 py-4 text-left transition hover:border-teal-500 hover:bg-teal-50 mt-auto cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+                    className="w-full rounded-lg border-2 border-dashed border-teal-300 bg-white px-4 py-4 text-left transition hover:border-teal-500 hover:bg-teal-50 mt-auto cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 dark:bg-slate-900 dark:border-teal-700/50 dark:hover:bg-slate-700/50"
                   >
                     {!parentIdFile ? (
                       <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-md bg-teal-100 text-teal-700">
+                        <div className="p-2 rounded-md bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">
                           <UploadCloud size={18} />
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-800">
+                          <p className="text-sm font-medium text-gray-800 dark:text-slate-50">
                             Choose a file
                           </p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-gray-500 dark:text-slate-400">
                             PDF, JPG, PNG up to 5MB
                           </p>
                         </div>
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        <p className="text-sm font-medium text-gray-800">
+                        <p className="text-sm font-medium text-gray-800 dark:text-slate-50">
                           Replace file
                         </p>
 
-                        <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                        <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 dark:border-slate-600 dark:bg-slate-700/50">
                           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                             <div className="min-w-0 flex-1 flex items-start gap-2.5">
-                              <span className="shrink-0 mt-0.5 text-gray-500">
+                              <span className="shrink-0 mt-0.5 text-gray-500 dark:text-slate-400">
                                 <FileText size={14} />
                               </span>
                               <div className="min-w-0 flex-1">
                                 <p
-                                  className="text-sm font-medium text-gray-800 wrap-break-word leading-5"
+                                  className="text-sm font-medium text-gray-800 wrap-break-word leading-5 dark:text-slate-50"
                                   title={parentIdFile.name}
                                 >
                                   {parentIdFile.name}
                                 </p>
-                                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">
+                                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500 dark:text-slate-400">
                                   <span>
                                     {formatFileSize(parentIdFile.size)}
                                   </span>
-                                  <span className="text-gray-300">|</span>
+                                  <span className="text-gray-300 dark:text-slate-600">|</span>
                                   <span>
                                     {getFileExtension(parentIdFile.name)}
                                   </span>
@@ -1102,7 +1102,7 @@ export default function AddChildModal({
                                 e.stopPropagation();
                                 removeDocument("parentId");
                               }}
-                              className="inline-flex items-center gap-1 self-start text-xs text-rose-600 hover:text-rose-700 cursor-pointer sm:ml-3"
+                              className="inline-flex items-center gap-1 self-start text-xs text-rose-600 hover:text-rose-700 cursor-pointer sm:ml-3 dark:text-rose-400 dark:hover:text-rose-300"
                             >
                               <Trash2 size={12} />
                               Remove
@@ -1114,14 +1114,14 @@ export default function AddChildModal({
                   </div>
 
                   {documentErrors.parentId && (
-                    <p className="mt-2 text-xs text-red-600 min-h-4.5">
+                    <p className="mt-2 text-xs text-red-600 min-h-4.5 dark:text-red-400">
                       {documentErrors.parentId}
                     </p>
                   )}
                 </div>
               </div>
 
-              <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
+              <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-700/50">
                 <label className="flex items-start gap-3 cursor-pointer">
                   <input
                     type="checkbox"
@@ -1135,13 +1135,13 @@ export default function AddChildModal({
                     }}
                     className="mt-0.5 h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
                   />
-                  <span className="text-sm leading-6 text-gray-700">
+                  <span className="text-sm leading-6 text-gray-700 dark:text-slate-300">
                     I confirm that the uploaded documents were verified against
                     the original physical copies.
                   </span>
                 </label>
                 {documentErrors.confirmation && (
-                  <p className="mt-2 text-xs text-red-600">
+                  <p className="mt-2 text-xs text-red-600 dark:text-red-400">
                     {documentErrors.confirmation}
                   </p>
                 )}
@@ -1150,8 +1150,8 @@ export default function AddChildModal({
           )}
 
           {/* Info Box */}
-          <div className="bg-teal-50 border border-teal-200 rounded-lg p-4 flex gap-3">
-            <div className="text-teal-600 mt-0.5">
+          <div className="bg-teal-50 border border-teal-200 rounded-lg p-4 flex gap-3 dark:bg-teal-900/20 dark:border-teal-700/30">
+            <div className="text-teal-600 mt-0.5 dark:text-teal-400">
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path
                   fillRule="evenodd"
@@ -1160,11 +1160,11 @@ export default function AddChildModal({
                 />
               </svg>
             </div>
-            <p className="text-sm text-teal-700">
+            <p className="text-sm text-teal-700 dark:text-teal-300">
               Student IDs are auto-generated based on enrollment year and a
               random number. For example, a child enrolled in 2024 might receive
               an ID like{" "}
-              <span className="font-mono bg-teal-100 px-1 rounded">
+              <span className="font-mono bg-teal-100 px-1 rounded dark:bg-teal-900/40">
                 CDC-2024-123456
               </span>
               .
@@ -1172,14 +1172,14 @@ export default function AddChildModal({
           </div>
 
           {/* Buttons */}
-          <div className="flex gap-3 justify-between pt-4 border-t">
+          <div className="flex gap-3 justify-between pt-4 border-t dark:border-slate-700">
             <div className="flex gap-3">
               {currentStep > 1 && (
                 <button
                   type="button"
                   onClick={handlePrevStep}
                   disabled={isLoading}
-                  className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition disabled:opacity-50 cursor-pointer"
+                  className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition disabled:opacity-50 cursor-pointer dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
                 >
                   Back
                 </button>

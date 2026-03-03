@@ -168,26 +168,26 @@ export default function ChildrenManagement() {
       breadcrumbs={["Admin", "Children Records"]}
       onNavigate={(path) => navigate(`/${path}`)}
     >
-      <div className="p-8 space-y-6">
+      <div className="space-y-6 p-8">
         {/* Page Header */}
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-slate-100">
             Children Records
           </h1>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-slate-400">
             View and manage student information
           </p>
         </div>
 
         {/* Student Directory Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
           {/* Card Header */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-6 border-b">
+          <div className="flex flex-col gap-4 border-b p-6 dark:border-slate-700 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-3">
-              <h2 className="text-lg font-semibold text-gray-900">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
                 Student Directory
               </h2>
-              <span className="px-2.5 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-700">
+              <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700 dark:bg-slate-700 dark:text-slate-200">
                 {children.length} Enrolled
               </span>
             </div>
@@ -204,7 +204,7 @@ export default function ChildrenManagement() {
                   placeholder="Search students..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-10 pr-4 py-2 text-sm border rounded-lg w-64 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-64 rounded-lg border border-gray-300 py-2 pl-10 pr-4 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-400"
                 />
               </div>
 
@@ -266,7 +266,7 @@ export default function ChildrenManagement() {
         menuAnchorRect &&
         createPortal(
           <div
-            className="fixed py-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50"
+            className="fixed z-50 w-48 rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-slate-600 dark:bg-slate-900"
             style={{
               top: menuAnchorRect.bottom + 4,
               left: menuAnchorRect.left,
@@ -274,11 +274,11 @@ export default function ChildrenManagement() {
             onClick={(e) => e.stopPropagation()}
           >
             <button
-              onClick={() => {
-                handleChangeStatus(menuChild as Child);
-                closeMenu();
-              }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition"
+                onClick={() => {
+                  handleChangeStatus(menuChild as Child);
+                  closeMenu();
+                }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 transition hover:bg-gray-50 dark:text-slate-200 dark:hover:bg-slate-800"
             >
               <ToggleLeft size={14} />
               Change Status
@@ -289,7 +289,7 @@ export default function ChildrenManagement() {
                   handleUnlinkParent(menuChild as Child);
                   closeMenu();
                 }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition"
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 transition hover:bg-red-50 dark:hover:bg-red-500/10"
               >
                 <Unlink size={14} />
                 Unlink Parent
@@ -300,7 +300,7 @@ export default function ChildrenManagement() {
                 closeMenu();
                 await handleDeleteChild(menuChild as Child);
               }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition"
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 transition hover:bg-red-50 dark:hover:bg-red-500/10"
             >
               <Trash2 size={14} />
               Delete Child
@@ -316,22 +316,22 @@ export default function ChildrenManagement() {
             onClick={closeViewModal}
           >
             <div
-              className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+              className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-900"
               onClick={(event) => event.stopPropagation()}
             >
-              <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+              <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 dark:border-slate-700">
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-slate-100">
                     Child Details
                   </h3>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 dark:text-slate-400">
                     Review profile and protected documents
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={closeViewModal}
-                  className="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
+                  className="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
                   title="Close"
                 >
                   <X size={18} />
@@ -344,7 +344,7 @@ export default function ChildrenManagement() {
                     <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                       Name
                     </p>
-                    <p className="text-base font-medium text-gray-900">
+                    <p className="text-base font-medium text-gray-900 dark:text-slate-100">
                       {formatFullName(
                         viewingChild.firstName,
                         viewingChild.middleName,
@@ -357,7 +357,7 @@ export default function ChildrenManagement() {
                       <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                         Age / Gender
                       </p>
-                      <p className="text-sm text-gray-900">
+                      <p className="text-sm text-gray-900 dark:text-slate-100">
                         {viewingChild.age} years / {viewingChild.gender}
                       </p>
                     </div>
@@ -380,7 +380,7 @@ export default function ChildrenManagement() {
                     <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                       Student ID
                     </p>
-                    <p className="font-mono text-sm text-gray-900">
+                    <p className="font-mono text-sm text-gray-900 dark:text-slate-100">
                       {viewingChild.studentId || "Not assigned"}
                     </p>
                   </div>
@@ -388,7 +388,7 @@ export default function ChildrenManagement() {
                     <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                       School Year
                     </p>
-                    <p className="text-sm text-gray-900">
+                    <p className="text-sm text-gray-900 dark:text-slate-100">
                       {viewingChild.schoolYear || "Not set"}
                     </p>
                   </div>
@@ -396,7 +396,7 @@ export default function ChildrenManagement() {
                     <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                       Enrollment Date
                     </p>
-                    <p className="text-sm text-gray-900">
+                    <p className="text-sm text-gray-900 dark:text-slate-100">
                       {formatDate(viewingChild.enrollmentDate)}
                     </p>
                   </div>
@@ -404,7 +404,7 @@ export default function ChildrenManagement() {
                     <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                       Date of Birth
                     </p>
-                    <p className="text-sm text-gray-900">
+                    <p className="text-sm text-gray-900 dark:text-slate-100">
                       {formatDate(viewingChild.dateOfBirth)}
                     </p>
                   </div>
@@ -415,7 +415,7 @@ export default function ChildrenManagement() {
                     <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                       Parent
                     </p>
-                    <p className="text-sm text-gray-900">
+                    <p className="text-sm text-gray-900 dark:text-slate-100">
                       {viewingChild.parent
                         ? formatFullName(
                             viewingChild.parent.firstName,
@@ -425,7 +425,7 @@ export default function ChildrenManagement() {
                         : "Not linked"}
                     </p>
                     {viewingChild.parent?.email && (
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 dark:text-slate-400">
                         {viewingChild.parent.email}
                       </p>
                     )}
@@ -434,7 +434,7 @@ export default function ChildrenManagement() {
                     <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                       Teacher
                     </p>
-                    <p className="text-sm text-gray-900">
+                    <p className="text-sm text-gray-900 dark:text-slate-100">
                       {viewingChild.teacher
                         ? formatFullName(
                             viewingChild.teacher.firstName,
@@ -444,16 +444,16 @@ export default function ChildrenManagement() {
                         : "Unassigned"}
                     </p>
                     {viewingChild.teacher?.email && (
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 dark:text-slate-400">
                         {viewingChild.teacher.email}
                       </p>
                     )}
                   </div>
-                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-900">
                     <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                       Protected Documents
                     </p>
-                    <p className="mt-1 text-xs text-gray-500">
+                    <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">
                       Links are signed and expire in 60 seconds.
                     </p>
                     <div className="mt-3 grid gap-2">
@@ -464,7 +464,7 @@ export default function ChildrenManagement() {
                           documentLoading !== null ||
                           !viewingChild.documents?.birthCertificate?.publicId
                         }
-                        className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-700"
                       >
                         {documentLoading === "birth-certificate" ? (
                           <Loader2 size={16} className="animate-spin" />
@@ -480,7 +480,7 @@ export default function ChildrenManagement() {
                           documentLoading !== null ||
                           !viewingChild.documents?.parentId?.publicId
                         }
-                        className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-700"
                       >
                         {documentLoading === "parent-id" ? (
                           <Loader2 size={16} className="animate-spin" />
@@ -490,7 +490,7 @@ export default function ChildrenManagement() {
                         View Parent ID
                       </button>
                     </div>
-                    <p className="mt-2 text-xs text-gray-500">
+                    <p className="mt-2 text-xs text-gray-500 dark:text-slate-400">
                       Disabled buttons mean no document has been uploaded yet.
                     </p>
                   </div>

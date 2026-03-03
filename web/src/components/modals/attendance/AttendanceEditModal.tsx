@@ -37,28 +37,28 @@ export default function AttendanceEditModal({
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       {/* Clean Modal (No Shadow, added subtle border for definition) */}
-      <div className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white border border-gray-200">
-        <div className="border-b border-gray-100 px-6 py-5">
-          <h2 className="text-lg font-semibold text-gray-900">
+      <div className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white border border-gray-200 dark:bg-slate-900 dark:border-slate-700">
+        <div className="border-b border-gray-100 px-6 py-5 dark:border-slate-700">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-50">
             Edit Attendance
           </h2>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
             Adjust the attendance status for this child.
           </p>
         </div>
 
         <div className="space-y-4 px-6 py-5">
-          <div className="rounded-xl bg-gray-50 border border-gray-100 px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+          <div className="rounded-xl bg-gray-50 border border-gray-100 px-4 py-3 dark:bg-slate-700 dark:border-slate-600">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
               Child
             </p>
-            <p className="mt-1 text-sm font-semibold text-gray-900">
+            <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-slate-50">
               {childName}
             </p>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
               Attendance Status
             </label>
             <select
@@ -66,7 +66,7 @@ export default function AttendanceEditModal({
               onChange={(event) =>
                 setStatus(event.target.value as "present" | "absent")
               }
-              className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
+              className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 transition dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
             >
               <option value="present">Present</option>
               <option value="absent">Absent</option>
@@ -74,17 +74,17 @@ export default function AttendanceEditModal({
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-3 border-t border-gray-100 bg-gray-50/50 px-6 py-4">
+        <div className="flex items-center justify-end gap-3 border-t border-gray-100 bg-gray-50/50 px-6 py-4 dark:border-slate-700 dark:bg-slate-900/50">
           <button
             type="button"
-            className="rounded-lg px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 transition"
+            className="rounded-lg px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 transition dark:text-slate-300 dark:hover:bg-slate-700"
             onClick={onClose}
           >
             Cancel
           </button>
           <button
             type="button"
-            className="inline-flex items-center rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 transition focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+            className="inline-flex items-center rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 transition focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
             onClick={() => onSave(status)}
           >
             Save Changes

@@ -31,34 +31,36 @@ type SidebarProps = {
 
 export default function Sidebar({ activeItem = "users", onNavigate }: SidebarProps) {
   return (
-    <aside className="w-60 bg-linear-to-b from-teal-600 to-teal-700 text-white flex flex-col h-screen fixed left-0 top-0">
+    <aside className="fixed left-0 top-0 flex h-screen w-60 flex-col bg-linear-to-b from-teal-600 to-teal-700 text-white transition-colors dark:from-slate-900 dark:to-slate-800">
       {/* Logo Section */}
-      <div className="p-6 border-b border-teal-500/30">
+      <div className="border-b border-teal-500/30 p-6 dark:border-slate-700">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
             <Shield className="text-teal-600" size={24} />
           </div>
           <div>
             <h1 className="text-lg font-bold">Smart KidCare</h1>
-            <p className="text-xs text-teal-200">Admin Panel</p>
+            <p className="text-xs text-teal-200 dark:text-slate-300">
+              Admin Panel
+            </p>
           </div>
         </div>
       </div>
 
       {/* Navigation Menu */}
-      <nav className="flex-1 py-6 px-3 space-y-1">
+      <nav className="flex-1 space-y-1 px-3 py-6">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeItem === item.path;
-          
+
           return (
             <button
               key={item.path}
               onClick={() => onNavigate?.(item.path)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                 isActive
-                  ? "bg-white/20 text-white font-medium shadow-sm"
-                  : "text-teal-100 hover:bg-white/10 hover:text-white"
+                  ? "bg-white/20 text-white font-medium shadow-sm dark:bg-slate-700/70"
+                  : "text-teal-100 hover:bg-white/10 hover:text-white dark:text-slate-300 dark:hover:bg-slate-700/60"
               }`}
             >
               <Icon size={20} />

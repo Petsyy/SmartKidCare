@@ -56,22 +56,22 @@ const StatCard = ({
   color: "blue" | "teal" | "emerald" | "rose" | "slate";
 }) => {
   const colorMap = {
-    blue: "bg-blue-50 text-blue-600",
-    teal: "bg-teal-50 text-teal-600",
-    emerald: "bg-emerald-50 text-emerald-600",
-    rose: "bg-rose-50 text-rose-600",
-    slate: "bg-slate-50 text-slate-600",
+    blue: "bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400",
+    teal: "bg-teal-50 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400",
+    emerald: "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
+    rose: "bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400",
+    slate: "bg-slate-50 text-slate-600 dark:bg-slate-700 dark:text-slate-400",
   };
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+    <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
       <div className="flex items-start justify-between">
         <div className="space-y-1">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
             {title}
           </p>
-          <p className="text-2xl font-semibold text-gray-900">{value}</p>
-          <p className="text-sm text-gray-500">{subtitle}</p>
+          <p className="text-2xl font-semibold text-gray-900 dark:text-slate-50">{value}</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400">{subtitle}</p>
         </div>
         <div className={`rounded-lg p-3 ${colorMap[color]}`}>
           <Icon className="h-5 w-5" />
@@ -117,22 +117,22 @@ export default function ReportAnalytics() {
     >
       <div className="space-y-6 p-8">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-slate-50">
             Reports & Analytics
           </h1>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-slate-400">
             Performance reports for attendance, feeding, and exception trends.
           </p>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div>
-              <p className="text-sm font-semibold text-gray-900">
+              <p className="text-sm font-semibold text-gray-900 dark:text-slate-50">
                 Report Range
               </p>
-              <p className="text-sm text-gray-600">{activeRange.label}</p>
-              <p className="mt-1 inline-flex items-center gap-1 text-xs text-gray-500">
+              <p className="text-sm text-gray-600 dark:text-slate-400">{activeRange.label}</p>
+              <p className="mt-1 inline-flex items-center gap-1 text-xs text-gray-500 dark:text-slate-400">
                 <Clock className="h-3.5 w-3.5" />
                 Last refreshed: {lastUpdatedLabel}
               </p>
@@ -148,8 +148,8 @@ export default function ReportAnalytics() {
                     onClick={() => setDatePreset(option.value)}
                     className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
                       isActive
-                        ? "border-teal-300 bg-teal-100 text-teal-800"
-                        : "border-gray-300 bg-white text-gray-600 hover:border-teal-200 hover:text-teal-700"
+                        ? "border-teal-300 bg-teal-100 text-teal-800 dark:border-teal-700 dark:bg-teal-900/40 dark:text-teal-200"
+                        : "border-gray-300 bg-white text-gray-600 hover:border-teal-200 hover:text-teal-700 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:border-teal-600 dark:hover:text-teal-200"
                     }`}
                   >
                     {option.label}
@@ -162,32 +162,32 @@ export default function ReportAnalytics() {
           {datePreset === "custom" && (
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               <label className="space-y-1">
-                <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
                   Start Date
                 </span>
                 <input
                   type="date"
                   value={customStartDate}
                   onChange={(event) => setCustomStartDate(event.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
                   End Date
                 </span>
                 <input
                   type="date"
                   value={customEndDate}
                   onChange={(event) => setCustomEndDate(event.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
                 />
               </label>
             </div>
           )}
 
           {customRangeError && (
-            <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
               {customRangeError}
             </div>
           )}
@@ -196,7 +196,7 @@ export default function ReportAnalytics() {
             <button
               type="button"
               onClick={() => void fetchReportData()}
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
             >
               <RefreshCw className="h-4 w-4" />
               Refresh Data
@@ -214,13 +214,13 @@ export default function ReportAnalytics() {
         </div>
 
         {error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-200">
             {error}
           </div>
         )}
 
         {isLoading ? (
-          <div className="flex h-56 items-center justify-center rounded-xl border border-gray-200 bg-white text-sm text-gray-500 shadow-sm">
+          <div className="flex h-56 items-center justify-center rounded-xl border border-gray-200 bg-white text-sm text-gray-500 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
             Loading report analytics...
           </div>
         ) : (
@@ -264,17 +264,17 @@ export default function ReportAnalytics() {
             </div>
 
             <div className="grid gap-4 lg:grid-cols-2">
-              <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                 <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-50">
                     Daily Compliance Trend
                   </h3>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 dark:text-slate-400">
                     Attendance and feeding compliance rates by day.
                   </p>
                 </div>
                 {dailyTrends.length === 0 ? (
-                  <div className="flex h-64 items-center justify-center text-sm text-gray-500">
+                  <div className="flex h-64 items-center justify-center text-sm text-gray-500 dark:text-slate-400">
                     No trend data for the selected range.
                   </div>
                 ) : (
@@ -322,17 +322,17 @@ export default function ReportAnalytics() {
                 )}
               </div>
 
-              <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                 <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-50">
                     Daily Outcomes
                   </h3>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 dark:text-slate-400">
                     Present, absent, fed, and missed counts by day.
                   </p>
                 </div>
                 {dailyTrends.length === 0 ? (
-                  <div className="flex h-64 items-center justify-center text-sm text-gray-500">
+                  <div className="flex h-64 items-center justify-center text-sm text-gray-500 dark:text-slate-400">
                     No outcome data for the selected range.
                   </div>
                 ) : (
@@ -369,12 +369,12 @@ export default function ReportAnalytics() {
             </div>
 
             <div className="grid gap-4 lg:grid-cols-2">
-              <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                 <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-50">
                     Status Distribution
                   </h3>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 dark:text-slate-400">
                     Combined distribution of attendance and feeding statuses.
                   </p>
                 </div>
@@ -420,35 +420,35 @@ export default function ReportAnalytics() {
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full border-collapse text-sm">
-                      <thead className="border-b bg-gray-50">
+                      <thead className="border-b border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-900/50">
                         <tr>
-                          <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                          <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
                             Child
                           </th>
-                          <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                          <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
                             Absences
                           </th>
-                          <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                          <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
                             Missed Meals
                           </th>
-                          <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                          <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
                             Total
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-100">
+                      <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                         {topExceptions.map((row) => (
-                          <tr key={row.childId} className="hover:bg-gray-50">
-                            <td className="px-4 py-3 font-medium text-gray-900">
+                          <tr key={row.childId} className="hover:bg-gray-50 dark:hover:bg-slate-700/50">
+                            <td className="px-4 py-3 font-medium text-gray-900 dark:text-slate-100">
                               {row.childName}
                             </td>
-                            <td className="px-4 py-3 text-right text-gray-700">
+                            <td className="px-4 py-3 text-right text-gray-700 dark:text-slate-300">
                               {formatNumber(row.absentCount)}
                             </td>
-                            <td className="px-4 py-3 text-right text-gray-700">
+                            <td className="px-4 py-3 text-right text-gray-700 dark:text-slate-300">
                               {formatNumber(row.missedCount)}
                             </td>
-                            <td className="px-4 py-3 text-right font-semibold text-rose-700">
+                            <td className="px-4 py-3 text-right font-semibold text-rose-700 dark:text-rose-400">
                               {formatNumber(row.totalExceptions)}
                             </td>
                           </tr>
@@ -460,45 +460,45 @@ export default function ReportAnalytics() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
               <div className="mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-50">
                   Recent Daily Summary
                 </h3>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 dark:text-slate-400">
                   Snapshot of the latest days in the selected range.
                 </p>
               </div>
               {recentDailyRows.length === 0 ? (
-                <div className="py-10 text-center text-sm text-gray-500">
+                <div className="py-10 text-center text-sm text-gray-500 dark:text-slate-400">
                   No daily summaries available.
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full border-collapse text-sm">
-                    <thead className="border-b bg-gray-50">
+                    <thead className="border-b border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-900/50">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
                           Date
                         </th>
-                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
                           Attendance Rate
                         </th>
-                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
                           Feeding Rate
                         </th>
-                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
                           Present / Absent
                         </th>
-                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
                           Fed / Missed
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                       {recentDailyRows.map((row) => (
-                        <tr key={row.dateKey} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 font-medium text-gray-900">
+                        <tr key={row.dateKey} className="hover:bg-gray-50 dark:hover:bg-slate-700/50">
+                          <td className="px-4 py-3 font-medium text-gray-900 dark:text-slate-100">
                             {new Intl.DateTimeFormat("en-PH", {
                               month: "short",
                               day: "2-digit",
@@ -506,17 +506,17 @@ export default function ReportAnalytics() {
                               timeZone: "Asia/Manila",
                             }).format(new Date(row.dateKey))}
                           </td>
-                          <td className="px-4 py-3 text-right text-teal-700">
+                          <td className="px-4 py-3 text-right text-teal-700 dark:text-teal-400">
                             {row.attendanceRate}%
                           </td>
-                          <td className="px-4 py-3 text-right text-emerald-700">
+                          <td className="px-4 py-3 text-right text-emerald-700 dark:text-emerald-400">
                             {row.feedingRate}%
                           </td>
-                          <td className="px-4 py-3 text-right text-gray-700">
+                          <td className="px-4 py-3 text-right text-gray-700 dark:text-slate-300">
                             {formatNumber(row.present)} /{" "}
                             {formatNumber(row.absent)}
                           </td>
-                          <td className="px-4 py-3 text-right text-gray-700">
+                          <td className="px-4 py-3 text-right text-gray-700 dark:text-slate-300">
                             {formatNumber(row.completed)} /{" "}
                             {formatNumber(row.missed)}
                           </td>

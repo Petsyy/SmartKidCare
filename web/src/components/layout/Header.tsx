@@ -38,17 +38,17 @@ export default function Header({
       .join("");
   };
   return (
-    <header className="bg-white border-b border-gray-200 px-8 py-4">
+    <header className="border-b border-gray-200 bg-white px-8 py-4 transition-colors dark:border-slate-800 dark:bg-slate-900">
       <div className="flex items-center justify-between">
         {/* Left: Breadcrumbs */}
-        <div className="flex items-center gap-2 text-sm text-gray-500">
+        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-slate-400">
           {breadcrumbs.map((crumb, index) => (
             <div key={index} className="flex items-center gap-2">
               {index > 0 && <ChevronRight size={16} />}
               <span
                 className={
                   index === breadcrumbs.length - 1
-                    ? "text-gray-900 font-medium"
+                    ? "font-medium text-gray-900 dark:text-slate-100"
                     : ""
                 }
               >
@@ -63,19 +63,19 @@ export default function Header({
           {/* Search Bar */}
           <div className="relative">
             <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500"
               size={18}
             />
             <input
               type="text"
               placeholder="Search..."
-              className="pl-10 pr-4 py-2 w-64 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              className="w-64 rounded-lg border border-gray-200 bg-gray-50 py-2 pl-10 pr-4 text-sm text-gray-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
           </div>
 
           {/* Notification Bell */}
-          <button className="relative p-2 hover:bg-gray-100 rounded-lg">
-            <Bell size={20} className="text-gray-600" />
+          <button className="relative rounded-lg p-2 transition hover:bg-gray-100 dark:hover:bg-slate-800">
+            <Bell size={20} className="text-gray-600 dark:text-slate-300" />
             <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-semibold">
               3
             </span>
@@ -85,7 +85,7 @@ export default function Header({
           <div className="relative">
             <button
               onClick={() => setShowDropdown(!showDropdown)}
-              className="flex items-center gap-3 hover:bg-gray-100 rounded-lg px-2 py-1 transition"
+              className="flex items-center gap-3 rounded-lg px-2 py-1 transition hover:bg-gray-100 dark:hover:bg-slate-800"
             >
               <div className="w-10 h-10 bg-teal-600 rounded-full flex items-center justify-center">
                 <span className="text-white font-semibold text-sm">
@@ -93,17 +93,21 @@ export default function Header({
                 </span>
               </div>
               <div className="text-sm text-left">
-                <div className="font-semibold text-gray-900">Admin</div>
-                <div className="text-gray-500 text-xs">{adminEmail}</div>
+                <div className="font-semibold text-gray-900 dark:text-slate-100">
+                  Admin
+                </div>
+                <div className="text-xs text-gray-500 dark:text-slate-400">
+                  {adminEmail}
+                </div>
               </div>
             </button>
 
             {/* Dropdown Menu */}
             {showDropdown && (
-              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+              <div className="absolute right-0 z-10 mt-2 w-48 rounded-lg border border-gray-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 transition text-sm font-medium"
+                  className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-red-600 transition hover:bg-red-50 dark:hover:bg-red-500/10"
                 >
                   <LogOut size={16} />
                   Logout

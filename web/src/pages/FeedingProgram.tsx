@@ -70,21 +70,21 @@ export default function FeedingProgram() {
     >
       <div className="space-y-6 p-8">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-slate-50">
             Feeding Program
           </h1>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-slate-400">
             Review daily feeding submissions and meal details from teachers.
           </p>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
-          <div className="flex flex-col gap-4 border-b p-6 md:flex-row md:items-center md:justify-between">
+        <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+          <div className="flex flex-col gap-4 border-b border-gray-200 p-6 dark:border-slate-700 md:flex-row md:items-center md:justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-50">
                 Daily Feeding Logs
               </h2>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 dark:text-slate-400">
                 Search by student, meal, or filter by date range to find
                 specific records.
               </p>
@@ -99,11 +99,11 @@ export default function FeedingProgram() {
                 value={search}
                 onChange={(event) => updateSearch(event.target.value)}
                 placeholder="Search by name, meal, or ID"
-                className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
               />
             </div>
           </div>
-          <div className="flex flex-col gap-3 border-b bg-gray-50/60 px-6 py-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-3 border-b border-gray-200 bg-gray-50/60 px-6 py-4 dark:border-slate-700 dark:bg-slate-900/40 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-wrap items-center gap-2">
               {(["all", "today", "thisWeek", "thisMonth"] as DatePreset[]).map(
                 (preset) => {
@@ -124,8 +124,8 @@ export default function FeedingProgram() {
                       onClick={() => updateDatePreset(preset)}
                       className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
                         isActive
-                          ? "border-teal-300 bg-teal-100 text-teal-800"
-                          : "border-gray-300 bg-white text-gray-600 hover:border-teal-200 hover:text-teal-700"
+                          ? "border-teal-300 bg-teal-100 text-teal-800 dark:border-teal-700 dark:bg-teal-900/40 dark:text-teal-200"
+                          : "border-gray-300 bg-white text-gray-600 hover:border-teal-200 hover:text-teal-700 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:border-teal-600 dark:hover:text-teal-200"
                       }`}
                     >
                       {label}
@@ -140,7 +140,7 @@ export default function FeedingProgram() {
                 onChange={(event) =>
                   updateStatusFilter(event.target.value as FeedingStatusFilter)
                 }
-                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
               >
                 <option value="all">All Status</option>
                 <option value="completed">Completed</option>
@@ -153,7 +153,7 @@ export default function FeedingProgram() {
                     event.target.value as VerificationFilter,
                   )
                 }
-                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
               >
                 <option value="all">All Verification</option>
                 <option value="verified">Verified</option>
@@ -163,7 +163,7 @@ export default function FeedingProgram() {
                 type="button"
                 disabled={!hasActiveFilters}
                 onClick={clearFilters}
-                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
               >
                 Clear
               </button>
@@ -171,47 +171,47 @@ export default function FeedingProgram() {
           </div>
 
           {error && (
-            <div className="border-b border-red-100 bg-red-50 px-6 py-3 text-sm text-red-700">
+            <div className="border-b border-red-100 bg-red-50 px-6 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-900/20 dark:text-red-200">
               {error}
             </div>
           )}
 
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
-              <thead className="border-b bg-gray-50">
+              <thead className="border-b border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-900/50">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
                     Student ID
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
                     Child Name
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
                     Date
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
                     Food Served
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
                     Feeding Status
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
                     Recorded By
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
                     Submitted At
                   </th>
-                  <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
                     Actions / Verification
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                 {isLoading ? (
                   <tr>
                     <td
                       colSpan={8}
-                      className="px-6 py-10 text-center text-sm text-gray-500"
+                      className="px-6 py-10 text-center text-sm text-gray-500 dark:text-slate-400"
                     >
                       Loading feeding records...
                     </td>
@@ -220,7 +220,7 @@ export default function FeedingProgram() {
                   <tr>
                     <td
                       colSpan={8}
-                      className="px-6 py-10 text-center text-sm text-gray-500"
+                      className="px-6 py-10 text-center text-sm text-gray-500 dark:text-slate-400"
                     >
                       No feeding records found.
                     </td>
@@ -229,33 +229,33 @@ export default function FeedingProgram() {
                   rows.map((row) => (
                     <tr
                       key={row.id}
-                      className="transition-colors hover:bg-gray-50"
+                      className="transition-colors hover:bg-gray-50 dark:hover:bg-slate-700/50"
                     >
-                      <td className="px-6 py-4 font-mono text-sm text-gray-900">
+                      <td className="px-6 py-4 font-mono text-sm text-gray-900 dark:text-slate-100">
                         {row.studentId || "—"}
                       </td>
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                      <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-slate-100">
                         {row.childName}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
+                      <td className="px-6 py-4 text-sm text-gray-900 dark:text-slate-100">
                         {formatDate(row.date)}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
+                      <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-300">
                         {row.foodServed || "—"}
                       </td>
                       <td className="px-6 py-4">
                         <FeedingStatusBadge status={row.status} />
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
+                      <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-300">
                         {row.teacherName}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
+                      <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-300">
                         {formatDateTime(row.submittedAt)}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-center gap-2">
                           <button
-                            className="group inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3.5 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                            className="group inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3.5 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-blue-900/50 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/40"
                             title="Edit Feeding"
                             onClick={() => openEditModal(row)}
                           >
@@ -265,7 +265,7 @@ export default function FeedingProgram() {
                           <button
                             onClick={() => handleViewVerification(row)}
                             title="View blockchain proof"
-                            className="group inline-flex items-center gap-2 rounded-lg border border-teal-200 bg-linear-to-r from-teal-50 to-emerald-50 px-3.5 py-1.5 text-xs font-semibold text-teal-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:from-teal-100 hover:to-emerald-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-teal-500/30"
+                            className="group inline-flex items-center gap-2 rounded-lg border border-teal-200 bg-linear-to-r from-teal-50 to-emerald-50 px-3.5 py-1.5 text-xs font-semibold text-teal-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:from-teal-100 hover:to-emerald-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-teal-500/30 dark:border-teal-900/50 dark:from-teal-900/20 dark:to-emerald-900/20 dark:text-teal-300 dark:hover:from-teal-900/40 dark:hover:to-emerald-900/40"
                           >
                             <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/90 ring-1 ring-teal-200">
                               <Link className="h-3.5 w-3.5 text-teal-700" />
@@ -280,13 +280,13 @@ export default function FeedingProgram() {
               </tbody>
             </table>
           </div>
-          <div className="flex items-center justify-between border-t px-6 py-4">
-            <div className="flex items-center gap-3 text-sm text-gray-600">
+          <div className="flex items-center justify-between border-t border-gray-200 px-6 py-4 dark:border-slate-700">
+            <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-slate-400">
               <span>{rangeLabel}</span>
               <select
                 value={limit}
                 onChange={(event) => setLimit(Number(event.target.value))}
-                className="rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
               >
                 <option value={10}>10 / page</option>
                 <option value={25}>25 / page</option>
@@ -298,11 +298,11 @@ export default function FeedingProgram() {
                 type="button"
                 onClick={() => setPage((prev) => Math.max(1, prev - 1))}
                 disabled={isLoading || page <= 1}
-                className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
               >
                 Previous
               </button>
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-gray-600 dark:text-slate-400">
                 Page {totalPages === 0 ? 0 : page} / {totalPages}
               </span>
               <button
@@ -313,7 +313,7 @@ export default function FeedingProgram() {
                   )
                 }
                 disabled={isLoading || page >= totalPages}
-                className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
               >
                 Next
               </button>
@@ -345,8 +345,8 @@ function FeedingStatusBadge({ status }: { status: "completed" | "missed" }) {
     <span
       className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
         isCompleted
-          ? "bg-emerald-100 text-emerald-700"
-          : "bg-rose-100 text-rose-700"
+          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200"
+          : "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-200"
       }`}
     >
       {isCompleted ? "Completed" : "Missed"}

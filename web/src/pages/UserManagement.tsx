@@ -11,18 +11,17 @@ import {
   MoreVertical,
   Search,
   Baby,
+  X,
 } from "lucide-react";
 import { getUsers, type User } from "@/api/authentication.api";
 import AddTeacherModal from "@/components/modals/user/AddTeacherModal";
 import AddChildForParentModal from "@/components/modals/child/AddChildForParentModal";
 import Layout from "@/components/layout/Layout";
 import {
-  handleViewUser,
   showErrorModal,
   showResetPasswordModal,
   showToggleUserStatusModal,
   showToggleUserStatusSuccessModal,
-  showLinkedChildrenModal,
 } from "@/utils/sweetalert.modal";
 import {
   getParentChildren,
@@ -57,6 +56,11 @@ export default function UserManagement() {
   const [showAddChildModal, setShowAddChildModal] = useState(false);
   const [selectedParentForChild, setSelectedParentForChild] =
     useState<User | null>(null);
+  const [viewingUser, setViewingUser] = useState<User | null>(null);
+  const [viewingChildrenParentName, setViewingChildrenParentName] = useState<
+    string | null
+  >(null);
+  const [viewingChildren, setViewingChildren] = useState<Child[]>([]);
   const [parentChildren, setParentChildren] = useState<Record<string, Child[]>>(
     {},
   );
@@ -87,6 +91,10 @@ export default function UserManagement() {
 
   const handleEditUser = (user: User) => {
     setEditingUser(user);
+  };
+
+  const handleViewUser = (user: User) => {
+    setViewingUser(user);
   };
 
   const handleResetPassword = async (userId: string) => {
@@ -200,7 +208,8 @@ export default function UserManagement() {
   const handleViewChildren = async (parentId: string, parentName: string) => {
     try {
       const children = await getParentChildren(parentId);
-      showLinkedChildrenModal(children, parentName);
+      setViewingChildren(children);
+      setViewingChildrenParentName(parentName);
     } catch (err: any) {
       showErrorModal(err.message || "Failed to load children");
     }
@@ -255,13 +264,13 @@ export default function UserManagement() {
       breadcrumbs={["Admin", "User Management"]}
       onNavigate={(path) => navigate(`/${path}`)}
     >
-      <div className="p-8 space-y-6">
+      <div className="space-y-6 p-8">
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-slate-100">
             User Management
           </h1>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-slate-400">
             Manage teacher and parent accounts
           </p>
         </div>
@@ -272,8 +281,8 @@ export default function UserManagement() {
             onClick={() => setActiveTab("teacher")}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
               activeTab === "teacher"
-                ? "bg-teal-50 text-teal-700 border border-teal-200"
-                : "text-gray-600 hover:bg-gray-100"
+                ? "border border-teal-200 bg-teal-50 text-teal-700 shadow-sm dark:border-teal-700 dark:bg-teal-900/40 dark:text-teal-200"
+                : "border border-transparent text-gray-600 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-gray-50 dark:hover:text-gray-900"
             }`}
           >
             Teacher Accounts
@@ -283,8 +292,8 @@ export default function UserManagement() {
             onClick={() => setActiveTab("parent")}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
               activeTab === "parent"
-                ? "bg-teal-50 text-teal-700 border border-teal-200"
-                : "text-gray-600 hover:bg-gray-100"
+                ? "border border-teal-200 bg-teal-50 text-teal-700 shadow-sm dark:border-teal-700 dark:bg-teal-900/40 dark:text-teal-200"
+                : "border border-transparent text-gray-600 hover:bg-gray-100 dark:hover:bg-slate-800/60 dark:hover:text-gray-900 dark:text-slate-100"
             }`}
           >
             Parent Accounts
@@ -292,29 +301,29 @@ export default function UserManagement() {
         </div>
 
         {error && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-300">
             {error}
           </div>
         )}
 
         {/* Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="p-6 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <h2 className="text-lg font-semibold text-gray-900">
+        <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex flex-col gap-4 border-b border-gray-200 p-6 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
               {activeTab === "teacher" ? "Teacher Accounts" : "Parent Accounts"}
             </h2>
             <div className="flex items-center gap-2">
               <div className="relative flex-1 sm:flex-initial">
                 <Search
                   size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-400"
                 />
                 <input
                   type="text"
                   placeholder={`Search ${activeTab === "teacher" ? "teachers" : "parents"}...`}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 pr-3 py-2 w-full sm:w-56 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="w-full rounded-lg border border-gray-300 bg-white py-2 pl-9 pr-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 sm:w-56"
                 />
               </div>
               {activeTab === "teacher" && (
@@ -341,36 +350,36 @@ export default function UserManagement() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                <tr className="border-b border-gray-200 bg-gray-50 dark:border-slate-800 dark:bg-slate-900">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
                     Name
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
                     Email
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
                     Phone
                   </th>
                   {activeTab === "parent" && (
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
                       Linked Child
                     </th>
                   )}
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
                     Actions
                   </th>
                 </tr>
               </thead>
 
-              <tbody>
+              <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
                 {isLoading && (
                   <tr>
                     <td
                       colSpan={activeTab === "parent" ? 6 : 5}
-                      className="px-6 py-10 text-center text-gray-500"
+                      className="px-6 py-10 text-center text-gray-500 dark:text-slate-400"
                     >
                       Loading users...
                     </td>
@@ -381,7 +390,7 @@ export default function UserManagement() {
                   <tr>
                     <td
                       colSpan={activeTab === "parent" ? 6 : 5}
-                      className="px-6 py-12 text-center text-gray-500"
+                      className="px-6 py-12 text-center text-gray-500 dark:text-slate-400"
                     >
                       No {activeTab === "teacher" ? "teachers" : "parents"}{" "}
                       found.
@@ -395,7 +404,7 @@ export default function UserManagement() {
                     <tr>
                       <td
                         colSpan={activeTab === "parent" ? 6 : 5}
-                        className="px-6 py-12 text-center text-gray-500"
+                        className="px-6 py-12 text-center text-gray-500 dark:text-slate-400"
                       >
                         No {activeTab === "teacher" ? "teachers" : "parents"}{" "}
                         match your search.
@@ -404,38 +413,41 @@ export default function UserManagement() {
                   )}
 
                 {filteredUsers.map((user) => (
-                  <tr key={user._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 font-medium text-gray-900">
+                  <tr
+                    key={user._id}
+                    className="transition-colors hover:bg-gray-50 dark:hover:bg-slate-800/60"
+                  >
+                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-slate-100">
                       {user.lastName}, {user.firstName} {user.middleName}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
+                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-slate-300">
                       {user.email}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-700">
-                      {user.phone || "—"}
+                    <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-300">
+                      {user.phone || "-"}
                     </td>
                     {activeTab === "parent" && (
-                      <td className="px-6 py-4 text-sm text-gray-700">
+                      <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-300">
                         {parentChildren[user._id] &&
                         parentChildren[user._id].length > 0 ? (
                           <div className="space-y-1">
                             {parentChildren[user._id].map((child) => (
                               <div key={child._id} className="flex flex-col">
-                                <span className="font-medium">
+                                <span className="font-medium text-gray-900 dark:text-slate-100">
                                   {child.firstName}{" "}
                                   {child.middleName
                                     ? child.middleName + " "
                                     : ""}
                                   {child.lastName}
                                 </span>
-                                <span className="text-xs text-gray-500">
+                                <span className="text-xs text-gray-500 dark:text-slate-400">
                                   ID: {child.studentId}
                                 </span>
                               </div>
                             ))}
                           </div>
                         ) : (
-                          <span className="text-gray-400">
+                          <span className="text-gray-400 dark:text-slate-500">
                             No linked children
                           </span>
                         )}
@@ -445,8 +457,8 @@ export default function UserManagement() {
                       <span
                         className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
                           user.isActive !== false
-                            ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
+                            ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200"
+                            : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200"
                         }`}
                       >
                         {user.isActive !== false ? "Active" : "Inactive"}
@@ -456,7 +468,7 @@ export default function UserManagement() {
                       <div className="flex flex-wrap items-center gap-1.5">
                         <button
                           onClick={() => handleViewUser(user)}
-                          className="group inline-flex items-center gap-1.5 rounded-lg border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-teal-500/30"
+                          className="group inline-flex items-center gap-1.5 rounded-lg border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-teal-500/30 dark:border-teal-900/50 dark:bg-teal-900/20 dark:text-teal-300 dark:hover:bg-teal-900/40"
                           title="View"
                         >
                           <Eye
@@ -467,7 +479,7 @@ export default function UserManagement() {
                         </button>
                         <button
                           onClick={() => handleEditUser(user)}
-                          className="group inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                          className="group inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-blue-900/50 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/40"
                           title="Edit"
                         >
                           <Pencil
@@ -485,7 +497,7 @@ export default function UserManagement() {
                                   .trim();
                               handleViewChildren(user._id, parentName);
                             }}
-                            className="group inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-indigo-300 hover:bg-indigo-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                            className="group inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-indigo-300 hover:bg-indigo-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-indigo-500/30 dark:border-indigo-900/50 dark:bg-indigo-900/20 dark:text-indigo-300 dark:hover:bg-indigo-900/40"
                             title="View children"
                           >
                             <Users
@@ -505,7 +517,7 @@ export default function UserManagement() {
                                 openMenu(user, e.currentTarget);
                               }
                             }}
-                            className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-semibold text-gray-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-gray-300 hover:bg-gray-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-gray-400/30"
+                            className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-semibold text-gray-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-gray-300 hover:bg-gray-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-gray-400/30 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:bg-slate-700"
                             title="More actions"
                           >
                             <MoreVertical size={14} />
@@ -530,12 +542,147 @@ export default function UserManagement() {
         />
       )}
 
+      {viewingUser && (
+        <div
+          className="fixed inset-0 z-60 flex items-center justify-center bg-slate-900/55 p-4"
+          onClick={() => setViewingUser(null)}
+        >
+          <div
+            className="w-full max-w-xl overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-6 py-4 dark:border-slate-700 dark:bg-slate-800">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
+                User Details
+              </h3>
+              <button
+                onClick={() => setViewingUser(null)}
+                className="rounded-md p-2 text-gray-500 transition hover:bg-white hover:text-gray-700 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-slate-100"
+                aria-label="Close modal"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-5 px-6 py-5 text-sm">
+              <div className="flex items-center gap-3 rounded-xl border border-teal-100 bg-teal-50 p-4 dark:border-teal-700/30 dark:bg-teal-900/20">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-teal-600 text-sm font-bold text-white">
+                  {`${viewingUser.firstName?.[0] || ""}${viewingUser.lastName?.[0] || ""}`}
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-teal-700 dark:text-teal-400">
+                    Full Name
+                  </p>
+                  <p className="text-base font-semibold text-gray-900 dark:text-slate-100">
+                    {viewingUser.firstName} {viewingUser.middleName || ""}{" "}
+                    {viewingUser.lastName}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="rounded-lg border border-gray-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
+                    Email
+                  </p>
+                  <p className="mt-1 break-all text-gray-900 dark:text-slate-100">
+                    {viewingUser.email}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-gray-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
+                    Phone
+                  </p>
+                  <p className="mt-1 text-gray-900 dark:text-slate-100">
+                    {viewingUser.phone || "-"}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-gray-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
+                    Role
+                  </p>
+                  <p className="mt-1 capitalize text-gray-900 dark:text-slate-100">
+                    {viewingUser.role}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-gray-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
+                    Status
+                  </p>
+                  <span
+                    className={`mt-1 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                      viewingUser.isActive !== false
+                        ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200"
+                        : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200"
+                    }`}
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                    {viewingUser.isActive !== false ? "Active" : "Inactive"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {viewingChildrenParentName && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-lg rounded-xl bg-white shadow-xl dark:bg-slate-900">
+            <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-slate-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
+                Linked Children
+              </h3>
+              <button
+                onClick={() => {
+                  setViewingChildrenParentName(null);
+                  setViewingChildren([]);
+                }}
+                className="rounded-md px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+              >
+                Close
+              </button>
+            </div>
+            <div className="px-5 py-4">
+              <p className="mb-3 text-sm text-gray-600 dark:text-slate-300">
+                Parent:{" "}
+                <span className="font-semibold text-gray-900 dark:text-slate-100">
+                  {viewingChildrenParentName}
+                </span>
+              </p>
+              {viewingChildren.length > 0 ? (
+                <div className="space-y-3">
+                  {viewingChildren.map((child) => (
+                    <div
+                      key={child._id}
+                      className="rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-slate-700 dark:bg-slate-900"
+                    >
+                      <p className="font-medium text-gray-900 dark:text-slate-100">
+                        {child.firstName} {child.middleName || ""}{" "}
+                        {child.lastName}
+                      </p>
+                      <p className="text-xs text-gray-600 dark:text-slate-400">
+                        Student ID: {child.studentId}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 dark:text-slate-500">
+                  No linked children.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {openMenuUserId &&
         menuUser &&
         menuAnchorRect &&
         createPortal(
           <div
-            className="fixed py-1 w-44 bg-white rounded-lg shadow-lg border border-gray-200 z-50"
+            className="fixed z-50 w-44 rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-slate-600 dark:bg-slate-900"
             style={{
               top: menuAnchorRect.bottom + 4,
               left: menuAnchorRect.left,
@@ -548,7 +695,7 @@ export default function UserManagement() {
                   closeMenu();
                   handleAddChildForParent(menuUser);
                 }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-teal-700 hover:bg-teal-50 transition"
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-teal-700 transition hover:bg-teal-50 dark:hover:bg-teal-500/10"
               >
                 <Baby size={14} />
                 Add Child
@@ -559,7 +706,7 @@ export default function UserManagement() {
                 closeMenu();
                 handleResetPassword(menuUser._id);
               }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-amber-700 hover:bg-amber-50 transition"
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-amber-700 transition hover:bg-amber-50 dark:hover:bg-amber-500/10"
             >
               <KeyRound size={14} />
               Reset password
@@ -569,7 +716,7 @@ export default function UserManagement() {
                 closeMenu();
                 handleToggleStatus(menuUser);
               }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition"
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 transition hover:bg-gray-50 dark:text-slate-200 dark:hover:bg-slate-800"
             >
               <Power size={14} />
               {menuUser.isActive === false ? "Activate" : "Deactivate"}
@@ -579,7 +726,7 @@ export default function UserManagement() {
                 closeMenu();
                 handleDeleteUser(menuUser);
               }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition"
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 transition hover:bg-red-50 dark:hover:bg-red-500/10"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

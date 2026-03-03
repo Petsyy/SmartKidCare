@@ -32,19 +32,19 @@ const StatCard = ({
   color: "blue" | "teal" | "purple" | "rose";
 }) => {
   const colorMap = {
-    blue: "bg-blue-50 text-blue-600",
-    teal: "bg-teal-50 text-teal-600",
-    purple: "bg-purple-50 text-purple-600",
-    rose: "bg-rose-50 text-rose-600",
+    blue: "bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300",
+    teal: "bg-teal-50 text-teal-600 dark:bg-teal-500/15 dark:text-teal-300",
+    purple: "bg-purple-50 text-purple-600 dark:bg-purple-500/15 dark:text-purple-300",
+    rose: "bg-rose-50 text-rose-600 dark:bg-rose-500/15 dark:text-rose-300",
   };
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-sm font-medium text-gray-600">{title}</p>
+          <p className="text-sm font-medium text-gray-600 dark:text-slate-400">{title}</p>
           <div className="mt-2 flex items-baseline gap-2">
-            <p className="text-3xl font-semibold text-gray-900">{value}</p>
+            <p className="text-3xl font-semibold text-gray-900 dark:text-slate-100">{value}</p>
             {trend && (
               <span
                 className={`text-sm font-medium ${trend.isUp ? "text-emerald-600" : "text-rose-600"}`}
@@ -53,7 +53,7 @@ const StatCard = ({
               </span>
             )}
           </div>
-          <p className="mt-1 text-sm text-gray-500">{subtitle}</p>
+          <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">{subtitle}</p>
         </div>
         <div className={`rounded-lg p-3 ${colorMap[color]}`}>
           <Icon className="h-6 w-6" />
@@ -76,15 +76,15 @@ export default function AdminDashboard() {
     >
       <div className="space-y-6 p-8">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
-          <p className="text-sm text-gray-500">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-slate-100">Dashboard</h1>
+          <p className="text-sm text-gray-500 dark:text-slate-400">
             Welcome to Smart KidCare Monitoring System
           </p>
         </div>
 
         {isLoading ? (
           <div className="flex h-64 items-center justify-center">
-            <div className="text-center text-gray-500">
+            <div className="text-center text-gray-500 dark:text-slate-400">
               Loading dashboard...
             </div>
           </div>
@@ -127,24 +127,24 @@ export default function AdminDashboard() {
             </div>
 
             <div className="grid gap-4 lg:grid-cols-2">
-              <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
                       Weekly Attendance Trend
                     </h3>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-500 dark:text-slate-400">
                       Attendance rate vs target for the past 7 days
                     </p>
                   </div>
                   <div className="flex items-center gap-4 text-sm">
                     <div className="flex items-center gap-2">
                       <div className="h-3 w-3 rounded-full bg-teal-500"></div>
-                      <span className="text-gray-600">Attendance Rate</span>
+                      <span className="text-gray-600 dark:text-slate-300">Attendance Rate</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="h-3 w-3 rounded-full bg-emerald-500"></div>
-                      <span className="text-gray-600">Target</span>
+                      <span className="text-gray-600 dark:text-slate-300">Target</span>
                     </div>
                   </div>
                 </div>
@@ -194,12 +194,12 @@ export default function AdminDashboard() {
                 </ResponsiveContainer>
               </div>
 
-              <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                 <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
                     Attendance Status Distribution
                   </h3>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 dark:text-slate-400">
                     Distribution of present vs absent students across all
                     records
                   </p>
@@ -229,13 +229,13 @@ export default function AdminDashboard() {
                 <div className="mt-4 flex items-center justify-center gap-6 text-sm">
                   <div className="flex items-center gap-2">
                     <div className="h-3 w-3 rounded-full bg-emerald-500"></div>
-                    <span className="text-gray-600">
+                    <span className="text-gray-600 dark:text-slate-300">
                       Present: {pieData[0]?.value || 0}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="h-3 w-3 rounded-full bg-rose-500"></div>
-                    <span className="text-gray-600">
+                    <span className="text-gray-600 dark:text-slate-300">
                       Absent: {pieData[1]?.value || 0}
                     </span>
                   </div>
@@ -243,48 +243,48 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
               <div className="mb-4 flex items-center gap-2">
-                <Clock className="h-5 w-5 text-gray-600" />
+                <Clock className="h-5 w-5 text-gray-600 dark:text-slate-300" />
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
                     Recent Activity
                   </h3>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 dark:text-slate-400">
                     Latest attendance and feeding records
                   </p>
                 </div>
               </div>
 
               {recentActivities.length === 0 ? (
-                <div className="py-8 text-center text-gray-500">
+                <div className="py-8 text-center text-gray-500 dark:text-slate-400">
                   No recent activity
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                    <thead className="bg-gray-50 dark:bg-slate-900">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-slate-400">
                           Type
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-slate-400">
                           Child Name
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-slate-400">
                           Action
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-slate-400">
                           Timestamp
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-slate-400">
                           Status
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
+                    <tbody className="divide-y divide-gray-200 bg-white dark:divide-slate-800 dark:bg-slate-900">
                       {recentActivities.map((activity) => (
-                        <tr key={activity.id} className="hover:bg-gray-50">
+                        <tr key={activity.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/60">
                           <td className="px-4 py-3 whitespace-nowrap">
                             <div className="flex items-center gap-2">
                               <div
@@ -300,23 +300,23 @@ export default function AdminDashboard() {
                                   <Utensils className="h-4 w-4 text-emerald-600" />
                                 )}
                               </div>
-                              <span className="text-sm capitalize text-gray-900">
+                              <span className="text-sm capitalize text-gray-900 dark:text-slate-100">
                                 {activity.type}
                               </span>
                             </div>
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-sm font-medium text-gray-900 dark:text-slate-100">
                               {activity.childName}
                             </div>
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap">
-                            <div className="text-sm text-gray-600">
+                            <div className="text-sm text-gray-600 dark:text-slate-300">
                               {activity.action}
                             </div>
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap">
-                            <div className="text-sm text-gray-500">
+                            <div className="text-sm text-gray-500 dark:text-slate-400">
                               {activity.timestamp}
                             </div>
                           </td>

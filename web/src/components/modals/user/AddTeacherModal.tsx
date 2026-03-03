@@ -95,35 +95,35 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto dark:bg-slate-900">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
+        <div className="flex items-center justify-between p-6 border-b dark:border-slate-700">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Add Teacher</h2>
-            <p className="text-sm text-gray-500">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-50">Add Teacher</h2>
+            <p className="text-sm text-gray-500 dark:text-slate-400">
               Create a new teacher account with auto-generated credentials
             </p>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition"
+            className="text-gray-400 hover:text-gray-600 transition dark:text-slate-500 dark:hover:text-slate-300"
           >
             <X size={24} />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-6 space-y-6 dark:bg-slate-900">
           {/* Teacher Information Section */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 mb-4">
+            <h3 className="text-sm font-semibold text-gray-900 mb-4 dark:text-slate-50">
               Teacher Information
             </h3>
             <div className="space-y-4">
               {/* First Name, Middle Name Last Name */}
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">
                     First Name <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -134,15 +134,15 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
                     onBlur={() => handleFieldBlur("firstName")}
                     placeholder="Enter first name"
                     maxLength={50}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
                     required
                   />
                   {errors.firstName && (
-                    <p className="mt-1 text-xs text-red-600">{errors.firstName}</p>
+                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.firstName}</p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">
                     Middle Name <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -153,15 +153,15 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
                     onBlur={() => handleFieldBlur("middleName")}
                     placeholder="Enter middle name"
                     maxLength={50}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
                     required
                   />
                   {errors.middleName && (
-                    <p className="mt-1 text-xs text-red-600">{errors.middleName}</p>
+                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.middleName}</p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">
                     Last Name <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -172,18 +172,18 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
                     onBlur={() => handleFieldBlur("lastName")}
                     placeholder="Enter last name"
                     maxLength={50}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
                     required
                   />
                   {errors.lastName && (
-                    <p className="mt-1 text-xs text-red-600">{errors.lastName}</p>
+                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.lastName}</p>
                   )}
                 </div>
               </div>
 
               {/* Email */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">
                   Email (Login Credential) <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -193,17 +193,17 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
                   onChange={handleInputChange}
                   onBlur={() => handleFieldBlur("email")}
                   placeholder="teacher@email.com"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
                   required
                 />
                 {errors.email && (
-                  <p className="mt-1 text-xs text-red-600">{errors.email}</p>
+                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.email}</p>
                 )}
               </div>
 
               {/* Phone */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">
                   Phone Number <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -213,11 +213,11 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
                   onChange={handleInputChange}
                   onBlur={() => handleFieldBlur("phone")}
                   placeholder="09123456789"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
                   required
                 />
                 {errors.phone && (
-                  <p className="mt-1 text-xs text-red-600">{errors.phone}</p>
+                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.phone}</p>
                 )}
               </div>
 
@@ -225,8 +225,8 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
           </div>
 
           {/* Info Box */}
-          <div className="bg-teal-50 border border-teal-200 rounded-lg p-4 flex gap-3">
-            <div className="text-teal-600 mt-0.5">
+          <div className="bg-teal-50 border border-teal-200 rounded-lg p-4 flex gap-3 dark:bg-teal-900/20 dark:border-teal-700/30">
+            <div className="text-teal-600 mt-0.5 dark:text-teal-400">
               <svg
                 className="w-5 h-5"
                 fill="currentColor"
@@ -239,18 +239,18 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
                 />
               </svg>
             </div>
-            <p className="text-sm text-teal-700">
+            <p className="text-sm text-teal-700 dark:text-teal-300">
               A temporary password is generated automatically by the system. The teacher will be required to change their password on first login.
             </p>
           </div>
 
           {/* Buttons */}
-          <div className="flex gap-3 justify-end pt-4 border-t">
+          <div className="flex gap-3 justify-end pt-4 border-t dark:border-slate-700">
             <button
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition disabled:opacity-50"
+              className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
             >
               Cancel
             </button>

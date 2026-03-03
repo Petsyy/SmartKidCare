@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import {
   Bell,
   KeyRound,
+  Moon,
   PencilLine,
   Save,
   ShieldCheck,
+  Sun,
   UserCog,
   X,
   type LucideIcon,
@@ -21,6 +23,8 @@ import {
   showAdminPasswordChangedModal,
   showAdminProfileSavedModal,
 } from "@/utils/sweetalert.modal";
+import ThemeSwitch from "@/components/theme/ThemeSwitch";
+import { useTheme } from "@/context/ThemeContext";
 
 type SettingsSectionId = "profile" | "security" | "preferences";
 
@@ -63,9 +67,10 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
   },
 ];
 
-const LABEL_CLASS_NAME = "mb-1.5 block text-sm font-medium text-slate-700";
+const LABEL_CLASS_NAME =
+  "mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300";
 const INPUT_CLASS_NAME =
-  "w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 read-only:cursor-not-allowed read-only:bg-slate-100 read-only:text-slate-500";
+  "w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 read-only:cursor-not-allowed read-only:bg-slate-100 read-only:text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 dark:disabled:bg-slate-800 dark:disabled:text-slate-500 dark:read-only:bg-slate-800 dark:read-only:text-slate-500";
 
 const ToggleRow = ({
   title,
@@ -74,10 +79,14 @@ const ToggleRow = ({
   onChange,
 }: ToggleRowProps) => {
   return (
-    <label className="flex items-start justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4 transition hover:border-teal-200">
+    <label className="flex items-start justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4 transition hover:border-teal-200 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-teal-500/40">
       <div>
-        <p className="text-sm font-medium text-slate-900">{title}</p>
-        <p className="mt-1 text-xs text-slate-500">{description}</p>
+        <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+          {title}
+        </p>
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          {description}
+        </p>
       </div>
       <span className="relative mt-0.5 inline-flex h-6 w-11 flex-none">
         <input
@@ -86,8 +95,8 @@ const ToggleRow = ({
           onChange={(event) => onChange(event.target.checked)}
           className="peer sr-only"
         />
-        <span className="absolute inset-0 rounded-full bg-slate-300 transition peer-checked:bg-teal-500 peer-focus:ring-2 peer-focus:ring-teal-300 peer-focus:ring-offset-2" />
-        <span className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-5" />
+        <span className="absolute inset-0 rounded-full bg-slate-300 transition peer-checked:bg-teal-500 peer-focus:ring-2 peer-focus:ring-teal-300 peer-focus:ring-offset-2 dark:bg-slate-600 dark:peer-focus:ring-offset-slate-900" />
+        <span className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-5 dark:bg-slate-100" />
       </span>
     </label>
   );
@@ -95,6 +104,7 @@ const ToggleRow = ({
 
 export default function AdminSettings() {
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
   const {
     profile,
     setProfile,
@@ -284,24 +294,26 @@ export default function AdminSettings() {
     >
       <div className="space-y-6 p-8">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Settings</h1>
-          <p className="text-sm text-gray-500">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-slate-100">
+            Settings
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-slate-400">
             Manage admin profile, security, and system notifications.
           </p>
         </div>
 
         {isLoading && (
-          <div className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-600 shadow-sm">
+          <div className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
             Loading settings...
           </div>
         )}
 
         {!isLoading && loadError && (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-6 shadow-sm">
+          <div className="rounded-xl border border-red-200 bg-red-50 p-6 shadow-sm dark:border-red-500/40 dark:bg-red-500/10">
             <p className="text-sm text-red-700">{loadError}</p>
             <button
               onClick={() => void loadSettings()}
-              className="mt-4 rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-100"
+              className="mt-4 rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-100 dark:border-red-500/40 dark:text-red-300 dark:hover:bg-red-500/10"
             >
               Retry
             </button>
@@ -309,15 +321,15 @@ export default function AdminSettings() {
         )}
 
         {!isLoading && !loadError && !isAdmin && (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-700 shadow-sm">
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-700 shadow-sm dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-300">
             This page is available for admin accounts only.
           </div>
         )}
 
         {!isLoading && !loadError && isAdmin && (
           <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
-            <aside className="h-fit rounded-2xl border border-slate-200 bg-white p-3 shadow-sm xl:sticky xl:top-6">
-              <p className="px-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <aside className="h-fit rounded-2xl border border-slate-200 bg-white p-3 shadow-sm xl:sticky xl:top-6 dark:border-slate-700 dark:bg-slate-900">
+              <p className="px-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                 Settings Menu
               </p>
               <div className="mt-3 space-y-2">
@@ -332,8 +344,8 @@ export default function AdminSettings() {
                       onClick={() => setActiveSection(section.id)}
                       className={`w-full rounded-xl border p-3 text-left transition ${
                         isActive
-                          ? "border-teal-200 bg-teal-50"
-                          : "border-transparent bg-white hover:border-slate-200 hover:bg-slate-50"
+                          ? "border-teal-200 bg-teal-50 dark:border-teal-500/50 dark:bg-teal-500/10"
+                          : "border-transparent bg-white hover:border-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:hover:border-slate-700 dark:hover:bg-slate-800/60"
                       }`}
                     >
                       <div className="flex items-start gap-3">
@@ -347,13 +359,13 @@ export default function AdminSettings() {
                           <Icon size={16} />
                         </span>
                         <div className="min-w-0">
-                          <p className="text-sm font-semibold text-slate-900">
+                          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                             {section.title}
                           </p>
-                          <p className="text-xs text-slate-500">
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
                             {section.description}
                           </p>
-                          <p className="mt-1 text-xs font-medium text-teal-700">
+                          <p className="mt-1 text-xs font-medium text-teal-700 dark:text-teal-300">
                             {sectionStatus[section.id]}
                           </p>
                         </div>
@@ -364,7 +376,7 @@ export default function AdminSettings() {
               </div>
             </aside>
 
-            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
               <div className="mb-6 flex items-start gap-3">
                 <div
                   className={`rounded-lg p-2 ${activeSectionMeta.iconClassName}`}
@@ -372,10 +384,10 @@ export default function AdminSettings() {
                   <ActiveSectionIcon size={18} />
                 </div>
                 <div>
-                  <h2 className="text-xl font-semibold text-slate-900">
+                  <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
                     {activeSectionMeta.title}
                   </h2>
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
                     {activeSectionMeta.description}
                   </p>
                 </div>
@@ -383,8 +395,8 @@ export default function AdminSettings() {
 
               {activeSection === "profile" && (
                 <form onSubmit={handleSaveProfile} className="space-y-5">
-                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                    <p className="text-xs font-medium text-slate-600">
+                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/60">
+                    <p className="text-xs font-medium text-slate-600 dark:text-slate-300">
                       {isProfileEditing
                         ? "Edit mode is enabled. Email remains read-only."
                         : "Profile is locked. Click Edit Profile to update details."}
@@ -396,7 +408,7 @@ export default function AdminSettings() {
                           ? handleCancelProfileEdit
                           : handleEnableProfileEdit
                       }
-                      className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                      className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                     >
                       {isProfileEditing ? (
                         <X size={14} />
@@ -439,7 +451,7 @@ export default function AdminSettings() {
                         placeholder="Email cannot be edited"
                         required
                       />
-                      <p className="mt-1 text-xs text-slate-500">
+                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                         Email cannot be edited here.
                       </p>
                     </div>
@@ -609,8 +621,8 @@ export default function AdminSettings() {
                     </div>
                   </div>
 
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/60">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
                       Password Rules
                     </p>
                     <ul className="mt-2 space-y-1 text-xs">
@@ -618,7 +630,7 @@ export default function AdminSettings() {
                         className={
                           passwordPolicyChecks.minimumLength
                             ? "text-teal-700"
-                            : "text-slate-500"
+                            : "text-slate-400"
                         }
                       >
                         At least 8 characters
@@ -627,7 +639,7 @@ export default function AdminSettings() {
                         className={
                           passwordPolicyChecks.startsWithUppercase
                             ? "text-teal-700"
-                            : "text-slate-500"
+                            : "text-slate-400"
                         }
                       >
                         Starts with a capital letter
@@ -636,7 +648,7 @@ export default function AdminSettings() {
                         className={
                           passwordPolicyChecks.hasSpecialCharacter
                             ? "text-teal-700"
-                            : "text-slate-500"
+                            : "text-slate-400"
                         }
                       >
                         Includes at least one special character
@@ -645,7 +657,7 @@ export default function AdminSettings() {
                         className={
                           passwordPolicyChecks.differsFromCurrent
                             ? "text-teal-700"
-                            : "text-slate-500"
+                            : "text-slate-400"
                         }
                       >
                         Different from current password
@@ -654,7 +666,7 @@ export default function AdminSettings() {
                         className={
                           passwordPolicyChecks.matchesConfirmation
                             ? "text-teal-700"
-                            : "text-slate-500"
+                            : "text-slate-400"
                         }
                       >
                         Matches confirmation
@@ -681,7 +693,7 @@ export default function AdminSettings() {
                         inputMode="numeric"
                         maxLength={6}
                       />
-                      <p className="mt-1 text-xs text-slate-500">
+                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                         Enter the OTP sent to your admin email to confirm
                         password change.
                       </p>
@@ -694,7 +706,7 @@ export default function AdminSettings() {
                   )}
 
                   {!passwordOtpState.sent && (
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
                       Send OTP first, then verify it to complete password
                       change.
                     </p>
@@ -730,7 +742,7 @@ export default function AdminSettings() {
                         passwordState.saving ||
                         !canRequestPasswordOtp
                       }
-                      className="inline-flex items-center gap-2 rounded-lg border border-teal-200 bg-white px-5 py-2.5 text-sm font-medium text-teal-700 transition hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex items-center gap-2 rounded-lg border border-teal-200 bg-white px-5 py-2.5 text-sm font-medium text-teal-700 transition hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-teal-500/30 dark:bg-slate-900 dark:text-teal-300 dark:hover:bg-teal-500/10"
                     >
                       <KeyRound size={16} />
                       {passwordOtpState.requesting
@@ -757,6 +769,26 @@ export default function AdminSettings() {
 
               {activeSection === "preferences" && (
                 <div className="space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                        Appearance Theme
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        Switch between light and dark mode for the admin web app.
+                      </p>
+                      <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-teal-700 dark:text-teal-300">
+                        {theme === "dark" ? <Moon size={14} /> : <Sun size={14} />}
+                        Current mode: {theme === "dark" ? "Dark" : "Light"}
+                      </p>
+                    </div>
+
+                    <ThemeSwitch
+                      checked={theme === "dark"}
+                      onChange={(checked) => setTheme(checked ? "dark" : "light")}
+                    />
+                  </div>
+
                   <ToggleRow
                     title="Require MFA on admin login"
                     description="If enabled, every admin sign-in requires an OTP sent to email."
