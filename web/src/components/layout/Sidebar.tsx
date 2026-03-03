@@ -29,14 +29,17 @@ type SidebarProps = {
   onNavigate?: (path: string) => void;
 };
 
-export default function Sidebar({ activeItem = "users", onNavigate }: SidebarProps) {
+export default function Sidebar({
+  activeItem = "users",
+  onNavigate,
+}: SidebarProps) {
   return (
     <aside className="fixed left-0 top-0 flex h-screen w-60 flex-col bg-linear-to-b from-teal-600 to-teal-700 text-white transition-colors dark:from-slate-900 dark:to-slate-800">
       {/* Logo Section */}
       <div className="border-b border-teal-500/30 p-6 dark:border-slate-700">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-            <Shield className="text-teal-600" size={24} />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-100 ring-1 ring-cyan-200 dark:bg-cyan-500/20 dark:ring-cyan-500/30">
+            <Shield className="text-cyan-700 dark:text-cyan-300" size={24} />
           </div>
           <div>
             <h1 className="text-lg font-bold">Smart KidCare</h1>
@@ -57,7 +60,7 @@ export default function Sidebar({ activeItem = "users", onNavigate }: SidebarPro
             <button
               key={item.path}
               onClick={() => onNavigate?.(item.path)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all cursor-pointer ${
                 isActive
                   ? "bg-white/20 text-white font-medium shadow-sm dark:bg-slate-700/70"
                   : "text-teal-100 hover:bg-white/10 hover:text-white dark:text-slate-300 dark:hover:bg-slate-700/60"

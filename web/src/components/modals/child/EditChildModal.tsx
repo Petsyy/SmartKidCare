@@ -187,8 +187,8 @@ export default function EditChildModal({ child, onClose, onUpdated }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden dark:bg-slate-900">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-4">
+      <div className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-white shadow-xl dark:bg-slate-900">
         <div className="flex items-center justify-between p-6 bg-linear-to-r from-teal-50 to-white border-b border-gray-100 dark:from-teal-900/20 dark:to-slate-800 dark:border-slate-700">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-50">Edit Child</h2>
           <button onClick={onClose} className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:text-slate-500 dark:hover:bg-slate-700 dark:hover:text-slate-300">
@@ -196,7 +196,7 @@ export default function EditChildModal({ child, onClose, onUpdated }: Props) {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 dark:bg-slate-900">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4 dark:bg-slate-900">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Student ID</label>
             <input

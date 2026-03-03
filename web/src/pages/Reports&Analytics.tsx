@@ -403,18 +403,18 @@ export default function ReportAnalytics() {
                 </ResponsiveContainer>
               </div>
 
-              <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                 <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-50">
                     Top Exceptions by Child
                   </h3>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 dark:text-slate-400">
                     Children with the highest combined absences and missed
                     meals.
                   </p>
                 </div>
                 {topExceptions.length === 0 ? (
-                  <div className="flex h-64 items-center justify-center text-sm text-gray-500">
+                  <div className="flex h-64 items-center justify-center text-sm text-gray-500 dark:text-slate-400">
                     No exception records in this range.
                   </div>
                 ) : (

@@ -281,8 +281,8 @@ export default function UserManagement() {
             onClick={() => setActiveTab("teacher")}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
               activeTab === "teacher"
-                ? "border border-teal-200 bg-teal-50 text-teal-700 shadow-sm dark:border-teal-700 dark:bg-teal-900/40 dark:text-teal-200"
-                : "border border-transparent text-gray-600 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-gray-50 dark:hover:text-gray-900"
+                ? "border border-teal-200 bg-teal-50 text-teal-700 shadow-sm hover:bg-teal-100 dark:border-teal-700 dark:bg-teal-900/40 dark:text-teal-200 dark:hover:bg-teal-900/55"
+                : "border border-transparent text-gray-600 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800/60 dark:hover:text-slate-100"
             }`}
           >
             Teacher Accounts
@@ -292,8 +292,8 @@ export default function UserManagement() {
             onClick={() => setActiveTab("parent")}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
               activeTab === "parent"
-                ? "border border-teal-200 bg-teal-50 text-teal-700 shadow-sm dark:border-teal-700 dark:bg-teal-900/40 dark:text-teal-200"
-                : "border border-transparent text-gray-600 hover:bg-gray-100 dark:hover:bg-slate-800/60 dark:hover:text-gray-900 dark:text-slate-100"
+                ? "border border-teal-200 bg-teal-50 text-teal-700 shadow-sm hover:bg-teal-100 dark:border-teal-700 dark:bg-teal-900/40 dark:text-teal-200 dark:hover:bg-teal-900/55"
+                : "border border-transparent text-gray-600 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800/60 dark:hover:text-slate-100"
             }`}
           >
             Parent Accounts
@@ -640,7 +640,7 @@ export default function UserManagement() {
                 }}
                 className="rounded-md px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
               >
-                Close
+                <X size={16} />
               </button>
             </div>
             <div className="px-5 py-4">

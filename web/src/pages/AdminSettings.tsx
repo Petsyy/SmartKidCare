@@ -49,21 +49,24 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
     title: "Profile",
     description: "Identity and contact info",
     icon: UserCog,
-    iconClassName: "bg-teal-100 text-teal-700",
+    iconClassName:
+      "bg-cyan-100 text-cyan-700 ring-1 ring-cyan-200 dark:bg-cyan-500/20 dark:text-cyan-300 dark:ring-cyan-500/30",
   },
   {
     id: "security",
     title: "Security",
     description: "Password and sign-in rules",
     icon: ShieldCheck,
-    iconClassName: "bg-teal-100 text-teal-700",
+    iconClassName:
+      "bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:ring-emerald-500/30",
   },
   {
     id: "preferences",
     title: "Preferences",
     description: "MFA and notification settings",
     icon: Bell,
-    iconClassName: "bg-teal-100 text-teal-700",
+    iconClassName:
+      "bg-violet-100 text-violet-700 ring-1 ring-violet-200 dark:bg-violet-500/20 dark:text-violet-300 dark:ring-violet-500/30",
   },
 ];
 
@@ -353,7 +356,7 @@ export default function AdminSettings() {
                           className={`rounded-lg p-2 ${
                             isActive
                               ? section.iconClassName
-                              : "bg-slate-100 text-slate-500"
+                              : "bg-slate-100 text-slate-500 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700"
                           }`}
                         >
                           <Icon size={16} />
@@ -408,7 +411,7 @@ export default function AdminSettings() {
                           ? handleCancelProfileEdit
                           : handleEnableProfileEdit
                       }
-                      className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                      className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs cursor-pointer font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                     >
                       {isProfileEditing ? (
                         <X size={14} />
@@ -542,7 +545,7 @@ export default function AdminSettings() {
                       <button
                         type="submit"
                         disabled={profileState.saving}
-                        className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-teal-700 disabled:opacity-50"
+                        className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-teal-700 disabled:opacity-50 cursor-pointer"
                       >
                         <Save size={16} />
                         {profileState.saving ? "Saving..." : "Save Profile"}
@@ -836,7 +839,7 @@ export default function AdminSettings() {
                       type="button"
                       onClick={() => void handleSavePreferences()}
                       disabled={preferenceState.saving}
-                      className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-teal-700 disabled:opacity-50"
+                      className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-teal-700 disabled:opacity-50 cursor-pointer"
                     >
                       <Save size={16} />
                       {preferenceState.saving
