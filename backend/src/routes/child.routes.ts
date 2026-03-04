@@ -5,6 +5,8 @@ import {
   getChildren,
   getChildById,
   getChildDocumentSignedUrl,
+  getChildDocumentUrl,
+  streamChildDocument,
   getMyChildren,
   updateChild,
 } from "../controllers/child/child.controller";
@@ -16,6 +18,8 @@ const router = express.Router();
 router.get("/", authenticateToken, getChildren);
 router.get("/my-children", authenticateToken, getMyChildren);
 router.get("/:id/documents/:documentType/url", authenticateToken, getChildDocumentSignedUrl);
+router.get("/document-access/:token", getChildDocumentUrl);
+router.get("/document-stream/:token", streamChildDocument);
 router.get("/:id", authenticateToken, getChildById);
 router.patch("/:id", authenticateToken, updateChild);
 router.delete("/:id", authenticateToken, deleteChild);

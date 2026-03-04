@@ -778,17 +778,24 @@ export default function AdminSettings() {
                         Appearance Theme
                       </p>
                       <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                        Switch between light and dark mode for the admin web app.
+                        Switch between light and dark mode for the admin web
+                        app.
                       </p>
                       <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-teal-700 dark:text-teal-300">
-                        {theme === "dark" ? <Moon size={14} /> : <Sun size={14} />}
+                        {theme === "dark" ? (
+                          <Moon size={14} />
+                        ) : (
+                          <Sun size={14} />
+                        )}
                         Current mode: {theme === "dark" ? "Dark" : "Light"}
                       </p>
                     </div>
 
                     <ThemeSwitch
                       checked={theme === "dark"}
-                      onChange={(checked) => setTheme(checked ? "dark" : "light")}
+                      onChange={(checked) =>
+                        setTheme(checked ? "dark" : "light")
+                      }
                     />
                   </div>
 

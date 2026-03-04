@@ -211,7 +211,7 @@ export default function ChildrenManagement() {
               {/* Add Child */}
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition"
+                className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition cursor-pointer"
               >
                 <Plus size={16} />
                 Add Child
@@ -278,7 +278,7 @@ export default function ChildrenManagement() {
                   handleChangeStatus(menuChild as Child);
                   closeMenu();
                 }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 transition hover:bg-gray-50 dark:text-slate-200 dark:hover:bg-slate-800"
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 transition hover:bg-gray-50 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
             >
               <ToggleLeft size={14} />
               Change Status
@@ -289,7 +289,7 @@ export default function ChildrenManagement() {
                   handleUnlinkParent(menuChild as Child);
                   closeMenu();
                 }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 transition hover:bg-red-50 dark:hover:bg-red-500/10"
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 transition hover:bg-red-50 dark:hover:bg-red-500/10 cursor-pointer"
               >
                 <Unlink size={14} />
                 Unlink Parent
@@ -300,7 +300,7 @@ export default function ChildrenManagement() {
                 closeMenu();
                 await handleDeleteChild(menuChild as Child);
               }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 transition hover:bg-red-50 dark:hover:bg-red-500/10"
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 transition hover:bg-red-50 dark:hover:bg-red-500/10 cursor-pointer"
             >
               <Trash2 size={14} />
               Delete Child

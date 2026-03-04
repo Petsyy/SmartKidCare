@@ -65,16 +65,25 @@ export const getChildDocumentUrl = async (
   childId: string,
   documentType: "birth-certificate" | "parent-id",
 ) => {
-  const res = await fetch(
+  const tokenRes = await fetch(
     `${API_BASE}/children/${childId}/documents/${documentType}/url`,
     {
       credentials: "include",
     },
   );
 
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || "Failed to fetch document URL");
-  return data as {
+  const tokenData = await tokenRes.json();
+  if (!tokenRes.ok)
+    throw new Error(tokenData.message || "Failed to fetch document token");
+
+  const { token, expiresInSeconds } = tokenData;
+  if (!token) throw new Error("No access token was returned");
+
+  return {
+    url: `${API_BASE}/documents/view?token=${token}`,
+    expiresInSeconds,
+    documentType: tokenData.documentType,
+  } as {
     url: string;
     expiresInSeconds: number;
     documentType: "birthCertificate" | "parentId";

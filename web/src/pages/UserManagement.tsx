@@ -282,7 +282,7 @@ export default function UserManagement() {
             className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
               activeTab === "teacher"
                 ? "border border-teal-200 bg-teal-50 text-teal-700 shadow-sm hover:bg-teal-100 dark:border-teal-700 dark:bg-teal-900/40 dark:text-teal-200 dark:hover:bg-teal-900/55"
-                : "border border-transparent text-gray-600 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800/60 dark:hover:text-slate-100"
+                : "border border-transparent text-gray-600 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800/60 dark:hover:text-slate-100 cursor-pointer"
             }`}
           >
             Teacher Accounts
@@ -293,7 +293,7 @@ export default function UserManagement() {
             className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
               activeTab === "parent"
                 ? "border border-teal-200 bg-teal-50 text-teal-700 shadow-sm hover:bg-teal-100 dark:border-teal-700 dark:bg-teal-900/40 dark:text-teal-200 dark:hover:bg-teal-900/55"
-                : "border border-transparent text-gray-600 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800/60 dark:hover:text-slate-100"
+                : "border border-transparent text-gray-600 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800/60 dark:hover:text-slate-100 cursor-pointer"
             }`}
           >
             Parent Accounts
@@ -334,7 +334,7 @@ export default function UserManagement() {
                     }
                   }}
                   disabled={isTeacherLimitReached}
-                  className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition shrink-0 ${
+                  className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition shrink-0 cursor-pointer ${
                     isTeacherLimitReached
                       ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                       : "bg-teal-600 text-white hover:bg-teal-700"
@@ -468,7 +468,7 @@ export default function UserManagement() {
                       <div className="flex flex-wrap items-center gap-1.5">
                         <button
                           onClick={() => handleViewUser(user)}
-                          className="group inline-flex items-center gap-1.5 rounded-lg border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-teal-500/30 dark:border-teal-900/50 dark:bg-teal-900/20 dark:text-teal-300 dark:hover:bg-teal-900/40"
+                          className="group inline-flex items-center gap-1.5 rounded-lg border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-teal-500/30 dark:border-teal-900/50 dark:bg-teal-900/20 dark:text-teal-300 dark:hover:bg-teal-900/40 cursor-pointer"
                           title="View"
                         >
                           <Eye
@@ -479,7 +479,7 @@ export default function UserManagement() {
                         </button>
                         <button
                           onClick={() => handleEditUser(user)}
-                          className="group inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-blue-900/50 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/40"
+                          className="group inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-blue-900/50 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/40 cursor-pointer"
                           title="Edit"
                         >
                           <Pencil
@@ -517,7 +517,7 @@ export default function UserManagement() {
                                 openMenu(user, e.currentTarget);
                               }
                             }}
-                            className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-semibold text-gray-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-gray-300 hover:bg-gray-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-gray-400/30 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:bg-slate-700"
+                            className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-semibold text-gray-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-gray-300 hover:bg-gray-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-gray-400/30 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:bg-slate-700 cursor-pointer"
                             title="More actions"
                           >
                             <MoreVertical size={14} />
@@ -682,7 +682,7 @@ export default function UserManagement() {
         menuAnchorRect &&
         createPortal(
           <div
-            className="fixed z-50 w-44 rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-slate-600 dark:bg-slate-900"
+            className="fixed z-50 w-44 rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-slate-600 dark:bg-slate-900 cursor-pointer"
             style={{
               top: menuAnchorRect.bottom + 4,
               left: menuAnchorRect.left,
@@ -695,7 +695,7 @@ export default function UserManagement() {
                   closeMenu();
                   handleAddChildForParent(menuUser);
                 }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-teal-700 transition hover:bg-teal-50 dark:hover:bg-teal-500/10"
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-teal-700 transition hover:bg-teal-50 dark:hover:bg-teal-500/10 cursor-pointer"
               >
                 <Baby size={14} />
                 Add Child
@@ -706,7 +706,7 @@ export default function UserManagement() {
                 closeMenu();
                 handleResetPassword(menuUser._id);
               }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-amber-700 transition hover:bg-amber-50 dark:hover:bg-amber-500/10"
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-amber-700 transition hover:bg-amber-50 dark:hover:bg-amber-500/10 cursor-pointer"
             >
               <KeyRound size={14} />
               Reset password
@@ -716,7 +716,7 @@ export default function UserManagement() {
                 closeMenu();
                 handleToggleStatus(menuUser);
               }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 transition hover:bg-gray-50 dark:text-slate-200 dark:hover:bg-slate-800"
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 transition hover:bg-gray-50 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
             >
               <Power size={14} />
               {menuUser.isActive === false ? "Activate" : "Deactivate"}
@@ -726,7 +726,7 @@ export default function UserManagement() {
                 closeMenu();
                 handleDeleteUser(menuUser);
               }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 transition hover:bg-red-50 dark:hover:bg-red-500/10"
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 transition hover:bg-red-50 dark:hover:bg-red-500/10 cursor-pointer"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

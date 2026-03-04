@@ -16,6 +16,6 @@ export const generateSecureUrl = (
   return cloudinary.utils.private_download_url(publicId, resolvedFormat, {
     resource_type: resourceType,
     type: "authenticated",
-    expires_at: Math.floor(Date.now() / 1000) + 60,
+    expires_at: Math.floor(Date.now() / 1000) + 60, // 60 seconds
   });
 };

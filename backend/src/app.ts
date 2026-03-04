@@ -12,6 +12,7 @@ import recordsRoutes from "./routes/records.routes";
 import blockchainRoutes from "./routes/blockchain.routes";
 import aiRoutes from "./routes/ai.routes";
 import notificationRoutes from "./routes/notification.routes";
+import documentsRoutes from "./routes/documents.routes";
 
 const app: Application = express();
 
@@ -74,5 +75,6 @@ app.use("/api/children", childRoutes);
 app.use("/api/records", recordsRoutes);
 app.use("/api/blockchain", blockchainRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/documents", documentsRoutes);
 
 export default app;
