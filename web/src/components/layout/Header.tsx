@@ -87,8 +87,8 @@ export default function Header({
               onClick={() => setShowDropdown(!showDropdown)}
               className="flex items-center gap-3 rounded-lg px-2 py-1 transition hover:bg-gray-100 dark:hover:bg-slate-800"
             >
-              <div className="w-10 h-10 bg-teal-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-semibold text-sm">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-teal-500 to-cyan-500 ring-1 ring-teal-400/40 dark:from-slate-700 dark:to-slate-600 dark:ring-slate-500/60">
+                <span className="text-sm font-semibold text-white dark:text-slate-100">
                   {getInitials(adminEmail)}
                 </span>
               </div>

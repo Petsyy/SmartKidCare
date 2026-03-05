@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ShieldCheck, ShieldX, Copy, X } from "lucide-react";
+import { ShieldCheck, ShieldX, Copy, X, ExternalLink } from "lucide-react";
 
 type Props = {
   open: boolean;
@@ -8,6 +8,8 @@ type Props = {
   data?: {
     isValid: boolean;
     dateHash?: string | null;
+    rootHash?: string | null;
+    txHash?: string | null;
     recordedBy?: string | null;
     timestamp?: number | null;
     reason?: string;
@@ -31,6 +33,9 @@ export default function VerificationModal({
   }, [open]);
 
   const dateHash = data?.dateHash || EMPTY_VALUE;
+  const rootHash = data?.rootHash || EMPTY_VALUE;
+  const txHash = data?.txHash || EMPTY_VALUE;
+  const txExplorerUrl = txHash !== EMPTY_VALUE ? `https://sepolia.etherscan.io/tx/${txHash}` : null;
   const isValid = !!data?.isValid;
 
   const statusReason = useMemo(() => {
@@ -128,7 +133,7 @@ export default function VerificationModal({
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <div className="text-xs font-semibold tracking-wide text-gray-600 dark:text-slate-400">
-                    ON-CHAIN DATA HASH (INTEGRITY PROOF)
+                    BATCH HASH (DATE KEY)
                   </div>
                   <div className="mt-1 break-all font-mono text-sm text-gray-900 dark:text-slate-100">
                     {loading ? "Loading..." : dateHash}
@@ -140,7 +145,7 @@ export default function VerificationModal({
                   onClick={() => copyToClipboard(dateHash, "dateHash")}
                   className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-100 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
                   disabled={dateHash === EMPTY_VALUE}
-                  title="Copy date hash"
+                  title="Copy batch hash"
                 >
                   <Copy size={14} />
                   {copiedKey === "dateHash" ? "Copied" : "Copy"}
@@ -149,12 +154,75 @@ export default function VerificationModal({
             </div>
 
             <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-700/50">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <div className="text-xs font-semibold tracking-wide text-gray-600 dark:text-slate-400">
+                    MERKLE ROOT HASH
+                  </div>
+                  <div className="mt-1 break-all font-mono text-sm text-gray-900 dark:text-slate-100">
+                    {loading ? "Loading..." : rootHash}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => copyToClipboard(rootHash, "rootHash")}
+                  className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-100 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
+                  disabled={rootHash === EMPTY_VALUE}
+                  title="Copy root hash"
+                >
+                  <Copy size={14} />
+                  {copiedKey === "rootHash" ? "Copied" : "Copy"}
+                </button>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-700/50">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <div className="text-xs font-semibold tracking-wide text-gray-600 dark:text-slate-400">
+                    TRANSACTION HASH
+                  </div>
+                  <div className="mt-1 break-all font-mono text-sm text-gray-900 dark:text-slate-100">
+                    {loading ? "Loading..." : txHash}
+                  </div>
+                </div>
+
+                <div className="inline-flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(txHash, "txHash")}
+                    className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-100 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
+                    disabled={txHash === EMPTY_VALUE}
+                    title="Copy transaction hash"
+                  >
+                    <Copy size={14} />
+                    {copiedKey === "txHash" ? "Copied" : "Copy"}
+                  </button>
+
+                  {txExplorerUrl && (
+                    <a
+                      href={txExplorerUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-100 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
+                      title="View transaction on Etherscan"
+                    >
+                      <ExternalLink size={14} />
+                      View
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-700/50">
               <div className="text-xs font-semibold tracking-wide text-gray-600 dark:text-slate-400">
                 CONTRACT NOTE
               </div>
               <div className="mt-1 text-sm text-gray-700 dark:text-slate-300">
-                This contract stores attendance and feeding hashes per date key.
-                Verification compares hashes for integrity checking only.
+                This contract stores one daily Merkle root per batch/date key.
+                Verification checks whether this record's derived hash is consistent with the anchored root.
               </div>
             </div>
           </div>

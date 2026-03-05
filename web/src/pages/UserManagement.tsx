@@ -334,10 +334,10 @@ export default function UserManagement() {
                     }
                   }}
                   disabled={isTeacherLimitReached}
-                  className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition shrink-0 cursor-pointer ${
+                  className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium shadow-sm transition shrink-0 ${
                     isTeacherLimitReached
-                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      : "bg-teal-600 text-white hover:bg-teal-700"
+                      ? "cursor-not-allowed bg-gray-300 text-gray-500 dark:bg-slate-700 dark:text-slate-500"
+                      : "cursor-pointer border border-teal-500/20 bg-linear-to-r from-teal-600 to-cyan-500 text-white hover:from-teal-700 hover:to-cyan-600 dark:border-cyan-400/20 dark:from-teal-600 dark:to-cyan-600 dark:hover:from-teal-500 dark:hover:to-cyan-500"
                   }`}
                 >
                   <Plus size={16} />

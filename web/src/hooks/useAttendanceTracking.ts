@@ -58,6 +58,8 @@ export type VerificationFilter = "all" | "verified" | "unverified";
 type VerificationData = {
   isValid: boolean;
   dateHash?: string | null;
+  rootHash?: string | null;
+  txHash?: string | null;
   recordedBy?: string | null;
   timestamp?: number | null;
   reason?: string;
@@ -255,6 +257,31 @@ export function useAttendanceTracking() {
     setVerifyModal({ open: false, row: null, data: null });
   }, []);
 
+  const enrichWithTxHash = useCallback(async (verificationData: VerificationData) => {
+    const dateHash = verificationData?.dateHash;
+    if (!dateHash) return verificationData;
+
+    try {
+      const txResp = await fetch(`${API_BASE}/records/attendance/tx/${dateHash}`, {
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!txResp.ok) return verificationData;
+      const txPayload = await txResp.json().catch(() => null);
+      const txHash = (txPayload as { txHash?: string } | null)?.txHash || null;
+
+      return {
+        ...verificationData,
+        txHash,
+      };
+    } catch {
+      return verificationData;
+    }
+  }, []);
+
   const handleViewVerification = useCallback(async (row: AttendanceRow) => {
     setVerifyModal({ open: true, row, data: null });
     try {
@@ -279,10 +306,12 @@ export function useAttendanceTracking() {
         );
       }
 
+      const verificationData = await enrichWithTxHash(payload as VerificationData);
+
       setVerifyModal({
         open: true,
         row,
-        data: payload as VerificationData,
+        data: verificationData,
       });
     } catch (err: unknown) {
       setError(
@@ -296,7 +325,7 @@ export function useAttendanceTracking() {
     } finally {
       setVerifyLoading(false);
     }
-  }, []);
+  }, [enrichWithTxHash]);
 
   const handleSaveEdit = useCallback(
     async (status: AttendanceRow["status"]) => {

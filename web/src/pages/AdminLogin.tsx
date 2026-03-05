@@ -38,7 +38,7 @@ export default function AdminLogin() {
   const otpInputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
   const inputClassName =
-    "w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:cursor-not-allowed disabled:bg-slate-100";
+    "w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-500 dark:disabled:bg-slate-900";
 
   const getOtpDigits = () =>
     Array.from({ length: 6 }, (_, index) => otp[index] ?? "");
@@ -258,23 +258,23 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-slate-100">
+    <div className="relative min-h-screen overflow-hidden bg-slate-100 dark:bg-linear-to-br dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-24 -left-16 h-72 w-72 rounded-full bg-teal-200/70 blur-3xl" />
-        <div className="absolute -right-20 top-1/4 h-80 w-80 rounded-full bg-emerald-200/60 blur-3xl" />
-        <div className="absolute left-1/3 bottom-0 h-64 w-64 rounded-full bg-cyan-200/40 blur-3xl" />
+        <div className="absolute -top-24 -left-16 h-72 w-72 rounded-full bg-teal-200/70 blur-3xl dark:bg-cyan-500/15" />
+        <div className="absolute -right-20 top-1/4 h-80 w-80 rounded-full bg-emerald-200/60 blur-3xl dark:bg-teal-400/10" />
+        <div className="absolute left-1/3 bottom-0 h-64 w-64 rounded-full bg-cyan-200/40 blur-3xl dark:bg-sky-500/10" />
       </div>
 
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-230 items-center p-4 py-8 md:px-6">
-        <div className="grid w-full overflow-hidden rounded-3xl border border-teal-100 bg-white/90 shadow-[0_24px_60px_-24px_rgba(13,148,136,0.35)] backdrop-blur-sm lg:grid-cols-2">
-          <aside className="relative hidden bg-linear-to-br from-teal-700 via-teal-600 to-emerald-500 p-10 text-white lg:flex lg:flex-col lg:justify-between">
-            <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full border border-white/30" />
-            <div className="pointer-events-none absolute bottom-8 right-8 h-24 w-24 rounded-3xl bg-white/10" />
+        <div className="grid w-full overflow-hidden rounded-3xl border border-teal-100 bg-white/90 shadow-[0_24px_60px_-24px_rgba(13,148,136,0.35)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/95 dark:shadow-[0_24px_60px_-24px_rgba(14,116,144,0.35)] lg:grid-cols-2">
+          <aside className="relative hidden bg-linear-to-br from-teal-700 via-teal-600 to-emerald-500 p-10 text-white dark:from-slate-900 dark:via-slate-800 dark:to-slate-800 lg:flex lg:flex-col lg:justify-between">
+            <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full border border-white/30 dark:border-cyan-300/20" />
+            <div className="pointer-events-none absolute bottom-8 right-8 h-24 w-24 rounded-3xl bg-white/10 dark:bg-cyan-300/10" />
             <div className="relative">
               <h1 className="text-4xl font-black leading-tight">
                 Secure access for daily school operations.
               </h1>
-              <p className="mt-4 max-w-md text-sm leading-relaxed text-teal-50">
+              <p className="mt-4 max-w-md text-sm leading-relaxed text-teal-50 dark:text-slate-300">
                 Monitor attendance, feeding records, and parent-linked child
                 profiles from one admin workspace.
               </p>
@@ -282,21 +282,21 @@ export default function AdminLogin() {
           </aside>
 
           <section className="flex flex-col">
-            <div className="border-b border-slate-200 px-8 py-7 md:px-10">
+            <div className="border-b border-slate-200 px-8 py-7 dark:border-slate-800 md:px-10">
               <div>
-                <h1 className="text-3xl font-black tracking-tight text-slate-900">
+                <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-slate-100">
                   Smart KidCare
                 </h1>
-                <p className="text-sm text-slate-500">Admin Portal</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Admin Portal</p>
               </div>
             </div>
 
             <div className="flex-1 px-8 py-8 md:px-10">
               <div className="mb-6">
-                <h2 className="text-2xl font-bold text-slate-900">
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
                   {mfaToken ? "Verify Your Login" : "Admin Sign In"}
                 </h2>
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                   {mfaToken
                     ? `Enter the OTP sent to ${mfaEmail || "your email"}`
                     : "Sign in to continue to your admin dashboard."}
@@ -304,15 +304,15 @@ export default function AdminLogin() {
               </div>
 
               {error && (
-                <div className="mb-5 flex gap-3 rounded-xl border border-red-200 bg-red-50 p-4">
-                  <AlertCircle className="shrink-0 text-red-600" size={20} />
-                  <p className="text-sm text-red-700">{error}</p>
+                <div className="mb-5 flex gap-3 rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-500/40 dark:bg-red-500/10">
+                  <AlertCircle className="shrink-0 text-red-600 dark:text-red-300" size={20} />
+                  <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
                 </div>
               )}
 
               {info && (
-                <div className="mb-5 rounded-xl border border-teal-200 bg-teal-50 p-4">
-                  <p className="text-sm text-teal-700">{info}</p>
+                <div className="mb-5 rounded-xl border border-teal-200 bg-teal-50 p-4 dark:border-teal-500/40 dark:bg-teal-500/10">
+                  <p className="text-sm text-teal-700 dark:text-teal-300">{info}</p>
                 </div>
               )}
 
@@ -320,13 +320,13 @@ export default function AdminLogin() {
                 {!mfaToken && (
                   <>
                     <div>
-                      <label className="mb-2 block text-sm font-semibold text-slate-700">
+                      <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
                         Username
                       </label>
                       <div className="relative">
                         <UserIcon
                           size={18}
-                          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
                         />
                         <input
                           type="text"
@@ -341,13 +341,13 @@ export default function AdminLogin() {
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-sm font-semibold text-slate-700">
+                      <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
                         Password
                       </label>
                       <div className="relative">
                         <Lock
                           size={18}
-                          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
                         />
                         <input
                           type="password"
@@ -366,14 +366,14 @@ export default function AdminLogin() {
                 {mfaToken && (
                   <div>
                     <div className="mb-2 flex items-center justify-between gap-3">
-                      <label className="block text-sm font-semibold text-slate-700">
+                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
                         Verification Code
                       </label>
                       <button
                         type="button"
                         onClick={handleResendOtp}
                         disabled={isLoading || isResendingOtp}
-                        className="cursor-pointer text-sm font-medium text-teal-700 transition hover:text-teal-800 disabled:cursor-not-allowed disabled:text-teal-400"
+                        className="cursor-pointer text-sm font-medium text-teal-700 transition hover:text-teal-800 disabled:cursor-not-allowed disabled:text-teal-400 dark:text-teal-300 dark:hover:text-teal-200 dark:disabled:text-teal-700"
                       >
                         {isResendingOtp ? "Sending..." : "Resend OTP"}
                       </button>
@@ -394,13 +394,13 @@ export default function AdminLogin() {
                           onPaste={(event) => handleOtpPaste(index, event)}
                           inputMode="numeric"
                           maxLength={1}
-                          className="h-12 w-12 rounded-xl border border-slate-300 bg-white text-center text-lg font-semibold text-slate-900 shadow-sm transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                        className="h-12 w-12 rounded-xl border border-slate-300 bg-white text-center text-lg font-semibold text-slate-900 shadow-sm transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100 dark:disabled:bg-slate-900"
                           disabled={isLoading}
                           aria-label={`OTP digit ${index + 1}`}
                         />
                       ))}
                     </div>
-                    <p className="mt-2 text-xs text-slate-500">
+                    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
                       Check your inbox and enter the one-time code to continue.
                     </p>
                   </div>
@@ -409,7 +409,7 @@ export default function AdminLogin() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="cursor-pointer flex w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-teal-600 to-teal-500 py-3 font-semibold text-white shadow-md transition hover:from-teal-700 hover:to-teal-600 disabled:cursor-not-allowed disabled:from-teal-400 disabled:to-teal-400"
+                  className="cursor-pointer flex w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-teal-600 to-cyan-500 py-3 font-semibold text-white shadow-md transition hover:from-teal-700 hover:to-cyan-600 disabled:cursor-not-allowed disabled:from-teal-400 disabled:to-cyan-400"
                 >
                   {isLoading ? (
                     <>
@@ -425,8 +425,8 @@ export default function AdminLogin() {
               </form>
             </div>
 
-            <div className="border-t border-slate-200 bg-slate-50 px-8 py-5 md:px-10">
-              <p className="text-center text-xs text-slate-500">
+            <div className="border-t border-slate-200 bg-slate-50 px-8 py-5 dark:border-slate-800 dark:bg-slate-900 md:px-10">
+              <p className="text-center text-xs text-slate-500 dark:text-slate-400">
                 Copyright 2026 Smart KidCare. All rights reserved.
               </p>
             </div>

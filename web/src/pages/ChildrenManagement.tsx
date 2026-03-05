@@ -211,7 +211,7 @@ export default function ChildrenManagement() {
               {/* Add Child */}
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition cursor-pointer"
+                className="flex cursor-pointer items-center gap-2 rounded-lg border border-teal-500/20 bg-linear-to-r from-teal-600 to-cyan-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:from-teal-700 hover:to-cyan-600 dark:border-cyan-400/20 dark:from-teal-600 dark:to-cyan-600 dark:hover:from-teal-500 dark:hover:to-cyan-500"
               >
                 <Plus size={16} />
                 Add Child

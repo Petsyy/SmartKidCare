@@ -60,6 +60,8 @@ export type VerificationFilter = "all" | "verified" | "unverified";
 type VerificationData = {
   isValid: boolean;
   dateHash?: string | null;
+  rootHash?: string | null;
+  txHash?: string | null;
   recordedBy?: string | null;
   timestamp?: number | null;
   reason?: string;
@@ -242,6 +244,31 @@ export function useFeedingProgram() {
         "Content-Type": "application/json",
       };
 
+      const enrichWithTxHash = async (
+        verificationData: VerificationData,
+      ): Promise<VerificationData> => {
+        const dateHash = verificationData?.dateHash;
+        if (!dateHash) return verificationData;
+
+        try {
+          const txResp = await fetch(`${API_BASE}/records/attendance/tx/${dateHash}`, {
+            credentials: "include",
+            headers,
+          });
+
+          if (!txResp.ok) return verificationData;
+          const txPayload = await txResp.json().catch(() => null);
+          const txHash = (txPayload as { txHash?: string } | null)?.txHash || null;
+
+          return {
+            ...verificationData,
+            txHash,
+          };
+        } catch {
+          return verificationData;
+        }
+      };
+
       const primaryResp = await fetch(
         `${API_BASE}/records/feeding/verify/${row.id}`,
         {
@@ -251,7 +278,7 @@ export function useFeedingProgram() {
       );
       const primaryPayload = await primaryResp.json().catch(() => null);
       if (primaryResp.ok && primaryPayload) {
-        return primaryPayload as VerificationData;
+        return await enrichWithTxHash(primaryPayload as VerificationData);
       }
 
       const childId = getChildIdFromRowId(row.id);
@@ -315,7 +342,7 @@ export function useFeedingProgram() {
         );
       }
 
-      return fallbackPayload as VerificationData;
+      return await enrichWithTxHash(fallbackPayload as VerificationData);
     },
     [],
   );
