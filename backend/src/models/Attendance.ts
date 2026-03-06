@@ -34,6 +34,15 @@ const AttendanceSchema = new mongoose.Schema(
       required: true,
     },
     records: [AttendanceRecordSchema],
+
+    // Blockchain anchor: stores daily Merkle root info
+    blockchainAnchor: {
+      dateHash: { type: String, default: null },
+      rootHash: { type: String, default: null },
+      transactionHash: { type: String, default: null },
+      blockNumber: { type: Number, default: null },
+      anchoredAt: { type: Date, default: null },
+    },
   },
   { timestamps: true }
 );

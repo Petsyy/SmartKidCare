@@ -1,7 +1,13 @@
 import {
   attendanceContract,
+  buildChildIdHash,
+  buildChildRecordHash,
+  buildRecordBatchHash,
   buildDateHash,
-  hashData,
+  buildDocumentsHash,
+  hashAttendance,
+  hashFeeding,
+  hashFileBuffer,
   wallet,
   provider,
 } from "../../blockchain/ethers";
@@ -129,9 +135,15 @@ export async function storeDailyRecord(
   feedingData: unknown,
 ) {
   try {
-    const dateHash = buildDateHash(childId, date);
-    const attendanceHash = hashData(attendanceData);
-    const feedingHash = hashData(feedingData);
+    // Extract date string (YYYY-MM-DD)
+    const dateStr = typeof date === 'string' ? date.split('T')[0] : new Date(date).toISOString().split('T')[0];
+    const dateHash = buildDateHash(dateStr);
+    const batchHash = buildRecordBatchHash(dateStr, childId);
+    
+    // For compatibility endpoint: derive a deterministic root from attendance+feeding.
+    const attendanceHash = hashAttendance(childId, typeof attendanceData === 'string' ? attendanceData : 'absent');
+    const feedingHash = hashFeeding(childId, typeof feedingData === 'string' ? feedingData : 'missed');
+    const rootHash = buildChildRecordHash(attendanceHash, feedingHash);
 
     console.log("\n==============================");
     console.log("📦 NEW BLOCKCHAIN RECORD");
@@ -140,14 +152,14 @@ export async function storeDailyRecord(
     console.log("🧒 Child ID   :", childId);
     console.log("📅 Date       :", date);
     console.log("🔐 Date Hash  :", dateHash);
+    console.log("🧩 Batch Hash :", batchHash);
     console.log("📘 Attendance :", attendanceHash);
     console.log("🥣 Feeding    :", feedingHash);
     console.log("------------------------------");
 
-    const tx = await attendanceContract.storeRecord(
-      dateHash,
-      attendanceHash,
-      feedingHash,
+    const tx = await attendanceContract.storeDailyRoot(
+      batchHash,
+      rootHash,
     );
 
     console.log("⏳ Sending transaction...");
@@ -171,6 +183,8 @@ export async function storeDailyRecord(
       txHash: tx.hash,
       blockNumber: receipt.blockNumber,
       dateHash,
+      batchHash,
+      rootHash,
       attendanceHash,
       feedingHash,
       gasUsed: gasUsed.toString(),
@@ -197,21 +211,86 @@ export async function storeDailyRecord(
   }
 }
 
+export async function storeChildDocumentsHash(
+  studentId: string,
+  birthCertificateBuffer?: Buffer | null,
+  parentIdBuffer?: Buffer | null,
+) {
+  const safeStudentId = String(studentId || "").trim();
+  if (!safeStudentId) {
+    throw new Error("studentId is required for document anchoring.");
+  }
+
+  const hasBirthCertificate = Boolean(birthCertificateBuffer?.length);
+  const hasParentId = Boolean(parentIdBuffer?.length);
+  if (!hasBirthCertificate && !hasParentId) {
+    return null;
+  }
+
+  const zeroHash = "0x0000000000000000000000000000000000000000000000000000000000000000";
+  const childIdHash = buildChildIdHash(safeStudentId);
+  const birthCertificateHash = hasBirthCertificate
+    ? hashFileBuffer(birthCertificateBuffer as Buffer)
+    : zeroHash;
+  const parentIdHash = hasParentId ? hashFileBuffer(parentIdBuffer as Buffer) : zeroHash;
+  const documentsHash = buildDocumentsHash(birthCertificateHash, parentIdHash);
+
+  try {
+    const tx = await attendanceContract.storeDocumentsHash(
+      childIdHash,
+      documentsHash,
+    );
+    const receipt = await tx.wait();
+
+    const gasUsed = receipt.gasUsed;
+    const gasPrice = tx.gasPrice || receipt.gasPrice || 0n;
+    const gasCost = gasUsed * gasPrice;
+    const gasCostInEth = Number(gasCost) / 1e18;
+
+    totalGasSpent += gasCostInEth;
+    totalTransactions++;
+
+    return {
+      txHash: tx.hash,
+      blockNumber: receipt.blockNumber,
+      childIdHash,
+      documentsHash,
+      birthCertificateHash,
+      parentIdHash,
+      gasUsed: gasUsed.toString(),
+      gasPrice: gasPrice.toString(),
+      gasCostInEth: gasCostInEth.toFixed(8),
+    };
+  } catch (error: any) {
+    const reason =
+      error?.reason ||
+      error?.shortMessage ||
+      error?.info?.error?.message ||
+      error?.message ||
+      "Unknown error";
+    throw new Error(reason);
+  }
+}
+
 export async function verifyDailyRecord(
   childId: string,
   date: string,
   attendanceHash: string,
   feedingHash: string,
 ) {
-  const dateHash = buildDateHash(childId, date);
+  // Extract date string (YYYY-MM-DD) for batch identification
+  const dateStr = typeof date === 'string' ? date.split('T')[0] : new Date(date).toISOString().split('T')[0];
+  const dateHash = buildDateHash(dateStr);
+  const batchHash = buildRecordBatchHash(dateStr, childId);
 
-  const isValid = await attendanceContract.verifyRecord(
-    dateHash,
-    attendanceHash,
-    feedingHash,
+  const rootHash = buildChildRecordHash(attendanceHash, feedingHash);
+
+  const isValid = await attendanceContract.verifyRoot(
+    batchHash,
+    rootHash,
   );
 
-  return { isValid, dateHash };
+  return { isValid, dateHash, batchHash, rootHash };
 }
 
 export async function findTxForDateHash(
@@ -264,7 +343,7 @@ export async function findTxForDateHash(
           const data = tx.input ?? tx.data ?? "0x";
           const value = tx.value ?? "0x0";
           const parsed = iface.parseTransaction({ data, value });
-          if (parsed && parsed.name === "storeRecord") {
+          if (parsed && parsed.name === "storeDailyRoot") {
             const argDateHash = parsed.args[0];
             if (String(argDateHash) === String(dateHash)) {
               const result = tx.hash as string;
