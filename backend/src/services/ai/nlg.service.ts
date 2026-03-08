@@ -824,38 +824,38 @@ export async function composeAttendanceReply(
         ? roleAwareLine({
             language,
             isParentAudience,
-            enParent: childName
+            enParent: "Your child was absent today.",
+            enOther: childName
               ? `${childName} was absent today.`
-              : "Your child was absent today.",
-            enOther: "This child was absent today.",
-            tlParent: childName
+              : "This child was absent today.",
+            tlParent: "Absent ang anak mo ngayong araw.",
+            tlOther: childName
               ? `Absent si ${childName} ngayong araw.`
-              : "Absent ang anak mo ngayong araw.",
-            tlOther: "Absent ang batang ito ngayong araw.",
+              : "Absent ang batang ito ngayong araw.",
           })
         : roleAwareLine({
             language,
             isParentAudience,
-            enParent: childName
+            enParent: "Yes, your child was present today.",
+            enOther: childName
               ? `Yes, ${childName} was present today.`
-              : "Yes, your child was present today.",
-            enOther: "Yes, this child was present today.",
-            tlParent: childName
+              : "Yes, this child was present today.",
+            tlParent: "Oo, present ang anak mo ngayong araw.",
+            tlOther: childName
               ? `Oo, present si ${childName} ngayong araw.`
-              : "Oo, present ang anak mo ngayong araw.",
-            tlOther: "Oo, present ang batang ito ngayong araw.",
+              : "Oo, present ang batang ito ngayong araw.",
           })
       : roleAwareLine({
           language,
           isParentAudience,
-          enParent: childName
+          enParent: `Your child attended ${result.present} out of ${result.totalDays} school days ${rangeText}, with ${result.absent} absence${result.absent === 1 ? "" : "s"}.`,
+          enOther: childName
             ? `${childName} attended ${result.present} out of ${result.totalDays} school days ${rangeText}, with ${result.absent} absence${result.absent === 1 ? "" : "s"}.`
-            : `Your child attended ${result.present} out of ${result.totalDays} school days ${rangeText}, with ${result.absent} absence${result.absent === 1 ? "" : "s"}.`,
-          enOther: `This child attended ${result.present} out of ${result.totalDays} school days ${rangeText}, with ${result.absent} absence${result.absent === 1 ? "" : "s"}.`,
-          tlParent: childName
+            : `This child attended ${result.present} out of ${result.totalDays} school days ${rangeText}, with ${result.absent} absence${result.absent === 1 ? "" : "s"}.`,
+          tlParent: `Present ang anak mo sa ${result.present} sa ${result.totalDays} araw ng klase ${rangeText}, na may ${result.absent} pagliban.`,
+          tlOther: childName
             ? `Present si ${childName} sa ${result.present} sa ${result.totalDays} araw ng klase ${rangeText}, na may ${result.absent} pagliban.`
-            : `Present ang anak mo sa ${result.present} sa ${result.totalDays} araw ng klase ${rangeText}, na may ${result.absent} pagliban.`,
-          tlOther: `Present ang batang ito sa ${result.present} sa ${result.totalDays} araw ng klase ${rangeText}, na may ${result.absent} pagliban.`,
+            : `Present ang batang ito sa ${result.present} sa ${result.totalDays} araw ng klase ${rangeText}, na may ${result.absent} pagliban.`,
         });
 
   const metricsLine =
@@ -929,14 +929,14 @@ export async function composeFeedingReply(
   const summaryLine = roleAwareLine({
     language,
     isParentAudience,
-    enParent: childName
+    enParent: `Your child completed ${result.completed} out of ${result.totalMeals} meals ${rangeText}, with ${result.missed} missed.`,
+    enOther: childName
       ? `${childName} completed ${result.completed} out of ${result.totalMeals} meals ${rangeText}, with ${result.missed} missed.`
-      : `Your child completed ${result.completed} out of ${result.totalMeals} meals ${rangeText}, with ${result.missed} missed.`,
-    enOther: `This child completed ${result.completed} out of ${result.totalMeals} meals ${rangeText}, with ${result.missed} missed.`,
-    tlParent: childName
+      : `This child completed ${result.completed} out of ${result.totalMeals} meals ${rangeText}, with ${result.missed} missed.`,
+    tlParent: `Nakumpleto ng anak mo ang ${result.completed} sa ${result.totalMeals} meals ${rangeText}, at may ${result.missed} na hindi nakumpleto.`,
+    tlOther: childName
       ? `Nakumpleto ni ${childName} ang ${result.completed} sa ${result.totalMeals} meals ${rangeText}, at may ${result.missed} na hindi nakumpleto.`
-      : `Nakumpleto ng anak mo ang ${result.completed} sa ${result.totalMeals} meals ${rangeText}, at may ${result.missed} na hindi nakumpleto.`,
-    tlOther: `Nakumpleto ng batang ito ang ${result.completed} sa ${result.totalMeals} meals ${rangeText}, at may ${result.missed} na hindi nakumpleto.`,
+      : `Nakumpleto ng batang ito ang ${result.completed} sa ${result.totalMeals} meals ${rangeText}, at may ${result.missed} na hindi nakumpleto.`,
   });
 
   const metricsLine = `Feeding Completion: ${result.completed}/${result.totalMeals} meals (${result.feedingRate}%).`;
@@ -984,14 +984,14 @@ export async function composeChildReportReply(
   const introLine = roleAwareLine({
     language,
     isParentAudience,
-    enParent: childName
+    enParent: `Here is your child's update ${rangeText}.`,
+    enOther: childName
       ? `Here is ${englishPossessive(childName)} update ${rangeText}.`
-      : `Here is your child's update ${rangeText}.`,
-    enOther: `Here is this child's update ${rangeText}.`,
-    tlParent: childName
+      : `Here is this child's update ${rangeText}.`,
+    tlParent: `Narito ang update ng anak mo ${rangeText}.`,
+    tlOther: childName
       ? `Narito ang update ni ${childName} ${rangeText}.`
-      : `Narito ang update ng anak mo ${rangeText}.`,
-    tlOther: `Narito ang update ng batang ito ${rangeText}.`,
+      : `Narito ang update ng batang ito ${rangeText}.`,
   });
 
   const attendanceLine =

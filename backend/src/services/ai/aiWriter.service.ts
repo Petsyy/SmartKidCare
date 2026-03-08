@@ -22,9 +22,11 @@ import {
   recommendForFeeding,
 } from "./recommendations.service";
 import { buildConversationClosureReply } from "./chatReply.service";
+import { logAIInteraction } from "./datasetLogging.service";
 
 type AIRole = "parent" | "teacher" | "admin";
 type WriterRiskLevel = "LOW" | "MEDIUM" | "HIGH";
+type WriterResponseTemplate = "fact" | "advice" | "alert";
 type MemoryRole = "user" | "assistant";
 
 type ConversationTurn = {
@@ -80,13 +82,20 @@ const HISTORY_LIMIT = 8;
 const writerMemory = new Map<string, ConversationTurn[]>();
 
 const WriterOutputSchema = z.object({
+  responseTemplate: z.enum(["fact", "advice", "alert"]),
   headline: z.string().min(1),
   metricLines: z.array(z.string().min(1)).min(1),
   riskLevel: z.enum(["LOW", "MEDIUM", "HIGH"]),
   analysis: z.string().min(1),
-  suggestedActions: z.array(z.string().min(1)).min(1).max(3),
-  followUp: z.string().min(1),
+  suggestedActions: z.array(z.string().min(1)).max(3).optional(),
+  followUp: z.string().optional(),
 });
+
+type WriterDisplayPolicy = {
+  responseTemplate: WriterResponseTemplate;
+  includeSuggestedActions: boolean;
+  includeFollowUp: boolean;
+};
 
 function normalizeRole(role: string): AIRole {
   const normalized = String(role).trim().toLowerCase();
@@ -297,6 +306,63 @@ function sanitizeAction(text: string): string {
     .trim();
 }
 
+/**
+ * Enforce consistent analysis length (50-150 words for consistency)
+ */
+function sanitizeAnalysis(analysis: string): string {
+  const trimmed = analysis.trim();
+  
+  // Remove excessive punctuation marks and normalize whitespace
+  const cleaned = trimmed
+    .replace(/([.!?])\1{2,}/g, "$1")
+    .replace(/\n{3,}/g, "\n");
+  
+  // Split into sentences and keep max 4 for consistency
+  const sentences = cleaned
+    .split(/(?<=[.!?])\s+/)
+    .filter((s) => s.trim())
+    .slice(0, 4);
+  
+  // Join back and limit to ~150 words max
+  const result = sentences.join(" ").trim();
+  const words = result.split(/\s+/);
+  
+  if (words.length > 150) {
+    return words.slice(0, 150).join(" ") + ".";
+  }
+  
+  return result;
+}
+
+function shouldIncludeGuidanceByIntent(question: string): boolean {
+  const lower = question.toLowerCase();
+  return /\b(recommend|recommendation|suggest|advice|what should|next step|tips?|improve|strategy|plan)\b/.test(
+    lower,
+  );
+}
+
+function buildWriterDisplayPolicy(params: {
+  question: string;
+  facts: WriterFacts;
+}): WriterDisplayPolicy {
+  const { question, facts } = params;
+  const guidanceIntent = shouldIncludeGuidanceByIntent(question);
+  const responseTemplate: WriterResponseTemplate =
+    facts.riskLevel === "HIGH"
+      ? "alert"
+      : guidanceIntent || facts.riskLevel === "MEDIUM"
+        ? "advice"
+        : "fact";
+
+  const includeSuggestedActions = responseTemplate !== "fact";
+
+  return {
+    responseTemplate,
+    includeSuggestedActions,
+    includeFollowUp: includeSuggestedActions,
+  };
+}
+
 function getHistory(conversationId: string): ConversationTurn[] {
   return [...(writerMemory.get(conversationId) ?? [])];
 }
@@ -351,17 +417,25 @@ function labelsForLanguage(language: AIResponseLanguage): {
 
 function fallbackNarrative(facts: WriterFacts): string {
   const labels = labelsForLanguage(facts.language);
+  
+  // Use "your child" for parents, actual name for teachers/admins
+  const childReference = facts.role === "parent" 
+    ? (facts.language === "tl" ? "anak mo" : "your child")
+    : facts.childName;
+  
   const headline =
     facts.language === "tl"
       ? facts.scenario === "class_report"
         ? `Narito ang class summary ${timeframeLabel(facts.timeframe, facts.language)}.`
-        : facts.childName
-          ? `Narito ang update ni ${facts.childName} ${timeframeLabel(facts.timeframe, facts.language)}.`
+        : childReference
+          ? `Narito ang update ng ${childReference} ${timeframeLabel(facts.timeframe, facts.language)}.`
           : `Narito ang update ${timeframeLabel(facts.timeframe, facts.language)}.`
       : facts.scenario === "class_report"
         ? `Here is the class summary ${timeframeLabel(facts.timeframe, facts.language)}.`
-        : facts.childName
-          ? `Here is ${facts.childName}'s update ${timeframeLabel(facts.timeframe, facts.language)}.`
+        : childReference
+          ? facts.role === "parent"
+            ? `Here is ${childReference}'s update ${timeframeLabel(facts.timeframe, facts.language)}.`
+            : `Here is ${childReference}'s update ${timeframeLabel(facts.timeframe, facts.language)}.`
           : `Here is the update ${timeframeLabel(facts.timeframe, facts.language)}.`;
 
   return [
@@ -373,34 +447,87 @@ function fallbackNarrative(facts: WriterFacts): string {
     "",
     safeJoinLines(facts.observationLines),
     "",
-    `${labels.suggestedActionsLabel}:`,
-    ...facts.recommendationLines.slice(0, 3).map((line) => `- ${line}`),
     "",
-    facts.language === "tl"
-      ? `${labels.followUpLabel}: Gusto mo bang magpatuloy sa mas detalyadong review?`
-      : `${labels.followUpLabel}: Would you like to continue with a more detailed review?`,
   ]
     .filter(Boolean)
+    .join("\n");
+}
+
+function fallbackNarrativeWithPolicy(
+  facts: WriterFacts,
+  policy: WriterDisplayPolicy,
+): string {
+  const base = fallbackNarrative(facts);
+  if (!policy.includeSuggestedActions) return base;
+
+  const labels = labelsForLanguage(facts.language);
+  const actionLines = facts.recommendationLines
+    .slice(0, 3)
+    .map((line) => `- ${line}`);
+  const followUp =
+    facts.language === "tl"
+      ? policy.responseTemplate === "alert"
+        ? `${labels.followUpLabel}: Gusto mo bang gumawa tayo ng agarang action plan para dito?`
+        : `${labels.followUpLabel}: Gusto mo bang magpatuloy sa mas detalyadong review?`
+      : policy.responseTemplate === "alert"
+        ? `${labels.followUpLabel}: Would you like to set an immediate action plan for this?`
+        : `${labels.followUpLabel}: Would you like to continue with a more detailed review?`;
+
+  return [
+    base,
+    "",
+    `${labels.suggestedActionsLabel}:`,
+    ...actionLines,
+    policy.includeFollowUp ? "" : undefined,
+    policy.includeFollowUp ? followUp : undefined,
+  ]
+    .filter((line): line is string => Boolean(line))
     .join("\n");
 }
 
 function validateWriterOutput(
   output: z.infer<typeof WriterOutputSchema>,
   facts: WriterFacts,
+  policy: WriterDisplayPolicy,
 ): boolean {
+  if (output.responseTemplate !== policy.responseTemplate) return false;
   if (output.riskLevel !== facts.riskLevel) return false;
   if (output.metricLines.length !== facts.metricLines.length) return false;
   const allMetricsMatch = output.metricLines.every(
     (line, index) => line.trim() === facts.metricLines[index].trim(),
   );
-  return allMetricsMatch;
+  if (!allMetricsMatch) return false;
+
+  const actionCount = (output.suggestedActions ?? [])
+    .map((line) => line.trim())
+    .filter(Boolean).length;
+  const hasFollowUp = (output.followUp ?? "").trim().length > 0;
+
+  if (policy.includeSuggestedActions && actionCount < 1) return false;
+  if (!policy.includeSuggestedActions && actionCount > 0) return false;
+  if (policy.includeFollowUp && !hasFollowUp) return false;
+
+  return true;
 }
 
 function renderWriterOutput(
   output: z.infer<typeof WriterOutputSchema>,
   language: AIResponseLanguage,
+  policy: WriterDisplayPolicy,
 ): string {
   const labels = labelsForLanguage(language);
+  
+  // Enforce consistent suggested actions (min 1, max 3)
+  const suggestedActions = (output.suggestedActions ?? [])
+    .map((line) => sanitizeAction(line))
+    .filter(Boolean)
+    .slice(0, 3);
+  
+  // Sanitize analysis for consistent length
+  const analysis = sanitizeAnalysis(output.analysis);
+  const followUp = (output.followUp ?? "").trim().slice(0, 200);
+
+  // BUILD RESPONSE WITH STRICT FORMATTING
   return [
     output.headline.trim(),
     "",
@@ -408,14 +535,24 @@ function renderWriterOutput(
     "",
     `${labels.riskLabel}: ${output.riskLevel}`,
     "",
-    output.analysis.trim(),
-    "",
-    `${labels.suggestedActionsLabel}:`,
-    ...output.suggestedActions.map((line) => `- ${sanitizeAction(line)}`),
-    "",
-    `${labels.followUpLabel}: ${output.followUp.trim()}`,
+    analysis,
+    policy.includeSuggestedActions && suggestedActions.length
+      ? ""
+      : undefined,
+    policy.includeSuggestedActions && suggestedActions.length
+      ? `${labels.suggestedActionsLabel}:`
+      : undefined,
+    ...(policy.includeSuggestedActions && suggestedActions.length
+      ? suggestedActions.map((line) => `- ${line}`)
+      : []),
+    policy.includeFollowUp && followUp
+      ? ""
+      : undefined,
+    policy.includeFollowUp && followUp
+      ? `${labels.followUpLabel}: ${followUp}`
+      : undefined,
   ]
-    .filter(Boolean)
+    .filter((line): line is string => Boolean(line))
     .join("\n");
 }
 
@@ -425,8 +562,9 @@ function buildWriterPrompt(params: {
   language: AIResponseLanguage;
   question: string;
   history: ConversationTurn[];
+  policy: WriterDisplayPolicy;
 }): string {
-  const { facts, role, language, question, history } = params;
+  const { facts, role, language, question, history, policy } = params;
   const historyText =
     history.length === 0
       ? "None"
@@ -441,6 +579,7 @@ Generate a fully structured response based ONLY on deterministic facts.
 
 Return ONLY one valid JSON object with this exact shape:
 {
+  "responseTemplate":"fact|advice|alert",
   "headline":"string",
   "metricLines":["string"],
   "riskLevel":"LOW|MEDIUM|HIGH",
@@ -452,13 +591,18 @@ Return ONLY one valid JSON object with this exact shape:
 Hard constraints:
 - Response language: ${language === "tl" ? "Filipino/Tagalog" : "English"}.
 - Audience role: ${role}.
+- IMPORTANT: When addressing parents, use "your child" (or "anak mo" in Tagalog) instead of the child's name. For teachers/admins, use the actual child name.
 - Use FACTS as source of truth. Never invent or modify numbers, percentages, dates, or counts.
 - metricLines must be copied EXACTLY from FACTS.metricLines, same order, same text.
 - riskLevel must be exactly FACTS.riskLevel.
-- analysis should be concise, practical, and grounded in FACTS.
-- suggestedActions must be 1-3 concise actionable lines.
-- followUp must be one contextual question.
-- Plain text values only. No markdown/code fences.
+- responseTemplate must be exactly "${policy.responseTemplate}".
+- ANALYSIS CONSTRAINT: Keep to 2-4 sentences maximum (~100-150 words). Be concise and practical.
+- If responseTemplate is "fact": analysis should be factual summary only, no action coaching.
+- If responseTemplate is "advice": analysis should interpret facts and set up recommended actions below.
+- If responseTemplate is "alert": analysis should clearly state the concern grounded in FACTS with urgency.
+- suggestedActions policy: ${policy.includeSuggestedActions ? "REQUIRED: provide exactly 2-3 concise actionable items (1 sentence each, max 20 words each). DO NOT return empty array." : "not needed (return empty array [])"}.
+- followUp policy: ${policy.includeFollowUp ? "REQUIRED: 1 short contextual follow-up question (max 15 words). DO NOT return empty string." : "not needed (return empty string \"\")"}.
+- Plain text values only. No markdown/code fences/formatting.
 
 Recent conversation memory:
 ${historyText}
@@ -545,7 +689,9 @@ function buildFacts(params: {
   const { result, role, language } = params;
 
   if (result.tool === "summarize_attendance_class") {
-    return Promise.resolve(buildFactsFromClassAttendance(result, role, language));
+    return Promise.resolve(
+      buildFactsFromClassAttendance(result, role, language),
+    );
   }
 
   if (result.tool === "summarize_feeding_class") {
@@ -599,9 +745,14 @@ function buildFacts(params: {
 
   if (result.tool === "summarize_attendance_comparison") {
     const currentInsight = analyzeAttendanceInsight(result.currentWeek);
-    return recommendForAttendance(result.currentWeek, currentInsight, language, {
-      deterministic: true,
-    }).then((recommendationLines) => ({
+    return recommendForAttendance(
+      result.currentWeek,
+      currentInsight,
+      language,
+      {
+        deterministic: true,
+      },
+    ).then((recommendationLines) => ({
       scenario: "child_attendance_comparison",
       role,
       language,
@@ -722,7 +873,10 @@ function buildFacts(params: {
     role,
     language,
     timeframe: result.timeframe,
-    childName: result.childName ?? result.attendance.childName ?? result.feeding.childName,
+    childName:
+      result.childName ??
+      result.attendance.childName ??
+      result.feeding.childName,
     metricLines: [
       `${metricLabel("attendance", language)}: ${result.attendance.present}/${result.attendance.totalDays} days (${result.attendance.attendanceRate}%)`,
       `${metricLabel("feeding", language)}: ${result.feeding.completed}/${result.feeding.totalMeals} meals (${result.feeding.feedingRate}%)`,
@@ -743,6 +897,59 @@ function buildFacts(params: {
   }));
 }
 
+function buildLoggingContext(
+  facts: WriterFacts,
+  result: WriterSupportedResult,
+): {
+  childName?: string;
+  attendance?: string;
+  feedingCompletion?: string;
+  date?: string;
+  verified?: boolean;
+} {
+  // Extract child-specific data from the result
+  if ("childName" in result && result.childName) {
+    const attendance =
+      "attendanceRate" in result
+        ? `${result.attendanceRate}%`
+        : facts.metricLines.find((line) => line.includes("Attendance"))?.split(":")[1]?.trim() ||
+          "Not recorded";
+    const feedingCompletion =
+      "feedingRate" in result
+        ? `${result.feedingRate}%`
+        : facts.metricLines.find((line) => line.includes("Feeding"))?.split(":")[1]?.trim() ||
+          "Not recorded";
+
+    return {
+      childName: result.childName,
+      attendance,
+      feedingCompletion,
+      date: facts.timeframe,
+      verified: true,
+    };
+  }
+
+  // For class-level queries, log simplified context
+  if (facts.scenario.includes("class")) {
+    return {
+      childName: `Class summary (${facts.scenario})`,
+      attendance: facts.metricLines.find((line) => line.includes("Attendance"))?.split(":")[1]?.trim(),
+      feedingCompletion: facts.metricLines.find((line) => line.includes("Feeding"))?.split(":")[1]?.trim(),
+      date: facts.timeframe,
+      verified: true,
+    };
+  }
+
+  // Fallback for other scenarios
+  return {
+    childName: facts.childName || "Unknown",
+    attendance: facts.metricLines.find((line) => line.includes("Attendance"))?.split(":")[1]?.trim() || "Not recorded",
+    feedingCompletion: facts.metricLines.find((line) => line.includes("Feeding"))?.split(":")[1]?.trim() || "Not recorded",
+    date: facts.timeframe,
+    verified: true,
+  };
+}
+
 export async function writeToolNarrative(params: {
   result: WriterSupportedResult;
   role: string;
@@ -756,6 +963,10 @@ export async function writeToolNarrative(params: {
     role,
     language: params.language,
   });
+  const displayPolicy = buildWriterDisplayPolicy({
+    question: params.question,
+    facts,
+  });
 
   const history = getHistory(params.conversationId);
   const prompt = buildWriterPrompt({
@@ -764,6 +975,7 @@ export async function writeToolNarrative(params: {
     language: params.language,
     question: params.question,
     history,
+    policy: displayPolicy,
   });
 
   let finalReply = "";
@@ -772,14 +984,22 @@ export async function writeToolNarrative(params: {
     const parsedUnknown = parseFirstJSONObject(raw);
     const validated = WriterOutputSchema.parse(parsedUnknown);
 
-    if (!validateWriterOutput(validated, facts)) {
-      finalReply = fallbackNarrative(facts);
+    if (!validateWriterOutput(validated, facts, displayPolicy)) {
+      finalReply = fallbackNarrativeWithPolicy(facts, displayPolicy);
     } else {
-      finalReply = renderWriterOutput(validated, params.language);
+      finalReply = renderWriterOutput(
+        validated,
+        params.language,
+        displayPolicy,
+      );
     }
   } catch {
-    finalReply = fallbackNarrative(facts);
+    finalReply = fallbackNarrativeWithPolicy(facts, displayPolicy);
   }
+
+  // Log interaction to datasets
+  const loggingContext = buildLoggingContext(facts, params.result);
+  await logAIInteraction(params.question, loggingContext, finalReply);
 
   remember(params.conversationId, { role: "user", content: params.question });
   remember(params.conversationId, { role: "assistant", content: finalReply });
@@ -843,7 +1063,8 @@ export function buildConversationId(params: {
   childId?: string;
   language: AIResponseLanguage;
 }): string {
-  const requester = String(params.requesterId ?? "anonymous").trim() || "anonymous";
+  const requester =
+    String(params.requesterId ?? "anonymous").trim() || "anonymous";
   const child = String(params.childId ?? "global").trim() || "global";
   const role = normalizeRole(params.role);
   return `${requester}:${role}:${child}:${params.language}`;

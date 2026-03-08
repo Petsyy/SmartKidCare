@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { askGemini } from "../../services/ai/gemini.service";
+import { logAIInteraction } from "../../services/ai/datasetLogging.service";
 import { AIChatRequest } from "../../types/ai.types";
 
 function isGreeting(message: string) {
@@ -18,10 +19,13 @@ export async function aiChatController(req: Request, res: Response) {
     }
 
     if (isGreeting(message)) {
-      return res.status(200).json({
-        reply:
-          "Hello, you can ask about a child's attendance, feeding status, or record verification.",
-      });
+      const greeting =
+        "Hello, you can ask about a child's attendance, feeding status, or record verification.";
+
+      // Log greeting interaction
+      await logAIInteraction(message, {}, greeting);
+
+      return res.status(200).json({ reply: greeting });
     }
 
     if (!child || !record) {
@@ -46,6 +50,7 @@ STRICT RULES:
 - Do NOT guess.
 - Do NOT summarize unrelated data.
 - Keep answer short and clear.
+- IMPORTANT: When responding to parents, refer to the child as "your child" instead of using the child's name. For teachers/admins, use the actual child name.
 
 User Role: ${role}
 
@@ -63,6 +68,18 @@ User Question:
 ${message}
 `;
     const reply = await askGemini(prompt);
+
+    // Prepare context for logging
+    const interactionContext = {
+      childName: child.name,
+      attendance: record.attendanceStatus || "Not recorded",
+      feedingCompletion: record.feedingStatus || "Not recorded",
+      date: record.date,
+      verified: record.verified,
+    };
+
+    // Log the interaction to both datasets
+    await logAIInteraction(message, interactionContext, reply);
 
     return res.status(200).json({ reply });
   } catch (error) {
