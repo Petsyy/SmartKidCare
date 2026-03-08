@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import Attendance from "../../models/Attendance";
 import Feeding from "../../models/Feeding";
-import { queueBlockchainSync } from "./records.shared";
 
 export const updateAttendanceRecord = async (req: Request, res: Response) => {
   try {
@@ -36,15 +35,8 @@ export const updateAttendanceRecord = async (req: Request, res: Response) => {
 
     if (record.status !== status) {
       record.status = status;
-      record.blockchainVerified = false;
-      record.integrityHash = null;
       attendance.markModified("records");
       await attendance.save();
-      queueBlockchainSync(
-        String(attendance.teacher),
-        new Date(attendance.date),
-        "edit",
-      );
     }
     res.json({ message: "Attendance record updated" });
   } catch (error: any) {
@@ -87,15 +79,8 @@ export const updateFeedingRecord = async (req: Request, res: Response) => {
 
     if (record.status !== status) {
       record.status = status;
-      record.blockchainVerified = false;
-      record.integrityHash = null;
       feeding.markModified("records");
       await feeding.save();
-      queueBlockchainSync(
-        String(feeding.teacher),
-        new Date(feeding.date),
-        "edit",
-      );
     }
 
     res.json({ message: "Feeding record updated" });

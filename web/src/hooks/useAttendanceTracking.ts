@@ -55,27 +55,6 @@ export type DatePreset = "all" | "today" | "thisWeek" | "thisMonth";
 export type AttendanceStatusFilter = "all" | "present" | "absent";
 export type VerificationFilter = "all" | "verified" | "unverified";
 
-type VerificationData = {
-  isValid: boolean;
-  dateHash?: string | null;
-  rootHash?: string | null;
-  txHash?: string | null;
-  recordedBy?: string | null;
-  timestamp?: number | null;
-  reason?: string;
-};
-
-type EditModalState = {
-  open: boolean;
-  row: AttendanceRow | null;
-};
-
-type VerifyModalState = {
-  open: boolean;
-  row: AttendanceRow | null;
-  data?: VerificationData | null;
-};
-
 const formatChildName = (child?: ChildRef | null) => {
   if (!child) return "Unknown";
   const middleName = child.middleName ?? child.middle ?? child.middle_name;
@@ -97,16 +76,6 @@ export function useAttendanceTracking() {
   const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [editModal, setEditModal] = useState<EditModalState>({
-    open: false,
-    row: null,
-  });
-  const [verifyModal, setVerifyModal] = useState<VerifyModalState>({
-    open: false,
-    row: null,
-    data: null,
-  });
-  const [verifyLoading, setVerifyLoading] = useState(false);
 
   const flattenAttendance = useCallback(
     (data: AttendanceApiResponse[]): AttendanceRow[] =>
@@ -245,84 +214,6 @@ export function useAttendanceTracking() {
     setVerificationFilter("all");
   }, []);
 
-  const openEditModal = useCallback((row: AttendanceRow) => {
-    setEditModal({ open: true, row });
-  }, []);
-
-  const closeEditModal = useCallback(() => {
-    setEditModal({ open: false, row: null });
-  }, []);
-
-  const closeVerificationModal = useCallback(() => {
-    setVerifyModal({ open: false, row: null, data: null });
-  }, []);
-
-  const handleViewVerification = useCallback(async (row: AttendanceRow) => {
-    setVerifyModal({ open: true, row, data: null });
-    try {
-      setVerifyLoading(true);
-      setError(null);
-      const verificationData: VerificationData = {
-        isValid: false,
-        reason: "Blockchain verification for attendance records has been removed.",
-      };
-
-      setVerifyModal({
-        open: true,
-        row,
-        data: verificationData,
-      });
-    } catch (err: unknown) {
-      setError(
-        err instanceof Error ? err.message : "Unable to fetch verification",
-      );
-      setVerifyModal({
-        open: false,
-        row: null,
-        data: null,
-      });
-    } finally {
-      setVerifyLoading(false);
-    }
-  }, []);
-
-  const handleSaveEdit = useCallback(
-    async (status: AttendanceRow["status"]) => {
-      if (!editModal.row) return;
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await fetch(
-          `${API_BASE}/records/attendance/${editModal.row.id}`,
-          {
-            method: "PATCH",
-            credentials: "include",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ status }),
-          },
-        );
-        if (!response.ok) {
-          const payload = await response.json().catch(() => ({}));
-          throw new Error(
-            (payload as { message?: string }).message ||
-              "Failed to update attendance",
-          );
-        }
-        await fetchAttendance();
-        setEditModal({ open: false, row: null });
-      } catch (err: unknown) {
-        setError(
-          err instanceof Error ? err.message : "Unable to update attendance",
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [editModal.row, fetchAttendance],
-  );
-
   return {
     rows,
     search,
@@ -334,9 +225,6 @@ export function useAttendanceTracking() {
     totalPages,
     isLoading,
     error,
-    editModal,
-    verifyModal,
-    verifyLoading,
     rangeLabel,
     hasActiveFilters,
     setPage,
@@ -346,10 +234,5 @@ export function useAttendanceTracking() {
     updateStatusFilter,
     updateVerificationFilter,
     clearFilters,
-    openEditModal,
-    closeEditModal,
-    closeVerificationModal,
-    handleViewVerification,
-    handleSaveEdit,
   };
 }

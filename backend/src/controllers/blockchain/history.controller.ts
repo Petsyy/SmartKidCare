@@ -5,7 +5,6 @@ import {
   formatChildName,
   getDateRangeFromPreset,
   getParentChildIds,
-  isRecordIntegrityValid,
   parsePositiveInt,
   shouldPaginate,
 } from "./records.shared";
@@ -53,7 +52,6 @@ export const getAttendanceHistory = async (req: Request, res: Response) => {
       limit,
       search,
       status,
-      verification,
       datePreset,
     } = req.query;
 
@@ -105,19 +103,6 @@ export const getAttendanceHistory = async (req: Request, res: Response) => {
       .sort({ date: -1 })
       .lean();
 
-    attendance.forEach((entry: any) => {
-      if (!Array.isArray(entry.records)) return;
-      entry.records = entry.records.map((record: any) => ({
-        ...record,
-        blockchainVerified: isRecordIntegrityValid(
-          record.child,
-          record.status,
-          record.integrityHash,
-          record.blockchainVerified,
-        ),
-      }));
-    });
-
     let scopedAttendance = attendance;
 
     if (req.user.role === "parent") {
@@ -152,10 +137,6 @@ export const getAttendanceHistory = async (req: Request, res: Response) => {
     const normalizedStatus = String(status || "")
       .trim()
       .toLowerCase();
-    const normalizedVerification = String(verification || "")
-      .trim()
-      .toLowerCase();
-
     const flatRows = scopedAttendance.flatMap((entry: any, entryIndex: number) =>
       (Array.isArray(entry.records) ? entry.records : []).map(
         (record: any, recordIndex: number) => {
@@ -176,7 +157,6 @@ export const getAttendanceHistory = async (req: Request, res: Response) => {
               ? `${entry.teacher.firstName} ${entry.teacher.lastName}`
               : "--",
             submittedAt: entry.updatedAt || entry.createdAt || entry.date,
-            blockchainVerified: Boolean(record.blockchainVerified),
           };
         },
       ),
@@ -204,19 +184,12 @@ export const getAttendanceHistory = async (req: Request, res: Response) => {
         ? filteredRows.filter((row: any) => row.status === normalizedStatus)
         : filteredRows;
 
-    const verificationFilteredRows =
-      normalizedVerification === "verified"
-        ? statusFilteredRows.filter((row: any) => row.blockchainVerified)
-        : normalizedVerification === "unverified"
-          ? statusFilteredRows.filter((row: any) => !row.blockchainVerified)
-          : statusFilteredRows;
-
-    const total = verificationFilteredRows.length;
+    const total = statusFilteredRows.length;
     const totalPages = total > 0 ? Math.ceil(total / currentLimit) : 0;
     const safePage =
       totalPages > 0 ? Math.min(currentPage, totalPages) : currentPage;
     const start = (safePage - 1) * currentLimit;
-    const data = verificationFilteredRows.slice(start, start + currentLimit);
+    const data = statusFilteredRows.slice(start, start + currentLimit);
 
     return res.json({
       data,
@@ -248,7 +221,6 @@ export const getFeedingHistory = async (req: Request, res: Response) => {
       limit,
       search,
       status,
-      verification,
       datePreset,
     } = req.query;
 
@@ -300,19 +272,6 @@ export const getFeedingHistory = async (req: Request, res: Response) => {
       .sort({ date: -1 })
       .lean();
 
-    feeding.forEach((entry: any) => {
-      if (!Array.isArray(entry.records)) return;
-      entry.records = entry.records.map((record: any) => ({
-        ...record,
-        blockchainVerified: isRecordIntegrityValid(
-          record.child,
-          record.status,
-          record.integrityHash,
-          record.blockchainVerified,
-        ),
-      }));
-    });
-
     let scopedFeeding = feeding;
 
     if (req.user.role === "parent") {
@@ -347,10 +306,6 @@ export const getFeedingHistory = async (req: Request, res: Response) => {
     const normalizedStatus = String(status || "")
       .trim()
       .toLowerCase();
-    const normalizedVerification = String(verification || "")
-      .trim()
-      .toLowerCase();
-
     const flatRows = scopedFeeding.flatMap((entry: any, entryIndex: number) =>
       (Array.isArray(entry.records) ? entry.records : []).map(
         (record: any, recordIndex: number) => {
@@ -372,7 +327,6 @@ export const getFeedingHistory = async (req: Request, res: Response) => {
               ? `${entry.teacher.firstName} ${entry.teacher.lastName}`
               : "--",
             submittedAt: entry.updatedAt || entry.createdAt || entry.date,
-            blockchainVerified: Boolean(record.blockchainVerified),
           };
         },
       ),
@@ -400,19 +354,12 @@ export const getFeedingHistory = async (req: Request, res: Response) => {
         ? filteredRows.filter((row: any) => row.status === normalizedStatus)
         : filteredRows;
 
-    const verificationFilteredRows =
-      normalizedVerification === "verified"
-        ? statusFilteredRows.filter((row: any) => row.blockchainVerified)
-        : normalizedVerification === "unverified"
-          ? statusFilteredRows.filter((row: any) => !row.blockchainVerified)
-          : statusFilteredRows;
-
-    const total = verificationFilteredRows.length;
+    const total = statusFilteredRows.length;
     const totalPages = total > 0 ? Math.ceil(total / currentLimit) : 0;
     const safePage =
       totalPages > 0 ? Math.min(currentPage, totalPages) : currentPage;
     const start = (safePage - 1) * currentLimit;
-    const data = verificationFilteredRows.slice(start, start + currentLimit);
+    const data = statusFilteredRows.slice(start, start + currentLimit);
 
     return res.json({
       data,

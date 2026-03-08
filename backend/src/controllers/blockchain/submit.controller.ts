@@ -6,7 +6,6 @@ import {
   notifyAttendanceSubmitted,
   notifyFeedingSubmitted,
 } from "../../services/notifications/recordEventNotification.service";
-import { queueBlockchainSync } from "./records.shared";
 
 const resolveChildId = (value: unknown): string => {
   if (value && typeof value === "object") {
@@ -101,24 +100,10 @@ export const submitFeeding = async (req: Request, res: Response) => {
     if (existingFeeding) {
       const newRecords = normalizedRecords as any[];
 
-      const oldRecordMap = new Map(
-        existingFeeding.records.map((r: any) => [String(r.child), r]),
-      );
-
-      newRecords.forEach((newRecord: any) => {
-        const oldRecord = oldRecordMap.get(String(newRecord.child));
-
-        if (oldRecord && oldRecord.status !== newRecord.status) {
-          newRecord.blockchainVerified = false;
-          newRecord.integrityHash = null;
-        }
-      });
-
       existingFeeding.foodServed = foodServed;
       existingFeeding.records = newRecords as any;
       await existingFeeding.save();
 
-      queueBlockchainSync(req.user.id, feedingDate);
       void notifyFeedingSubmitted({
         date: feedingDate,
         foodServed,
@@ -143,7 +128,6 @@ export const submitFeeding = async (req: Request, res: Response) => {
       records: normalizedRecords,
     });
 
-    queueBlockchainSync(req.user.id, feedingDate);
     void notifyFeedingSubmitted({
       date: feedingDate,
       foodServed,
@@ -199,23 +183,9 @@ export const submitAttendance = async (req: Request, res: Response) => {
     if (existingAttendance) {
       const newRecords = normalizedRecords as any[];
 
-      const oldRecordMap = new Map(
-        existingAttendance.records.map((r: any) => [String(r.child), r]),
-      );
-
-      newRecords.forEach((newRecord: any) => {
-        const oldRecord = oldRecordMap.get(String(newRecord.child));
-
-        if (oldRecord && oldRecord.status !== newRecord.status) {
-          newRecord.blockchainVerified = false;
-          newRecord.integrityHash = null;
-        }
-      });
-
       existingAttendance.records = newRecords as any;
       await existingAttendance.save();
 
-      queueBlockchainSync(req.user.id, attendanceDate);
       void notifyAttendanceSubmitted({
         date: attendanceDate,
         records: newRecords as Array<{
@@ -238,7 +208,6 @@ export const submitAttendance = async (req: Request, res: Response) => {
       records: normalizedRecords,
     });
 
-    queueBlockchainSync(req.user.id, attendanceDate);
     void notifyAttendanceSubmitted({
       date: attendanceDate,
       records: normalizedRecords as Array<{

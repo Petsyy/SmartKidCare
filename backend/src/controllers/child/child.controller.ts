@@ -12,13 +12,25 @@ import {
   uploadToCloudinary,
   UploadResult,
 } from "../../utils/uploadToCloudinary";
+import {
+  attendanceContract,
+  buildChildIdHash,
+  buildDocumentsHash,
+  hashFileBuffer,
+} from "../../blockchain/ethers";
+import { storeChildDocumentsHash } from "../../services/blockchain/blockchain.service";
 
 type ChildDocumentKey = "birthCertificate" | "parentId";
+
+const ZERO_HASH =
+  "0x0000000000000000000000000000000000000000000000000000000000000000";
 
 const attachUploadedDocuments = (
   childData: any,
   birthUpload: UploadResult | null,
   parentUpload: UploadResult | null,
+  birthHash?: string | null,
+  parentIdHash?: string | null,
 ) => {
   if (!birthUpload && !parentUpload) {
     return;
@@ -31,6 +43,7 @@ const attachUploadedDocuments = (
       publicId: birthUpload.publicId,
       resourceType: birthUpload.resourceType,
       format: birthUpload.format,
+      hash: birthHash || undefined,
     };
   }
 
@@ -39,6 +52,7 @@ const attachUploadedDocuments = (
       publicId: parentUpload.publicId,
       resourceType: parentUpload.resourceType,
       format: parentUpload.format,
+      hash: parentIdHash || undefined,
     };
   }
 };
@@ -130,6 +144,10 @@ export const createChild = async (req: Request, res: Response) => {
 
   const birthFile = files?.birthCertificate?.[0];
   const parentIdFile = files?.parentId?.[0];
+  const birthDocumentHash = birthFile ? hashFileBuffer(birthFile.buffer) : null;
+  const parentIdDocumentHash = parentIdFile
+    ? hashFileBuffer(parentIdFile.buffer)
+    : null;
 
   console.log("[createChild] Incoming document files", {
     hasBirthCertificate: Boolean(birthFile),
@@ -251,13 +269,40 @@ export const createChild = async (req: Request, res: Response) => {
 
       if (middleName) childData.middleName = middleName;
       if (resolvedTeacherId) childData.teacher = resolvedTeacherId;
-      attachUploadedDocuments(childData, birthUpload, parentUpload);
+      attachUploadedDocuments(
+        childData,
+        birthUpload,
+        parentUpload,
+        birthDocumentHash,
+        parentIdDocumentHash,
+      );
 
       const child = await Child.create(childData);
+      const documentsAnchor = await storeChildDocumentsHash(
+        String(child.studentId || ""),
+        birthFile?.buffer,
+        parentIdFile?.buffer,
+      ).catch((error) => {
+        console.error("Child document anchor failed:", error);
+        return null;
+      });
+
+      if (documentsAnchor) {
+        child.documentIntegrity = {
+          childIdHash: documentsAnchor.childIdHash,
+          documentsHash: documentsAnchor.documentsHash,
+          txHash: documentsAnchor.txHash,
+          blockNumber: documentsAnchor.blockNumber,
+          blockchainVerified: true,
+          anchoredAt: new Date(),
+        } as any;
+        await child.save();
+      }
 
       return res.status(201).json({
         child,
         parentCredentials: null,
+        documentAnchor: documentsAnchor,
       });
     }
 
@@ -278,7 +323,13 @@ export const createChild = async (req: Request, res: Response) => {
         parent: parent._id,
       };
       if (resolvedTeacherId) childData.teacher = resolvedTeacherId;
-      attachUploadedDocuments(childData, birthUpload, parentUpload);
+      attachUploadedDocuments(
+        childData,
+        birthUpload,
+        parentUpload,
+        birthDocumentHash,
+        parentIdDocumentHash,
+      );
 
       // Only add middleName if it exists
       if (middleName) {
@@ -286,6 +337,26 @@ export const createChild = async (req: Request, res: Response) => {
       }
 
       const child = await Child.create(childData);
+      const documentsAnchor = await storeChildDocumentsHash(
+        String(child.studentId || ""),
+        birthFile?.buffer,
+        parentIdFile?.buffer,
+      ).catch((error) => {
+        console.error("Child document anchor failed:", error);
+        return null;
+      });
+
+      if (documentsAnchor) {
+        child.documentIntegrity = {
+          childIdHash: documentsAnchor.childIdHash,
+          documentsHash: documentsAnchor.documentsHash,
+          txHash: documentsAnchor.txHash,
+          blockNumber: documentsAnchor.blockNumber,
+          blockchainVerified: true,
+          anchoredAt: new Date(),
+        } as any;
+        await child.save();
+      }
 
       return res.status(201).json({
         child,
@@ -293,6 +364,7 @@ export const createChild = async (req: Request, res: Response) => {
           email: parentEmail,
           tempPassword: null,
         },
+        documentAnchor: documentsAnchor,
       });
     }
 
@@ -331,7 +403,13 @@ export const createChild = async (req: Request, res: Response) => {
     };
     if (resolvedTeacherId) childData.teacher = resolvedTeacherId;
 
-    attachUploadedDocuments(childData, birthUpload, parentUpload);
+    attachUploadedDocuments(
+      childData,
+      birthUpload,
+      parentUpload,
+      birthDocumentHash,
+      parentIdDocumentHash,
+    );
 
     // Only add middleName if it exists
     if (middleName) {
@@ -339,6 +417,26 @@ export const createChild = async (req: Request, res: Response) => {
     }
 
     const child = await Child.create(childData);
+    const documentsAnchor = await storeChildDocumentsHash(
+      String(child.studentId || ""),
+      birthFile?.buffer,
+      parentIdFile?.buffer,
+    ).catch((error) => {
+      console.error("Child document anchor failed:", error);
+      return null;
+    });
+
+    if (documentsAnchor) {
+      child.documentIntegrity = {
+        childIdHash: documentsAnchor.childIdHash,
+        documentsHash: documentsAnchor.documentsHash,
+        txHash: documentsAnchor.txHash,
+        blockNumber: documentsAnchor.blockNumber,
+        blockchainVerified: true,
+        anchoredAt: new Date(),
+      } as any;
+      await child.save();
+    }
 
     res.status(201).json({
       child,
@@ -346,6 +444,7 @@ export const createChild = async (req: Request, res: Response) => {
         email: parentEmail,
         tempPassword,
       },
+      documentAnchor: documentsAnchor,
     });
   } catch (error: any) {
     console.error("Create child error:", error);
@@ -442,6 +541,98 @@ export const getChildById = async (req: Request, res: Response) => {
     res.json(child);
   } catch {
     res.status(500).json({ message: "Failed to fetch child details" });
+  }
+};
+
+export const getChildBlockchainProof = async (req: Request, res: Response) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const childId = String(req.params.id || "");
+    if (!mongoose.Types.ObjectId.isValid(childId)) {
+      return res.status(400).json({ message: "Invalid child ID" });
+    }
+
+    const child = await Child.findById(childId)
+      .populate("parent", "_id")
+      .populate("teacher", "_id")
+      .select("studentId documents documentIntegrity parent teacher")
+      .lean();
+
+    if (!child) {
+      return res.status(404).json({ message: "Child not found" });
+    }
+
+    if (!ensureCanAccessChild(child, req)) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    const studentId = String((child as any).studentId || "").trim();
+    if (!studentId) {
+      return res.status(400).json({ message: "Student ID is missing" });
+    }
+
+    const birthHash =
+      String((child as any)?.documents?.birthCertificate?.hash || "").trim() ||
+      ZERO_HASH;
+    const parentIdHash =
+      String((child as any)?.documents?.parentId?.hash || "").trim() || ZERO_HASH;
+
+    const childIdHash = buildChildIdHash(studentId);
+    const documentsHash = buildDocumentsHash(birthHash, parentIdHash);
+
+    let verifiedOnChain = false;
+    let onChainDocumentsHash: string | null = null;
+
+    try {
+      verifiedOnChain = await attendanceContract.verifyDocuments(
+        childIdHash,
+        documentsHash,
+      );
+      onChainDocumentsHash = await attendanceContract.getDocumentsHash(childIdHash);
+    } catch (error) {
+      console.error("Blockchain proof read failed:", error);
+    }
+
+    const txHash = String((child as any)?.documentIntegrity?.txHash || "").trim();
+    const network = "Sepolia";
+    const etherscanUrl = txHash
+      ? `https://sepolia.etherscan.io/tx/${txHash}`
+      : null;
+
+    return res.json({
+      network,
+      txHash: txHash || null,
+      etherscanUrl,
+      blockNumber: (child as any)?.documentIntegrity?.blockNumber ?? null,
+      anchoredAt: (child as any)?.documentIntegrity?.anchoredAt ?? null,
+      childIdHash,
+      localDocumentsHash: documentsHash,
+      onChainDocumentsHash,
+      verifiedOnChain,
+      documents: {
+        birthCertificate: {
+          hasDocument: Boolean((child as any)?.documents?.birthCertificate?.publicId),
+          hash: birthHash === ZERO_HASH ? null : birthHash,
+          blockchainVerified:
+            Boolean((child as any)?.documents?.birthCertificate?.publicId) &&
+            verifiedOnChain,
+        },
+        parentId: {
+          hasDocument: Boolean((child as any)?.documents?.parentId?.publicId),
+          hash: parentIdHash === ZERO_HASH ? null : parentIdHash,
+          blockchainVerified:
+            Boolean((child as any)?.documents?.parentId?.publicId) && verifiedOnChain,
+        },
+      },
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      message: "Failed to load child blockchain proof",
+      error: error?.message,
+    });
   }
 };
 

@@ -57,27 +57,6 @@ export type DatePreset = "all" | "today" | "thisWeek" | "thisMonth";
 export type FeedingStatusFilter = "all" | "completed" | "missed";
 export type VerificationFilter = "all" | "verified" | "unverified";
 
-type VerificationData = {
-  isValid: boolean;
-  dateHash?: string | null;
-  rootHash?: string | null;
-  txHash?: string | null;
-  recordedBy?: string | null;
-  timestamp?: number | null;
-  reason?: string;
-};
-
-type VerifyModalState = {
-  open: boolean;
-  row: FeedingRow | null;
-  data?: VerificationData | null;
-};
-
-type EditModalState = {
-  open: boolean;
-  row: FeedingRow | null;
-};
-
 const formatChildName = (child?: ChildRef | null) => {
   if (!child) return "Unknown";
   const middleName = child.middleName ?? child.middle ?? child.middle_name;
@@ -98,16 +77,6 @@ export function useFeedingProgram() {
   const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [verifyModal, setVerifyModal] = useState<VerifyModalState>({
-    open: false,
-    row: null,
-    data: null,
-  });
-  const [verifyLoading, setVerifyLoading] = useState(false);
-  const [editModal, setEditModal] = useState<EditModalState>({
-    open: false,
-    row: null,
-  });
 
   const flattenFeeding = useCallback(
     (data: FeedingApiResponse[]): FeedingRow[] =>
@@ -219,16 +188,6 @@ export function useFeedingProgram() {
     verificationFilter !== "all" ||
     search.trim().length > 0;
 
-  const fetchVerificationData = useCallback(
-    async (_row: FeedingRow): Promise<VerificationData> => {
-      return {
-        isValid: false,
-        reason: "Blockchain verification for feeding records has been removed.",
-      };
-    },
-    [],
-  );
-
   const updateSearch = useCallback((value: string) => {
     setPage(1);
     setSearch(value);
@@ -257,84 +216,6 @@ export function useFeedingProgram() {
     setVerificationFilter("all");
   }, []);
 
-  const openEditModal = useCallback((row: FeedingRow) => {
-    setEditModal({ open: true, row });
-  }, []);
-
-  const closeEditModal = useCallback(() => {
-    setEditModal({ open: false, row: null });
-  }, []);
-
-  const closeVerificationModal = useCallback(() => {
-    setVerifyModal({ open: false, row: null, data: null });
-  }, []);
-
-  const handleViewVerification = useCallback(
-    async (row: FeedingRow) => {
-      setVerifyModal({ open: true, row, data: null });
-      setVerifyLoading(true);
-      try {
-        const verificationData = await fetchVerificationData(row);
-        setVerifyModal({
-          open: true,
-          row,
-          data: verificationData,
-        });
-      } catch (err: unknown) {
-        const reason =
-          err instanceof Error ? err.message : "Unable to fetch verification";
-        setVerifyModal({
-          open: true,
-          row,
-          data: {
-            isValid: false,
-            reason,
-          },
-        });
-      } finally {
-        setVerifyLoading(false);
-      }
-    },
-    [fetchVerificationData],
-  );
-
-  const handleSaveEdit = useCallback(
-    async (status: FeedingRow["status"]) => {
-      if (!editModal.row) return;
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await fetch(
-          `${API_BASE}/records/feeding/${editModal.row.id}`,
-          {
-            method: "PATCH",
-            credentials: "include",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ status }),
-          },
-        );
-        if (!response.ok) {
-          const payload = await response.json().catch(() => ({}));
-          throw new Error(
-            (payload as { message?: string }).message ||
-              "Failed to update feeding",
-          );
-        }
-        await fetchFeeding();
-        setEditModal({ open: false, row: null });
-      } catch (err: unknown) {
-        setError(
-          err instanceof Error ? err.message : "Unable to update feeding",
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [editModal.row, fetchFeeding],
-  );
-
   return {
     rows,
     search,
@@ -346,9 +227,6 @@ export function useFeedingProgram() {
     totalPages,
     isLoading,
     error,
-    verifyModal,
-    verifyLoading,
-    editModal,
     rangeLabel,
     hasActiveFilters,
     setPage,
@@ -358,10 +236,5 @@ export function useFeedingProgram() {
     updateStatusFilter,
     updateVerificationFilter,
     clearFilters,
-    openEditModal,
-    closeEditModal,
-    closeVerificationModal,
-    handleViewVerification,
-    handleSaveEdit,
   };
 }
