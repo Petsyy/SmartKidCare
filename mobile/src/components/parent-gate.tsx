@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { View, ActivityIndicator } from "react-native";
-import { useAuth } from "@/src/hooks/useAuth";
+import { useAuth } from "@/src/hooks/use-auth";
 import { getMyChildren } from "@/src/api/parent.api";
 
 type Props = {

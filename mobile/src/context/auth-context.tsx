@@ -6,7 +6,7 @@ import {
   getUser,
   saveToken,
   saveUser,
-} from "@/src/utils/authStorage";
+} from "@/src/utils/auth-storage";
 
 type Role = "parent" | "teacher" | null;
 

@@ -3,8 +3,8 @@ import { Stack } from "expo-router";
 import { ActivityIndicator, LogBox, Platform, View } from "react-native";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
-import { AuthProvider } from "@/src/context/AuthContext";
-import { useAuth } from "@/src/hooks/useAuth";
+import { AuthProvider } from "@/src/context/auth-context";
+import { useAuth } from "@/src/hooks/use-auth";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import {
   configureReanimatedLogger,

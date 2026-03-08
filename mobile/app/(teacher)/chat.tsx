@@ -14,7 +14,7 @@ import {
 } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import * as Icons from "lucide-react-native";
-import { useAuth } from "@/src/hooks/useAuth";
+import { useAuth } from "@/src/hooks/use-auth";
 import { sendAIChat } from "@/src/api/ai.api";
 import { getAttendanceHistory, getFeedingHistory } from "@/src/api/records.api";
 import {
@@ -22,7 +22,7 @@ import {
   getAIRiskBadgeStyle,
   removeAIRiskLevelLine,
   resolveTeacherFollowUpMessage,
-} from "@/src/components/ai/aiChat";
+} from "@/src/components/ai/ai-chat";
 
 const SUGGESTIONS = [
   "How many children were present today?",

@@ -1,5 +1,5 @@
 import { Tabs, Redirect } from "expo-router";
-import { useAuth } from "@/src/hooks/useAuth";
+import { useAuth } from "@/src/hooks/use-auth";
 import { Home, Users, Bell, User } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 

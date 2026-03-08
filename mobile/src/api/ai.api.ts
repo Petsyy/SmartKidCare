@@ -3,7 +3,7 @@ import {
   AI_INPUT_LIMITS,
   sanitizeAIChildId,
   sanitizeAIMessageInput,
-} from "../utils/aiInputSanitizer";
+} from "../utils/ai-input-sanitizer";
 
 export type AIRole = "parent" | "teacher" | "admin";
 

@@ -12,7 +12,7 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import { useAuth } from "@/src/hooks/useAuth";
+import { useAuth } from "@/src/hooks/use-auth";
 import {
   AlertCircle,
   CheckCircle2,

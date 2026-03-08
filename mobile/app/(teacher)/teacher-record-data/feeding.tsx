@@ -21,7 +21,7 @@ import {
   Lock,
 } from "lucide-react-native";
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { useAuth } from "@/src/hooks/useAuth";
+import { useAuth } from "@/src/hooks/use-auth";
 import { getChildren } from "@/src/api/teacher.api";
 import {
   submitFeeding,

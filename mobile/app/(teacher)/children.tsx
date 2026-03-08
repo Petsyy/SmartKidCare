@@ -16,8 +16,8 @@ import { useRouter } from "expo-router";
 import { Child } from "@/src/api/parent.api";
 import { getChildren } from "@/src/api/teacher.api";
 import { getTodayAttendance, getTodayFeeding } from "@/src/api/records.api";
-import { useAuth } from "@/src/hooks/useAuth";
-import ChildCard from "@/src/components/ChildCard";
+import { useAuth } from "@/src/hooks/use-auth";
+import ChildCard from "@/src/components/child-card";
 import { Search, X, Users, UserPlus, AlertCircle } from "lucide-react-native";
 
 interface ChildStatus {

@@ -14,7 +14,7 @@ import {
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { getChildById, type Child } from "@/src/api/parent.api";
 import { getTodayAttendance, getTodayFeeding } from "@/src/api/records.api";
-import { useAuth } from "@/src/hooks/useAuth";
+import { useAuth } from "@/src/hooks/use-auth";
 import {
   ChevronLeft,
   User,

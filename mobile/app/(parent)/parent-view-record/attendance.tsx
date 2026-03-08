@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft, ChevronDown, ChevronRight, UserCheck, UserX, Calendar, User } from 'lucide-react-native';
 import { getMyChildren, Child } from "@/src/api/parent.api";
 import { getAttendanceHistory } from "@/src/api/records.api";
-import { useAuth } from "@/src/hooks/useAuth";
+import { useAuth } from "@/src/hooks/use-auth";
 
 type AttendanceStatus = "Present" | "Absent" | null;
 

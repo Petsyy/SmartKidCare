@@ -1,4 +1,4 @@
-import { useAuthContext } from "@/src/context/AuthContext";
+import { useAuthContext } from "@/src/context/auth-context";
 
 export const useAuth = () => {
   const { user, token, role, loading, login, logout } = useAuthContext();

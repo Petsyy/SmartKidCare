@@ -15,7 +15,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { ChevronLeft, Eye, EyeOff, Lock } from "lucide-react-native";
 import { resetForgotPassword } from "@/src/api/authentication.api";
 import { validatePasswordRules } from "@/src/validations/password-validation";
-import PasswordStrengthFeedback from "@/src/components/password-feedback/PasswordStrengthFeedback";
+import PasswordStrengthFeedback from "@/src/components/password-feedback/password-strength-feedback";
 
 export default function ForgotPasswordResetScreen() {
   const router = useRouter();
@@ -36,7 +36,10 @@ export default function ForgotPasswordResetScreen() {
 
   const handleResetPassword = async () => {
     if (!resetToken) {
-      Alert.alert("Invalid Request", "Missing reset token. Please restart forgot password.");
+      Alert.alert(
+        "Invalid Request",
+        "Missing reset token. Please restart forgot password.",
+      );
       return;
     }
 
@@ -47,7 +50,10 @@ export default function ForgotPasswordResetScreen() {
 
     const passwordValidation = validatePasswordRules(newPassword);
     if (!passwordValidation.isValid) {
-      Alert.alert("Weak Password", passwordValidation.message || "Invalid password.");
+      Alert.alert(
+        "Weak Password",
+        passwordValidation.message || "Invalid password.",
+      );
       return;
     }
 
@@ -73,7 +79,10 @@ export default function ForgotPasswordResetScreen() {
   };
 
   return (
-    <LinearGradient colors={["#ecfdf5", "#d1fae5", "#a7f3d0"]} className="flex-1">
+    <LinearGradient
+      colors={["#ecfdf5", "#d1fae5", "#a7f3d0"]}
+      className="flex-1"
+    >
       <SafeAreaView className="flex-1" edges={["top"]}>
         <Pressable
           onPress={() => router.replace("/(auth)/login")}
@@ -154,7 +163,9 @@ export default function ForgotPasswordResetScreen() {
               onPress={handleResetPassword}
               disabled={isSubmitting}
               className="mt-6 rounded-xl overflow-hidden"
-              style={({ pressed }) => [{ opacity: isSubmitting ? 0.7 : pressed ? 0.85 : 1 }]}
+              style={({ pressed }) => [
+                { opacity: isSubmitting ? 0.7 : pressed ? 0.85 : 1 },
+              ]}
             >
               <LinearGradient
                 colors={["#10b981", "#059669"]}

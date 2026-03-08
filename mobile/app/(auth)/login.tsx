@@ -14,8 +14,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Eye, EyeOff, Mail, Lock, ShieldCheck } from "lucide-react-native";
-import { useAuth } from "@/src/hooks/useAuth";
-import type { User } from "@/src/context/AuthContext";
+import { useAuth } from "@/src/hooks/use-auth";
+import type { User } from "@/src/context/auth-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { login as apiLogin } from "@/src/api/authentication.api";

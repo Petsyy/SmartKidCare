@@ -16,7 +16,7 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import * as Icons from "lucide-react-native";
-import { useAuth } from "@/src/hooks/useAuth";
+import { useAuth } from "@/src/hooks/use-auth";
 import { getChildren, getTeacherProfile } from "@/src/api/teacher.api";
 import { getTodayAttendance, getTodayFeeding } from "@/src/api/records.api";
 import type { Child } from "@/src/api/parent.api";

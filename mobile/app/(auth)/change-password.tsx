@@ -13,11 +13,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ChevronLeft, Eye, EyeOff, Lock } from "lucide-react-native";
-import { useAuth } from "@/src/hooks/useAuth";
-import type { User } from "@/src/context/AuthContext";
+import { useAuth } from "@/src/hooks/use-auth";
+import type { User } from "@/src/context/auth-context";
 import { completeTeacherPasswordSetup } from "@/src/api/authentication.api";
 import { validatePasswordRules } from "@/src/validations/password-validation";
-import PasswordStrengthFeedback from "@/src/components/password-feedback/PasswordStrengthFeedback";
+import PasswordStrengthFeedback from "@/src/components/password-feedback/password-strength-feedback";
 
 export default function ChangePasswordScreen() {
   const router = useRouter();
