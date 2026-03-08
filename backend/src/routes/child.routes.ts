@@ -4,6 +4,7 @@ import {
   deleteChild,
   getChildren,
   getChildById,
+  getChildBlockchainProof,
   getChildDocumentSignedUrl,
   getChildDocumentUrl,
   streamChildDocument,
@@ -17,6 +18,7 @@ const router = express.Router();
 
 router.get("/", authenticateToken, getChildren);
 router.get("/my-children", authenticateToken, getMyChildren);
+router.get("/:id/blockchain-proof", authenticateToken, getChildBlockchainProof);
 router.get("/:id/documents/:documentType/url", authenticateToken, getChildDocumentSignedUrl);
 router.get("/document-access/:token", getChildDocumentUrl);
 router.get("/document-stream/:token", streamChildDocument);

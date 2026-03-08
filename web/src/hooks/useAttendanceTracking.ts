@@ -257,56 +257,15 @@ export function useAttendanceTracking() {
     setVerifyModal({ open: false, row: null, data: null });
   }, []);
 
-  const enrichWithTxHash = useCallback(async (verificationData: VerificationData) => {
-    const dateHash = verificationData?.dateHash;
-    if (!dateHash) return verificationData;
-
-    try {
-      const txResp = await fetch(`${API_BASE}/records/attendance/tx/${dateHash}`, {
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!txResp.ok) return verificationData;
-      const txPayload = await txResp.json().catch(() => null);
-      const txHash = (txPayload as { txHash?: string } | null)?.txHash || null;
-
-      return {
-        ...verificationData,
-        txHash,
-      };
-    } catch {
-      return verificationData;
-    }
-  }, []);
-
   const handleViewVerification = useCallback(async (row: AttendanceRow) => {
     setVerifyModal({ open: true, row, data: null });
     try {
       setVerifyLoading(true);
       setError(null);
-
-      const resp = await fetch(
-        `${API_BASE}/records/attendance/verify/${row.id}`,
-        {
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        },
-      );
-
-      const payload = await resp.json().catch(() => null);
-      if (!resp.ok) {
-        throw new Error(
-          (payload as { message?: string } | null)?.message ||
-            "Failed to fetch verification",
-        );
-      }
-
-      const verificationData = await enrichWithTxHash(payload as VerificationData);
+      const verificationData: VerificationData = {
+        isValid: false,
+        reason: "Blockchain verification for attendance records has been removed.",
+      };
 
       setVerifyModal({
         open: true,
@@ -325,7 +284,7 @@ export function useAttendanceTracking() {
     } finally {
       setVerifyLoading(false);
     }
-  }, [enrichWithTxHash]);
+  }, []);
 
   const handleSaveEdit = useCallback(
     async (status: AttendanceRow["status"]) => {

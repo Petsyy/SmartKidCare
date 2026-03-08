@@ -1,5 +1,5 @@
 import { Eye, Pencil, MoreVertical } from "lucide-react";
-import { type Child } from "../pages/ChildrenManagement";
+import type { Child } from "@/types/child";
 
 interface ChildrenTableProps {
   isLoading: boolean;

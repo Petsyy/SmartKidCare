@@ -1,4 +1,5 @@
 import { API_BASE } from "../components/config/config.api";
+import type { ChildBlockchainProof } from "@/types/child";
 
 export type CreateChildPayload = {
   firstName: string;
@@ -88,6 +89,21 @@ export const getChildDocumentUrl = async (
     expiresInSeconds: number;
     documentType: "birthCertificate" | "parentId";
   };
+};
+
+export const getChildBlockchainProof = async (
+  childId: string,
+): Promise<ChildBlockchainProof> => {
+  const res = await fetch(`${API_BASE}/children/${childId}/blockchain-proof`, {
+    credentials: "include",
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || "Failed to fetch blockchain proof");
+  }
+
+  return data as ChildBlockchainProof;
 };
 
 export const updateChild = async (

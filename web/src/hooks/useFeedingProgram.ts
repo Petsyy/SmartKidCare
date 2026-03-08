@@ -67,14 +67,6 @@ type VerificationData = {
   reason?: string;
 };
 
-type AttendanceLookupResponse = {
-  _id: string;
-  date: string;
-  records: Array<{
-    child: ChildRef | string;
-  }>;
-};
-
 type VerifyModalState = {
   open: boolean;
   row: FeedingRow | null;
@@ -85,17 +77,6 @@ type EditModalState = {
   open: boolean;
   row: FeedingRow | null;
 };
-
-const toDateKey = (value: string) =>
-  new Date(value).toISOString().split("T")[0];
-
-const getChildIdFromRowId = (rowId: string) => {
-  const parts = String(rowId).split("-");
-  return parts.length > 1 ? parts.slice(1).join("-") : "";
-};
-
-const getChildId = (child: ChildRef | string) =>
-  typeof child === "string" ? child : String(child?._id || "");
 
 const formatChildName = (child?: ChildRef | null) => {
   if (!child) return "Unknown";
@@ -239,110 +220,11 @@ export function useFeedingProgram() {
     search.trim().length > 0;
 
   const fetchVerificationData = useCallback(
-    async (row: FeedingRow): Promise<VerificationData> => {
-      const headers = {
-        "Content-Type": "application/json",
+    async (_row: FeedingRow): Promise<VerificationData> => {
+      return {
+        isValid: false,
+        reason: "Blockchain verification for feeding records has been removed.",
       };
-
-      const enrichWithTxHash = async (
-        verificationData: VerificationData,
-      ): Promise<VerificationData> => {
-        const dateHash = verificationData?.dateHash;
-        if (!dateHash) return verificationData;
-
-        try {
-          const txResp = await fetch(`${API_BASE}/records/attendance/tx/${dateHash}`, {
-            credentials: "include",
-            headers,
-          });
-
-          if (!txResp.ok) return verificationData;
-          const txPayload = await txResp.json().catch(() => null);
-          const txHash = (txPayload as { txHash?: string } | null)?.txHash || null;
-
-          return {
-            ...verificationData,
-            txHash,
-          };
-        } catch {
-          return verificationData;
-        }
-      };
-
-      const primaryResp = await fetch(
-        `${API_BASE}/records/feeding/verify/${row.id}`,
-        {
-          credentials: "include",
-          headers,
-        },
-      );
-      const primaryPayload = await primaryResp.json().catch(() => null);
-      if (primaryResp.ok && primaryPayload) {
-        return await enrichWithTxHash(primaryPayload as VerificationData);
-      }
-
-      const childId = getChildIdFromRowId(row.id);
-      if (!childId) {
-        throw new Error(
-          (primaryPayload as { reason?: string; message?: string } | null)
-            ?.reason ||
-            (primaryPayload as { reason?: string; message?: string } | null)
-              ?.message ||
-            "Invalid record id",
-        );
-      }
-
-      const attendanceResp = await fetch(`${API_BASE}/records/attendance`, {
-        credentials: "include",
-        headers,
-      });
-      const attendancePayload = await attendanceResp.json().catch(() => null);
-      if (!attendanceResp.ok || !Array.isArray(attendancePayload)) {
-        throw new Error(
-          (primaryPayload as { reason?: string; message?: string } | null)
-            ?.reason ||
-            (primaryPayload as { reason?: string; message?: string } | null)
-              ?.message ||
-            "Verification unavailable",
-        );
-      }
-
-      const targetDateKey = toDateKey(row.date);
-      const matchedAttendance = (
-        attendancePayload as AttendanceLookupResponse[]
-      ).find(
-        (entry) =>
-          toDateKey(entry.date) === targetDateKey &&
-          entry.records.some((record) => getChildId(record.child) === childId),
-      );
-
-      if (!matchedAttendance) {
-        throw new Error(
-          (primaryPayload as { reason?: string; message?: string } | null)
-            ?.reason ||
-            (primaryPayload as { reason?: string; message?: string } | null)
-              ?.message ||
-            "Matching attendance record not found",
-        );
-      }
-
-      const fallbackResp = await fetch(
-        `${API_BASE}/records/attendance/verify/${matchedAttendance._id}-${childId}`,
-        { credentials: "include", headers },
-      );
-      const fallbackPayload = await fallbackResp.json().catch(() => null);
-      if (!fallbackResp.ok || !fallbackPayload) {
-        throw new Error(
-          (fallbackPayload as { message?: string } | null)?.message ||
-            (primaryPayload as { reason?: string; message?: string } | null)
-              ?.reason ||
-            (primaryPayload as { reason?: string; message?: string } | null)
-              ?.message ||
-            "Verification unavailable",
-        );
-      }
-
-      return await enrichWithTxHash(fallbackPayload as VerificationData);
     },
     [],
   );

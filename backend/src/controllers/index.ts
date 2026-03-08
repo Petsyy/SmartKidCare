@@ -7,11 +7,6 @@ export {
   getFeedingHistory,
 } from "./blockchain/history.controller";
 export {
-  getAttendanceVerification,
-  getFeedingVerification,
-  getTxForDateHash,
-} from "./blockchain/verification.controller";
-export {
   updateAttendanceRecord,
   updateFeedingRecord,
   deleteAttendanceRecord,

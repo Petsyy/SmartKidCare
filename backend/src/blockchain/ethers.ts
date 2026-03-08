@@ -19,8 +19,10 @@ const wallet = new ethers.Wallet(process.env.METAMASK_PRIVATE_KEY, provider);
 console.log("Active Wallet:", wallet.address);
 
 const abi = [
-  "function storeRecord(bytes32 dateHash, bytes32 attendanceHash, bytes32 feedingHash)",
-  "function verifyRecord(bytes32 dateHash, bytes32 attendanceHash, bytes32 feedingHash) view returns (bool)",
+  // Document storage
+  "function storeDocumentsHash(bytes32 childIdHash, bytes32 documentsHash)",
+  "function verifyDocuments(bytes32 childIdHash, bytes32 documentsHash) view returns (bool)",
+  "function getDocumentsHash(bytes32 childIdHash) view returns (bytes32)",
 ];
 
 export const attendanceContract = new ethers.Contract(
@@ -31,7 +33,22 @@ export const attendanceContract = new ethers.Contract(
 
 export { wallet, provider };
 
-export const buildDateHash = (childId: string, date: string) =>
-  ethers.id(`${childId}|${date}`);
+/**
+ * Build dateHash from date only (batch identifier)
+ * Example: dateHash = keccak256("2026-03-04")
+ */
+export const buildChildIdHash = (studentId: string) => ethers.id(studentId.trim());
 
-export const hashData = (data: unknown) => ethers.id(JSON.stringify(data));
+export const hashFileBuffer = (buffer: Buffer): string => ethers.keccak256(buffer);
+
+export const buildDocumentsHash = (
+  birthCertificateHash: string,
+  parentIdHash: string,
+) =>
+  ethers.keccak256(
+    ethers.solidityPacked(
+      ["bytes32", "bytes32"],
+      [birthCertificateHash, parentIdHash],
+    ),
+  );
+

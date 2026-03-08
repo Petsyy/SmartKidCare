@@ -1,7 +1,5 @@
-import AttendanceEditModal from "@/components/modals/attendance/AttendanceEditModal";
-import VerificationModal from "@/components/modals/verification/VerificationModal";
 import { useNavigate } from "react-router-dom";
-import { Search, Pencil, Link } from "lucide-react";
+import { Search } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import {
   useAttendanceTracking,
@@ -43,9 +41,6 @@ export default function AttendanceTracking() {
     totalPages,
     isLoading,
     error,
-    editModal,
-    verifyModal,
-    verifyLoading,
     rangeLabel,
     hasActiveFilters,
     setPage,
@@ -55,11 +50,6 @@ export default function AttendanceTracking() {
     updateStatusFilter,
     updateVerificationFilter,
     clearFilters,
-    openEditModal,
-    closeEditModal,
-    closeVerificationModal,
-    handleViewVerification,
-    handleSaveEdit,
   } = useAttendanceTracking();
 
   return (
@@ -200,16 +190,13 @@ export default function AttendanceTracking() {
                   <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
                     Submitted At
                   </th>
-                  <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
-                    Actions / Verification
-                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                 {isLoading ? (
                   <tr>
                     <td
-                      colSpan={7}
+                      colSpan={6}
                       className="px-6 py-10 text-center text-sm text-gray-500 dark:text-slate-400"
                     >
                       Loading attendance records...
@@ -218,7 +205,7 @@ export default function AttendanceTracking() {
                 ) : rows.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={7}
+                      colSpan={6}
                       className="px-6 py-10 text-center text-sm text-gray-500 dark:text-slate-400"
                     >
                       No attendance records found.
@@ -248,12 +235,6 @@ export default function AttendanceTracking() {
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-300">
                         {formatDateTime(row.submittedAt)}
-                      </td>
-                      <td className="px-6 py-4">
-                        <AttendanceRowActions
-                          onEdit={() => openEditModal(row)}
-                          onViewVerification={() => handleViewVerification(row)}
-                        />
                       </td>
                     </tr>
                   ))
@@ -302,21 +283,6 @@ export default function AttendanceTracking() {
           </div>
         </div>
       </div>
-
-      <AttendanceEditModal
-        open={editModal.open}
-        onClose={closeEditModal}
-        onSave={handleSaveEdit}
-        initialStatus={editModal.row?.status || "present"}
-        childName={editModal.row?.childName || ""}
-      />
-
-      <VerificationModal
-        open={verifyModal.open}
-        onClose={closeVerificationModal}
-        loading={verifyLoading}
-        data={verifyModal.data}
-      />
     </Layout>
   );
 }
@@ -333,40 +299,6 @@ function AttendanceStatusBadge({ status }: { status: "present" | "absent" }) {
     >
       {isPresent ? "Present" : "Absent"}
     </span>
-  );
-}
-
-type AttendanceRowActionsProps = {
-  onEdit: () => void;
-  onViewVerification?: () => void;
-};
-
-function AttendanceRowActions({
-  onEdit,
-  onViewVerification,
-}: AttendanceRowActionsProps) {
-  return (
-    <div className="flex items-center gap-2 justify-center">
-      <button
-        className="group inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3.5 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-blue-900/50 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/40"
-        title="Edit Attendance"
-        onClick={onEdit}
-      >
-        <Pencil className="h-3.5 w-3.5 transition-transform duration-200 group-hover:-rotate-6" />
-        <span>Edit</span>
-      </button>
-
-      <button
-        onClick={onViewVerification}
-        title="View blockchain proof"
-        className="group inline-flex items-center gap-2 rounded-lg border border-teal-200 bg-linear-to-r from-teal-50 to-emerald-50 px-3.5 py-1.5 text-xs font-semibold text-teal-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:from-teal-100 hover:to-emerald-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-teal-500/30 dark:border-teal-900/50 dark:from-teal-900/20 dark:to-emerald-900/20 dark:text-teal-300 dark:hover:from-teal-900/40 dark:hover:to-emerald-900/40"
-      >
-        <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/90 ring-1 ring-teal-200 dark:bg-slate-900 dark:ring-teal-500/40">
-          <Link className="h-3.5 w-3.5 text-teal-700" />
-        </span>
-        <span>View Proof</span>
-      </button>
-    </div>
   );
 }
 
