@@ -14,6 +14,9 @@ import { registerPushToken } from "@/src/api/notifications.api";
 import * as SecureStore from "expo-secure-store";
 import { useEffect, useRef } from "react";
 
+const PUSH_TOKEN_KEY = "expoPushToken";
+const PUSH_TOKEN_USER_ID_KEY = "expoPushTokenUserId";
+
 configureReanimatedLogger({
   level: ReanimatedLogLevel.warn,
   strict: false,
@@ -49,20 +52,30 @@ function LayoutContent() {
           finalStatus = request.status;
         }
 
-        if (finalStatus !== "granted") return;
+        if (finalStatus !== "granted") {
+          return;
+        }
 
         const projectId =
           Constants.expoConfig?.extra?.eas?.projectId ||
           Constants.easConfig?.projectId;
 
-        if (!projectId) return;
+        if (!projectId) {
+          return;
+        }
 
         const { data: expoPushToken } =
           await Notifications.getExpoPushTokenAsync({ projectId });
 
-        const savedToken = await SecureStore.getItemAsync("expoPushToken");
+        const savedToken = await SecureStore.getItemAsync(PUSH_TOKEN_KEY);
+        const savedUserId = await SecureStore.getItemAsync(
+          PUSH_TOKEN_USER_ID_KEY,
+        );
+        const currentUserId = String(user.id || "");
+        const shouldRegister =
+          savedToken !== expoPushToken || savedUserId !== currentUserId;
 
-        if (savedToken !== expoPushToken) {
+        if (shouldRegister) {
           await registerPushToken(token, {
             pushToken: expoPushToken,
             platform:
@@ -75,7 +88,8 @@ function LayoutContent() {
             appOwnership: Constants.appOwnership ?? null,
           });
 
-          await SecureStore.setItemAsync("expoPushToken", expoPushToken);
+          await SecureStore.setItemAsync(PUSH_TOKEN_KEY, expoPushToken);
+          await SecureStore.setItemAsync(PUSH_TOKEN_USER_ID_KEY, currentUserId);
         }
       } catch (error: any) {
         console.warn("Push registration failed:", error?.message || error);
@@ -91,14 +105,20 @@ function LayoutContent() {
     const subscription = Notifications.addPushTokenListener(
       async (tokenData) => {
         const newToken = tokenData.data;
-        
+
         if (!newToken.startsWith("ExponentPushToken")) {
           return;
         }
 
-        const savedToken = await SecureStore.getItemAsync("expoPushToken");
+        const savedToken = await SecureStore.getItemAsync(PUSH_TOKEN_KEY);
+        const savedUserId = await SecureStore.getItemAsync(
+          PUSH_TOKEN_USER_ID_KEY,
+        );
+        const currentUserId = String(user?.id || "");
+        const shouldRegister =
+          savedToken !== newToken || savedUserId !== currentUserId;
 
-        if (savedToken !== newToken && user && token) {
+        if (shouldRegister && user && token) {
           try {
             await registerPushToken(token, {
               pushToken: newToken,
@@ -112,7 +132,11 @@ function LayoutContent() {
               appOwnership: Constants.appOwnership ?? null,
             });
 
-            await SecureStore.setItemAsync("expoPushToken", newToken);
+            await SecureStore.setItemAsync(PUSH_TOKEN_KEY, newToken);
+            await SecureStore.setItemAsync(
+              PUSH_TOKEN_USER_ID_KEY,
+              currentUserId,
+            );
           } catch (err: any) {
             console.warn("Token refresh sync failed:", err?.message || err);
           }
@@ -151,7 +175,6 @@ export default function RootLayout() {
     LogBox.ignoreLogs([
       "SafeAreaView has been deprecated and will be removed in a future release.",
       "[Reanimated] Reduced motion setting is enabled on this device.",
-      "Ignoring non-Expo token refresh:",
     ]);
   }, []);
 

@@ -297,7 +297,9 @@ export default function NotificationsScreen() {
                     key={item.id}
                     onPress={() => markAsRead(item.id)}
                     className={`mb-3 rounded-2xl border p-5 transition-all ${
-                      isRead ? "border-gray-200 bg-white" : "border-teal-200 bg-white"
+                      isRead
+                        ? "border-gray-200 bg-white"
+                        : "border-teal-200 bg-white"
                     }`}
                     style={{
                       borderLeftWidth: 5,
@@ -315,7 +317,11 @@ export default function NotificationsScreen() {
                         className="mr-4 h-14 w-14 items-center justify-center rounded-2xl flex-shrink-0"
                         style={{ backgroundColor: ui.iconBg }}
                       >
-                        <Icon size={24} color={ui.iconColor} strokeWidth={1.5} />
+                        <Icon
+                          size={24}
+                          color={ui.iconColor}
+                          strokeWidth={1.5}
+                        />
                       </View>
 
                       <View className="flex-1">
@@ -323,7 +329,9 @@ export default function NotificationsScreen() {
                           <View className="flex-1">
                             <View className="flex-row items-center gap-2">
                               <Text className="text-lg font-bold text-gray-900">
-                                {item.title === "Reminder" ? ui.fallbackTitle : item.title}
+                                {item.title === "Reminder"
+                                  ? ui.fallbackTitle
+                                  : item.title}
                               </Text>
                               {!isRead && (
                                 <View
@@ -339,7 +347,11 @@ export default function NotificationsScreen() {
                               style={{ backgroundColor: ui.accent }}
                             />
                           ) : (
-                            <CheckCircle2 size={18} color="#16A34A" strokeWidth={1.5} />
+                            <CheckCircle2
+                              size={18}
+                              color="#16A34A"
+                              strokeWidth={1.5}
+                            />
                           )}
                         </View>
 
@@ -355,7 +367,10 @@ export default function NotificationsScreen() {
                             }}
                           >
                             <Icon size={12} color={ui.iconColor} />
-                            <Text className="text-xs font-semibold" style={{ color: ui.iconColor }}>
+                            <Text
+                              className="text-xs font-semibold"
+                              style={{ color: ui.iconColor }}
+                            >
                               {item.timeLabel}
                             </Text>
                           </View>

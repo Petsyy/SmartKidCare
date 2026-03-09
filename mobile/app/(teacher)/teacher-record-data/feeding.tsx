@@ -18,7 +18,6 @@ import {
   ChevronDown,
   Search,
   CheckCircle,
-  Lock,
 } from "lucide-react-native";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useAuth } from "@/src/hooks/use-auth";
@@ -28,7 +27,6 @@ import {
   getTodayFeeding,
   getTodayAttendance,
   type FeedingRecord,
-  type OnChainData,
 } from "@/src/api/records.api";
 import type { Child } from "@/src/api/parent.api";
 
@@ -60,9 +58,6 @@ export default function RecordFeeding() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showMenuModal, setShowMenuModal] = useState(false);
   const [isReadOnly, setIsReadOnly] = useState(false);
-  const [blockchainData, setBlockchainData] = useState<OnChainData | null>(
-    null,
-  );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const presentChildrenIds = useMemo(() => {
@@ -86,15 +81,6 @@ export default function RecordFeeding() {
 
   const interactionDisabled = isReadOnly || isSubmitting;
 
-  useEffect(() => {
-    if (!params.blockchainData) return;
-    try {
-      const data = JSON.parse(params.blockchainData as string) as OnChainData;
-      setBlockchainData(data);
-    } catch (err) {
-      console.error("Failed to parse blockchain data:", err);
-    }
-  }, [params.blockchainData]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -235,13 +221,9 @@ export default function RecordFeeding() {
         records,
       });
 
-      if (response.onChain) {
-        setBlockchainData(response.onChain);
-      }
-
       Alert.alert(
         "Success",
-        "Records saved successfully!\n\nBlockchain verification is processing in the background.",
+        "Records saved successfully!",
         [{ text: "OK", onPress: () => router.push("/(teacher)") }],
       );
     } catch (error) {
@@ -343,40 +325,6 @@ export default function RecordFeeding() {
         </View>
       )}
 
-      {blockchainData && blockchainData.successes.length > 0 && (
-        <View className="px-6 pb-5">
-          <View className="rounded-2xl border border-blue-200 bg-blue-50 p-4 shadow-sm">
-            <View className="mb-3 flex-row items-center">
-              <View className="h-9 w-9 items-center justify-center rounded-lg bg-blue-100">
-                <Lock size={18} color="#1D4ED8" />
-              </View>
-              <Text className="ml-2 text-lg font-bold text-blue-900">
-                Saved on Blockchain
-              </Text>
-            </View>
-            <Text className="mb-3 text-base text-blue-800">
-              Records secured with blockchain verification.
-            </Text>
-            <View className="rounded-xl border border-blue-100 bg-white/90 p-3">
-              <Text className="mb-1 text-sm font-semibold uppercase tracking-wide text-blue-900">
-                Transaction Hash
-              </Text>
-              <Text
-                className="text-sm text-blue-800 font-mono"
-                numberOfLines={1}
-                ellipsizeMode="middle"
-              >
-                {blockchainData.successes[0].result.txHash}
-              </Text>
-              <Text className="text-sm text-blue-600 mt-2">
-                {blockchainData.successes.length} record
-                {blockchainData.successes.length > 1 ? "s" : ""} verified on
-                blockchain
-              </Text>
-            </View>
-          </View>
-        </View>
-      )}
 
       <View className="px-6 pb-5 py-4">
         <View className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
