@@ -42,6 +42,13 @@ function normalizeText(value?: string): string {
     : "Not recorded";
 }
 
+function parsePercentage(value: string): number | null {
+  const match = value.match(/(\d+(?:\.\d+)?)%/);
+  if (!match) return null;
+  const parsed = Number(match[1]);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 /**
  * Detect question category based on question and context
  */
@@ -113,9 +120,21 @@ function buildRagasContextArray(context: InteractionContext): string[] {
   // Determine attendance status
   if (context.attendance && context.attendance.trim()) {
     const attendance = context.attendance.trim();
-    const isPresent =
-      attendance.toLowerCase().includes("present") || attendance === "100%";
-    contexts.push(`Attendance Status: ${isPresent ? "Present" : "Absent"}`);
+    const normalizedAttendance = attendance.toLowerCase();
+    let attendanceStatus = "Not recorded";
+
+    if (normalizedAttendance.includes("present")) {
+      attendanceStatus = "Present";
+    } else if (normalizedAttendance.includes("absent")) {
+      attendanceStatus = "Absent";
+    } else {
+      const percentage = parsePercentage(attendance);
+      if (percentage !== null) {
+        attendanceStatus = percentage > 0 ? "Present" : "Absent";
+      }
+    }
+
+    contexts.push(`Attendance Status: ${attendanceStatus}`);
     contexts.push(`Attendance Rate: ${attendance}`);
   }
 
@@ -135,12 +154,18 @@ function buildRagasContextArray(context: InteractionContext): string[] {
 function buildGroundTruthFromContext(context: InteractionContext): string {
   const childName = normalizeText(context.childName);
   const attendance = normalizeText(context.attendance);
+  const feeding = normalizeText(context.feedingCompletion);
+  const date = normalizeText(context.date);
 
-  if (childName === "Not recorded" && attendance === "Not recorded") {
-    return "No specific child attendance record is available for this query.";
+  if (
+    childName === "Not recorded" &&
+    attendance === "Not recorded" &&
+    feeding === "Not recorded"
+  ) {
+    return "No sufficient child record is available for this query.";
   }
 
-  return `${childName} was present today with ${attendance} attendance.`;
+  return `Child: ${childName}. Date: ${date}. Attendance: ${attendance}. Feeding Completion: ${feeding}.`;
 }
 
 /**

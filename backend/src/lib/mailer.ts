@@ -21,7 +21,6 @@ export const transporter = nodemailer.createTransport({
 export async function verifyMailer() {
   try {
     await transporter.verify();
-    console.log("Mailer is ready");
   } catch (err) {
     console.error("Mailer verification failed:", err);
   }

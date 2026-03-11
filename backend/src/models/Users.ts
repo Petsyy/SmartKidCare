@@ -70,7 +70,7 @@ const UserSchema: Schema = new Schema(
     adminMfaEnabled: {
       type: Boolean,
       default: function (this: { role?: string }): boolean {
-        return this.role === "admin";
+        return this.role === "admin"; 
       },
     },
 

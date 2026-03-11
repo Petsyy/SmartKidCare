@@ -33,6 +33,20 @@ yarn-error.log*
 .cache/
 .turbo/
 
+# Local Python environments
+.venv/
+.venv*/
+**/.venv/
+**/.venv*/
+
+# Local Expo workspace cache
+.expo/
+
+# Runtime artifacts
+backend/error_log.txt
+backend/progress_log.txt
+backend/src/data/_tmp_eval.json
+
 # OS
 .DS_Store
 Thumbs.db

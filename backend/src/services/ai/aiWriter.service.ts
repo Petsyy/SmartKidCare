@@ -80,6 +80,8 @@ export type WriterSupportedResult =
 
 const HISTORY_LIMIT = 8;
 const writerMemory = new Map<string, ConversationTurn[]>();
+const WRITER_MODE = (process.env.AI_WRITER_MODE ?? "").toLowerCase();
+const USE_LLM_WRITER = WRITER_MODE === "llm";
 
 const WriterOutputSchema = z.object({
   responseTemplate: z.enum(["fact", "advice", "alert"]),
@@ -96,6 +98,39 @@ type WriterDisplayPolicy = {
   includeSuggestedActions: boolean;
   includeFollowUp: boolean;
 };
+
+function ragasCategoryFromScenario(scenario: WriterFacts["scenario"]): string {
+  if (scenario === "child_feeding" || scenario === "class_feeding") {
+    return "feeding_status";
+  }
+  if (scenario === "child_trend" || scenario === "child_attendance_comparison") {
+    return "trend_analysis";
+  }
+  if (scenario === "child_report" || scenario === "class_report") {
+    return "risk_analysis";
+  }
+  return "attendance_status";
+}
+
+function buildGroundTruthFromFacts(facts: WriterFacts): string {
+  const subject = facts.childName?.trim().length
+    ? facts.childName.trim()
+    : facts.scenario.includes("class")
+      ? "Class"
+      : "Child";
+
+  const metricSummary = facts.metricLines.join("; ");
+  const primaryObservation = facts.observationLines[0]?.trim();
+
+  return [
+    `${subject} summary (${facts.timeframe}).`,
+    metricSummary,
+    `Risk Level: ${facts.riskLevel}.`,
+    primaryObservation,
+  ]
+    .filter((line): line is string => Boolean(line))
+    .join(" ");
+}
 
 function normalizeRole(role: string): AIRole {
   const normalized = String(role).trim().toLowerCase();
@@ -306,6 +341,53 @@ function sanitizeAction(text: string): string {
     .trim();
 }
 
+function normalizeForGrounding(text: string): string {
+  return text.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function extractClaimTokens(text: string): string[] {
+  const valueMatches = text.match(/\b\d+(?:\.\d+)?%|\b\d+\/\d+\b|\b\d+(?:\.\d+)?\b/g) ?? [];
+  const isoDateMatches = text.match(/\b\d{4}-\d{2}-\d{2}\b/g) ?? [];
+  const namedDateMatches =
+    text.match(
+      /\b(?:jan|january|feb|february|mar|march|apr|april|may|jun|june|jul|july|aug|august|sep|sept|september|oct|october|nov|november|dec|december)\s+\d{1,2}(?:,\s*\d{4})?\b/gi,
+    ) ?? [];
+
+  return [...valueMatches, ...isoDateMatches, ...namedDateMatches].map((token) =>
+    normalizeForGrounding(token),
+  );
+}
+
+function isGroundedNarrative(params: {
+  output: z.infer<typeof WriterOutputSchema>;
+  facts: WriterFacts;
+}): boolean {
+  const { output, facts } = params;
+  const factsCorpus = normalizeForGrounding(
+    [
+      ...facts.metricLines,
+      ...facts.observationLines,
+      ...facts.recommendationLines,
+      String(facts.childName ?? ""),
+      String(facts.timeframe ?? ""),
+      String(facts.riskLevel ?? ""),
+    ].join("\n"),
+  );
+
+  const outputCorpus = [
+    output.headline,
+    ...output.metricLines,
+    output.analysis,
+    ...(output.suggestedActions ?? []),
+    output.followUp ?? "",
+  ].join("\n");
+
+  const claimTokens = extractClaimTokens(outputCorpus);
+  if (claimTokens.length === 0) return true;
+
+  return claimTokens.every((token) => factsCorpus.includes(token));
+}
+
 /**
  * Enforce consistent analysis length (50-150 words for consistency)
  */
@@ -414,72 +496,106 @@ function labelsForLanguage(language: AIResponseLanguage): {
     followUpLabel: "Follow-up",
   };
 }
+ 
+function childReference(facts: WriterFacts): string | undefined {
+  if (facts.role === "parent") return facts.language === "tl" ? "anak mo" : "your child";
+  return facts.childName;
+}
 
-function fallbackNarrative(facts: WriterFacts): string {
+function deterministicHeadline(facts: WriterFacts): string {
+  const subject = childReference(facts);
+  const timeframe = timeframeLabel(facts.timeframe, facts.language);
+
+  if (facts.language === "tl") {
+    if (facts.scenario === "class_report") return `Narito ang class summary ${timeframe}.`;
+    if (subject) return `Narito ang update ng ${subject} ${timeframe}.`;
+    return `Narito ang update ${timeframe}.`;
+  }
+
+  if (facts.scenario === "class_report") return `Here is the class summary ${timeframe}.`;
+  if (subject) return `Here is ${subject}'s update ${timeframe}.`;
+  return `Here is the update ${timeframe}.`;
+}
+
+function buildFollowUp(policy: WriterDisplayPolicy, facts: WriterFacts): string | undefined {
+  if (!policy.includeFollowUp) return undefined;
   const labels = labelsForLanguage(facts.language);
-  
-  // Use "your child" for parents, actual name for teachers/admins
-  const childReference = facts.role === "parent" 
-    ? (facts.language === "tl" ? "anak mo" : "your child")
-    : facts.childName;
-  
-  const headline =
+  if (facts.language === "tl") {
+    return policy.responseTemplate === "alert"
+      ? `${labels.followUpLabel}: Gusto mo bang gumawa tayo ng agarang action plan para dito?`
+      : `${labels.followUpLabel}: Gusto mo bang magpatuloy sa mas detalyadong review?`;
+  }
+  return policy.responseTemplate === "alert"
+    ? `${labels.followUpLabel}: Would you like to set an immediate action plan for this?`
+    : `${labels.followUpLabel}: Would you like to continue with a more detailed review?`;
+}
+
+function ensureActions(
+  recommendationLines: string[],
+  language: AIResponseLanguage,
+  required: boolean,
+): string[] {
+  const cleaned = recommendationLines
+    .map((line) => sanitizeAction(line))
+    .filter(Boolean)
+    .slice(0, 3);
+
+  if (cleaned.length || !required) return cleaned;
+
+  if (language === "tl") {
+    return [
+      "I-record ang attendance at feeding nang tuloy-tuloy para makita ang trend.",
+      "Mag-follow up sa teacher kung may na-miss na araw o pagkain.",
+    ];
+  }
+  return [
+    "Keep logging attendance and meals consistently to track trends.",
+    "Follow up with the teacher on any missed days or meals.",
+  ];
+}
+
+function buildAnalysisFromFacts(facts: WriterFacts): string {
+  const subject = childReference(facts) ?? (facts.language === "tl" ? "ang bata" : "the child");
+  const timeframe = timeframeLabel(facts.timeframe, facts.language);
+  const observation = safeJoinLines(facts.observationLines).trim();
+
+  const intro =
     facts.language === "tl"
-      ? facts.scenario === "class_report"
-        ? `Narito ang class summary ${timeframeLabel(facts.timeframe, facts.language)}.`
-        : childReference
-          ? `Narito ang update ng ${childReference} ${timeframeLabel(facts.timeframe, facts.language)}.`
-          : `Narito ang update ${timeframeLabel(facts.timeframe, facts.language)}.`
-      : facts.scenario === "class_report"
-        ? `Here is the class summary ${timeframeLabel(facts.timeframe, facts.language)}.`
-        : childReference
-          ? facts.role === "parent"
-            ? `Here is ${childReference}'s update ${timeframeLabel(facts.timeframe, facts.language)}.`
-            : `Here is ${childReference}'s update ${timeframeLabel(facts.timeframe, facts.language)}.`
-          : `Here is the update ${timeframeLabel(facts.timeframe, facts.language)}.`;
+      ? `${subject} ${timeframe} ay may risk level na ${facts.riskLevel}.`
+      : `${subject} ${timeframe} has a ${facts.riskLevel} risk level.`;
+
+  const merged = [intro, observation].filter(Boolean).join(" ").trim();
+  return sanitizeAnalysis(merged || intro);
+}
+
+function buildDeterministicNarrative(
+  facts: WriterFacts,
+  policy: WriterDisplayPolicy,
+): string {
+  const labels = labelsForLanguage(facts.language);
+  const headline = deterministicHeadline(facts);
+  const metrics = safeJoinLines(facts.metricLines);
+  const analysis = buildAnalysisFromFacts(facts);
+  const actions = ensureActions(
+    facts.recommendationLines,
+    facts.language,
+    policy.includeSuggestedActions,
+  );
+  const followUp = buildFollowUp(policy, facts);
 
   return [
     headline,
     "",
-    safeJoinLines(facts.metricLines),
+    metrics,
     "",
     `${labels.riskLabel}: ${facts.riskLevel}`,
     "",
-    safeJoinLines(facts.observationLines),
-    "",
-    "",
-  ]
-    .filter(Boolean)
-    .join("\n");
-}
-
-function fallbackNarrativeWithPolicy(
-  facts: WriterFacts,
-  policy: WriterDisplayPolicy,
-): string {
-  const base = fallbackNarrative(facts);
-  if (!policy.includeSuggestedActions) return base;
-
-  const labels = labelsForLanguage(facts.language);
-  const actionLines = facts.recommendationLines
-    .slice(0, 3)
-    .map((line) => `- ${line}`);
-  const followUp =
-    facts.language === "tl"
-      ? policy.responseTemplate === "alert"
-        ? `${labels.followUpLabel}: Gusto mo bang gumawa tayo ng agarang action plan para dito?`
-        : `${labels.followUpLabel}: Gusto mo bang magpatuloy sa mas detalyadong review?`
-      : policy.responseTemplate === "alert"
-        ? `${labels.followUpLabel}: Would you like to set an immediate action plan for this?`
-        : `${labels.followUpLabel}: Would you like to continue with a more detailed review?`;
-
-  return [
-    base,
-    "",
-    `${labels.suggestedActionsLabel}:`,
-    ...actionLines,
-    policy.includeFollowUp ? "" : undefined,
-    policy.includeFollowUp ? followUp : undefined,
+    analysis,
+    actions.length ? "" : undefined,
+    actions.length ? `${labels.suggestedActionsLabel}:` : undefined,
+    ...actions.map((line) => `- ${line}`),
+    followUp ? "" : undefined,
+    followUp,
   ]
     .filter((line): line is string => Boolean(line))
     .join("\n");
@@ -593,6 +709,8 @@ Hard constraints:
 - Audience role: ${role}.
 - IMPORTANT: When addressing parents, use "your child" (or "anak mo" in Tagalog) instead of the child's name. For teachers/admins, use the actual child name.
 - Use FACTS as source of truth. Never invent or modify numbers, percentages, dates, or counts.
+- If a detail is not in FACTS (for example exact dates, reasons, comparisons, or meal names), explicitly say it is not available in the provided records.
+- Never mention a specific date unless that exact date string appears in FACTS.
 - metricLines must be copied EXACTLY from FACTS.metricLines, same order, same text.
 - riskLevel must be exactly FACTS.riskLevel.
 - responseTemplate must be exactly "${policy.responseTemplate}".
@@ -968,38 +1086,47 @@ export async function writeToolNarrative(params: {
     facts,
   });
 
-  const history = getHistory(params.conversationId);
-  const prompt = buildWriterPrompt({
-    facts,
-    role,
-    language: params.language,
-    question: params.question,
-    history,
-    policy: displayPolicy,
-  });
+  const deterministicReply = buildDeterministicNarrative(facts, displayPolicy);
+  let finalReply = deterministicReply;
 
-  let finalReply = "";
-  try {
-    const raw = await askGemini(prompt);
-    const parsedUnknown = parseFirstJSONObject(raw);
-    const validated = WriterOutputSchema.parse(parsedUnknown);
+  if (USE_LLM_WRITER) {
+    const history = getHistory(params.conversationId);
+    const prompt = buildWriterPrompt({
+      facts,
+      role,
+      language: params.language,
+      question: params.question,
+      history,
+      policy: displayPolicy,
+    });
 
-    if (!validateWriterOutput(validated, facts, displayPolicy)) {
-      finalReply = fallbackNarrativeWithPolicy(facts, displayPolicy);
-    } else {
-      finalReply = renderWriterOutput(
-        validated,
-        params.language,
-        displayPolicy,
-      );
+    try {
+      const raw = await askGemini(prompt);
+      const parsedUnknown = parseFirstJSONObject(raw);
+      const validated = WriterOutputSchema.parse(parsedUnknown);
+
+      if (validateWriterOutput(validated, facts, displayPolicy) &&
+          isGroundedNarrative({ output: validated, facts })) {
+        finalReply = renderWriterOutput(
+          validated,
+          params.language,
+          displayPolicy,
+        );
+      }
+    } catch {
+      finalReply = deterministicReply;
     }
-  } catch {
-    finalReply = fallbackNarrativeWithPolicy(facts, displayPolicy);
   }
 
   // Log interaction to datasets
   const loggingContext = buildLoggingContext(facts, params.result);
-  await logAIInteraction(params.question, loggingContext, finalReply);
+  await logAIInteraction(
+    params.question,
+    loggingContext,
+    finalReply,
+    ragasCategoryFromScenario(facts.scenario),
+    buildGroundTruthFromFacts(facts),
+  );
 
   remember(params.conversationId, { role: "user", content: params.question });
   remember(params.conversationId, { role: "assistant", content: finalReply });
