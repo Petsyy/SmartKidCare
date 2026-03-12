@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
   Modal,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft, ChevronDown, ChevronRight, UserCheck, UserX, Calendar, User } from 'lucide-react-native';
 import { getMyChildren, Child } from "@/src/api/parent.api";
@@ -36,25 +36,44 @@ export default function ViewAttendanceDetails() {
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [showDayModal, setShowDayModal] = useState(false);
 
-  useEffect(() => {
-    loadChildren();
-  }, [token]);
-
-  const loadChildren = async () => {
+  const loadChildren = useCallback(async () => {
     try {
       if (!token) throw new Error("No authentication token");
 
       const data = await getMyChildren(token);
       setChildren(data);
-      if (data.length > 0) {
-        setSelectedChild(data[0]);
-      }
+      setSelectedChild((currentSelectedChild) => {
+        if (!data.length) return null;
+
+        if (currentSelectedChild) {
+          const matchedChild = data.find(
+            (child) => child._id === currentSelectedChild._id,
+          );
+          if (matchedChild) {
+            return matchedChild;
+          }
+        }
+
+        return data[0];
+      });
     } catch (err: any) {
       console.error("Failed to load children:", err);
+      setChildren([]);
+      setSelectedChild(null);
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    void loadChildren();
+  }, [loadChildren]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void loadChildren();
+    }, [loadChildren]),
+  );
 
   useEffect(() => {
     const loadAttendance = async () => {

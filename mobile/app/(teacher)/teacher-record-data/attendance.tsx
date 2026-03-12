@@ -21,10 +21,7 @@ import {
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/src/hooks/use-auth";
 import { getChildren } from "@/src/api/teacher.api";
-import {
-  submitAttendance,
-  getTodayAttendance,
-} from "@/src/api/records.api";
+import { submitAttendance, getTodayAttendance } from "@/src/api/records.api";
 import type { Child } from "@/src/api/parent.api";
 
 export default function RecordAttendance() {
@@ -90,7 +87,8 @@ export default function RecordAttendance() {
 
   const filteredChildren = useMemo(() => {
     return children.filter((child) => {
-      const fullName = `${child.lastName}, ${child.firstName} ${child.middleName || ""}`.toLowerCase();
+      const fullName =
+        `${child.lastName}, ${child.firstName} ${child.middleName || ""}`.toLowerCase();
       return (
         fullName.includes(searchQuery.toLowerCase()) ||
         child.studentId.toLowerCase().includes(searchQuery.toLowerCase())
