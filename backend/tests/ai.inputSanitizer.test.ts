@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   AI_INPUT_LIMITS,
+  inputIsGibberish,
   sanitizeAIChildId,
   sanitizeAIMessageInput,
 } from "../src/utils/aiInputSanitizer";
@@ -34,4 +35,23 @@ test("sanitizeAIChildId accepts only valid 24-char hex id", () => {
   assert.equal(sanitizeAIChildId("507f1f77bcf86cd79943901Z"), undefined);
   assert.equal(sanitizeAIChildId("not-an-object-id"), undefined);
   assert.equal(sanitizeAIChildId(""), undefined);
+});
+
+test("inputIsGibberish blocks noisy keyword stuffing", () => {
+  assert.equal(inputIsGibberish("asdasdas attedance"), true);
+  assert.equal(inputIsGibberish("asdf attendance"), true);
+  assert.equal(inputIsGibberish("asdasdas qwqwqw zxzxzx"), true);
+  assert.equal(inputIsGibberish("gagagagag feeding"), true);
+  assert.equal(inputIsGibberish("kahakagjsgd feeding"), true);
+  assert.equal(inputIsGibberish("jkjajjajajaj feeding"), true);
+});
+
+test("inputIsGibberish allows meaningful attendance/feeding prompts", () => {
+  assert.equal(inputIsGibberish("attendance"), false);
+  assert.equal(inputIsGibberish("feeding"), false);
+  assert.equal(inputIsGibberish("show attendance today"), false);
+  assert.equal(
+    inputIsGibberish("How many absences does my child have this week?"),
+    false,
+  );
 });

@@ -19,6 +19,7 @@ import {
 import { detectResponseLanguage } from "../services/ai/language.service";
 import {
   AI_INPUT_LIMITS,
+  inputIsGibberish,
   sanitizeAIChildId,
   sanitizeAIMessageInput,
 } from "../utils/aiInputSanitizer";
@@ -63,6 +64,13 @@ router.post("/chat", authenticateToken, async (req, res) => {
     if (!message) {
       return res.status(400).json({
         message: "Invalid request: message is empty after sanitization.",
+      });
+    }
+
+    if (inputIsGibberish(message)) {
+      return res.status(400).json({
+        message:
+          "I couldn't understand that. Please ask a clear question about attendance or feeding.",
       });
     }
 

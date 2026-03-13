@@ -13,6 +13,7 @@ import {
   ClassReportResult,
   writeToolNarrative,
 } from "./aiWriter.service";
+import { inputIsGibberish } from "../../utils/aiInputSanitizer";
 
 type AIRole = "parent" | "teacher" | "admin";
 
@@ -122,7 +123,7 @@ function shouldTriggerMissedMealsAgent(lower: string): boolean {
 
 function shouldTriggerReportAgent(lower: string): boolean {
   const explicitReportIntent =
-    /\b(report|summary|overview|overall|status|ulat|buod|kabuuan|kalagayan)\b/.test(
+    /\b(report|summary|summarize|summarise|overview|overall|status|ulat|buod|kabuuan|kalagayan)\b/.test(
       lower,
     );
   if (explicitReportIntent) return true;
@@ -186,6 +187,8 @@ function isTrendQuestion(question: string): boolean {
 }
 
 export function detectToolForQuestion(question: string): AgentToolName | null {
+  if (inputIsGibberish(question)) return null;
+
   const lower = question.trim().toLowerCase();
   const hasChildSubject = /\b(child|children|kid|kids|anak|bata)\b/.test(lower);
 

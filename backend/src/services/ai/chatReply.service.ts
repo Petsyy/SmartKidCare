@@ -111,6 +111,25 @@ const CLOSURE_REPLIES: RoleReplyTable = {
   },
 };
 
+const LOW_SIGNAL_REPLIES: RoleReplyTable = {
+  en: {
+    parent:
+      "I can help with attendance or feeding. What would you like to check for your child?",
+    teacher:
+      "I can help with attendance or feeding summaries. What would you like to check?",
+    admin:
+      "I can help with attendance, feeding, or verification insights. What would you like to check?",
+  },
+  tl: {
+    parent:
+      "Matutulungan kita sa attendance o feeding. Ano ang gusto mong i-check para sa anak mo?",
+    teacher:
+      "Matutulungan kita sa buod ng attendance o feeding. Ano ang gusto mong i-check?",
+    admin:
+      "Matutulungan kita sa attendance, feeding, o verification insights. Ano ang gusto mong i-check?",
+  },
+};
+
 function normalizeMessage(text: string): string {
   return text.trim().toLowerCase().replace(/\s+/g, " ");
 }
@@ -188,6 +207,13 @@ export function buildConversationClosureReply(
   language: AIResponseLanguage = "en",
 ): string {
   return pickReply(CLOSURE_REPLIES, role, language);
+}
+
+export function buildLowSignalReply(
+  role: string,
+  language: AIResponseLanguage = "en",
+): string {
+  return pickReply(LOW_SIGNAL_REPLIES, role, language);
 }
 
 // Quota fallback now generic, no summaries.

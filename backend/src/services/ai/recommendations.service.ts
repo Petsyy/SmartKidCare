@@ -353,7 +353,10 @@ async function generateRecommendationWording(params: {
   });
 
   try {
-    const raw = await withTimeout(askGemini(prompt), recommendationTimeoutMs());
+    const raw = await withTimeout(
+      askGemini(prompt, { mode: "json" }),
+      recommendationTimeoutMs(),
+    );
     const aiRecommendations = parseAIRecommendations(raw);
     if (!aiRecommendations?.length) return unique(fallbackRecommendations);
 
