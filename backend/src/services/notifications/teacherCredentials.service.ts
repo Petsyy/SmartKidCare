@@ -61,12 +61,35 @@ Temporary password: ${tempPassword}
 
 You will be required to change this password on your first login.`,
     html: `
-      <div style="font-family: Arial, sans-serif; line-height: 1.5;">
-        <p>Hello ${firstName},</p>
-        <p>Your SmartKidCare teacher account has been created.</p>
-        <p><strong>Login email:</strong> ${to}</p>
-        <p><strong>Temporary password:</strong> ${tempPassword}</p>
-        <p>You will be required to change this password on your first login.</p>
+      <div style="background-color: #f8fafc; padding: 40px 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1e293b;">
+        <div style="max-width: 500px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
+          <div style="background: linear-gradient(135deg, #0d9488 0%, #10b981 100%); padding: 32px; text-align: center;">
+            <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.025em;">Smart KidCare</h1>
+          </div>
+          <div style="padding: 40px;">
+            <h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 600; color: #0f766e; text-align: center;">Welcome, ${firstName}!</h2>
+            <p style="color: #64748b; margin-bottom: 24px; font-size: 16px; text-align: center;">Your SmartKidCare teacher account has been successfully created.</p>
+            
+            <div style="background: #f0fdfa; border-radius: 12px; padding: 24px; border: 1px solid #ccfbf1; margin-bottom: 24px;">
+              <div style="margin-bottom: 16px;">
+                <p style="margin: 0; font-size: 12px; color: #0d9488; text-transform: uppercase; font-weight: 800;">Login Email</p>
+                <p style="margin: 4px 0 0; font-size: 16px; color: #1e293b; font-weight: 500;">${to}</p>
+              </div>
+              <div>
+                <p style="margin: 0; font-size: 12px; color: #0d9488; text-transform: uppercase; font-weight: 800;">Temporary Password</p>
+                <p style="margin: 4px 0 0; font-size: 16px; color: #0f766e; font-weight: 600; font-family: 'Courier New', Courier, monospace;">${tempPassword}</p>
+              </div>
+            </div>
+            
+            <div style="background: #fff9eb; border-radius: 8px; padding: 16px; border: 1px solid #fef3c7; text-align: center;">
+              <p style="margin: 0; font-size: 14px; color: #92400e; font-weight: 600;">🔔 Action Required</p>
+              <p style="margin: 4px 0 0; font-size: 13px; color: #b45309;">You will be required to change this password on your first login.</p>
+            </div>
+          </div>
+          <div style="background: #f8fafc; padding: 24px; text-align: center; border-top: 1px solid #f1f5f9;">
+            <p style="margin: 0; font-size: 12px; color: #94a3b8;">&copy; ${new Date().getFullYear()} Smart KidCare. All rights reserved.</p>
+          </div>
+        </div>
       </div>
     `,
   });

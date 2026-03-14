@@ -163,12 +163,19 @@ export default function ViewAttendanceDetails() {
       currentDate.getMonth(),
       selectedDay,
     );
-    return date.toLocaleDateString("en-PH", {
+    const month = date.toLocaleDateString("en-PH", {
       month: "long",
+      timeZone: "Asia/Manila",
+    });
+    const day = date.toLocaleDateString("en-PH", {
       day: "numeric",
+      timeZone: "Asia/Manila",
+    });
+    const year = date.toLocaleDateString("en-PH", {
       year: "numeric",
       timeZone: "Asia/Manila",
     });
+    return `${month}, ${day} ${year}`;
   };
 
   const getStatusColor = (status: AttendanceStatus) => {
@@ -497,14 +504,29 @@ export default function ViewAttendanceDetails() {
         {(() => {
           const dayDetails = selectedDay ? getDetailsForDay(selectedDay) : null;
           const recordedLabel = dayDetails?.recordedAt
-            ? new Date(dayDetails.recordedAt).toLocaleString("en-PH", {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-                hour: "numeric",
-                minute: "2-digit",
-                timeZone: "Asia/Manila",
-              })
+            ? (() => {
+                const recordedDate = new Date(dayDetails.recordedAt as string);
+                const month = recordedDate.toLocaleDateString("en-PH", {
+                  month: "long",
+                  timeZone: "Asia/Manila",
+                });
+                const day = recordedDate.toLocaleDateString("en-PH", {
+                  day: "numeric",
+                  timeZone: "Asia/Manila",
+                });
+                const year = recordedDate.toLocaleDateString("en-PH", {
+                  year: "numeric",
+                  timeZone: "Asia/Manila",
+                });
+                const time = recordedDate.toLocaleTimeString("en-PH", {
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                  timeZone: "Asia/Manila",
+                });
+
+                return `${month}, ${day} ${year}, ${time}`;
+              })()
             : "Not available";
 
           return (
@@ -518,12 +540,12 @@ export default function ViewAttendanceDetails() {
               elevation: 10,
             }}
           >
-            <View className="flex-row items-center justify-between mb-5">
+            <View className="mb-5">
               <View className="flex-row items-center">
                 <View className="h-12 w-12 items-center justify-center rounded-2xl bg-teal-50 mr-3">
                   <Calendar size={24} color="#14B8A6" />
                 </View>
-                <View>
+                <View className="flex-1">
                   <Text className="text-xl font-bold text-gray-900">
                     {getSelectedDateLabel()}
                   </Text>
@@ -543,14 +565,13 @@ export default function ViewAttendanceDetails() {
                 }}
               >
                 <Text className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider">Status</Text>
-                  <View className={`inline-flex px-4 py-2 rounded-full ${
+                  <View className={`px-4 py-2 rounded-full self-start ${
                     dayDetails?.status === "Present"
                       ? "bg-green-100"
                       : dayDetails?.status === "Absent"
                         ? "bg-red-100"
                         : "bg-gray-100"
                   }`}
-                    style={{ alignSelf: "flex-start" }}
                   >
                     <Text className={`text-base font-bold ${
                       dayDetails?.status === "Present"
@@ -563,7 +584,7 @@ export default function ViewAttendanceDetails() {
                     </Text>
                   </View>
               
-                <Text className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider">Teacher</Text>
+                <Text className="text-xs font-semibold text-gray-500 mb-2 mt-4 uppercase tracking-wider">Teacher</Text>
                 <Text className="text-base font-bold text-gray-800">
                   {dayDetails?.teacherName || "Not available"}
                 </Text>

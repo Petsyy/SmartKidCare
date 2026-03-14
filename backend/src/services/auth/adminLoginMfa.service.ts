@@ -4,6 +4,7 @@ import { Response } from "express";
 import { IUser } from "../../models/Users";
 import { sendEmail } from "../notifications/email.service";
 import { setCsrfCookie } from "../../lib/csrf";
+import { getAuthCookieOptions } from "../../lib/cookies";
 
 export const ADMIN_LOGIN_MFA_PURPOSE = "admin_login_mfa";
 
@@ -31,12 +32,7 @@ export const clearAdminLoginOtp = async (user: IUser) => {
 };
 
 export const setAdminAuthCookie = (res: Response, token: string) => {
-  res.cookie("authToken", token, {
-    httpOnly: true,
-    secure: false, // true in production
-    sameSite: "lax",
-    maxAge: 24 * 60 * 60 * 1000,
-  });
+  res.cookie("authToken", token, getAuthCookieOptions());
 
   setCsrfCookie(res, token);
 };
@@ -93,10 +89,24 @@ export const issueAdminLoginOtp = async (user: IUser): Promise<string> => {
       subject: "SmartKidCare admin login verification code",
       text: `Your SmartKidCare admin login OTP is ${otp}. It expires in 10 minutes.`,
       html: `
-        <div style="font-family: Arial, sans-serif; line-height: 1.5;">
-          <p>Your SmartKidCare admin login OTP is:</p>
-          <p style="font-size: 24px; font-weight: 700; letter-spacing: 4px; margin: 12px 0;">${otp}</p>
-          <p>This code expires in 10 minutes.</p>
+        <div style="background-color: #f8fafc; padding: 40px 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1e293b;">
+          <div style="max-width: 500px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
+            <div style="background: linear-gradient(135deg, #0d9488 0%, #10b981 100%); padding: 32px; text-align: center;">
+              <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.025em;">Smart KidCare</h1>
+            </div>
+            <div style="padding: 40px; text-align: center;">
+              <h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 600; color: #0f766e;">Verification Code</h2>
+              <p style="color: #64748b; margin-bottom: 32px; font-size: 16px;">Please use the following verification code to complete your admin login.</p>
+              <div style="background: #f0fdfa; border-radius: 12px; padding: 24px; display: inline-block; border: 1px solid #ccfbf1;">
+                <span style="font-family: 'Courier New', Courier, monospace; font-size: 36px; font-weight: 700; color: #0d9488; letter-spacing: 8px;">${otp}</span>
+              </div>
+              <p style="margin-top: 32px; font-size: 14px; color: #94a3b8;">This code will expire in <span style="font-weight: 600; color: #475569;">10 minutes</span>.</p>
+            </div>
+            <div style="background: #f8fafc; padding: 24px; text-align: center; border-top: 1px solid #f1f5f9;">
+              <p style="margin: 0; font-size: 12px; color: #94a3b8;">If you didn't request this code, you can safely ignore this email.</p>
+              <p style="margin: 8px 0 0; font-size: 12px; color: #94a3b8;">&copy; ${new Date().getFullYear()} Smart KidCare. All rights reserved.</p>
+            </div>
+          </div>
         </div>
       `,
     });
