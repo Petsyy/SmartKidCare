@@ -42,6 +42,7 @@ type WriterDisplayPolicy = {
   responseTemplate: WriterResponseTemplate;
   includeSuggestedActions: boolean;
   includeFollowUp: boolean;
+  detailMode: "compact" | "expanded";
 };
 
 function ragasCategoryFromScenario(scenario: WriterFacts["scenario"]): string {
@@ -208,12 +209,67 @@ function shouldIncludeGuidanceByIntent(question: string): boolean {
   );
 }
 
+function shouldOfferFollowUpByIntent(
+  question: string,
+  facts: WriterFacts,
+): boolean {
+  const lower = question.toLowerCase();
+
+  const asksSpecificDetail =
+    /\b(detail|details|date[- ]by[- ]date|by date|specific|exact|which dates?|what food|meal history|attendance details|feeding details)\b/.test(
+      lower,
+    ) ||
+    (/\b(show|list|give me|tell me)\b/.test(lower) &&
+      /\b(attendance|feeding|absence|absences|meals?|food|dates?)\b/.test(
+        lower,
+      ));
+
+  if (asksSpecificDetail) return false;
+
+  const asksBroadSummary =
+    /\b(summary|summarize|overall|status|report|update|overview|risk|how is|how are|kamusta|kumusta|kalagayan)\b/.test(
+      lower,
+    );
+
+  if (asksBroadSummary) return true;
+
+  return (
+    facts.scenario === "child_report" ||
+    facts.scenario === "class_report" ||
+    facts.scenario === "child_trend"
+  );
+}
+
+function shouldExpandDetailsByIntent(question: string): boolean {
+  const lower = question.toLowerCase();
+  return (
+    /\b(detail|details|date[- ]by[- ]date|by date|specific|exact|which dates?|what food|meal history|attendance details|feeding details)\b/.test(
+      lower,
+    ) ||
+    (/\b(show|list|give me|tell me)\b/.test(lower) &&
+      /\b(attendance|feeding|absence|absences|meals?|food|dates?)\b/.test(
+        lower,
+      ))
+  );
+}
+
 function buildWriterDisplayPolicy(params: {
   question: string;
   facts: WriterFacts;
+  suppressFollowUp?: boolean;
+  hasRecentFollowUp?: boolean;
 }): WriterDisplayPolicy {
-  const { question, facts } = params;
+  const {
+    question,
+    facts,
+    suppressFollowUp = false,
+    hasRecentFollowUp = false,
+  } = params;
   const guidanceIntent = shouldIncludeGuidanceByIntent(question);
+  const followUpIntent = shouldOfferFollowUpByIntent(question, facts);
+  const detailMode = shouldExpandDetailsByIntent(question)
+    ? "expanded"
+    : "compact";
   const responseTemplate: WriterResponseTemplate =
     facts.riskLevel === "HIGH"
       ? "alert"
@@ -222,16 +278,43 @@ function buildWriterDisplayPolicy(params: {
         : "fact";
 
   const includeSuggestedActions = responseTemplate !== "fact";
+  const includeFollowUp =
+    includeSuggestedActions &&
+    followUpIntent &&
+    !suppressFollowUp &&
+    !hasRecentFollowUp;
 
   return {
     responseTemplate,
     includeSuggestedActions,
-    includeFollowUp: includeSuggestedActions,
+    includeFollowUp,
+    detailMode,
   };
 }
 
 function getHistory(conversationId: string): ConversationTurn[] {
   return [...(writerMemory.get(conversationId) ?? [])];
+}
+
+export function getConversationHistory(
+  conversationId: string,
+): ConversationTurn[] {
+  return getHistory(conversationId);
+}
+
+function hasRecentAssistantFollowUp(history: ConversationTurn[]): boolean {
+  const recentAssistantTurns = history
+    .filter((turn) => turn.role === "assistant")
+    .slice(-2);
+
+  if (recentAssistantTurns.length === 0) return false;
+
+  const followUpPattern =
+    /(?:^|\n)\s*follow[- ]?up\s*:|would you like to|gusto mo bang/i;
+
+  return recentAssistantTurns.some((turn) =>
+    followUpPattern.test(turn.content),
+  );
 }
 
 function remember(conversationId: string, turn: ConversationTurn): void {
@@ -265,18 +348,24 @@ function safeJoinLines(lines: string[]): string {
 
 function labelsForLanguage(language: AIResponseLanguage): {
   riskLabel: string;
+  summaryLabel: string;
+  keyDetailsLabel: string;
   suggestedActionsLabel: string;
   followUpLabel: string;
 } {
   if (language === "tl") {
     return {
       riskLabel: "Antas ng Panganib",
+      summaryLabel: "Buod",
+      keyDetailsLabel: "Mahahalagang Detalye",
       suggestedActionsLabel: "Mga Mungkahing Hakbang",
       followUpLabel: "Follow-up",
     };
   }
   return {
     riskLabel: "Risk Level",
+    summaryLabel: "Summary",
+    keyDetailsLabel: "Key Details",
     suggestedActionsLabel: "Suggested Actions",
     followUpLabel: "Follow-up",
   };
@@ -305,20 +394,190 @@ function deterministicHeadline(facts: WriterFacts): string {
   return `Here is the update ${timeframe}.`;
 }
 
+function isObservationDetailLine(line: string): boolean {
+  const normalized = line.trim().toLowerCase();
+  if (!normalized) return false;
+
+  return (
+    normalized.startsWith("absence date:") ||
+    normalized.startsWith("absence dates:") ||
+    normalized.startsWith("pagliban:") ||
+    normalized.startsWith("mga araw ng pagliban:") ||
+    normalized.startsWith("meals served:") ||
+    normalized.startsWith("mga inihain na pagkain:") ||
+    normalized.startsWith("trend snapshot") ||
+    /^\d{4}-\d{2}-\d{2}\b/.test(normalized)
+  );
+}
+
+function splitObservationLines(facts: WriterFacts): {
+  summaryLines: string[];
+  detailLines: string[];
+} {
+  if (facts.scenario === "child_trend") {
+    return {
+      summaryLines: [],
+      detailLines: facts.observationLines
+        .map((line) => line.trim())
+        .filter(Boolean),
+    };
+  }
+
+  const summaryLines: string[] = [];
+  const detailLines: string[] = [];
+
+  for (const line of facts.observationLines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    if (isObservationDetailLine(trimmed)) {
+      detailLines.push(trimmed);
+      continue;
+    }
+
+    summaryLines.push(trimmed);
+  }
+
+  return { summaryLines, detailLines };
+}
+
+function genericSummaryFromFacts(facts: WriterFacts): string {
+  const timeframe = timeframeLabel(facts.timeframe, facts.language);
+  const combinedScenario =
+    facts.scenario === "child_report" ||
+    facts.scenario === "class_report" ||
+    facts.scenario === "child_trend";
+  const attendanceScenario =
+    facts.scenario === "child_attendance" ||
+    facts.scenario === "class_attendance" ||
+    facts.scenario === "child_attendance_comparison";
+  const feedingScenario =
+    facts.scenario === "child_feeding" || facts.scenario === "class_feeding";
+
+  if (facts.language === "tl") {
+    if (combinedScenario) {
+      if (facts.riskLevel === "HIGH") {
+        return `Kailangan ng mas agarang pagtingin sa attendance at feeding ${timeframe}.`;
+      }
+      if (facts.riskLevel === "MEDIUM") {
+        return `May mga bahagi sa attendance at feeding na dapat bantayan ${timeframe}.`;
+      }
+      return `Mukhang stable ang attendance at feeding ${timeframe}.`;
+    }
+
+    if (attendanceScenario) {
+      if (facts.riskLevel === "HIGH") {
+        return `Kailangan ng agarang follow-up sa attendance ${timeframe}.`;
+      }
+      if (facts.riskLevel === "MEDIUM") {
+        return `Dapat bantayan nang mas malapitan ang attendance ${timeframe}.`;
+      }
+      return `Mukhang stable ang attendance ${timeframe}.`;
+    }
+
+    if (facts.riskLevel === "HIGH") {
+      return `Kailangan ng agarang atensyon sa feeding consistency ${timeframe}.`;
+    }
+    if (facts.riskLevel === "MEDIUM") {
+      return `Dapat bantayan nang mas malapitan ang feeding consistency ${timeframe}.`;
+    }
+    return `Mukhang stable ang feeding consistency ${timeframe}.`;
+  }
+
+  if (combinedScenario) {
+    if (facts.riskLevel === "HIGH") {
+      return `Attendance and feeding need prompt review ${timeframe}.`;
+    }
+    if (facts.riskLevel === "MEDIUM") {
+      return `Attendance and feeding should be monitored more closely ${timeframe}.`;
+    }
+    return `Attendance and feeding look stable ${timeframe}.`;
+  }
+
+  if (attendanceScenario) {
+    if (facts.riskLevel === "HIGH") {
+      return `Attendance needs prompt follow-up ${timeframe}.`;
+    }
+    if (facts.riskLevel === "MEDIUM") {
+      return `Attendance should be monitored more closely ${timeframe}.`;
+    }
+    return `Attendance looks stable ${timeframe}.`;
+  }
+
+  if (facts.riskLevel === "HIGH") {
+    return `Feeding consistency needs prompt attention ${timeframe}.`;
+  }
+  if (facts.riskLevel === "MEDIUM") {
+    return `Feeding consistency should be monitored more closely ${timeframe}.`;
+  }
+  return `Feeding consistency looks stable ${timeframe}.`;
+}
+
+function detailScopeForNarrative(facts: WriterFacts): string {
+  const timeframe = timeframeLabel(facts.timeframe, facts.language);
+  const isParent = facts.role === "parent";
+
+  if (facts.language === "tl") {
+    if (facts.timeframe === "recent") {
+      return isParent
+        ? " mula sa recent records ng anak mo"
+        : " mula sa recent records";
+    }
+    return isParent ? ` para sa anak mo ${timeframe}` : ` para sa ${timeframe}`;
+  }
+
+  if (facts.timeframe === "recent") {
+    return isParent
+      ? " from your child's recent records"
+      : " from the recent records";
+  }
+
+  return isParent ? ` for your child ${timeframe}` : ` for ${timeframe}`;
+}
+
 function buildFollowUp(
   policy: WriterDisplayPolicy,
   facts: WriterFacts,
 ): string | undefined {
   if (!policy.includeFollowUp) return undefined;
   const labels = labelsForLanguage(facts.language);
+  const detailScope = detailScopeForNarrative(facts);
+
   if (facts.language === "tl") {
-    return policy.responseTemplate === "alert"
-      ? `${labels.followUpLabel}: Gusto mo bang gumawa tayo ng agarang action plan para dito?`
-      : `${labels.followUpLabel}: Gusto mo bang magpatuloy sa mas detalyadong review?`;
+    if (
+      facts.scenario === "child_attendance" ||
+      facts.scenario === "class_attendance" ||
+      facts.scenario === "child_attendance_comparison"
+    ) {
+      return `${labels.followUpLabel}: Gusto mo bang makita ang date-by-date attendance details${detailScope}?`;
+    }
+
+    if (
+      facts.scenario === "child_feeding" ||
+      facts.scenario === "class_feeding"
+    ) {
+      return `${labels.followUpLabel}: Gusto mo bang makita ang feeding details${detailScope}?`;
+    }
+
+    return `${labels.followUpLabel}: Gusto mo bang makita ang attendance details, feeding details, o pareho${detailScope}?`;
   }
-  return policy.responseTemplate === "alert"
-    ? `${labels.followUpLabel}: Would you like to set an immediate action plan for this?`
-    : `${labels.followUpLabel}: Would you like to continue with a more detailed review?`;
+
+  if (
+    facts.scenario === "child_attendance" ||
+    facts.scenario === "class_attendance" ||
+    facts.scenario === "child_attendance_comparison"
+  ) {
+    return `${labels.followUpLabel}: Would you like date-by-date attendance details${detailScope}?`;
+  }
+
+  if (
+    facts.scenario === "child_feeding" ||
+    facts.scenario === "class_feeding"
+  ) {
+    return `${labels.followUpLabel}: Would you like feeding details${detailScope}?`;
+  }
+
+  return `${labels.followUpLabel}: Would you like attendance details, feeding details, or both${detailScope}?`;
 }
 
 function ensureActions(
@@ -346,19 +605,73 @@ function ensureActions(
 }
 
 function buildAnalysisFromFacts(facts: WriterFacts): string {
-  const subject =
-    childReference(facts) ??
-    (facts.language === "tl" ? "ang bata" : "the child");
-  const timeframe = timeframeLabel(facts.timeframe, facts.language);
-  const observation = safeJoinLines(facts.observationLines).trim();
+  const { summaryLines } = splitObservationLines(facts);
+  const summaryText =
+    summaryLines.join(" ").trim() || genericSummaryFromFacts(facts);
+  return ensureSentenceStartsUppercase(sanitizeAnalysis(summaryText));
+}
 
-  const intro =
-    facts.language === "tl"
-      ? `${subject} ${timeframe} ay may risk level na ${facts.riskLevel}.`
-      : `${subject} ${timeframe} has a ${facts.riskLevel} risk level.`;
+function truncateNamedListLine(params: {
+  line: string;
+  prefixes: string[];
+  maxItems: number;
+}): string {
+  const { line, prefixes, maxItems } = params;
+  const matchedPrefix = prefixes.find((prefix) => line.startsWith(prefix));
+  if (!matchedPrefix) return line;
 
-  const merged = [intro, observation].filter(Boolean).join(" ").trim();
-  return ensureSentenceStartsUppercase(sanitizeAnalysis(merged || intro));
+  const rawContent = line.slice(matchedPrefix.length).trim();
+  const suffix = rawContent.endsWith(".") ? "." : "";
+  const normalizedContent = rawContent.replace(/\.$/, "");
+  const items = normalizedContent
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  if (items.length <= maxItems) return line;
+
+  const shown = items.slice(0, maxItems).join(", ");
+  const remaining = items.length - maxItems;
+  return `${matchedPrefix} ${shown}, +${remaining} more${suffix}`;
+}
+
+function formatDetailLineForQuestion(
+  line: string,
+  policy: WriterDisplayPolicy,
+  language: AIResponseLanguage,
+): string {
+  if (policy.detailMode === "expanded") return line;
+
+  if (language === "tl") {
+    return truncateNamedListLine({
+      line: truncateNamedListLine({
+        line,
+        prefixes: ["Mga araw ng pagliban:"],
+        maxItems: 3,
+      }),
+      prefixes: ["Mga inihain na pagkain:"],
+      maxItems: 4,
+    });
+  }
+
+  return truncateNamedListLine({
+    line: truncateNamedListLine({
+      line,
+      prefixes: ["Absence dates:"],
+      maxItems: 3,
+    }),
+    prefixes: ["Meals served:"],
+    maxItems: 4,
+  });
+}
+
+function buildDetailLines(
+  facts: WriterFacts,
+  policy: WriterDisplayPolicy,
+): string[] {
+  return splitObservationLines(facts).detailLines.map((line) =>
+    formatDetailLineForQuestion(line, policy, facts.language),
+  );
 }
 
 function buildDeterministicNarrative(
@@ -369,6 +682,7 @@ function buildDeterministicNarrative(
   const headline = deterministicHeadline(facts);
   const metrics = safeJoinLines(facts.metricLines);
   const analysis = buildAnalysisFromFacts(facts);
+  const detailLines = buildDetailLines(facts, policy);
   const actions = ensureActions(
     facts.recommendationLines,
     facts.language,
@@ -383,7 +697,11 @@ function buildDeterministicNarrative(
     "",
     `${labels.riskLabel}: ${facts.riskLevel}`,
     "",
+    `${labels.summaryLabel}:`,
     analysis,
+    detailLines.length ? "" : undefined,
+    detailLines.length ? `${labels.keyDetailsLabel}:` : undefined,
+    ...detailLines.map((line) => `- ${line}`),
     actions.length ? "" : undefined,
     actions.length ? `${labels.suggestedActionsLabel}:` : undefined,
     ...actions.map((line) => `- ${line}`),
@@ -421,46 +739,62 @@ function validateWriterOutput(
 
 function renderWriterOutput(
   output: z.infer<typeof WriterOutputSchema>,
-  language: AIResponseLanguage,
+  facts: WriterFacts,
   policy: WriterDisplayPolicy,
 ): string {
-  const labels = labelsForLanguage(language);
-
-  // Enforce consistent suggested actions (min 1, max 3)
-  const suggestedActions = (output.suggestedActions ?? [])
-    .map((line) => sanitizeAction(line))
-    .filter(Boolean)
-    .slice(0, 3);
-
-  // Sanitize analysis for consistent length
+  const labels = labelsForLanguage(facts.language);
+  const headline = output.headline.trim() || deterministicHeadline(facts);
   const analysis = ensureSentenceStartsUppercase(
-    sanitizeAnalysis(output.analysis),
+    sanitizeAnalysis(output.analysis || buildAnalysisFromFacts(facts)),
   );
-  const followUp = sanitizeFollowUp(output.followUp ?? "");
+  const detailLines = buildDetailLines(facts, policy);
+  const suggestedActions = ensureActions(
+    facts.recommendationLines,
+    facts.language,
+    policy.includeSuggestedActions,
+  );
+  const followUp =
+    buildFollowUp(policy, facts) ||
+    (policy.includeFollowUp && sanitizeFollowUp(output.followUp ?? "")
+      ? `${labels.followUpLabel}: ${sanitizeFollowUp(output.followUp ?? "")}`
+      : undefined);
 
-  // BUILD RESPONSE WITH STRICT FORMATTING
   return [
-    output.headline.trim(),
+    headline,
     "",
-    safeJoinLines(output.metricLines.map((line) => line.trim())),
+    safeJoinLines(facts.metricLines.map((line) => line.trim())),
     "",
-    `${labels.riskLabel}: ${output.riskLevel}`,
+    `${labels.riskLabel}: ${facts.riskLevel}`,
     "",
+    `${labels.summaryLabel}:`,
     analysis,
-    policy.includeSuggestedActions && suggestedActions.length ? "" : undefined,
-    policy.includeSuggestedActions && suggestedActions.length
-      ? `${labels.suggestedActionsLabel}:`
-      : undefined,
-    ...(policy.includeSuggestedActions && suggestedActions.length
-      ? suggestedActions.map((line) => `- ${line}`)
-      : []),
-    policy.includeFollowUp && followUp ? "" : undefined,
-    policy.includeFollowUp && followUp
-      ? `${labels.followUpLabel}: ${followUp}`
-      : undefined,
+    detailLines.length ? "" : undefined,
+    detailLines.length ? `${labels.keyDetailsLabel}:` : undefined,
+    ...detailLines.map((line) => `- ${line}`),
+    suggestedActions.length ? "" : undefined,
+    suggestedActions.length ? `${labels.suggestedActionsLabel}:` : undefined,
+    ...suggestedActions.map((line) => `- ${line}`),
+    followUp ? "" : undefined,
+    followUp,
   ]
     .filter((line): line is string => Boolean(line))
     .join("\n");
+}
+
+export function buildDeterministicNarrativeForFacts(params: {
+  question: string;
+  facts: WriterFacts;
+  suppressFollowUp?: boolean;
+  hasRecentFollowUp?: boolean;
+}): string {
+  const policy = buildWriterDisplayPolicy({
+    question: params.question,
+    facts: params.facts,
+    suppressFollowUp: params.suppressFollowUp,
+    hasRecentFollowUp: params.hasRecentFollowUp,
+  });
+
+  return buildDeterministicNarrative(params.facts, policy);
 }
 
 function buildWriterPrompt(params: {
@@ -601,6 +935,7 @@ export async function writeToolNarrative(params: {
   question: string;
   language: AIResponseLanguage;
   conversationId: string;
+  suppressFollowUp?: boolean;
 }): Promise<string> {
   const role = normalizeRole(params.role);
   const facts = await buildFacts({
@@ -611,6 +946,10 @@ export async function writeToolNarrative(params: {
   const displayPolicy = buildWriterDisplayPolicy({
     question: params.question,
     facts,
+    suppressFollowUp: params.suppressFollowUp,
+    hasRecentFollowUp: hasRecentAssistantFollowUp(
+      getHistory(params.conversationId),
+    ),
   });
 
   const deterministicReply = buildDeterministicNarrative(facts, displayPolicy);
@@ -636,11 +975,7 @@ export async function writeToolNarrative(params: {
         validateWriterOutput(validated, facts, displayPolicy) &&
         isGroundedNarrative({ output: validated, facts })
       ) {
-        finalReply = renderWriterOutput(
-          validated,
-          params.language,
-          displayPolicy,
-        );
+        finalReply = renderWriterOutput(validated, facts, displayPolicy);
       }
     } catch {
       finalReply = deterministicReply;

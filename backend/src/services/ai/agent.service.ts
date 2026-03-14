@@ -281,6 +281,7 @@ export async function tryHandleAgentQuery(params: {
   requesterId?: string;
   language?: AIResponseLanguage;
   conversationId?: string;
+  suppressFollowUp?: boolean;
 }): Promise<string | null> {
   const language = params.language ?? detectResponseLanguage(params.question);
   const normalizedRole = normalizeRole(params.role);
@@ -311,6 +312,7 @@ export async function tryHandleAgentQuery(params: {
         question: params.question,
         language,
         conversationId,
+        suppressFollowUp: params.suppressFollowUp,
       });
     }
 
@@ -322,6 +324,7 @@ export async function tryHandleAgentQuery(params: {
         question: params.question,
         language,
         conversationId,
+        suppressFollowUp: params.suppressFollowUp,
       });
     }
 
@@ -342,6 +345,7 @@ export async function tryHandleAgentQuery(params: {
       question: params.question,
       language,
       conversationId,
+      suppressFollowUp: params.suppressFollowUp,
     });
   }
 
@@ -363,6 +367,7 @@ export async function tryHandleAgentQuery(params: {
       question: params.question,
       language,
       conversationId,
+      suppressFollowUp: params.suppressFollowUp,
     });
   }
 
@@ -389,6 +394,7 @@ export async function tryHandleAgentQuery(params: {
       question: params.question,
       language,
       conversationId,
+      suppressFollowUp: params.suppressFollowUp,
     });
   }
 
@@ -406,5 +412,6 @@ export async function tryHandleAgentQuery(params: {
     question: params.question,
     language,
     conversationId,
+    suppressFollowUp: params.suppressFollowUp,
   });
 }
