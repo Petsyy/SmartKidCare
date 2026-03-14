@@ -1,5 +1,6 @@
 import express, { Application } from "express";
 import cors from "cors";
+import helmet from "helmet";
 // import morgan from "morgan";
 import rateLimit from "express-rate-limit";
 import cookieParser from "cookie-parser";
@@ -14,6 +15,12 @@ import notificationRoutes from "./routes/notification.routes";
 import documentsRoutes from "./routes/documents.routes";
 
 const app: Application = express();
+const isProduction = process.env.NODE_ENV === "production";
+
+const staticSecurityFiles = {
+  robots: "User-agent: *\nDisallow: /\n",
+  sitemap: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\"></urlset>\n",
+};
 
 const limiter = rateLimit({
   windowMs: 5 * 60 * 1000,
@@ -32,7 +39,36 @@ const limiter = rateLimit({
 const allowedOrigins = String(process.env.FRONTEND_URL || "")
   .split(",")
   .map((origin) => origin.trim())
-  .filter(Boolean);
+  .filter((origin) => Boolean(origin) && origin !== "*");
+
+const connectSrc = ["'self'", ...allowedOrigins];
+
+app.disable("x-powered-by");
+
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      useDefaults: false,
+      directives: {
+        defaultSrc: ["'none'"],
+        baseUri: ["'none'"],
+        connectSrc,
+        fontSrc: ["'none'"],
+        formAction: ["'none'"],
+        frameAncestors: ["'none'"],
+        imgSrc: ["'none'"],
+        objectSrc: ["'none'"],
+        scriptSrc: ["'none'"],
+        styleSrc: ["'none'"],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: false,
+    xContentTypeOptions: true,
+    hsts: isProduction,
+    referrerPolicy: { policy: "no-referrer" },
+  }),
+);
 
 app.use(cookieParser());
 app.use(
@@ -56,13 +92,25 @@ app.use(
 
 app.use(express.json());
 app.use((req, res, next) => {
-  if (req.body) {
+  if (req.body) { 
     mongoSanitize.sanitize(req.body);
   }
   if (req.params) {
     mongoSanitize.sanitize(req.params);
   }
   next();
+});
+
+app.get("/", (req, res) => {
+  res.json({ message: "SmartKidCare API running" });
+});
+
+app.get("/robots.txt", (_req, res) => {
+  res.type("text/plain; charset=utf-8").send(staticSecurityFiles.robots);
+});
+
+app.get("/sitemap.xml", (_req, res) => {
+  res.type("application/xml; charset=utf-8").send(staticSecurityFiles.sitemap);
 });
 
 app.use("/api/notifications", notificationRoutes);
@@ -74,5 +122,9 @@ app.use("/api/children", childRoutes);
 app.use("/api/records", recordsRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/documents", documentsRoutes);
+
+app.use((req, res) => {
+  res.status(404).json({ message: "Not found" });
+});
 
 export default app;

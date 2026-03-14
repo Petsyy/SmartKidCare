@@ -200,7 +200,9 @@ router.post("/send-test", authenticateToken, async (req, res) => {
     });
   } catch (error: any) {
     console.error("Send test push error:", error);
-    return res.status(500).json({ message: "Failed to send push notification" });
+    return res
+      .status(500)
+      .json({ message: "Failed to send push notification" });
   }
 });
 

@@ -18,8 +18,10 @@ import { useAuth } from "@/src/hooks/use-auth";
 import { sendAIChat } from "@/src/api/ai.api";
 import { getAttendanceHistory, getFeedingHistory } from "@/src/api/records.api";
 import {
+  extractAIBulletText,
   extractAIRiskLevel,
   getAIRiskBadgeStyle,
+  isAISectionLine,
   removeAIRiskLevelLine,
 } from "@/src/components/ai/ai-chat";
 
@@ -170,6 +172,24 @@ export default function ParentChatScreen() {
             return <View key={`spacer-${index}`} style={{ height: 8 }} />;
           }
 
+          const bulletText = extractAIBulletText(trimmed);
+          if (bulletText) {
+            return (
+              <View
+                key={`bullet-clean-${index}`}
+                className="flex-row items-start gap-2"
+              >
+                <View className="mt-[9px] h-1.5 w-1.5 rounded-full bg-gray-500" />
+                <Text
+                  className="flex-1 text-[15px] text-gray-800"
+                  style={{ lineHeight: 22 }}
+                >
+                  {bulletText}
+                </Text>
+              </View>
+            );
+          }
+
           const bulletMatch = trimmed.match(/^[-*•]\s+(.*)$/);
           if (bulletMatch?.[1]) {
             return (
@@ -187,7 +207,7 @@ export default function ParentChatScreen() {
             );
           }
 
-          const isSection = /^(Suggested Actions|Follow-up):/i.test(trimmed);
+          const isSection = isAISectionLine(trimmed);
           return (
             <Text
               key={`line-${index}`}

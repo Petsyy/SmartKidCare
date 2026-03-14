@@ -13,6 +13,7 @@ import {
   setAdminAuthCookie,
 } from "../../services/auth/adminLoginMfa.service";
 import { clearCsrfCookie, setCsrfCookie } from "../../lib/csrf";
+import { getExpiredCookieOptions } from "../../lib/cookies";
 
 const escapeRegex = (value: string) =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -291,11 +292,7 @@ export const getCsrf = async (req: Request, res: Response) => {
 };
 
 export const logout = async (_req: Request, res: Response) => {
-  res.clearCookie("authToken", {
-    httpOnly: true,
-    secure: false, // true in production
-    sameSite: "lax",
-  });
+  res.clearCookie("authToken", getExpiredCookieOptions(true));
   clearCsrfCookie(res);
 
   res.json({ message: "Logged out" });

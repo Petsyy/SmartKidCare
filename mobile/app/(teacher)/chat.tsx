@@ -18,10 +18,11 @@ import { useAuth } from "@/src/hooks/use-auth";
 import { sendAIChat } from "@/src/api/ai.api";
 import { getAttendanceHistory, getFeedingHistory } from "@/src/api/records.api";
 import {
+  extractAIBulletText,
   extractAIRiskLevel,
   getAIRiskBadgeStyle,
+  isAISectionLine,
   removeAIRiskLevelLine,
-  resolveTeacherFollowUpMessage,
 } from "@/src/components/ai/ai-chat";
 
 const SUGGESTIONS = [
@@ -115,7 +116,6 @@ export default function TeacherChatScreen() {
   const sendMessage = useCallback(async () => {
     const text = input.trim();
     if (!text || !token || loading || !childId) return;
-    const resolvedMessage = resolveTeacherFollowUpMessage(text, messages);
 
     setInput("");
     const userMsg: Message = {
@@ -135,7 +135,7 @@ export default function TeacherChatScreen() {
     try {
       const reply = await sendAIChat(token, {
         role: "teacher",
-        message: resolvedMessage,
+        message: text,
         childId,
       });
 
@@ -157,7 +157,7 @@ export default function TeacherChatScreen() {
     } finally {
       setLoading(false);
     }
-  }, [input, loading, token, childId, messages]);
+  }, [input, loading, token, childId]);
 
   const onSuggestionPress = (text: string) => {
     setInput(text);
@@ -172,6 +172,24 @@ export default function TeacherChatScreen() {
           const trimmed = line.trim();
           if (!trimmed) {
             return <View key={`spacer-${index}`} style={{ height: 8 }} />;
+          }
+
+          const bulletText = extractAIBulletText(trimmed);
+          if (bulletText) {
+            return (
+              <View
+                key={`bullet-clean-${index}`}
+                className="flex-row items-start gap-2"
+              >
+                <View className="mt-[9px] h-1.5 w-1.5 rounded-full bg-gray-500" />
+                <Text
+                  className="flex-1 text-[15px] text-gray-800"
+                  style={{ lineHeight: 22 }}
+                >
+                  {bulletText}
+                </Text>
+              </View>
+            );
           }
 
           const bulletMatch = trimmed.match(/^[-*•]\s+(.*)$/);
@@ -191,7 +209,7 @@ export default function TeacherChatScreen() {
             );
           }
 
-          const isSection = /^(Suggested Actions|Follow-up):/i.test(trimmed);
+          const isSection = isAISectionLine(trimmed);
           return (
             <Text
               key={`line-${index}`}

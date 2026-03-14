@@ -1,5 +1,6 @@
 import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 import { Response } from "express";
+import { getCsrfCookieOptions, getExpiredCookieOptions } from "./cookies";
 
 export const CSRF_COOKIE_NAME = "csrfToken";
 export const CSRF_HEADER_NAME = "x-csrf-token";
@@ -54,20 +55,11 @@ export const verifyCsrfToken = (
 export const setCsrfCookie = (res: Response, authToken: string): string => {
   const csrfToken = createCsrfToken(authToken);
 
-  res.cookie(CSRF_COOKIE_NAME, csrfToken, {
-    httpOnly: false,
-    secure: false, // true in production
-    sameSite: "lax",
-    maxAge: CSRF_TOKEN_MAX_AGE_MS,
-  });
+  res.cookie(CSRF_COOKIE_NAME, csrfToken, getCsrfCookieOptions(CSRF_TOKEN_MAX_AGE_MS));
 
   return csrfToken;
 };
 
 export const clearCsrfCookie = (res: Response) => {
-  res.clearCookie(CSRF_COOKIE_NAME, {
-    httpOnly: false,
-    secure: false, // true in production
-    sameSite: "lax",
-  });
+  res.clearCookie(CSRF_COOKIE_NAME, getExpiredCookieOptions(false));
 };

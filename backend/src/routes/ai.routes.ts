@@ -5,6 +5,7 @@ import { AIServiceError } from "../services/ai/gemini.service";
 import { shouldUseAIAgent, tryHandleAgentQuery } from "../services/ai/agent.service";
 import {
   buildConversationId,
+  getConversationHistory,
   writeConversationClosure,
 } from "../services/ai/aiWriter.service";
 import {
@@ -25,6 +26,244 @@ import {
 } from "../utils/aiInputSanitizer";
 
 const router = Router();
+const FOLLOW_UP_STATE_TTL_MS = 10 * 60 * 1000;
+
+type FollowUpChoice = "attendance" | "feeding" | "both";
+type PendingTimeframe = "today" | "week" | "last_week" | "month" | "recent";
+type PendingFollowUpKind = "detailed_review_confirmation" | "domain_selection";
+
+type PendingFollowUpState = {
+  kind: PendingFollowUpKind;
+  timeframe: PendingTimeframe;
+  domain: FollowUpChoice;
+  expiresAt: number;
+};
+
+const pendingFollowUpByConversation = new Map<string, PendingFollowUpState>();
+
+function setPendingFollowUp(
+  conversationId: string,
+  state: Omit<PendingFollowUpState, "expiresAt">,
+): void {
+  pendingFollowUpByConversation.set(conversationId, {
+    ...state,
+    expiresAt: Date.now() + FOLLOW_UP_STATE_TTL_MS,
+  });
+}
+
+function getPendingFollowUp(
+  conversationId: string,
+): PendingFollowUpState | undefined {
+  const state = pendingFollowUpByConversation.get(conversationId);
+  if (!state) return undefined;
+  if (Date.now() > state.expiresAt) {
+    pendingFollowUpByConversation.delete(conversationId);
+    return undefined;
+  }
+  return state;
+}
+
+function clearPendingFollowUp(conversationId: string): void {
+  pendingFollowUpByConversation.delete(conversationId);
+}
+
+function recoverPendingFollowUpFromHistory(
+  conversationId: string,
+): PendingFollowUpState | undefined {
+  const history = getConversationHistory(conversationId);
+  if (!history.length) return undefined;
+
+  const lastAssistantTurn = [...history]
+    .reverse()
+    .find((turn) => turn.role === "assistant" && turn.content.trim());
+  const lastUserTurn = [...history]
+    .reverse()
+    .find((turn) => turn.role === "user" && turn.content.trim());
+
+  if (!lastAssistantTurn || !lastUserTurn) return undefined;
+  if (!replyContainsNarrativeFollowUp(lastAssistantTurn.content)) return undefined;
+
+  return {
+    kind: "detailed_review_confirmation",
+    timeframe: inferPendingTimeframe(lastUserTurn.content),
+    domain: inferPendingDomain({
+      question: lastUserTurn.content,
+      reply: lastAssistantTurn.content,
+    }),
+    expiresAt: Date.now() + FOLLOW_UP_STATE_TTL_MS,
+  };
+}
+
+function inferFollowUpChoice(message: string): FollowUpChoice | null {
+  const lower = message.toLowerCase();
+  const hasAttendance = /\b(attendance|present|absent|pagdalo|pasok|pumasok|lumiban|pagliban)\b/.test(
+    lower,
+  );
+  const hasFeeding =
+    /\b(feeding|feed|food|meal|meals|eat|ate|eaten|pagkain|kain|kumain|kinain|ulam)\b/.test(
+      lower,
+    );
+  const asksBoth = /\b(both|pareho|lahat|all)\b/.test(lower);
+
+  if (asksBoth || (hasAttendance && hasFeeding)) return "both";
+  if (hasAttendance) return "attendance";
+  if (hasFeeding) return "feeding";
+  return null;
+}
+
+function inferPendingTimeframe(text: string): PendingTimeframe {
+  const lower = text.toLowerCase();
+  if (
+    lower.includes("last week") ||
+    lower.includes("previous week") ||
+    lower.includes("nakaraang linggo") ||
+    lower.includes("huling linggo")
+  ) {
+    return "last_week";
+  }
+  if (lower.includes("today") || lower.includes("ngayon")) return "today";
+  if (lower.includes("month") || lower.includes("buwan")) return "month";
+  if (lower.includes("week") || lower.includes("linggo")) return "week";
+  return "recent";
+}
+
+function inferPendingDomain(params: {
+  question: string;
+  reply: string;
+}): FollowUpChoice {
+  const combined = `${params.question}\n${params.reply}`.toLowerCase();
+  const hasAttendance = /\b(attendance|present|absent|pagdalo|pasok|pumasok|lumiban|pagliban)\b/.test(
+    combined,
+  );
+  const hasFeeding =
+    /\b(feeding|feed|food|meal|meals|eat|ate|eaten|pagkain|kain|kumain|kinain|ulam)\b/.test(
+      combined,
+    );
+
+  if (hasAttendance && hasFeeding) return "both";
+  if (hasFeeding) return "feeding";
+  return "attendance";
+}
+
+function timeframeLabelForPrompt(
+  timeframe: PendingTimeframe,
+  language: "en" | "tl",
+): string {
+  if (language === "tl") {
+    if (timeframe === "today") return "ngayong araw";
+    if (timeframe === "week") return "ngayong linggo";
+    if (timeframe === "last_week") return "nakaraang linggo";
+    if (timeframe === "month") return "ngayong buwan";
+    return "kamakailan";
+  }
+
+  if (timeframe === "today") return "today";
+  if (timeframe === "week") return "this week";
+  if (timeframe === "last_week") return "last week";
+  if (timeframe === "month") return "this month";
+  return "recently";
+}
+
+function buildPromptScope(params: {
+  role: string;
+  timeframe: PendingTimeframe;
+  language: "en" | "tl";
+  possessive?: boolean;
+}): string {
+  const isParent = String(params.role).toLowerCase() === "parent";
+  const subject =
+    params.language === "tl"
+      ? params.possessive
+        ? "ng anak mo"
+        : "sa anak mo"
+      : params.possessive
+        ? "your child's"
+        : "your child";
+
+  if (params.language === "tl") {
+    if (params.timeframe === "recent") {
+      return isParent
+        ? " mula sa recent records ng anak mo"
+        : " mula sa recent records";
+    }
+
+    const timeframeLabel = timeframeLabelForPrompt(
+      params.timeframe,
+      params.language,
+    );
+    return isParent ? ` ${subject} ${timeframeLabel}` : ` sa ${timeframeLabel}`;
+  }
+
+  if (params.timeframe === "recent") {
+    return isParent
+      ? " from your child's recent records"
+      : " from the recent records";
+  }
+
+  const timeframeLabel = timeframeLabelForPrompt(params.timeframe, params.language);
+  return isParent ? ` for ${subject} ${timeframeLabel}` : ` for ${timeframeLabel}`;
+}
+
+function buildDomainSelectionPrompt(params: {
+  role: string;
+  language: "en" | "tl";
+  timeframe: PendingTimeframe;
+}): string {
+  const scope = buildPromptScope({
+    role: params.role,
+    timeframe: params.timeframe,
+    language: params.language,
+  });
+
+  if (params.language === "tl") {
+    return `Sige. Attendance details, feeding details, o pareho${scope}?`;
+  }
+
+  return `Sure. Do you want attendance details, feeding details, or both${scope}?`;
+}
+
+function buildGenericDomainSelectionPrompt(params: {
+  role: string;
+  language: "en" | "tl";
+}): string {
+  const isParent = String(params.role).toLowerCase() === "parent";
+
+  if (params.language === "tl") {
+    return isParent
+      ? "Sige. Attendance details, feeding details, o pareho para sa anak mo?"
+      : "Sige. Attendance, feeding, o pareho ang gusto mong makita?";
+  }
+
+  return isParent
+    ? "Sure. Do you want attendance details, feeding details, or both for your child?"
+    : "Sure. Do you want attendance, feeding, or both?";
+}
+
+function buildScopedFollowUpQuestion(
+  role: string,
+  choice: FollowUpChoice,
+  timeframe: PendingTimeframe,
+): string {
+  const scope = buildPromptScope({
+    role,
+    timeframe,
+    language: "en",
+    possessive: false,
+  });
+
+  if (choice === "attendance") {
+    return `Show attendance details${scope}.`;
+  }
+  if (choice === "feeding") {
+    return `Show feeding details${scope}.`;
+  }
+
+  return `Show both attendance and feeding details${scope}.`;
+}
+
+function replyContainsNarrativeFollowUp(reply: string): boolean {
+  return /(?:^|\n)\s*follow[- ]?up\s*:/i.test(reply);
+}
 
 const aiChatRequestSchema = z.object({
   role: z.enum(["parent", "teacher", "admin"]).optional(),
@@ -95,20 +334,26 @@ router.post("/chat", authenticateToken, async (req, res) => {
       language,
     });
     const hasAgentIntent = shouldUseAIAgent(trimmedMessage);
+    const pendingFollowUp =
+      getPendingFollowUp(conversationId) ??
+      recoverPendingFollowUpFromHistory(conversationId);
 
     if (!hasAgentIntent && isGreeting(trimmedMessage)) {
+      clearPendingFollowUp(conversationId);
       return res.json({
         reply: buildGreetingReply(String(role), language),
       });
     }
 
     if (!hasAgentIntent && isAcknowledgement(trimmedMessage)) {
+      clearPendingFollowUp(conversationId);
       return res.json({
         reply: buildAcknowledgementReply(String(role), language),
       });
     }
 
     if (!hasAgentIntent && isConversationClosure(trimmedMessage)) {
+      clearPendingFollowUp(conversationId);
       const closureReply = await writeConversationClosure({
         role,
         language,
@@ -120,30 +365,57 @@ router.post("/chat", authenticateToken, async (req, res) => {
       });
     }
 
-    if (isAffirmative(trimmedMessage)) {
-      const followUpQuestion =
-        String(role).toLowerCase() === "parent"
-          ? "Show both attendance and feeding details for my child this week."
-          : "Show both attendance and feeding details this week.";
+    if (pendingFollowUp && !hasAgentIntent) {
+      const selectedChoice = isAffirmative(trimmedMessage)
+        ? pendingFollowUp.domain
+        : inferFollowUpChoice(trimmedMessage);
 
-      const affirmativeReply = await tryHandleAgentQuery({
-        role,
-        question: followUpQuestion,
-        childId,
-        requesterId,
-        language,
-        conversationId,
-      });
+      if (selectedChoice) {
+        clearPendingFollowUp(conversationId);
+        const followUpQuestion = buildScopedFollowUpQuestion(
+          role,
+          selectedChoice,
+          pendingFollowUp.timeframe,
+        );
 
-      if (affirmativeReply) {
-        return res.json({ reply: affirmativeReply });
+        const followUpReply = await tryHandleAgentQuery({
+          role,
+          question: followUpQuestion,
+          childId,
+          requesterId,
+          language,
+          conversationId,
+          suppressFollowUp: true,
+        });
+
+        if (followUpReply) {
+          return res.json({ reply: followUpReply });
+        }
       }
 
+      if (trimmedMessage.trim().length <= 30) {
+        return res.json({
+          reply: buildDomainSelectionPrompt({
+            role: String(role),
+            language,
+            timeframe: pendingFollowUp.timeframe,
+          }),
+        });
+      }
+    }
+
+    if (isAffirmative(trimmedMessage)) {
+      setPendingFollowUp(conversationId, {
+        kind: "domain_selection",
+        timeframe: "recent",
+        domain: "both",
+      });
+
       return res.json({
-        reply:
-          language === "tl"
-            ? "Pakitanong ang attendance, feeding, o pareho para maibuod ko ang records."
-            : "Please ask for attendance, feeding, or both so I can summarize the records.",
+        reply: buildGenericDomainSelectionPrompt({
+          role: String(role),
+          language,
+        }),
       });
     }
 
@@ -160,6 +432,20 @@ router.post("/chat", authenticateToken, async (req, res) => {
       if (accuracyMatch?.[1]) {
         console.log(`${accuracyMatch[1]}%`);
       }
+
+      if (replyContainsNarrativeFollowUp(agentReply)) {
+        setPendingFollowUp(conversationId, {
+          kind: "detailed_review_confirmation",
+          timeframe: inferPendingTimeframe(trimmedMessage),
+          domain: inferPendingDomain({
+            question: trimmedMessage,
+            reply: agentReply,
+          }),
+        });
+      } else {
+        clearPendingFollowUp(conversationId);
+      }
+
       return res.json({ reply: agentReply });
     }
 

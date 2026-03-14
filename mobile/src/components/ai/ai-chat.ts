@@ -16,6 +16,9 @@ export type AIRiskBadgeStyle = {
 const RISK_LEVEL_LINE_REGEX = /^\s*Risk Level\s*:\s*(LOW|MEDIUM|HIGH)\s*$/im;
 const RISK_LEVEL_LINE_REMOVE_REGEX =
   /^\s*Risk Level\s*:\s*(LOW|MEDIUM|HIGH)\s*$/gim;
+const AI_SECTION_LINE_REGEX =
+  /^(Summary|Key Details|Suggested Actions|Follow-up|Buod|Mahahalagang Detalye|Mga Mungkahing Hakbang)\s*:/i;
+const AI_BULLET_LINE_REGEX = /^[-*]\s+(.*)$/;
 
 const RISK_BADGE_STYLES: Record<AIRiskLevel, AIRiskBadgeStyle> = {
   LOW: {
@@ -58,6 +61,15 @@ export function removeAIRiskLevelLine(text: string): string {
 
 export function getAIRiskBadgeStyle(level: AIRiskLevel): AIRiskBadgeStyle {
   return RISK_BADGE_STYLES[level];
+}
+
+export function isAISectionLine(text: string): boolean {
+  return AI_SECTION_LINE_REGEX.test(text.trim());
+}
+
+export function extractAIBulletText(text: string): string | null {
+  const match = text.trim().match(AI_BULLET_LINE_REGEX);
+  return match?.[1]?.trim() ?? null;
 }
 
 export function formatDateLabel(value: unknown): string {
@@ -161,55 +173,6 @@ export function summarizeFeedingStatuses(records: any[]): {
     completed,
     missed,
   };
-}
-
-export function resolveTeacherFollowUpMessage(
-  text: string,
-  messages: ChatMessageLike[],
-): string {
-  const normalized = text.trim().toLowerCase();
-  const affirmatives = [
-    "yes",
-    "y",
-    "yeah",
-    "yep",
-    "sure",
-    "ok",
-    "okay",
-    "please",
-  ];
-  if (!affirmatives.includes(normalized)) return text;
-
-  const lastAssistantMessage =
-    [...messages]
-      .reverse()
-      .find((m) => m.role === "assistant" && m.content.trim())
-      ?.content.toLowerCase() ?? "";
-
-  if (lastAssistantMessage.includes("attendance for other dates")) {
-    return "Show attendance for other dates.";
-  }
-  if (lastAssistantMessage.includes("feeding for other dates")) {
-    return "Show feeding records for other dates.";
-  }
-  if (lastAssistantMessage.includes("submit new attendance")) {
-    return "How do I submit new attendance records?";
-  }
-  if (lastAssistantMessage.includes("submit new feeding")) {
-    return "How do I submit new feeding records?";
-  }
-
-  const mentionsAttendance = lastAssistantMessage.includes("attendance");
-  const mentionsFeeding = lastAssistantMessage.includes("feeding");
-
-  if (mentionsAttendance && !mentionsFeeding) {
-    return "Show more attendance details for recent dates.";
-  }
-  if (mentionsFeeding && !mentionsAttendance) {
-    return "Show more feeding details for recent dates.";
-  }
-
-  return "Show more attendance details for recent dates.";
 }
 
 export function formatAttendanceChildren(records: any[]): string {
