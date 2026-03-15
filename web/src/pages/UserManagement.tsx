@@ -147,6 +147,10 @@ export default function UserManagement() {
       enrollmentDate: string;
       schoolYear: string;
     },
+    files: {
+      birthCertificate: File;
+      parentId: File;
+    },
   ) => {
     try {
       const p = data.parent;
@@ -166,7 +170,10 @@ export default function UserManagement() {
           parentMiddleName: p.middleName || undefined,
           parentEmail: p.email,
         },
-        {},
+        {
+          birthCertificate: files.birthCertificate,
+          parentId: files.parentId,
+        },
       );
       setShowAddChildModal(false);
       setSelectedParentForChild(null);

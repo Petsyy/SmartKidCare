@@ -146,12 +146,20 @@ export default function ParentDashboard() {
   const childAge = child?.age ?? "-";
   const childGender = child?.gender ? child.gender : "-";
   const enrolledText = child?.enrollmentDate
-    ? new Intl.DateTimeFormat("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-        timeZone: "Asia/Manila",
-      }).format(new Date(child.enrollmentDate))
+    ? (() => {
+        const parts = new Intl.DateTimeFormat("en-US", {
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+          timeZone: "Asia/Manila",
+        }).formatToParts(new Date(child.enrollmentDate));
+
+        const month = parts.find((part) => part.type === "month")?.value ?? "";
+        const day = parts.find((part) => part.type === "day")?.value ?? "";
+        const year = parts.find((part) => part.type === "year")?.value ?? "";
+
+        return `${month}, ${day} ${year}`.trim();
+      })()
     : "-";
 
   // Calculate statistics for the selected child
