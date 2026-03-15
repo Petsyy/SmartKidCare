@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
-import { askGemini } from "../../services/ai/gemini.service";
 import { logAIInteraction } from "../../services/ai/datasetLogging.service";
+import { tryHandleAgentQuery } from "../../services/ai/agent.service";
+import { detectResponseLanguage } from "../../services/ai/language.service";
+import { inputIsGibberish } from "../../utils/aiInputSanitizer";
 import { AIChatRequest } from "../../types/ai.types";
 
 function isGreeting(message: string) {
@@ -15,6 +17,13 @@ export async function aiChatController(req: Request, res: Response) {
     if (!role || !message) {
       return res.status(400).json({
         message: "Invalid AI chat request",
+      });
+    }
+
+    if (inputIsGibberish(message)) {
+      return res.status(400).json({
+        message:
+          "I couldn't understand that. Please ask a clear question about attendance or feeding.",
       });
     }
 
@@ -42,32 +51,18 @@ export async function aiChatController(req: Request, res: Response) {
       });
     }
 
-    const prompt = `
-You are an AI assistant inside a child monitoring system.
+    const language = detectResponseLanguage(message);
+    const reply = await tryHandleAgentQuery({
+      role,
+      question: message,
+      childId: child.id,
+      requesterId: String(req.user?.id ?? ""),
+      language,
+    });
 
-STRICT RULES:
-- Answer ONLY using the provided record.
-- Do NOT guess.
-- Do NOT summarize unrelated data.
-- Keep answer short and clear.
-- IMPORTANT: When responding to parents, refer to the child as "your child" instead of using the child's name. For teachers/admins, use the actual child name.
-
-User Role: ${role}
-
-Child:
-- Name: ${child.name}
-- ID: ${child.id}
-
-Record:
-- Date: ${record.date}
-- Attendance: ${record.attendanceStatus || "Not recorded"}
-- Feeding: ${record.feedingStatus || "Not recorded"}
-- Verified: ${record.verified}
-
-User Question:
-${message}
-`;
-    const reply = await askGemini(prompt);
+    if (reply) {
+      return res.status(200).json({ reply });
+    }
 
     // Prepare context for logging
     const interactionContext = {
@@ -78,10 +73,13 @@ ${message}
       verified: record.verified,
     };
 
-    // Log the interaction to both datasets
-    await logAIInteraction(message, interactionContext, reply);
+    const fallbackReply =
+      "I couldn't process that request through the attendance/feeding agent. Please ask a clear question about attendance or feeding for this child.";
 
-    return res.status(200).json({ reply });
+    // Log the fallback interaction to keep the legacy controller consistent.
+    await logAIInteraction(message, interactionContext, fallbackReply);
+
+    return res.status(200).json({ reply: fallbackReply });
   } catch (error) {
     console.error("AI Chat Error:", error);
     return res.status(500).json({

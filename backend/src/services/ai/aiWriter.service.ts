@@ -14,6 +14,7 @@ import {
 export type {
   AttendanceComparisonResult,
   ClassReportResult,
+  FeedingComparisonResult,
 } from "./writer/types";
 
 type MemoryRole = "user" | "assistant";
@@ -39,9 +40,11 @@ const WriterOutputSchema = z.object({
 });
 
 type WriterDisplayPolicy = {
+  mode: "direct" | "structured";
   responseTemplate: WriterResponseTemplate;
   includeSuggestedActions: boolean;
   includeFollowUp: boolean;
+  includeRiskLevel: boolean;
   detailMode: "compact" | "expanded";
 };
 
@@ -51,7 +54,8 @@ function ragasCategoryFromScenario(scenario: WriterFacts["scenario"]): string {
   }
   if (
     scenario === "child_trend" ||
-    scenario === "child_attendance_comparison"
+    scenario === "child_attendance_comparison" ||
+    scenario === "child_feeding_comparison"
   ) {
     return "trend_analysis";
   }
@@ -202,6 +206,209 @@ function sanitizeFollowUp(text: string): string {
     .slice(0, 200);
 }
 
+type DirectQuestionKind =
+  | "attendance_presence"
+  | "attendance_absence_count"
+  | "attendance_absence_dates"
+  | "attendance_rate"
+  | "attendance_comparison"
+  | "feeding_meals"
+  | "feeding_missed"
+  | "feeding_rate"
+  | "feeding_comparison"
+  | "risk_level"
+  | "recommendations"
+  | "trend_snapshot"
+  | "detail_lookup"
+  | null;
+
+function normalizedQuestion(question: string): string {
+  return question.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function isBroadSummaryIntent(question: string): boolean {
+  const lower = normalizedQuestion(question);
+  return /\b(summary|summarize|overall|status|report|update|overview|risk|why|recommend|recommendation|suggest|advice|next step|tips?|strategy|plan|trend|how is|how are|kamusta|kumusta|kalagayan)\b/.test(
+    lower,
+  );
+}
+
+function inferDirectQuestionKind(
+  question: string,
+  facts: WriterFacts,
+): DirectQuestionKind {
+  const lower = normalizedQuestion(question);
+  const isAttendanceScenario =
+    facts.scenario === "child_attendance" ||
+    facts.scenario === "class_attendance";
+  const isFeedingScenario =
+    facts.scenario === "child_feeding" || facts.scenario === "class_feeding";
+
+  if (
+    facts.scenario === "child_attendance_comparison" &&
+    /\b(improv\w*|compar\w*|versus|vs)\b/.test(lower)
+  ) {
+    return "attendance_comparison";
+  }
+
+  if (
+    facts.scenario === "child_feeding_comparison" &&
+    /\b(improv\w*|compar\w*|versus|vs)\b/.test(lower)
+  ) {
+    return "feeding_comparison";
+  }
+
+  if (
+    facts.scenario === "child_trend" &&
+    /\b(trend|last 30 days|30 days|history)\b/.test(lower)
+  ) {
+    return "trend_snapshot";
+  }
+
+  if (
+    /\b(risk|risk level|high risk|medium risk|low risk)\b/.test(lower) &&
+    (facts.scenario === "child_report" ||
+      facts.scenario === "class_report" ||
+      facts.scenario === "child_trend")
+  ) {
+    return "risk_level";
+  }
+
+  if (
+    /\b(recommend|recommendation|suggest|advice|actions?|what should|next step|tips?|improve|strategy|plan)\b/.test(
+      lower,
+    )
+  ) {
+    return "recommendations";
+  }
+
+  if (isBroadSummaryIntent(lower)) return null;
+
+  if (
+    isAttendanceScenario &&
+    /\b(was|is)\b/.test(lower) &&
+    /\b(present|here|pumasok|pasok)\b/.test(lower)
+  ) {
+    return "attendance_presence";
+  }
+
+  if (
+    isAttendanceScenario &&
+    (/\bhow many\b/.test(lower) || /\bcount|number|total|ilan\b/.test(lower)) &&
+    /\b(absences?|absent|lumiban|pagliban)\b/.test(lower)
+  ) {
+    return "attendance_absence_count";
+  }
+
+  if (
+    isAttendanceScenario &&
+    (/\bwhich dates?\b/.test(lower) ||
+      /\bon which dates?\b/.test(lower) ||
+      /\bwhat dates?\b/.test(lower) ||
+      /\bwhen\b/.test(lower)) &&
+    /\b(absent|absence|absences|lumiban|pagliban)\b/.test(lower)
+  ) {
+    return "attendance_absence_dates";
+  }
+
+  if (
+    isAttendanceScenario &&
+    /\b(rate|percentage|percent)\b/.test(lower) &&
+    /\b(attendance|present|absence)\b/.test(lower)
+  ) {
+    return "attendance_rate";
+  }
+
+  if (
+    isFeedingScenario &&
+    (/\bwhat\b/.test(lower) ||
+      /\bwhich\b/.test(lower) ||
+      /\b(show|list)\b/.test(lower)) &&
+    /\b(meals?|food|eat|ate|served|kinain|pagkain|ulam)\b/.test(lower)
+  ) {
+    return "feeding_meals";
+  }
+
+  if (
+    isFeedingScenario &&
+    (/\bmissed\b/.test(lower) ||
+      /\bskip|skipped\b/.test(lower) ||
+      lower.includes("didn't eat") ||
+      lower.includes("did not eat") ||
+      /\bhindi kumain|di kumain\b/.test(lower))
+  ) {
+    return "feeding_missed";
+  }
+
+  if (
+    isFeedingScenario &&
+    /\b(rate|percentage|percent|completion rate)\b/.test(lower) &&
+    /\b(feed|feeding|meal|meals)\b/.test(lower)
+  ) {
+    return "feeding_rate";
+  }
+
+  if (
+    (isAttendanceScenario || isFeedingScenario) &&
+    (/\b(show|list|give me|tell me)\b/.test(lower) ||
+      /\bdetail|details|specific|exact\b/.test(lower))
+  ) {
+    return "detail_lookup";
+  }
+
+  return null;
+}
+
+function shouldUseDirectAnswer(
+  question: string,
+  facts: WriterFacts,
+): boolean {
+  return inferDirectQuestionKind(question, facts) !== null;
+}
+
+function parseMetricFraction(
+  line: string,
+): { numerator: number; denominator: number; rate: number | null } | null {
+  const match = line.match(/(\d+(?:\.\d+)?)\/(\d+(?:\.\d+)?)\D+\((\d+(?:\.\d+)?)%\)/);
+  if (!match) return null;
+
+  const numerator = Number(match[1]);
+  const denominator = Number(match[2]);
+  const rate = Number(match[3]);
+
+  if (!Number.isFinite(numerator) || !Number.isFinite(denominator)) return null;
+  return {
+    numerator,
+    denominator,
+    rate: Number.isFinite(rate) ? rate : null,
+  };
+}
+
+function parseMetricRate(line: string): number | null {
+  const match = line.match(/(\d+(?:\.\d+)?)%/);
+  if (!match) return null;
+  const value = Number(match[1]);
+  return Number.isFinite(value) ? value : null;
+}
+
+function firstMetricLine(
+  facts: WriterFacts,
+  prefixes: string[],
+): string | undefined {
+  return facts.metricLines.find((line) =>
+    prefixes.some((prefix) => line.startsWith(prefix)),
+  );
+}
+
+function firstDetailLine(
+  detailLines: string[],
+  prefixes: string[],
+): string | undefined {
+  return detailLines.find((line) =>
+    prefixes.some((prefix) => line.startsWith(prefix)),
+  );
+}
+
 function shouldIncludeGuidanceByIntent(question: string): boolean {
   const lower = question.toLowerCase();
   return /\b(recommend|recommendation|suggest|advice|what should|next step|tips?|improve|strategy|plan)\b/.test(
@@ -226,18 +433,21 @@ function shouldOfferFollowUpByIntent(
 
   if (asksSpecificDetail) return false;
 
+  const asksExplicitDeliverable =
+    /\b(summary|summarize|summarise|report|overview|risk|recommend|recommendation|suggest|advice|actions?|trend|compare|comparison)\b/.test(
+      lower,
+    );
+
+  if (asksExplicitDeliverable) return false;
+
   const asksBroadSummary =
-    /\b(summary|summarize|overall|status|report|update|overview|risk|how is|how are|kamusta|kumusta|kalagayan)\b/.test(
+    /\b(how is|how are|overall|status|update|kamusta|kumusta|kalagayan)\b/.test(
       lower,
     );
 
   if (asksBroadSummary) return true;
 
-  return (
-    facts.scenario === "child_report" ||
-    facts.scenario === "class_report" ||
-    facts.scenario === "child_trend"
-  );
+  return false;
 }
 
 function shouldExpandDetailsByIntent(question: string): boolean {
@@ -265,6 +475,7 @@ function buildWriterDisplayPolicy(params: {
     suppressFollowUp = false,
     hasRecentFollowUp = false,
   } = params;
+  const mode = shouldUseDirectAnswer(question, facts) ? "direct" : "structured";
   const guidanceIntent = shouldIncludeGuidanceByIntent(question);
   const followUpIntent = shouldOfferFollowUpByIntent(question, facts);
   const detailMode = shouldExpandDetailsByIntent(question)
@@ -273,21 +484,24 @@ function buildWriterDisplayPolicy(params: {
   const responseTemplate: WriterResponseTemplate =
     facts.riskLevel === "HIGH"
       ? "alert"
-      : guidanceIntent || facts.riskLevel === "MEDIUM"
+      : guidanceIntent
         ? "advice"
         : "fact";
 
-  const includeSuggestedActions = responseTemplate !== "fact";
+  const includeSuggestedActions = mode === "structured" && guidanceIntent;
   const includeFollowUp =
-    includeSuggestedActions &&
+    mode === "structured" &&
     followUpIntent &&
+    !guidanceIntent &&
     !suppressFollowUp &&
     !hasRecentFollowUp;
 
   return {
+    mode,
     responseTemplate,
     includeSuggestedActions,
     includeFollowUp,
+    includeRiskLevel: mode === "structured",
     detailMode,
   };
 }
@@ -554,7 +768,8 @@ function buildFollowUp(
 
     if (
       facts.scenario === "child_feeding" ||
-      facts.scenario === "class_feeding"
+      facts.scenario === "class_feeding" ||
+      facts.scenario === "child_feeding_comparison"
     ) {
       return `${labels.followUpLabel}: Gusto mo bang makita ang feeding details${detailScope}?`;
     }
@@ -572,7 +787,8 @@ function buildFollowUp(
 
   if (
     facts.scenario === "child_feeding" ||
-    facts.scenario === "class_feeding"
+    facts.scenario === "class_feeding" ||
+    facts.scenario === "child_feeding_comparison"
   ) {
     return `${labels.followUpLabel}: Would you like feeding details${detailScope}?`;
   }
@@ -674,29 +890,424 @@ function buildDetailLines(
   );
 }
 
+function directSubject(facts: WriterFacts): string {
+  const reference = childReference(facts);
+  if (reference) return reference;
+  return facts.language === "tl" ? "ang bata" : "the child";
+}
+
+function sentenceSubject(facts: WriterFacts): string {
+  return ensureSentenceStartsUppercase(directSubject(facts));
+}
+
+function possessiveSubject(facts: WriterFacts): string {
+  const subject = directSubject(facts);
+  if (facts.language === "tl") return subject;
+  if (subject === "your child") return "Your child's";
+  return `${ensureSentenceStartsUppercase(subject)}'s`;
+}
+
+function recommendationFocus(facts: WriterFacts): string {
+  if (facts.language === "tl") {
+    if (
+      facts.scenario === "child_attendance" ||
+      facts.scenario === "class_attendance" ||
+      facts.scenario === "child_attendance_comparison"
+    ) {
+      return "attendance";
+    }
+    if (
+      facts.scenario === "child_feeding" ||
+      facts.scenario === "class_feeding" ||
+      facts.scenario === "child_feeding_comparison"
+    ) {
+      return "feeding";
+    }
+    return "attendance at feeding";
+  }
+
+  if (
+    facts.scenario === "child_attendance" ||
+    facts.scenario === "class_attendance" ||
+    facts.scenario === "child_attendance_comparison"
+  ) {
+    return "attendance";
+  }
+  if (
+    facts.scenario === "child_feeding" ||
+    facts.scenario === "class_feeding" ||
+    facts.scenario === "child_feeding_comparison"
+  ) {
+    return "feeding";
+  }
+  return "attendance and feeding";
+}
+
+function parseSignedRate(line: string): number | null {
+  const match = line.match(/([+-]?\d+(?:\.\d+)?)%/);
+  if (!match) return null;
+  const value = Number(match[1]);
+  return Number.isFinite(value) ? value : null;
+}
+
+function buildDirectAnswerNarrative(params: {
+  question: string;
+  facts: WriterFacts;
+  policy: WriterDisplayPolicy;
+}): string {
+  const { question, facts, policy } = params;
+  const kind = inferDirectQuestionKind(question, facts);
+  const timeframe = timeframeLabel(facts.timeframe, facts.language);
+  const subject = directSubject(facts);
+  const detailLines = buildDetailLines(facts, policy);
+  const attendanceLine = firstMetricLine(facts, ["Attendance"]);
+  const feedingLine = firstMetricLine(facts, ["Feeding Completion"]);
+  const changeLine = firstMetricLine(facts, ["Change:", "Pagbabago:"]);
+  const summaryLine = buildAnalysisFromFacts(facts);
+  const actions = ensureActions(facts.recommendationLines, facts.language, false);
+
+  if (
+    kind === "attendance_presence" ||
+    kind === "attendance_absence_count" ||
+    kind === "attendance_absence_dates" ||
+    kind === "attendance_rate" ||
+    kind === "detail_lookup"
+  ) {
+    const metricLine = attendanceLine;
+    const metric = metricLine ? parseMetricFraction(metricLine) : null;
+    const absences =
+      metric && Number.isFinite(metric.denominator - metric.numerator)
+        ? metric.denominator - metric.numerator
+        : null;
+    const absenceLine = firstDetailLine(detailLines, [
+      "Absence date:",
+      "Absence dates:",
+      "Pagliban:",
+      "Mga araw ng pagliban:",
+    ]);
+
+    if (facts.language === "tl") {
+      const noRecord = `Walang available na attendance record para sa ${subject} ${timeframe}.`;
+
+      if (kind === "attendance_presence") {
+        const lead =
+          !metric || metric.denominator === 0
+            ? noRecord
+            : metric.numerator > 0
+              ? `Oo, present ang ${subject} ${timeframe}.`
+              : `Hindi, absent ang ${subject} ${timeframe}.`;
+        return [lead, metricLine].filter(Boolean).join("\n");
+      }
+
+      if (kind === "attendance_absence_count") {
+        const lead =
+          absences === null
+            ? noRecord
+            : `May ${absences} absence ang ${subject} ${timeframe}.`;
+        return [lead, metricLine, absenceLine].filter(Boolean).join("\n");
+      }
+
+      if (kind === "attendance_absence_dates") {
+        const lead = absenceLine
+          ? `Ito ang recorded absence dates ng ${subject} ${timeframe}.`
+          : `Walang recorded absences ang ${subject} ${timeframe}.`;
+        return [lead, metricLine, absenceLine].filter(Boolean).join("\n");
+      }
+
+      const lead =
+        !metricLine || !metric
+          ? noRecord
+          : kind === "attendance_rate"
+            ? `Ang attendance rate ng ${subject} ${timeframe} ay ${metricLine.replace(/^Attendance:\s*/, "")}.`
+            : `Narito ang attendance details ng ${subject} ${timeframe}.`;
+      return [lead, metricLine, absenceLine].filter(Boolean).join("\n");
+    }
+
+    const noRecord = `There is no recorded attendance data for ${subject} ${timeframe}.`;
+
+    if (kind === "attendance_presence") {
+      const lead =
+        !metric || metric.denominator === 0
+          ? noRecord
+          : metric.numerator > 0
+            ? `Yes, ${subject} was present ${timeframe}.`
+            : `No, ${subject} was absent ${timeframe}.`;
+      return [lead, metricLine].filter(Boolean).join("\n");
+    }
+
+    if (kind === "attendance_absence_count") {
+      const lead =
+        absences === null
+          ? noRecord
+          : `${sentenceSubject(facts)} had ${absences} absence${absences === 1 ? "" : "s"} ${timeframe}.`;
+      return [lead, metricLine, absenceLine].filter(Boolean).join("\n");
+    }
+
+    if (kind === "attendance_absence_dates") {
+      const lead = absenceLine
+        ? `These are the recorded absence dates for ${subject} ${timeframe}.`
+        : `${sentenceSubject(facts)} had no recorded absences ${timeframe}.`;
+      return [lead, metricLine, absenceLine].filter(Boolean).join("\n");
+    }
+
+    const lead =
+      !metricLine || !metric
+        ? noRecord
+        : kind === "attendance_rate"
+          ? `${possessiveSubject(facts)} attendance rate ${timeframe} was ${metricLine.replace(/^Attendance:\s*/, "")}.`
+          : `Here are the attendance details for ${subject} ${timeframe}.`;
+    return [lead, metricLine, absenceLine].filter(Boolean).join("\n");
+  }
+
+  if (
+    kind === "feeding_meals" ||
+    kind === "feeding_missed" ||
+    kind === "feeding_rate"
+  ) {
+    const metricLine = feedingLine;
+    const metric = metricLine ? parseMetricFraction(metricLine) : null;
+    const missed =
+      metric && Number.isFinite(metric.denominator - metric.numerator)
+        ? metric.denominator - metric.numerator
+        : null;
+    const mealsLine = firstDetailLine(detailLines, [
+      "Meals served:",
+      "Mga inihain na pagkain:",
+    ]);
+
+    if (facts.language === "tl") {
+      const noRecord = `Walang available na feeding record para sa ${subject} ${timeframe}.`;
+
+      if (kind === "feeding_meals") {
+        const lead = metric
+          ? missed === 0
+            ? `${subject} completed all ${metric.numerator}/${metric.denominator} recorded meals ${timeframe}.`
+            : `${subject} completed ${metric.numerator}/${metric.denominator} recorded meals ${timeframe}.`
+          : noRecord;
+        const limitation =
+          mealsLine && missed !== null && missed > 0
+            ? "Ipinapakita ng meal list kung ano ang inihain, pero hindi nito tinutukoy kung aling partikular na meal ang na-miss."
+            : undefined;
+        return [lead, metricLine, mealsLine, limitation].filter(Boolean).join("\n");
+      }
+
+      if (kind === "feeding_missed") {
+        const lead =
+          missed === null
+            ? noRecord
+            : missed === 0
+              ? `Walang recorded missed meals ang ${subject} ${timeframe}.`
+              : `May ${missed} missed meal${missed === 1 ? "" : "s"} ang ${subject} ${timeframe}.`;
+        return [lead, metricLine, mealsLine].filter(Boolean).join("\n");
+      }
+
+      const lead =
+        !metricLine || !metric
+          ? noRecord
+          : `Ang feeding completion rate ng ${subject} ${timeframe} ay ${metricLine.replace(/^Feeding Completion:\s*/, "")}.`;
+      return [lead, metricLine, mealsLine].filter(Boolean).join("\n");
+    }
+
+    const noRecord = `There is no recorded feeding data for ${subject} ${timeframe}.`;
+
+    if (kind === "feeding_meals") {
+      const lead = metric
+        ? missed === 0
+          ? `${sentenceSubject(facts)} completed all ${metric.numerator}/${metric.denominator} recorded meals ${timeframe}.`
+          : `${sentenceSubject(facts)} completed ${metric.numerator}/${metric.denominator} recorded meals ${timeframe}.`
+        : noRecord;
+      const limitation =
+        mealsLine && missed !== null && missed > 0
+          ? "The meal list shows what was served, but the records do not identify which specific meal was missed."
+          : undefined;
+      return [lead, metricLine, mealsLine, limitation].filter(Boolean).join("\n");
+    }
+
+    if (kind === "feeding_missed") {
+      const lead =
+        missed === null
+          ? noRecord
+          : missed === 0
+            ? `${sentenceSubject(facts)} did not miss any recorded meals ${timeframe}.`
+            : `${sentenceSubject(facts)} missed ${missed} meal${missed === 1 ? "" : "s"} ${timeframe}.`;
+      return [lead, metricLine, mealsLine].filter(Boolean).join("\n");
+    }
+
+    const lead =
+      !metricLine || !metric
+        ? noRecord
+        : `${possessiveSubject(facts)} feeding completion rate ${timeframe} was ${metricLine.replace(/^Feeding Completion:\s*/, "")}.`;
+    return [lead, metricLine, mealsLine].filter(Boolean).join("\n");
+  }
+
+  if (kind === "risk_level") {
+    if (facts.language === "tl") {
+      const lead = `Ang kasalukuyang risk level ng ${subject} ay ${facts.riskLevel}.`;
+      return [
+        lead,
+        ...facts.metricLines,
+        `Dahilan: ${summaryLine}`,
+        ...detailLines.slice(0, 2),
+      ]
+        .filter(Boolean)
+        .join("\n");
+    }
+
+    const lead = `${possessiveSubject(facts)} current risk level is ${facts.riskLevel}.`;
+    return [lead, ...facts.metricLines, `Reason: ${summaryLine}`, ...detailLines.slice(0, 2)]
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  if (kind === "recommendations") {
+    const actionLines = actions.map((line) => `- ${line}`);
+
+    if (facts.language === "tl") {
+      const lead = `Narito ang mga inirerekomendang hakbang para mapabuti ang ${recommendationFocus(
+        facts,
+      )} para kay ${subject}.`;
+      return [lead, ...actionLines, `Batayan: ${summaryLine}`, ...facts.metricLines]
+        .filter(Boolean)
+        .join("\n");
+    }
+
+    const lead = `Here are the recommended actions to improve ${recommendationFocus(
+      facts,
+    )} for ${subject}.`;
+    return [lead, ...actionLines, `Reason: ${summaryLine}`, ...facts.metricLines]
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  if (kind === "trend_snapshot") {
+    if (facts.language === "tl") {
+      const lead = `Narito ang maikling trend para kay ${subject} sa nakaraang 30 araw.`;
+      return [lead, ...facts.metricLines, ...detailLines].filter(Boolean).join("\n");
+    }
+
+    const lead = `Here is a short trend for ${subject} over the last 30 days.`;
+    return [lead, ...facts.metricLines, ...detailLines].filter(Boolean).join("\n");
+  }
+
+  if (kind === "attendance_comparison" || kind === "feeding_comparison") {
+    const comparisonLines = facts.metricLines;
+    const delta = changeLine ? parseSignedRate(changeLine) : null;
+
+    if (facts.language === "tl") {
+      const lead =
+        delta === null
+          ? `Narito ang comparison para kay ${subject} ${timeframe}.`
+          : delta > 0
+            ? `${kind === "attendance_comparison" ? "Mas bumuti" : "Mas bumuti"} ng ${delta}% ang ${kind === "attendance_comparison" ? "attendance" : "feeding"} kumpara sa nakaraang linggo.`
+            : delta < 0
+              ? `Bumaba ng ${Math.abs(delta)}% ang ${kind === "attendance_comparison" ? "attendance" : "feeding"} kumpara sa nakaraang linggo.`
+              : `Walang pagbabago sa ${kind === "attendance_comparison" ? "attendance" : "feeding"} kumpara sa nakaraang linggo.`;
+      const comparisonDetail =
+        kind === "feeding_comparison"
+          ? firstDetailLine(detailLines, [
+              "Meals served:",
+              "Mga inihain na pagkain:",
+            ])
+          : firstDetailLine(detailLines, [
+              "Absence date:",
+              "Absence dates:",
+              "Pagliban:",
+              "Mga araw ng pagliban:",
+            ]);
+      return [lead, ...comparisonLines, comparisonDetail]
+        .filter(Boolean)
+        .join("\n");
+    }
+
+    const metricName =
+      kind === "attendance_comparison" ? "Attendance" : "Feeding";
+    const lead =
+      delta === null
+        ? `Here is the ${metricName.toLowerCase()} comparison for ${subject} ${timeframe}.`
+        : delta > 0
+          ? `${metricName} improved by ${delta}% compared with last week.`
+          : delta < 0
+            ? `${metricName} declined by ${Math.abs(delta)}% compared with last week.`
+            : `${metricName} is unchanged compared with last week.`;
+    const comparisonDetail =
+      kind === "feeding_comparison"
+        ? firstDetailLine(detailLines, ["Meals served:", "Mga inihain na pagkain:"])
+        : firstDetailLine(detailLines, [
+            "Absence date:",
+            "Absence dates:",
+            "Pagliban:",
+            "Mga araw ng pagliban:",
+          ]);
+    return [lead, ...comparisonLines, comparisonDetail]
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  return [
+    deterministicHeadline(facts),
+    ...facts.metricLines,
+    ...detailLines,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+function buildEvaluationArtifacts(params: {
+  answer: string;
+  facts: WriterFacts;
+  policy: WriterDisplayPolicy;
+}): { contexts: string[]; groundTruth: string } {
+  const { answer, facts, policy } = params;
+  const detailLines = splitObservationLines(facts).detailLines.map((line) =>
+    line.trim(),
+  );
+  const actions = ensureActions(facts.recommendationLines, facts.language, false);
+  const followUp = buildFollowUp(policy, facts);
+  const contexts = [
+    facts.childName?.trim() ? `Child: ${facts.childName.trim()}` : undefined,
+    `Timeframe: ${facts.timeframe}`,
+    `Scenario: ${facts.scenario}`,
+    ...facts.metricLines,
+    `Risk Level: ${facts.riskLevel}`,
+    `Summary: ${buildAnalysisFromFacts(facts)}`,
+    ...detailLines.map((line) => `Key Detail: ${line}`),
+    ...actions.map((line) => `Suggested Action: ${line}`),
+    followUp ? `Follow-up Prompt: ${followUp}` : undefined,
+  ].filter((line): line is string => Boolean(line));
+
+  return {
+    contexts,
+    // Ground truth must be independently derived from facts, not copied from model output.
+    groundTruth: buildGroundTruthFromFacts(facts),
+  };
+}
+
 function buildDeterministicNarrative(
+  question: string,
   facts: WriterFacts,
   policy: WriterDisplayPolicy,
 ): string {
+  if (policy.mode === "direct") {
+    return buildDirectAnswerNarrative({ question, facts, policy });
+  }
+
   const labels = labelsForLanguage(facts.language);
   const headline = deterministicHeadline(facts);
   const metrics = safeJoinLines(facts.metricLines);
   const analysis = buildAnalysisFromFacts(facts);
   const detailLines = buildDetailLines(facts, policy);
-  const actions = ensureActions(
-    facts.recommendationLines,
-    facts.language,
-    policy.includeSuggestedActions,
-  );
+  const actions = policy.includeSuggestedActions
+    ? ensureActions(facts.recommendationLines, facts.language, true)
+    : [];
   const followUp = buildFollowUp(policy, facts);
 
   return [
     headline,
     "",
     metrics,
-    "",
-    `${labels.riskLabel}: ${facts.riskLevel}`,
-    "",
+    policy.includeRiskLevel ? "" : undefined,
+    policy.includeRiskLevel ? `${labels.riskLabel}: ${facts.riskLevel}` : undefined,
+    policy.includeRiskLevel ? "" : undefined,
     `${labels.summaryLabel}:`,
     analysis,
     detailLines.length ? "" : undefined,
@@ -748,11 +1359,9 @@ function renderWriterOutput(
     sanitizeAnalysis(output.analysis || buildAnalysisFromFacts(facts)),
   );
   const detailLines = buildDetailLines(facts, policy);
-  const suggestedActions = ensureActions(
-    facts.recommendationLines,
-    facts.language,
-    policy.includeSuggestedActions,
-  );
+  const suggestedActions = policy.includeSuggestedActions
+    ? ensureActions(facts.recommendationLines, facts.language, true)
+    : [];
   const followUp =
     buildFollowUp(policy, facts) ||
     (policy.includeFollowUp && sanitizeFollowUp(output.followUp ?? "")
@@ -763,9 +1372,9 @@ function renderWriterOutput(
     headline,
     "",
     safeJoinLines(facts.metricLines.map((line) => line.trim())),
-    "",
-    `${labels.riskLabel}: ${facts.riskLevel}`,
-    "",
+    policy.includeRiskLevel ? "" : undefined,
+    policy.includeRiskLevel ? `${labels.riskLabel}: ${facts.riskLevel}` : undefined,
+    policy.includeRiskLevel ? "" : undefined,
     `${labels.summaryLabel}:`,
     analysis,
     detailLines.length ? "" : undefined,
@@ -794,7 +1403,33 @@ export function buildDeterministicNarrativeForFacts(params: {
     hasRecentFollowUp: params.hasRecentFollowUp,
   });
 
-  return buildDeterministicNarrative(params.facts, policy);
+  return buildDeterministicNarrative(params.question, params.facts, policy);
+}
+
+export function buildEvaluationArtifactsForFacts(params: {
+  question: string;
+  facts: WriterFacts;
+  suppressFollowUp?: boolean;
+  hasRecentFollowUp?: boolean;
+}): { answer: string; contexts: string[]; groundTruth: string } {
+  const policy = buildWriterDisplayPolicy({
+    question: params.question,
+    facts: params.facts,
+    suppressFollowUp: params.suppressFollowUp,
+    hasRecentFollowUp: params.hasRecentFollowUp,
+  });
+  const answer = buildDeterministicNarrative(params.question, params.facts, policy);
+  const evaluation = buildEvaluationArtifacts({
+    answer,
+    facts: params.facts,
+    policy,
+  });
+
+  return {
+    answer,
+    contexts: evaluation.contexts,
+    groundTruth: evaluation.groundTruth,
+  };
 }
 
 function buildWriterPrompt(params: {
@@ -952,10 +1587,14 @@ export async function writeToolNarrative(params: {
     ),
   });
 
-  const deterministicReply = buildDeterministicNarrative(facts, displayPolicy);
+  const deterministicReply = buildDeterministicNarrative(
+    params.question,
+    facts,
+    displayPolicy,
+  );
   let finalReply = deterministicReply;
 
-  if (USE_LLM_WRITER) {
+  if (USE_LLM_WRITER && displayPolicy.mode === "structured") {
     const history = getHistory(params.conversationId);
     const prompt = buildWriterPrompt({
       facts,
@@ -984,12 +1623,18 @@ export async function writeToolNarrative(params: {
 
   // Log interaction to datasets
   const loggingContext = buildLoggingContext(facts, params.result);
+  const evaluationArtifacts = buildEvaluationArtifacts({
+    answer: finalReply,
+    facts,
+    policy: displayPolicy,
+  });
   await logAIInteraction(
     params.question,
     loggingContext,
     finalReply,
     ragasCategoryFromScenario(facts.scenario),
-    buildGroundTruthFromFacts(facts),
+    evaluationArtifacts.groundTruth,
+    evaluationArtifacts,
   );
 
   remember(params.conversationId, { role: "user", content: params.question });

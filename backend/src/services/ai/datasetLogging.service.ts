@@ -7,13 +7,21 @@ const AI_INTERACTIONS_FILE = path.join(
   DATA_DIR,
   "ai_interactions_dataset.json",
 );
-const RAG_EVALUATION_FILE = path.join(DATA_DIR, "rag_evaluation_dataset.json");
+const BENCHMARK_RAG_EVALUATION_FILE = path.join(
+  DATA_DIR,
+  "rag_evaluation_dataset.json",
+);
+const RUNTIME_RAG_EVALUATION_FILE = path.join(DATA_DIR, "rag_eval.json");
 
 interface AIInteraction {
   category: string;
   question: string;
   context: InteractionContext;
   answer: string;
+  ragEvaluation?: {
+    contexts: string[];
+    groundTruth: string;
+  };
   timestamp: string;
 }
 
@@ -34,6 +42,11 @@ interface InteractionContext {
   feedingCompletion?: string;
   date?: string;
   verified?: boolean;
+}
+
+interface RagEvaluationPayload {
+  contexts: string[];
+  groundTruth: string;
 }
 
 function normalizeText(value?: string): string {
@@ -114,7 +127,7 @@ function buildRagasContextArray(context: InteractionContext): string[] {
   }
 
   if (context.date && context.date.trim()) {
-    contexts.push(`Date: ${context.date.trim()}`);
+    contexts.push(`Timeframe: ${context.date.trim()}`);
   }
 
   // Determine attendance status
@@ -135,11 +148,11 @@ function buildRagasContextArray(context: InteractionContext): string[] {
     }
 
     contexts.push(`Attendance Status: ${attendanceStatus}`);
-    contexts.push(`Attendance Rate: ${attendance}`);
+    contexts.push(`Attendance Snapshot: ${attendance}`);
   }
 
   if (context.feedingCompletion && context.feedingCompletion.trim()) {
-    contexts.push(`Feeding Completion: ${context.feedingCompletion.trim()}`);
+    contexts.push(`Feeding Snapshot: ${context.feedingCompletion.trim()}`);
   }
 
   if (typeof context.verified === "boolean") {
@@ -152,20 +165,18 @@ function buildRagasContextArray(context: InteractionContext): string[] {
 }
 
 function buildGroundTruthFromContext(context: InteractionContext): string {
-  const childName = normalizeText(context.childName);
   const attendance = normalizeText(context.attendance);
   const feeding = normalizeText(context.feedingCompletion);
   const date = normalizeText(context.date);
 
   if (
-    childName === "Not recorded" &&
     attendance === "Not recorded" &&
     feeding === "Not recorded"
   ) {
     return "No sufficient child record is available for this query.";
   }
 
-  return `Child: ${childName}. Date: ${date}. Attendance: ${attendance}. Feeding Completion: ${feeding}.`;
+  return `Your child summary (${date}). Attendance: ${attendance}. Feeding Completion: ${feeding}.`;
 }
 
 /**
@@ -192,11 +203,17 @@ async function ensureFilesExist(): Promise<void> {
     await fs.writeFile(AI_INTERACTIONS_FILE, JSON.stringify([], null, 2));
   }
 
-  // Ensure rag_evaluation_dataset.json exists
   try {
-    await fs.access(RAG_EVALUATION_FILE);
+    await fs.access(RUNTIME_RAG_EVALUATION_FILE);
   } catch {
-    await fs.writeFile(RAG_EVALUATION_FILE, JSON.stringify([], null, 2));
+    await fs.writeFile(RUNTIME_RAG_EVALUATION_FILE, JSON.stringify([], null, 2));
+  }
+
+  // Benchmark dataset is managed separately by rebuild:rag-benchmark.
+  try {
+    await fs.access(BENCHMARK_RAG_EVALUATION_FILE);
+  } catch {
+    await fs.writeFile(BENCHMARK_RAG_EVALUATION_FILE, JSON.stringify([], null, 2));
   }
 }
 
@@ -224,6 +241,18 @@ async function writeDataFile<T>(filePath: string, data: T[]): Promise<void> {
   }
 }
 
+async function writeRuntimeRagEvaluationFile(
+  data: RAGEvaluation[],
+): Promise<void> {
+  await writeDataFile(RUNTIME_RAG_EVALUATION_FILE, data);
+}
+
+function hasMeaningfulRagContexts(contexts: string[]): boolean {
+  return contexts.some(
+    (line) => line.trim().length > 0 && line.trim() !== "No context available",
+  );
+}
+
 /**
  * Log AI interaction to both datasets
  */
@@ -233,11 +262,13 @@ export async function logAIInteraction(
   answer: string,
   category?: string,
   groundTruth?: string,
+  ragEvaluation?: RagEvaluationPayload,
 ): Promise<void> {
   try {
     await ensureFilesExist();
 
     const timestamp = new Date().toISOString();
+    const normalizedAnswer = answer.trim();
     // Auto-detect category if not provided
     const detectedCategory = category || detectCategory(question, context);
 
@@ -249,27 +280,51 @@ export async function logAIInteraction(
       question,
       context,
       answer,
+      ragEvaluation:
+        ragEvaluation &&
+        hasMeaningfulRagContexts(ragEvaluation.contexts) &&
+        ragEvaluation.groundTruth.trim().length > 0 &&
+        ragEvaluation.groundTruth.trim() !== normalizedAnswer
+          ? {
+              contexts: ragEvaluation.contexts,
+              groundTruth: ragEvaluation.groundTruth,
+            }
+          : undefined,
       timestamp,
     });
     await writeDataFile(AI_INTERACTIONS_FILE, aiInteractions);
 
-    // Log to rag_evaluation_dataset.json
-    const ragEvaluations =
-      await readDataFile<RAGEvaluation>(RAG_EVALUATION_FILE);
-    ragEvaluations.push({
-      id: randomUUID(),
-      category: detectedCategory,
-      question,
-      contexts: buildRagasContextArray(context),
-      answer,
-      ground_truth:
-        typeof groundTruth === "string" && groundTruth.trim().length > 0
+    const nextContexts =
+      ragEvaluation?.contexts && ragEvaluation.contexts.length > 0
+        ? ragEvaluation.contexts
+        : buildRagasContextArray(context);
+
+    const nextGroundTruth =
+      ragEvaluation?.groundTruth &&
+      ragEvaluation.groundTruth.trim().length > 0 &&
+      ragEvaluation.groundTruth.trim() !== normalizedAnswer
+        ? ragEvaluation.groundTruth.trim()
+      : typeof groundTruth === "string" && groundTruth.trim().length > 0
+          && groundTruth.trim() !== normalizedAnswer
           ? groundTruth.trim()
-          : buildGroundTruthFromContext(context),
-      source: "smartkidcare_database",
-      timestamp,
-    });
-    await writeDataFile(RAG_EVALUATION_FILE, ragEvaluations);
+          : buildGroundTruthFromContext(context);
+
+    if (hasMeaningfulRagContexts(nextContexts)) {
+      const ragEvaluations = await readDataFile<RAGEvaluation>(
+        RUNTIME_RAG_EVALUATION_FILE,
+      );
+      ragEvaluations.push({
+        id: randomUUID(),
+        category: detectedCategory,
+        question,
+        contexts: nextContexts,
+        answer,
+        ground_truth: nextGroundTruth,
+        source: "smartkidcare_database",
+        timestamp,
+      });
+      await writeRuntimeRagEvaluationFile(ragEvaluations);
+    }
 
     console.info("AI interaction logged successfully");
   } catch (error) {
@@ -291,7 +346,7 @@ export async function getAIInteractions(): Promise<AIInteraction[]> {
  */
 export async function getRAGEvaluations(): Promise<RAGEvaluation[]> {
   await ensureFilesExist();
-  return readDataFile<RAGEvaluation>(RAG_EVALUATION_FILE);
+  return readDataFile<RAGEvaluation>(RUNTIME_RAG_EVALUATION_FILE);
 }
 
 /**
@@ -301,7 +356,7 @@ export async function clearAllInteractions(): Promise<void> {
   try {
     await ensureFilesExist();
     await writeDataFile(AI_INTERACTIONS_FILE, []);
-    await writeDataFile(RAG_EVALUATION_FILE, []);
+    await writeRuntimeRagEvaluationFile([]);
     console.info("All interactions cleared");
   } catch (error) {
     console.error("Error clearing interactions:", error);

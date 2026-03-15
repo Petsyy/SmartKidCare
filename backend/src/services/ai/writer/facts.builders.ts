@@ -15,6 +15,7 @@ import {
   AIRole,
   AttendanceComparisonResult,
   ClassReportResult,
+  FeedingComparisonResult,
   WriterFacts,
   WriterRiskLevel,
   WriterSupportedResult,
@@ -366,6 +367,57 @@ async function buildFactsFromAttendanceComparison(
   };
 }
 
+async function buildFactsFromFeedingComparison(
+  result: FeedingComparisonResult,
+  role: AIRole,
+  language: AIResponseLanguage,
+): Promise<WriterFacts> {
+  const currentInsight = analyzeFeedingInsight(result.currentWeek);
+  const recommendationLines = await recommendForFeeding(
+    result.currentWeek,
+    currentInsight,
+    language,
+    {
+      deterministic: true,
+    },
+  );
+
+  return {
+    scenario: "child_feeding_comparison",
+    role,
+    language,
+    timeframe: result.timeframe,
+    childName:
+      result.childName ??
+      result.currentWeek.childName ??
+      result.lastWeek.childName,
+    metricLines: [
+      `${metricLabel("feeding", language)} This Week: ${result.currentWeek.completed}/${result.currentWeek.totalMeals} meals (${result.currentWeek.feedingRate}%)`,
+      `${metricLabel("feeding", language)} Last Week: ${result.lastWeek.completed}/${result.lastWeek.totalMeals} meals (${result.lastWeek.feedingRate}%)`,
+      language === "tl"
+        ? `Pagbabago: ${result.deltaRate > 0 ? "+" : ""}${result.deltaRate}%`
+        : `Change: ${result.deltaRate > 0 ? "+" : ""}${result.deltaRate}%`,
+    ],
+    riskLevel: riskFromInsight(currentInsight.level),
+    observationLines: [
+      currentInsight.interpretation,
+      language === "tl"
+        ? result.deltaRate > 0
+          ? `May pagbuti na ${result.deltaRate}% kumpara sa nakaraang linggo.`
+          : result.deltaRate < 0
+            ? `May pagbaba na ${Math.abs(result.deltaRate)}% kumpara sa nakaraang linggo.`
+            : "Walang pagbabago kumpara sa nakaraang linggo."
+        : result.deltaRate > 0
+          ? `Feeding improved by ${result.deltaRate}% versus last week.`
+          : result.deltaRate < 0
+            ? `Feeding declined by ${Math.abs(result.deltaRate)}% versus last week.`
+            : "Feeding is unchanged versus last week.",
+      formatFoodsLine(result.currentWeek.foods, language),
+    ].filter((line): line is string => Boolean(line)),
+    recommendationLines,
+  };
+}
+
 function buildFactsFromChildTrend(
   result: Extract<WriterSupportedResult, { tool: "summarize_child_trend" }>,
   role: AIRole,
@@ -530,6 +582,7 @@ const WRITER_FACT_BUILDERS: WriterFactsBuilderMap = {
   generate_class_report: async (result, role, language) =>
     buildFactsFromClassReport(result, role, language),
   summarize_attendance_comparison: buildFactsFromAttendanceComparison,
+  summarize_feeding_comparison: buildFactsFromFeedingComparison,
   summarize_child_trend: async (result, role, language) =>
     buildFactsFromChildTrend(result, role, language),
   summarize_attendance: buildFactsFromChildAttendance,

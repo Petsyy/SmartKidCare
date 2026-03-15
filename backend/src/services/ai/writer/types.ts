@@ -4,6 +4,7 @@ import {
   SummarizeAttendanceResult,
   SummarizeAttendanceClassResult,
   SummarizeFeedingClassResult,
+  SummarizeFeedingResult,
   SummarizeChildTrendResult,
 } from "../mongoAgentTools.service";
 import { AgentToolResult } from "../tools.service";
@@ -16,6 +17,7 @@ export type WriterFacts = {
   scenario:
     | "child_attendance"
     | "child_feeding"
+    | "child_feeding_comparison"
     | "child_report"
     | "child_attendance_comparison"
     | "child_trend"
@@ -48,9 +50,19 @@ export type AttendanceComparisonResult = {
   deltaRate: number;
 };
 
+export type FeedingComparisonResult = {
+  tool: "summarize_feeding_comparison";
+  timeframe: "week";
+  childName?: string;
+  currentWeek: SummarizeFeedingResult;
+  lastWeek: SummarizeFeedingResult;
+  deltaRate: number;
+};
+
 export type WriterSupportedResult =
   | AgentToolResult
   | AttendanceComparisonResult
+  | FeedingComparisonResult
   | SummarizeChildTrendResult
   | SummarizeAttendanceClassResult
   | SummarizeFeedingClassResult

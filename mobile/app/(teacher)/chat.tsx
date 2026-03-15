@@ -113,8 +113,8 @@ export default function TeacherChatScreen() {
     };
   }, [token]);
 
-  const sendMessage = useCallback(async () => {
-    const text = input.trim();
+  const sendMessage = useCallback(async (overrideText?: string) => {
+    const text = (overrideText ?? input).trim();
     if (!text || !token || loading || !childId) return;
 
     setInput("");
@@ -160,9 +160,16 @@ export default function TeacherChatScreen() {
   }, [input, loading, token, childId]);
 
   const onSuggestionPress = (text: string) => {
-    setInput(text);
-    setTimeout(() => sendMessage(), 100);
+    void sendMessage(text);
   };
+
+  const onSubmitEditing = useCallback(() => {
+    void sendMessage();
+  }, [sendMessage]);
+
+  const onSendPress = useCallback(() => {
+    void sendMessage();
+  }, [sendMessage]);
 
   const renderAssistantContent = (text: string) => {
     const lines = text.split(/\r?\n/);
@@ -472,11 +479,11 @@ export default function TeacherChatScreen() {
             className="flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3.5 text-[15px] text-gray-800 min-h-[48px] max-h-28"
             multiline
             editable={!loading}
-            onSubmitEditing={sendMessage}
+            onSubmitEditing={onSubmitEditing}
             returnKeyType="send"
           />
           <Pressable
-            onPress={sendMessage}
+            onPress={onSendPress}
             disabled={loading || !input.trim()}
             className="h-12 w-12 items-center justify-center rounded-full bg-teal-600 active:opacity-90 disabled:opacity-50"
             style={{

@@ -2,6 +2,7 @@ import {
   summarizeAttendanceTool,
   summarizeAttendanceClassTool,
   summarizeChildTrendTool,
+  summarizeFeedingTool,
   summarizeFeedingClassTool,
   ToolTimeframe,
 } from "./mongoAgentTools.service";
@@ -11,6 +12,7 @@ import {
   AttendanceComparisonResult,
   buildConversationId,
   ClassReportResult,
+  FeedingComparisonResult,
   writeToolNarrative,
 } from "./aiWriter.service";
 import { inputIsGibberish } from "../../utils/aiInputSanitizer";
@@ -172,9 +174,30 @@ function isAttendanceComparisonQuestion(question: string): boolean {
     lower,
   );
   const asksComparison =
-    /\b(improv|compare|comparison|versus|vs)\b/.test(lower) &&
+    /\b(improv\w*|compar\w*|versus|vs)\b/.test(lower) &&
     /\b(last week|previous week|this week|week)\b/.test(lower);
   return hasAttendance && asksComparison;
+}
+
+function isFeedingComparisonQuestion(question: string): boolean {
+  const lower = question.toLowerCase();
+  const hasFeeding =
+    /\b(feeding|feed|food|meal|meals|eat|ate|eaten|served|pagkain|kain|kumain|kinain|ulam)\b/.test(
+      lower,
+    );
+  const asksComparison =
+    /\b(improv\w*|compar\w*|versus|vs)\b/.test(lower) &&
+    /\b(last week|previous week|this week|week)\b/.test(lower);
+  return hasFeeding && asksComparison;
+}
+
+function normalizeQuestionForIntentMatching(question: string): string {
+  return question
+    .trim()
+    .toLowerCase()
+    .replace(/\batt?e?dance\b/g, "attendance")
+    .replace(/\babsenses\b/g, "absences")
+    .replace(/\bfeedng\b/g, "feeding");
 }
 
 function isTrendQuestion(question: string): boolean {
@@ -189,7 +212,7 @@ function isTrendQuestion(question: string): boolean {
 export function detectToolForQuestion(question: string): AgentToolName | null {
   if (inputIsGibberish(question)) return null;
 
-  const lower = question.trim().toLowerCase();
+  const lower = normalizeQuestionForIntentMatching(question);
   const hasChildSubject = /\b(child|children|kid|kids|anak|bata)\b/.test(lower);
 
   const hasAttendanceSignal =
@@ -386,6 +409,31 @@ export async function tryHandleAgentQuery(params: {
       deltaRate: Number(
         (currentWeek.attendanceRate - lastWeek.attendanceRate).toFixed(2),
       ),
+    };
+
+    return writeToolNarrative({
+      result: comparisonResult,
+      role: normalizedRole,
+      question: params.question,
+      language,
+      conversationId,
+      suppressFollowUp: params.suppressFollowUp,
+    });
+  }
+
+  if (isFeedingComparisonQuestion(params.question)) {
+    const [currentWeek, lastWeek] = await Promise.all([
+      summarizeFeedingTool(normalizedChildId, "week"),
+      summarizeFeedingTool(normalizedChildId, "last_week"),
+    ]);
+
+    const comparisonResult: FeedingComparisonResult = {
+      tool: "summarize_feeding_comparison",
+      timeframe: "week",
+      childName: currentWeek.childName ?? lastWeek.childName,
+      currentWeek,
+      lastWeek,
+      deltaRate: Number((currentWeek.feedingRate - lastWeek.feedingRate).toFixed(2)),
     };
 
     return writeToolNarrative({
