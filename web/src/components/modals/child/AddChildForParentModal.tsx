@@ -76,6 +76,27 @@ function calculateAge(dob: string) {
   return age.toString();
 }
 
+const formatDateInputValue = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const getDobBounds = (referenceDate: Date) => {
+  const minDate = new Date(referenceDate);
+  minDate.setFullYear(minDate.getFullYear() - 6);
+  minDate.setDate(minDate.getDate() + 1);
+
+  const maxDate = new Date(referenceDate);
+  maxDate.setFullYear(maxDate.getFullYear() - 3);
+
+  return {
+    min: formatDateInputValue(minDate),
+    max: formatDateInputValue(maxDate),
+  };
+};
+
 export default function AddChildForParentModal({
   isOpen,
   parent,
@@ -98,7 +119,9 @@ export default function AddChildForParentModal({
   const [documentsConfirmed, setDocumentsConfirmed] = useState(false);
   const birthCertificateInputRef = useRef<HTMLInputElement | null>(null);
   const parentIdInputRef = useRef<HTMLInputElement | null>(null);
-  const todayDate = new Date().toISOString().slice(0, 10);
+  const today = new Date();
+  const todayDate = formatDateInputValue(today);
+  const { min: minAgeDate, max: maxAgeDate } = getDobBounds(today);
 
   useEffect(() => {
     if (!isOpen) {
@@ -336,7 +359,7 @@ export default function AddChildForParentModal({
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">
-                    Middle Name
+                    Middle Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -388,7 +411,8 @@ export default function AddChildForParentModal({
                     value={formData.dateOfBirth}
                     onChange={handleInputChange}
                     onBlur={() => handleFieldBlur("dateOfBirth")}
-                    max={todayDate}
+                    min={minAgeDate}
+                    max={maxAgeDate}
                     className={inputClass("dateOfBirth")}
                     required
                   />

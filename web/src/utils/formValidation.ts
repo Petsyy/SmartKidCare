@@ -17,9 +17,12 @@ const nameSchema = (label: string, minLength = 2, maxLength = 50) =>
   z
     .string()
     .trim()
-    .min(minLength, `${label} is too short.`)
-    .max(maxLength, `${label} is too long.`)
-    .regex(NAME_REGEX, `${label} contains invalid characters.`);
+    .refine((val) => val.length > 0, `${label} is required.`)
+    .refine((val) => val.length === 0 || val.length >= minLength, `${label} is too short.`)
+    .refine((val) => val.length <= maxLength, `${label} is too long.`)
+    .refine((value) => value.length === 0 || NAME_REGEX.test(value), {
+      message: `${label} contains invalid characters.`,
+    });
 
 const optionalNameSchema = (label: string, minLength = 1, maxLength = 50) =>
   z
@@ -35,12 +38,17 @@ const optionalNameSchema = (label: string, minLength = 1, maxLength = 50) =>
     });
 
 const emailSchema = (label: string) =>
-  z.string().trim().email(`${label} is invalid.`);
+  z
+    .string()
+    .trim()
+    .min(1, `${label} is required.`)
+    .email(`${label} is invalid.`);
 
 const phoneSchema = (_label: string) =>
   z
     .string()
     .trim()
+    .min(1, "Phone number is required.")
     .refine((value) => {
       const digitsOnly = value.replace(/\D/g, "");
       return /^09\d{9}$/.test(digitsOnly) || /^639\d{9}$/.test(digitsOnly);
@@ -48,7 +56,7 @@ const phoneSchema = (_label: string) =>
 
 const dateOfBirthSchema = z
   .string()
-  .refine((val) => val.length > 0, "Required.")
+  .refine((val) => val.length > 0, "Date of birth is required.")
   .refine((val) => !isNaN(new Date(val).getTime()), "Invalid date.")
   .refine((val) => {
     const birthDate = new Date(val);
@@ -56,20 +64,34 @@ const dateOfBirthSchema = z
     today.setHours(0, 0, 0, 0);
     birthDate.setHours(0, 0, 0, 0);
     return birthDate <= today;
-  }, "Cannot be in the future.");
+  }, "Cannot be in the future.")
+  .refine((val) => {
+    const birthDate = new Date(val);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age >= 3 && age <= 5;
+  }, "Age must be between 3 and 5 years old.");
 
 const enrollmentDateSchema = z
   .string()
-  .refine((val) => val.length > 0, "Required.")
+  .refine((val) => val.length > 0, "Enrollment date is required.")
   .refine((val) => !isNaN(new Date(val).getTime()), "Invalid date.");
 
 const schoolYearSchema = z
   .string()
-  .refine((val) => val.length > 0 && SCHOOL_YEAR_REGEX.test(val), "Required.");
+  .refine(
+    (val) => val.length > 0 && SCHOOL_YEAR_REGEX.test(val),
+    "School year is required.",
+  );
 
 const teacherIdSchema = z
   .string()
-  .refine((val) => val.length > 0, "Please select a teacher.");
+  .trim()
+  .min(1, "Please select a teacher.");
 
 const genderSchema = z.enum(["male", "female"], {
   message: "Please select a gender.",
@@ -80,7 +102,7 @@ const createAddChildSchema = (requireParentInfo: boolean) =>
   z
     .object({
       firstName: nameSchema("First name", 2, 50),
-      middleName: optionalNameSchema("Middle name", 1, 50),
+      middleName: nameSchema("Middle name", 2, 50),
       lastName: nameSchema("Last name", 2, 50),
       dateOfBirth: dateOfBirthSchema,
       age: z.string(),
@@ -91,7 +113,9 @@ const createAddChildSchema = (requireParentInfo: boolean) =>
       parentFirstName: requireParentInfo
         ? nameSchema("Parent first name", 2, 50)
         : optionalNameSchema("Parent first name", 2, 50),
-      parentMiddleName: optionalNameSchema("Parent middle name", 1, 50),
+      parentMiddleName: requireParentInfo
+        ? nameSchema("Parent middle name", 2, 50)
+        : optionalNameSchema("Parent middle name", 1, 50),
       parentLastName: requireParentInfo
         ? nameSchema("Parent last name", 2, 50)
         : optionalNameSchema("Parent last name", 2, 50),
@@ -264,7 +288,10 @@ export const validateChildStep = (
       error.issues.forEach((err: z.ZodIssue) => {
         const field = err.path[0] as keyof AddChildFormValues;
         if (stepFields.includes(field)) {
-          nextFieldErrors[field] = err.message;
+          // Keep the first (highest priority) message per field.
+          if (!nextFieldErrors[field]) {
+            nextFieldErrors[field] = err.message;
+          }
         }
       });
     }
@@ -296,7 +323,10 @@ export const validateAddChildForm = (
     if (error instanceof z.ZodError) {
       error.issues.forEach((err: z.ZodIssue) => {
         const field = err.path[0] as keyof AddChildFormValues;
-        errors[field] = err.message;
+        // Keep the first (highest priority) message per field.
+        if (!errors[field]) {
+          errors[field] = err.message;
+        }
       });
     }
   }
@@ -353,7 +383,7 @@ const createAddChildForParentSchema = () =>
   z
     .object({
       firstName: nameSchema("First name", 2, 50),
-      middleName: optionalNameSchema("Middle name", 1, 50),
+      middleName: nameSchema("Middle name", 2, 50),
       lastName: nameSchema("Last name", 2, 50),
       dateOfBirth: dateOfBirthSchema,
       age: z.string(),

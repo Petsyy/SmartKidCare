@@ -6,11 +6,8 @@ import {
   type AddChildForParentField,
   type AddChildForParentFormErrors,
   type AddChildForParentFormValues,
-  validateAddChildForParentField,
   validateAddChildForParentForm,
 } from "@/utils/formValidation";
-
-const schoolYears = ["2024-2025", "2025-2026", "2026-2027"];
 
 export type ChildForEdit = {
   _id: string;
@@ -56,6 +53,13 @@ const calculateAge = (dob: string) => {
   return age.toString();
 };
 
+const calculateSchoolYear = (enrollmentDate: string) => {
+  if (!enrollmentDate) return "";
+  const year = new Date(enrollmentDate).getFullYear();
+  if (isNaN(year)) return "";
+  return `${year}-${year + 1}`;
+};
+
 const getInitialForm = (child: ChildForEdit): AddChildForParentFormValues => ({
   firstName: child.firstName,
   middleName: child.middleName ?? "",
@@ -64,12 +68,15 @@ const getInitialForm = (child: ChildForEdit): AddChildForParentFormValues => ({
   age: String(child.age),
   gender: child.gender as "male" | "female",
   enrollmentDate: formatDateForInput(child.enrollmentDate),
-  schoolYear: child.schoolYear,
+  schoolYear:
+    calculateSchoolYear(formatDateForInput(child.enrollmentDate)) || child.schoolYear,
 });
 
 export default function EditChildModal({ child, onClose, onUpdated }: Props) {
   const [form, setForm] = useState<AddChildForParentFormValues>(() => getInitialForm(child));
-  const [errors, setErrors] = useState<AddChildForParentFormErrors>({});
+  const [errors, setErrors] = useState<AddChildForParentFormErrors>(() =>
+    validateAddChildForParentForm(getInitialForm(child)),
+  );
   const [teachers, setTeachers] = useState<User[]>([]);
   const [selectedTeacherId, setSelectedTeacherId] = useState(
     String(child.teacher?._id || ""),
@@ -77,8 +84,9 @@ export default function EditChildModal({ child, onClose, onUpdated }: Props) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    setForm(getInitialForm(child));
-    setErrors({});
+    const nextForm = getInitialForm(child);
+    setForm(nextForm);
+    setErrors(validateAddChildForParentForm(nextForm));
     setSelectedTeacherId(String(child.teacher?._id || ""));
   }, [child]);
 
@@ -112,11 +120,11 @@ export default function EditChildModal({ child, onClose, onUpdated }: Props) {
     field: AddChildForParentField,
     nextForm = form,
   ) => {
-    const error = validateAddChildForParentField(field, nextForm);
+    const allErrors = validateAddChildForParentForm(nextForm);
     setErrors((prev) => {
       const next = { ...prev };
-      if (error) {
-        next[field] = error;
+      if (allErrors[field]) {
+        next[field] = allErrors[field];
       } else {
         delete next[field];
       }
@@ -130,14 +138,19 @@ export default function EditChildModal({ child, onClose, onUpdated }: Props) {
     const nextForm = { ...form, [field]: value } as AddChildForParentFormValues;
 
     if (field === "dateOfBirth") nextForm.age = calculateAge(value);
-    if (field === "enrollmentDate" && value) {
-      const year = new Date(value).getFullYear();
-      if (!isNaN(year)) nextForm.schoolYear = `${year}-${year + 1}`;
-    }
+    if (field === "enrollmentDate") nextForm.schoolYear = calculateSchoolYear(value);
 
     setForm(nextForm);
 
-    if (errors[field]) {
+    const validationFields = new Set<AddChildForParentField>([
+      "firstName",
+      "middleName",
+      "lastName",
+      "dateOfBirth",
+      "enrollmentDate",
+      "schoolYear",
+    ]);
+    if (validationFields.has(field)) {
       setFieldError(field, nextForm);
     }
     if (field === "dateOfBirth" || field === "enrollmentDate") {
@@ -153,9 +166,7 @@ export default function EditChildModal({ child, onClose, onUpdated }: Props) {
   const handleGenderChange = (gender: "male" | "female") => {
     const nextForm: AddChildForParentFormValues = { ...form, gender };
     setForm(nextForm);
-    if (errors.gender) {
-      setFieldError("gender", nextForm);
-    }
+    setFieldError("gender", nextForm);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -186,6 +197,22 @@ export default function EditChildModal({ child, onClose, onUpdated }: Props) {
     }
   };
 
+  const today = new Date();
+  const minAgeDate = new Date(
+    today.getFullYear() - 6,
+    today.getMonth(),
+    today.getDate() + 1,
+  )
+    .toISOString()
+    .slice(0, 10);
+  const maxAgeDate = new Date(
+    today.getFullYear() - 3,
+    today.getMonth(),
+    today.getDate(),
+  )
+    .toISOString()
+    .slice(0, 10);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-4">
       <div className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-white shadow-xl dark:bg-slate-900">
@@ -215,6 +242,7 @@ export default function EditChildModal({ child, onClose, onUpdated }: Props) {
                 name="firstName"
                 value={form.firstName}
                 onChange={handleChange}
+                maxLength={15}
                 onBlur={() => handleFieldBlur("firstName")}
                 className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
                 required
@@ -224,11 +252,12 @@ export default function EditChildModal({ child, onClose, onUpdated }: Props) {
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5 dark:text-slate-300">Middle Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5 dark:text-slate-300">Middle Name <span className="text-red-500">*</span></label>
               <input
                 type="text"
                 name="middleName"
                 value={form.middleName}
+                maxLength={15}
                 onChange={handleChange}
                 onBlur={() => handleFieldBlur("middleName")}
                 className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
@@ -245,6 +274,7 @@ export default function EditChildModal({ child, onClose, onUpdated }: Props) {
               type="text"
               name="lastName"
               value={form.lastName}
+              maxLength={15}
               onChange={handleChange}
               onBlur={() => handleFieldBlur("lastName")}
               className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
@@ -264,6 +294,8 @@ export default function EditChildModal({ child, onClose, onUpdated }: Props) {
                 value={form.dateOfBirth}
                 onChange={handleChange}
                 onBlur={() => handleFieldBlur("dateOfBirth")}
+                min={minAgeDate}
+                max={maxAgeDate}
                 className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
                 required
               />
@@ -332,17 +364,14 @@ export default function EditChildModal({ child, onClose, onUpdated }: Props) {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5 dark:text-slate-300">School Year</label>
-              <select
+              <input
+                type="text"
                 name="schoolYear"
                 value={form.schoolYear}
-                onChange={handleChange}
                 onBlur={() => handleFieldBlur("schoolYear")}
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
-              >
-                {schoolYears.map((y) => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
+                readOnly
+                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-500"
+              />
               {errors.schoolYear && (
                 <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.schoolYear}</p>
               )}

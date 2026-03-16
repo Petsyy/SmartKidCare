@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { createTeacher } from "@/api/teacher.api";
 import { showTeacherCredentialsModal, showErrorModal } from "@/utils/sweetalert.modal";
@@ -26,6 +26,12 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<AddTeacherFormErrors>({});
+
+  useEffect(() => {
+    // Show validation immediately even before typing.
+    setErrors(validateAddTeacherForm(form));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const setFieldError = (field: AddTeacherField, nextForm = form) => {
     const error = validateAddTeacherField(field, nextForm);
@@ -193,6 +199,7 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
                   onChange={handleInputChange}
                   onBlur={() => handleFieldBlur("email")}
                   placeholder="teacher@email.com"
+                  maxLength={254}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
                   required
                 />
@@ -213,6 +220,8 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
                   onChange={handleInputChange}
                   onBlur={() => handleFieldBlur("phone")}
                   placeholder="09123456789"
+                  inputMode="numeric"
+                  maxLength={12}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
                   required
                 />

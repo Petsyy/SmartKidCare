@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X, User as UserIcon, Save } from "lucide-react";
 import Swal from "sweetalert2";
 import { type User } from "@/api/authentication.api";
@@ -12,42 +12,100 @@ type Props = {
   onDeleted: () => Promise<void> | void;
 };
 
+type EditUserForm = {
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+};
+
+const validateField = (name: keyof EditUserForm, value: string): string | undefined => {
+  const trimmed = String(value || "").trim();
+
+  if (!trimmed) {
+    const labelMap: Record<keyof EditUserForm, string> = {
+      firstName: "First name is required.",
+      middleName: "Middle name is required.",
+      lastName: "Last name is required.",
+      email: "Email is required.",
+      phone: "Phone number is required.",
+    };
+    return labelMap[name];
+  }
+
+  if (name === "email") {
+    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
+    if (!isValidEmail) return "Email is invalid.";
+  }
+
+  return undefined;
+};
+
+const validateForm = (nextForm: EditUserForm): Partial<Record<keyof EditUserForm, string>> => {
+  const nextErrors: Partial<Record<keyof EditUserForm, string>> = {};
+  (Object.keys(nextForm) as Array<keyof EditUserForm>).forEach((field) => {
+    const error = validateField(field, nextForm[field]);
+    if (error) {
+      nextErrors[field] = error;
+    }
+  });
+  return nextErrors;
+};
+
 export default function EditUserModal({ user, onClose, onUpdated }: Props) {
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<EditUserForm>({
     firstName: user.firstName,
-    middleName: user.middleName,
+    middleName: user.middleName || "",
     lastName: user.lastName,
     email: user.email,
     phone: user.phone || "",
   });
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof typeof form, string>>>({});
 
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    const nextForm: EditUserForm = {
+      firstName: user.firstName,
+      middleName: user.middleName || "",
+      lastName: user.lastName,
+      email: user.email,
+      phone: user.phone || "",
+    };
+    setForm(nextForm);
+    setFieldErrors(validateForm(nextForm));
+  }, [user]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setForm((prev) => ({
+    const field = name as keyof typeof form;
+    setForm((prev) => {
+      const next = {
+        ...prev,
+        [name]: value,
+      };
+      setFieldErrors((prevErrors) => ({
+        ...prevErrors,
+        [field]: validateField(field, value),
+      }));
+      return next;
+    });
+  };
+
+  const handleFieldBlur = (field: keyof typeof form) => {
+    setFieldErrors((prev) => ({
       ...prev,
-      [name]: value,
+      [field]: validateField(field, form[field]),
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (
-      !form.firstName ||
-      !form.middleName ||
-      !form.lastName ||
-      !form.email ||
-      !form.phone
-    ) {
-      Swal.fire({
-        title: "Missing Fields",
-        text: "Please fill all required fields",
-        icon: "warning",
-        confirmButtonText: "OK",
-        confirmButtonColor: "#0D9488",
-      });
+    const nextErrors = validateForm(form);
+    setFieldErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
       return;
     }
 
@@ -128,10 +186,14 @@ export default function EditUserModal({ user, onClose, onUpdated }: Props) {
                   name="firstName"
                   value={form.firstName}
                   onChange={handleInputChange}
+                  onBlur={() => handleFieldBlur("firstName")}
                   placeholder="Enter first name"
                   className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
                   required
                 />
+                {fieldErrors.firstName && (
+                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.firstName}</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5 dark:text-slate-300">
@@ -142,10 +204,14 @@ export default function EditUserModal({ user, onClose, onUpdated }: Props) {
                   name="middleName"
                   value={form.middleName}
                   onChange={handleInputChange}
+                  onBlur={() => handleFieldBlur("middleName")}
                   placeholder="Enter first name"
                   className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
                   required
                 />
+                {fieldErrors.middleName && (
+                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.middleName}</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5 dark:text-slate-300">
@@ -156,10 +222,14 @@ export default function EditUserModal({ user, onClose, onUpdated }: Props) {
                   name="lastName"
                   value={form.lastName}
                   onChange={handleInputChange}
+                  onBlur={() => handleFieldBlur("lastName")}
                   placeholder="Enter last name"
                   className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
                   required
                 />
+                {fieldErrors.lastName && (
+                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.lastName}</p>
+                )}
               </div>
             </div>
 
@@ -172,10 +242,14 @@ export default function EditUserModal({ user, onClose, onUpdated }: Props) {
                 name="email"
                 value={form.email}
                 onChange={handleInputChange}
+                onBlur={() => handleFieldBlur("email")}
                 placeholder="user@email.com"
                 className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
                 required
               />
+              {fieldErrors.email && (
+                <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.email}</p>
+              )}
             </div>
 
             <div>
@@ -187,10 +261,14 @@ export default function EditUserModal({ user, onClose, onUpdated }: Props) {
                 name="phone"
                 value={form.phone}
                 onChange={handleInputChange}
+                onBlur={() => handleFieldBlur("phone")}
                 placeholder="Enter phone number"
                 className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
                 required
               />
+              {fieldErrors.phone && (
+                <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.phone}</p>
+              )}
             </div>
           </div>
 

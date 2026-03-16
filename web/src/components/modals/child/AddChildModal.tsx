@@ -81,6 +81,27 @@ const initialFormData: ChildFormData = {
 const MAX_DOCUMENT_SIZE = 5 * 1024 * 1024;
 const ALLOWED_DOCUMENT_TYPES = ["application/pdf", "image/jpeg", "image/png"];
 
+const formatDateInputValue = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const getDobBounds = (referenceDate: Date) => {
+  const minDate = new Date(referenceDate);
+  minDate.setFullYear(minDate.getFullYear() - 6);
+  minDate.setDate(minDate.getDate() + 1);
+
+  const maxDate = new Date(referenceDate);
+  maxDate.setFullYear(maxDate.getFullYear() - 3);
+
+  return {
+    min: formatDateInputValue(minDate),
+    max: formatDateInputValue(maxDate),
+  };
+};
+
 const formatFileSize = (bytes: number) => {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -156,31 +177,65 @@ export default function AddChildModal({
     if (!isOpen) {
       setFormData(initialFormData);
       setDateErrors({});
+      setFieldErrors({});
       setCurrentStep(1);
       setBirthCertificateFile(null);
       setParentIdFile(null);
       setDocumentErrors({});
       setDocumentsConfirmed(false);
     } else if (initialParent) {
-      setFormData({
+      const nextFormData = {
         ...initialFormData,
         parentFirstName: initialParent.firstName,
         parentMiddleName: initialParent.middleName ?? "",
         parentLastName: initialParent.lastName,
         parentEmail: initialParent.email,
-      });
-      setDateErrors({});
+      };
+      setFormData(nextFormData);
+      setCurrentStep(1);
       setBirthCertificateFile(null);
       setParentIdFile(null);
       setDocumentErrors({});
       setDocumentsConfirmed(false);
+
+      // Show validation immediately, even without touching fields.
+      const nextDateErrors = validateDateFields({
+        dateOfBirth: nextFormData.dateOfBirth,
+        enrollmentDate: nextFormData.enrollmentDate,
+      });
+      setDateErrors(nextDateErrors);
+      const addChildValues = buildAddChildValuesFromForm(nextFormData);
+      const { errors } = validateChildStep(
+        1,
+        addChildValues,
+        nextDateErrors,
+        { requireParentInfo: !initialParent },
+        {},
+      );
+      setFieldErrors(errors);
     } else {
       setFormData(initialFormData);
-      setDateErrors({});
+      setCurrentStep(1);
       setBirthCertificateFile(null);
       setParentIdFile(null);
       setDocumentErrors({});
       setDocumentsConfirmed(false);
+
+      // Show validation immediately, even without touching fields.
+      const nextDateErrors = validateDateFields({
+        dateOfBirth: initialFormData.dateOfBirth,
+        enrollmentDate: initialFormData.enrollmentDate,
+      });
+      setDateErrors(nextDateErrors);
+      const addChildValues = buildAddChildValuesFromForm(initialFormData);
+      const { errors } = validateChildStep(
+        1,
+        addChildValues,
+        nextDateErrors,
+        { requireParentInfo: !initialParent },
+        {},
+      );
+      setFieldErrors(errors);
     }
   }, [isOpen, initialParent]);
 
@@ -219,11 +274,17 @@ export default function AddChildModal({
   };
 
   const validateStep = (step: number, data: ChildFormData): boolean => {
+    const nextDateErrors = validateDateFields({
+      dateOfBirth: data.dateOfBirth,
+      enrollmentDate: data.enrollmentDate,
+    });
+    setDateErrors(nextDateErrors);
+
     const addChildValues = buildAddChildValuesFromForm(data);
     const { isValid, errors } = validateChildStep(
       step,
       addChildValues,
-      dateErrors,
+      nextDateErrors,
       { requireParentInfo: !initialParent },
       fieldErrors,
     );
@@ -304,6 +365,14 @@ export default function AddChildModal({
     if (currentStep <= 1) return;
     setCurrentStep((prev) => prev - 1);
   };
+
+  // When entering a step, populate errors for that step
+  useEffect(() => {
+    if (!isOpen) return;
+    if (currentStep >= documentsStep) return;
+    validateStep(currentStep, formData);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentStep, isOpen]);
 
   const handleGenderChange = (gender: "male" | "female") => {
     setFormData((prev) => {
@@ -425,7 +494,9 @@ export default function AddChildModal({
   };
 
   if (!isOpen) return null;
-  const todayDate = new Date().toISOString().slice(0, 10);
+  const today = new Date();
+  const todayDate = formatDateInputValue(today);
+  const { min: minAgeDate, max: maxAgeDate } = getDobBounds(today);
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -511,7 +582,7 @@ export default function AddChildModal({
                         setFieldValidationError("firstName", formData)
                       }
                       placeholder="Enter first name"
-                      maxLength={50}
+                      maxLength={15}
                       className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600 ${
                         fieldErrors.firstName
                           ? "border-red-300 focus:ring-red-200"
@@ -538,7 +609,7 @@ export default function AddChildModal({
                         setFieldValidationError("middleName", formData)
                       }
                       placeholder="Enter middle name"
-                      maxLength={50}
+                      maxLength={15}
                       className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600 ${
                         fieldErrors.middleName
                           ? "border-red-300 focus:ring-red-200"
@@ -564,7 +635,7 @@ export default function AddChildModal({
                         setFieldValidationError("lastName", formData)
                       }
                       placeholder="Enter last name"
-                      maxLength={50}
+                      maxLength={15}
                       className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600 ${
                         fieldErrors.lastName
                           ? "border-red-300 focus:ring-red-200"
@@ -595,7 +666,8 @@ export default function AddChildModal({
                         onBlur={() =>
                           setFieldValidationError("dateOfBirth", formData)
                         }
-                        max={todayDate}
+                        max={maxAgeDate}
+                        min={minAgeDate}
                         className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600 ${
                           fieldErrors.dateOfBirth || dateErrors.dateOfBirth
                             ? "border-red-300 focus:ring-red-200"
@@ -785,7 +857,7 @@ export default function AddChildModal({
                       value={formData.parentFirstName}
                       onChange={handleInputChange}
                       placeholder="Enter first name"
-                      maxLength={50}
+                      maxLength={15}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
                       required
                     />
@@ -806,7 +878,7 @@ export default function AddChildModal({
                       value={formData.parentMiddleName}
                       onChange={handleInputChange}
                       placeholder="Enter middle name"
-                      maxLength={50}
+                      maxLength={15}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
                       required
                     />
@@ -827,7 +899,7 @@ export default function AddChildModal({
                       value={formData.parentLastName}
                       onChange={handleInputChange}
                       placeholder="Enter last name"
-                      maxLength={50}
+                      maxLength={15}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
                     />
                     {fieldErrors.parentLastName && (
@@ -849,6 +921,7 @@ export default function AddChildModal({
                     value={formData.parentEmail}
                     onChange={handleInputChange}
                     placeholder="parent@email.com"
+                    maxLength={35}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
                     required
                   />
@@ -869,6 +942,8 @@ export default function AddChildModal({
                     value={formData.parentPhone}
                     onChange={handleInputChange}
                     placeholder="09123456789"
+                    inputMode="numeric"
+                    maxLength={12}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
                     required
                   />
