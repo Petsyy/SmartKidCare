@@ -15,6 +15,7 @@ import { getTeacherProfile } from "@/src/api/teacher.api";
 import { API_BASE_URL } from "@/src/config/config.api";
 import { validatePasswordRules } from "@/src/validations/password-validation";
 import PasswordStrengthFeedback from "@/src/components/password-feedback/password-strength-feedback";
+import UserGuideModal from "@/src/components/user-guide";
 import React, { useState } from "react";
 import * as Icons from "lucide-react-native";
 
@@ -26,8 +27,10 @@ type UserProfile = {
   email: string;
   role: string;
   employeeId?: string;
-  isActive?: boolean;  phone?: string;
-  assignedCenter?: string;};
+  isActive?: boolean;
+  phone?: string;
+  assignedCenter?: string;
+};
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -36,6 +39,7 @@ export default function ProfileScreen() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showHelpModal, setShowHelpModal] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -264,7 +268,10 @@ export default function ProfileScreen() {
             </TouchableOpacity>
 
             {/* Help & User Guide */}
-            <TouchableOpacity className="flex-row items-center justify-between py-4">
+            <TouchableOpacity
+              className="flex-row items-center justify-between py-4"
+              onPress={() => setShowHelpModal(true)}
+            >
               <View className="flex-row items-center flex-1">
                 <Icons.HelpCircle size={22} color="#14B8A6" />
                 <Text className="ml-3 text-base font-medium text-gray-700">
@@ -389,6 +396,12 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
+
+      <UserGuideModal
+        visible={showHelpModal}
+        onClose={() => setShowHelpModal(false)}
+        role="teacher"
+      />
     </SafeAreaView>
   );
 }

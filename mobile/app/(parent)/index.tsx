@@ -22,6 +22,10 @@ import {
   getTodayAttendance,
   getTodayFeeding,
 } from "@/src/api/records.api";
+import {
+  getParentNotificationsFeed,
+  type ParentNotificationFeedItem,
+} from "@/src/api/notifications.api";
 import { StatRow, ProgressBar } from "@/src/utils/dashboard-overview";
 
 type StatCardProps = {
@@ -51,6 +55,9 @@ export default function ParentDashboard() {
   const [feedingRecords, setFeedingRecords] = useState<any[]>([]);
   const [todayAttendanceRecord, setTodayAttendanceRecord] = useState<any>(null);
   const [todayFeedingRecord, setTodayFeedingRecord] = useState<any>(null);
+  const [recentNotifications, setRecentNotifications] = useState<
+    ParentNotificationFeedItem[]
+  >([]);
   const centerName = "Child Development Center";
 
   // Dynamic date
@@ -87,18 +94,30 @@ export default function ParentDashboard() {
           }
 
           // Fetch attendance and feeding records
-          const [attendance, feeding, todayAttendance, todayFeeding] =
-            await Promise.all([
-              getAttendanceHistory(token),
-              getFeedingHistory(token),
-              getTodayAttendance(token).catch(() => null),
-              getTodayFeeding(token).catch(() => null),
-            ]);
+          const [
+            attendance,
+            feeding,
+            todayAttendance,
+            todayFeeding,
+            parentNotifications,
+          ] = await Promise.all([
+            getAttendanceHistory(token),
+            getFeedingHistory(token),
+            getTodayAttendance(token).catch(() => null),
+            getTodayFeeding(token).catch(() => null),
+            getParentNotificationsFeed(token).catch(() => null),
+          ]);
 
           setAttendanceRecords(attendance);
           setFeedingRecords(feeding);
           setTodayAttendanceRecord(todayAttendance);
           setTodayFeedingRecord(todayFeeding);
+
+          if (parentNotifications?.notifications?.length) {
+            setRecentNotifications(parentNotifications.notifications.slice(0, 2));
+          } else {
+            setRecentNotifications([]);
+          }
         }
       } catch (err: any) {
         setError(err?.message || "Failed to load children");
@@ -564,7 +583,7 @@ export default function ParentDashboard() {
           </View>
         </View>
 
-        {/* Recent Activity */}
+        {/* Recent Activity (Notifications) */}
         <View className="rounded-3xl bg-white mt-6 p-5 shadow-sm">
           <View className="mb-4 flex-row items-center justify-between">
             <Text className="text-xl font-bold text-gray-900">
@@ -582,35 +601,37 @@ export default function ParentDashboard() {
             </Pressable>
           </View>
 
-          <View className="rounded-2xl bg-gray-50 p-4">
-            <View className="flex-row">
-              <View className="mr-4 w-1.5 rounded-full bg-emerald-600" />
-              <View className="flex-1">
-                <Text className="text-base font-extrabold text-gray-900">
-                  Attendance Recorded
-                </Text>
-                <Text className="mt-1 text-sm leading-5 text-gray-600">
-                  Your child was marked present today.
-                </Text>
-              </View>
+          {recentNotifications.length === 0 ? (
+            <View className="rounded-2xl bg-gray-50 p-4">
+              <Text className="text-sm text-gray-600">
+                No notifications yet for today.
+              </Text>
             </View>
-          </View>
-
-          <View className="h-3" />
-
-          <View className="rounded-2xl bg-gray-50 p-4">
-            <View className="flex-row">
-              <View className="mr-4 w-1.5 rounded-full bg-sky-600" />
-              <View className="flex-1">
-                <Text className="text-base font-extrabold text-gray-900">
-                  Meal Completed
-                </Text>
-                <Text className="mt-1 text-sm leading-5 text-gray-600">
-                  Your child finished their lunch today.
-                </Text>
+          ) : (
+            recentNotifications.map((item, index) => (
+              <View
+                key={item.id}
+                className={`rounded-2xl bg-gray-50 p-4 ${
+                  index > 0 ? "mt-3" : ""
+                }`}
+              >
+                <View className="flex-row">
+                  <View className="mr-4 w-1.5 rounded-full bg-emerald-600" />
+                  <View className="flex-1">
+                    <Text className="text-base font-extrabold text-gray-900">
+                      {item.title}
+                    </Text>
+                    <Text className="mt-1 text-sm leading-5 text-gray-600">
+                      {item.message}
+                    </Text>
+                    <Text className="mt-1 text-xs text-gray-400">
+                      {item.timeLabel}
+                    </Text>
+                  </View>
+                </View>
               </View>
-            </View>
-          </View>
+            ))
+          )}
         </View>
       </ScrollView>
 
