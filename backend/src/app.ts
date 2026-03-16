@@ -13,6 +13,7 @@ import recordsRoutes from "./routes/records.routes";
 import aiRoutes from "./routes/ai.routes";
 import notificationRoutes from "./routes/notification.routes";
 import documentsRoutes from "./routes/documents.routes";
+import { auditLogMiddleware } from "./middlewares/auditLog.middleware";
 
 const app: Application = express();
 const isProduction = process.env.NODE_ENV === "production";
@@ -100,6 +101,7 @@ app.use((req, res, next) => {
   }
   next();
 });
+app.use(auditLogMiddleware);
 
 app.get("/", (req, res) => {
   res.json({ message: "SmartKidCare API running" });

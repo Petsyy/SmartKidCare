@@ -23,3 +23,7 @@ lib-cov
 coverage
 *.lcov
 # nyc test coverage
+
+# Python cache (scripts)
+__pycache__/
+*.py[cod]

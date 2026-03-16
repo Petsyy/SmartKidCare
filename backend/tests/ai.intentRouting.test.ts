@@ -45,6 +45,12 @@ test("routes feeding intent to summarize_feeding", () => {
     detectToolForQuestion("How is my child's feeding this week?"),
     "summarize_feeding",
   );
+  assert.equal(
+    detectToolForQuestion(
+      "Is my child's feeding improving compared to last week?",
+    ),
+    "summarize_feeding",
+  );
 });
 
 test("routes mixed/report intent to generate_child_report", () => {
@@ -60,6 +66,12 @@ test("routes mixed/report intent to generate_child_report", () => {
   );
   assert.equal(
     detectToolForQuestion("What is my child's current risk level, and why?"),
+    "generate_child_report",
+  );
+  assert.equal(
+    detectToolForQuestion(
+      "What actions do you recommend to improve attendance and feeding?",
+    ),
     "generate_child_report",
   );
   assert.equal(
@@ -88,13 +100,9 @@ test("returns null for unrelated prompts", () => {
 });
 
 test("rejects gibberish / keyboard-mash inputs", () => {
-  // gibberish prefix + typo keyword → still rejected (not a real question)
   assert.equal(detectToolForQuestion("asdasdas attedance"), null);
-  // half of tokens are mash → rejected
   assert.equal(detectToolForQuestion("asdf attendance"), null);
-  // all mash → rejected
   assert.equal(detectToolForQuestion("asdasdas qwqwqw zxzxzx"), null);
-  // pure mash token → rejected
   assert.equal(detectToolForQuestion("asdfghj"), null);
 });
 
@@ -109,28 +117,19 @@ test("does NOT reject legitimate questions with no mash tokens", () => {
   );
 });
 
-test("handles typos in intent keywords (fuzzy normalization)", () => {
-  // typo: "attedance" → "attendance"
+test("handles plain typos in intent keywords", () => {
   assert.equal(
     detectToolForQuestion("attedance"),
     "summarize_attendance",
   );
-  // typo with junk prefix — junk is ignored, typo keyword is corrected
-  assert.equal(
-    detectToolForQuestion("asdasdas attedance"),
-    "summarize_attendance",
-  );
-  // typo: "absenses" → "absences"
   assert.equal(
     detectToolForQuestion("How many absenses does my child have?"),
     "summarize_attendance",
   );
-  // typo: "feedng" → "feeding"
   assert.equal(
     detectToolForQuestion("feedng records for my child"),
     "summarize_feeding",
   );
-  // pure gibberish with no recognizable keyword → null
   assert.equal(detectToolForQuestion("asdasdas qwqwqw zxzxzx"), null);
 });
 
