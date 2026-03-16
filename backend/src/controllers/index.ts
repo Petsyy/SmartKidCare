@@ -10,4 +10,5 @@ export {
   updateAttendanceRecord,
   updateFeedingRecord,
   deleteAttendanceRecord,
+  deleteFeedingRecord,
 } from "./blockchain/update.controller";

@@ -1,18 +1,12 @@
 import { useState, useEffect } from "react";
 import type { Child } from "@/types/child";
-import Swal from "sweetalert2";
 import {
   createChild,
   deleteChild,
   getChildren,
   updateChild,
 } from "../api/child.api";
-import {
-  showErrorModal,
-  showChangeChildStatusModal,
-  showUnlinkParentConfirm,
-  showParentCredentialsModal,
-} from "../utils/sweetalert.modal";
+import { showErrorModal, showParentCredentialsModal } from "../utils/sweetalert.modal";
 
 export type ChildFormData = {
   firstName: string;
@@ -93,11 +87,7 @@ export function useChildrenManagement() {
     }
   };
 
-  const handleChangeStatus = async (child: Child) => {
-    const newStatus = await showChangeChildStatusModal(
-      `${child.firstName} ${child.lastName}`,
-      child.status,
-    );
+  const handleChangeStatus = async (child: Child, newStatus: string) => {
     if (!newStatus) return;
     try {
       const updated = await updateChild(child._id, { status: newStatus });
@@ -114,10 +104,6 @@ export function useChildrenManagement() {
       showErrorModal("Child has no linked parent.");
       return;
     }
-    const ok = await showUnlinkParentConfirm(
-      `${child.firstName} ${child.lastName}`,
-    );
-    if (!ok) return;
     try {
       const updated = await updateChild(child._id, { unlinkParent: true });
       setChildren((prev) =>
@@ -129,29 +115,9 @@ export function useChildrenManagement() {
   };
 
   const handleDeleteChild = async (child: Child) => {
-    const result = await Swal.fire({
-      title: "Delete Child?",
-      text: `Are you sure you want to delete ${child.firstName} ${child.lastName}? This action cannot be undone.`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#DC2626",
-      cancelButtonColor: "#6B7280",
-      confirmButtonText: "Yes, delete",
-      cancelButtonText: "Cancel",
-    });
-
-    if (!result.isConfirmed) return;
-
     try {
       await deleteChild(child._id);
       setChildren((prev) => prev.filter((item) => item._id !== child._id));
-
-      await Swal.fire({
-        title: "Deleted",
-        text: "Child has been deleted successfully.",
-        icon: "success",
-        confirmButtonColor: "#0D9488",
-      });
     } catch (err: any) {
       showErrorModal(err.message || "Failed to delete child");
     }

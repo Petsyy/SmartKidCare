@@ -55,7 +55,6 @@ type PaginatedFeedingResponse = {
 
 export type DatePreset = "all" | "today" | "thisWeek" | "thisMonth";
 export type FeedingStatusFilter = "all" | "completed" | "missed";
-export type VerificationFilter = "all" | "verified" | "unverified";
 
 const formatChildName = (child?: ChildRef | null) => {
   if (!child) return "Unknown";
@@ -68,9 +67,9 @@ export function useFeedingProgram() {
   const [rows, setRows] = useState<FeedingRow[]>([]);
   const [search, setSearch] = useState("");
   const [datePreset, setDatePreset] = useState<DatePreset>("all");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<FeedingStatusFilter>("all");
-  const [verificationFilter, setVerificationFilter] =
-    useState<VerificationFilter>("all");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [total, setTotal] = useState(0);
@@ -112,14 +111,14 @@ export function useFeedingProgram() {
       if (search.trim()) {
         params.set("search", search.trim());
       }
-      if (datePreset !== "all") {
+      if (startDate && endDate) {
+        params.set("startDate", startDate);
+        params.set("endDate", endDate);
+      } else if (datePreset !== "all") {
         params.set("datePreset", datePreset);
       }
       if (statusFilter !== "all") {
         params.set("status", statusFilter);
-      }
-      if (verificationFilter !== "all") {
-        params.set("verification", verificationFilter);
       }
       const url = `${API_BASE}/records/feeding?${params.toString()}`;
       const response = await fetch(url, {
@@ -163,12 +162,13 @@ export function useFeedingProgram() {
     }
   }, [
     datePreset,
+    endDate,
     flattenFeeding,
     limit,
     page,
     search,
+    startDate,
     statusFilter,
-    verificationFilter,
   ]);
 
   useEffect(() => {
@@ -185,7 +185,7 @@ export function useFeedingProgram() {
   const hasActiveFilters =
     datePreset !== "all" ||
     statusFilter !== "all" ||
-    verificationFilter !== "all" ||
+    Boolean(startDate && endDate) ||
     search.trim().length > 0;
 
   const updateSearch = useCallback((value: string) => {
@@ -196,6 +196,8 @@ export function useFeedingProgram() {
   const updateDatePreset = useCallback((value: DatePreset) => {
     setPage(1);
     setDatePreset(value);
+    setStartDate("");
+    setEndDate("");
   }, []);
 
   const updateStatusFilter = useCallback((value: FeedingStatusFilter) => {
@@ -203,25 +205,73 @@ export function useFeedingProgram() {
     setStatusFilter(value);
   }, []);
 
-  const updateVerificationFilter = useCallback((value: VerificationFilter) => {
+  const updateDateRange = useCallback((nextStart: string, nextEnd: string) => {
     setPage(1);
-    setVerificationFilter(value);
+    setDatePreset("all");
+    setStartDate(nextStart);
+    setEndDate(nextEnd);
   }, []);
 
   const clearFilters = useCallback(() => {
     setPage(1);
     setSearch("");
     setDatePreset("all");
+    setStartDate("");
+    setEndDate("");
     setStatusFilter("all");
-    setVerificationFilter("all");
   }, []);
+
+  const updateFeedingStatus = useCallback(
+    async (id: string, status: "completed" | "missed") => {
+      const response = await fetch(`${API_BASE}/records/feeding/${id}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status }),
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const message =
+          (payload as { message?: string }).message ||
+          "Failed to update feeding record";
+        throw new Error(message);
+      }
+
+      await fetchFeeding();
+    },
+    [fetchFeeding],
+  );
+
+  const deleteFeeding = useCallback(
+    async (id: string) => {
+      const response = await fetch(`${API_BASE}/records/feeding/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const message =
+          (payload as { message?: string }).message ||
+          "Failed to delete feeding record";
+        throw new Error(message);
+      }
+
+      await fetchFeeding();
+    },
+    [fetchFeeding],
+  );
 
   return {
     rows,
     search,
     datePreset,
+    startDate,
+    endDate,
     statusFilter,
-    verificationFilter,
     page,
     limit,
     totalPages,
@@ -233,8 +283,10 @@ export function useFeedingProgram() {
     setLimit,
     updateSearch,
     updateDatePreset,
+    updateDateRange,
     updateStatusFilter,
-    updateVerificationFilter,
     clearFilters,
+    updateFeedingStatus,
+    deleteFeeding,
   };
 }

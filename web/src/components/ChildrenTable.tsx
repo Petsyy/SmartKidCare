@@ -1,4 +1,4 @@
-import { Eye, Pencil, MoreVertical } from "lucide-react";
+import { ArrowDown, ArrowUp, Eye, MoreVertical, Pencil } from "lucide-react";
 import type { Child } from "@/types/child";
 
 interface ChildrenTableProps {
@@ -8,6 +8,8 @@ interface ChildrenTableProps {
   onViewChild: (child: Child) => void;
   onEditChild: (child: Child) => void;
   onMenuClick: (child: Child, buttonEl: HTMLButtonElement) => void;
+  childNameSortDir: "asc" | "desc";
+  onToggleChildNameSort: () => void;
 }
 
 export function ChildrenTable({
@@ -17,6 +19,8 @@ export function ChildrenTable({
   onViewChild,
   onEditChild,
   onMenuClick,
+  childNameSortDir,
+  onToggleChildNameSort,
 }: ChildrenTableProps) {
   return (
     <div className="overflow-x-auto">
@@ -26,8 +30,25 @@ export function ChildrenTable({
             <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
               Student ID
             </th>
-            <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
-              Child Name
+            <th className="px-6 py-0 text-left">
+              <button
+                type="button"
+                onClick={onToggleChildNameSort}
+                className="flex w-full items-center px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200"
+              >
+                Child Name{" "}
+                {childNameSortDir === "asc" ? (
+                  <ArrowUp
+                    size={14}
+                    className="ml-2 inline-block align-middle text-gray-400 dark:text-slate-500"
+                  />
+                ) : (
+                  <ArrowDown
+                    size={14}
+                    className="ml-2 inline-block align-middle text-gray-400 dark:text-slate-500"
+                  />
+                )}
+              </button>
             </th>
             <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
               Age

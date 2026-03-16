@@ -126,3 +126,40 @@ export const deleteAttendanceRecord = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Failed to delete attendance record" });
   }
 };
+
+export const deleteFeedingRecord = async (req: Request, res: Response) => {
+  try {
+    let { id } = req.params;
+
+    if (Array.isArray(id)) id = id[0];
+
+    const [feedingId, childId] = String(id).split("-");
+
+    if (!feedingId || !childId) {
+      return res.status(400).json({ message: "Invalid record id" });
+    }
+
+    const feeding = await Feeding.findById(feedingId);
+
+    if (!feeding) {
+      return res.status(404).json({ message: "Feeding not found" });
+    }
+
+    const initialLength = feeding.records.length;
+
+    feeding.records.pull({ child: childId });
+
+    if (feeding.records.length === initialLength) {
+      return res.status(404).json({ message: "Child record not found" });
+    }
+
+    feeding.markModified("records");
+
+    await feeding.save();
+
+    res.json({ message: "Feeding record deleted" });
+  } catch (error: any) {
+    console.error("Delete feeding error:", error);
+    res.status(500).json({ message: "Failed to delete feeding record" });
+  }
+};

@@ -53,7 +53,6 @@ type PaginatedAttendanceResponse = {
 
 export type DatePreset = "all" | "today" | "thisWeek" | "thisMonth";
 export type AttendanceStatusFilter = "all" | "present" | "absent";
-export type VerificationFilter = "all" | "verified" | "unverified";
 
 const formatChildName = (child?: ChildRef | null) => {
   if (!child) return "Unknown";
@@ -66,10 +65,10 @@ export function useAttendanceTracking() {
   const [rows, setRows] = useState<AttendanceRow[]>([]);
   const [search, setSearch] = useState("");
   const [datePreset, setDatePreset] = useState<DatePreset>("all");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
   const [statusFilter, setStatusFilter] =
     useState<AttendanceStatusFilter>("all");
-  const [verificationFilter, setVerificationFilter] =
-    useState<VerificationFilter>("all");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [total, setTotal] = useState(0);
@@ -110,14 +109,14 @@ export function useAttendanceTracking() {
       if (search.trim()) {
         params.set("search", search.trim());
       }
-      if (datePreset !== "all") {
+      if (startDate && endDate) {
+        params.set("startDate", startDate);
+        params.set("endDate", endDate);
+      } else if (datePreset !== "all") {
         params.set("datePreset", datePreset);
       }
       if (statusFilter !== "all") {
         params.set("status", statusFilter);
-      }
-      if (verificationFilter !== "all") {
-        params.set("verification", verificationFilter);
       }
       const url = `${API_BASE}/records/attendance?${params.toString()}`;
       const response = await fetch(url, {
@@ -161,12 +160,13 @@ export function useAttendanceTracking() {
     }
   }, [
     datePreset,
+    endDate,
     flattenAttendance,
     limit,
     page,
     search,
+    startDate,
     statusFilter,
-    verificationFilter,
   ]);
 
   useEffect(() => {
@@ -183,7 +183,7 @@ export function useAttendanceTracking() {
   const hasActiveFilters =
     datePreset !== "all" ||
     statusFilter !== "all" ||
-    verificationFilter !== "all" ||
+    Boolean(startDate && endDate) ||
     search.trim().length > 0;
 
   const updateSearch = useCallback((value: string) => {
@@ -194,6 +194,8 @@ export function useAttendanceTracking() {
   const updateDatePreset = useCallback((value: DatePreset) => {
     setPage(1);
     setDatePreset(value);
+    setStartDate("");
+    setEndDate("");
   }, []);
 
   const updateStatusFilter = useCallback((value: AttendanceStatusFilter) => {
@@ -201,25 +203,73 @@ export function useAttendanceTracking() {
     setStatusFilter(value);
   }, []);
 
-  const updateVerificationFilter = useCallback((value: VerificationFilter) => {
+  const updateDateRange = useCallback((nextStart: string, nextEnd: string) => {
     setPage(1);
-    setVerificationFilter(value);
+    setDatePreset("all");
+    setStartDate(nextStart);
+    setEndDate(nextEnd);
   }, []);
 
   const clearFilters = useCallback(() => {
     setPage(1);
     setSearch("");
     setDatePreset("all");
+    setStartDate("");
+    setEndDate("");
     setStatusFilter("all");
-    setVerificationFilter("all");
   }, []);
+
+  const updateAttendanceStatus = useCallback(
+    async (id: string, status: "present" | "absent") => {
+      const response = await fetch(`${API_BASE}/records/attendance/${id}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status }),
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const message =
+          (payload as { message?: string }).message ||
+          "Failed to update attendance record";
+        throw new Error(message);
+      }
+
+      await fetchAttendance();
+    },
+    [fetchAttendance],
+  );
+
+  const deleteAttendance = useCallback(
+    async (id: string) => {
+      const response = await fetch(`${API_BASE}/records/attendance/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const message =
+          (payload as { message?: string }).message ||
+          "Failed to delete attendance record";
+        throw new Error(message);
+      }
+
+      await fetchAttendance();
+    },
+    [fetchAttendance],
+  );
 
   return {
     rows,
     search,
     datePreset,
+    startDate,
+    endDate,
     statusFilter,
-    verificationFilter,
     page,
     limit,
     totalPages,
@@ -231,8 +281,10 @@ export function useAttendanceTracking() {
     setLimit,
     updateSearch,
     updateDatePreset,
+    updateDateRange,
     updateStatusFilter,
-    updateVerificationFilter,
     clearFilters,
+    updateAttendanceStatus,
+    deleteAttendance,
   };
 }
