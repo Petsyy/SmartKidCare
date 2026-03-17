@@ -14,7 +14,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ChevronLeft, Eye, EyeOff, Lock } from "lucide-react-native";
 import { resetForgotPassword } from "@/src/api/authentication.api";
-import { validatePasswordRules } from "@/src/validations/password-validation";
+import { validatePasswordRules, getPasswordStrengthFeedback } from "@/src/validations/password-validation";
 import PasswordStrengthFeedback from "@/src/components/password-feedback/password-strength-feedback";
 
 export default function ForgotPasswordResetScreen() {
@@ -34,6 +34,19 @@ export default function ForgotPasswordResetScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const passwordValidation = useMemo(() => {
+    return validatePasswordRules(newPassword);
+  }, [newPassword]);
+
+  const passwordFeedback = useMemo(
+    () => getPasswordStrengthFeedback(newPassword),
+    [newPassword],
+  );
+
+  const isPasswordsMatching = newPassword && confirmPassword && newPassword === confirmPassword;
+  const isPasswordStrong = passwordFeedback.label === "Strong";
+  const isFormValid = isPasswordStrong && isPasswordsMatching;
+
   const handleResetPassword = async () => {
     if (!resetToken) {
       Alert.alert(
@@ -45,15 +58,6 @@ export default function ForgotPasswordResetScreen() {
 
     if (!newPassword || !confirmPassword) {
       Alert.alert("Missing Fields", "Please complete all password fields.");
-      return;
-    }
-
-    const passwordValidation = validatePasswordRules(newPassword);
-    if (!passwordValidation.isValid) {
-      Alert.alert(
-        "Weak Password",
-        passwordValidation.message || "Invalid password.",
-      );
       return;
     }
 
@@ -161,10 +165,10 @@ export default function ForgotPasswordResetScreen() {
 
             <Pressable
               onPress={handleResetPassword}
-              disabled={isSubmitting}
+              disabled={isSubmitting || !isFormValid}
               className="mt-6 rounded-xl overflow-hidden"
               style={({ pressed }) => [
-                { opacity: isSubmitting ? 0.7 : pressed ? 0.85 : 1 },
+                { opacity: isSubmitting || !isFormValid ? 0.5 : pressed ? 0.85 : 1 },
               ]}
             >
               <LinearGradient

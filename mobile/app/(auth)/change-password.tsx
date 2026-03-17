@@ -16,7 +16,7 @@ import { ChevronLeft, Eye, EyeOff, Lock } from "lucide-react-native";
 import { useAuth } from "@/src/hooks/use-auth";
 import type { User } from "@/src/context/auth-context";
 import { completeTeacherPasswordSetup } from "@/src/api/authentication.api";
-import { validatePasswordRules } from "@/src/validations/password-validation";
+import { validatePasswordRules, getPasswordStrengthFeedback } from "@/src/validations/password-validation";
 import PasswordStrengthFeedback from "@/src/components/password-feedback/password-strength-feedback";
 
 export default function ChangePasswordScreen() {
@@ -37,6 +37,15 @@ export default function ChangePasswordScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const passwordFeedback = useMemo(
+    () => getPasswordStrengthFeedback(newPassword),
+    [newPassword],
+  );
+
+  const isPasswordsMatching = newPassword && confirmPassword && newPassword === confirmPassword;
+  const isPasswordStrong = passwordFeedback.label === "Strong";
+  const isFormValid = isPasswordStrong && isPasswordsMatching;
+
   const handleSetPassword = async () => {
     if (!setupToken) {
       Alert.alert("Invalid Request", "Missing setup token. Please log in again.");
@@ -45,12 +54,6 @@ export default function ChangePasswordScreen() {
 
     if (!newPassword || !confirmPassword) {
       Alert.alert("Missing Fields", "Please complete all password fields.");
-      return;
-    }
-
-    const passwordValidation = validatePasswordRules(newPassword);
-    if (!passwordValidation.isValid) {
-      Alert.alert("Weak Password", passwordValidation.message || "Invalid password.");
       return;
     }
 
@@ -165,12 +168,12 @@ export default function ChangePasswordScreen() {
 
             <Pressable
               onPress={handleSetPassword}
-              disabled={isSubmitting}
+              disabled={isSubmitting || !isFormValid}
               className="mt-6 rounded-xl overflow-hidden"
-              style={({ pressed }) => [{ opacity: isSubmitting ? 0.7 : pressed ? 0.85 : 1 }]}
+              style={({ pressed }) => [{ opacity: pressed && isFormValid ? 0.85 : 1 }]}
             >
               <LinearGradient
-                colors={["#10b981", "#059669"]}
+                colors={isFormValid ? ["#10b981", "#059669"] : ["#d1d5db", "#9ca3af"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 className="w-full py-4 items-center justify-center rounded-xl"
@@ -178,7 +181,7 @@ export default function ChangePasswordScreen() {
                 {isSubmitting ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <Text className="text-white text-lg font-bold">
+                  <Text className={isFormValid ? "text-white text-lg font-bold" : "text-gray-500 text-lg font-bold"}>
                     Save Password
                   </Text>
                 )}

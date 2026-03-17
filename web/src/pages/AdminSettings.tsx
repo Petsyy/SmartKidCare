@@ -63,7 +63,7 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
   {
     id: "preferences",
     title: "Preferences",
-    description: "MFA and notification settings",
+    description: "MFA and appearance settings",
     icon: Bell,
     iconClassName:
       "bg-violet-100 text-violet-700 ring-1 ring-violet-200 dark:bg-violet-500/20 dark:text-violet-300 dark:ring-violet-500/30",
@@ -327,14 +327,12 @@ export default function AdminSettings() {
 
   const enabledPreferenceCount = [
     preferences.adminMfaEnabled,
-    preferences.adminNotifySecurityEvents,
-    preferences.adminNotifySystemUpdates,
   ].filter(Boolean).length;
 
   const sectionStatus: Record<SettingsSectionId, string> = {
     profile: `${profileCompletion}% complete`,
     security: securityStatus,
-    preferences: `${enabledPreferenceCount}/3 enabled`,
+    preferences: `${enabledPreferenceCount}/1 enabled`,
   };
 
   const activeSectionMeta =
@@ -354,7 +352,7 @@ export default function AdminSettings() {
             Settings
           </h1>
           <p className="text-sm text-gray-500 dark:text-slate-400">
-            Manage admin profile, security, and system notifications.
+            Manage admin profile, security, and preferences.
           </p>
         </div>
 
@@ -894,28 +892,6 @@ export default function AdminSettings() {
                     checked={preferences.adminMfaEnabled}
                     onChange={(checked) =>
                       handlePreferenceToggle("adminMfaEnabled", checked)
-                    }
-                  />
-                  <ToggleRow
-                    title="Security event emails"
-                    description="Receive notifications for security-related account events."
-                    checked={preferences.adminNotifySecurityEvents}
-                    onChange={(checked) =>
-                      handlePreferenceToggle(
-                        "adminNotifySecurityEvents",
-                        checked,
-                      )
-                    }
-                  />
-                  <ToggleRow
-                    title="System update emails"
-                    description="Receive notifications for maintenance and release updates."
-                    checked={preferences.adminNotifySystemUpdates}
-                    onChange={(checked) =>
-                      handlePreferenceToggle(
-                        "adminNotifySystemUpdates",
-                        checked,
-                      )
                     }
                   />
 

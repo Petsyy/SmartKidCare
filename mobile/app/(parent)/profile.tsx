@@ -16,10 +16,10 @@ import { useRouter, useFocusEffect } from "expo-router";
 import { useAuthContext } from "../../src/context/auth-context";
 import { getParentProfile } from "@/src/api/parent.api";
 import { API_BASE_URL } from "@/src/config/config.api";
-import { validatePasswordRules } from "@/src/validations/password-validation";
+import { validatePasswordRules, getPasswordStrengthFeedback } from "@/src/validations/password-validation";
 import PasswordStrengthFeedback from "@/src/components/password-feedback/password-strength-feedback";
 import UserGuideModal from "@/src/components/user-guide";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import * as Icons from "lucide-react-native";
 
 type UserProfile = {
@@ -83,6 +83,15 @@ export default function ProfileScreen() {
     ]);
   };
 
+  const passwordFeedback = useMemo(
+    () => getPasswordStrengthFeedback(newPassword),
+    [newPassword],
+  );
+
+  const isPasswordsMatching = newPassword && confirmPassword && newPassword === confirmPassword;
+  const isPasswordStrong = passwordFeedback.label === "Strong";
+  const isChangePasswordFormValid = currentPassword && isPasswordStrong && isPasswordsMatching;
+
   const handleChangePassword = async () => {
     setPasswordError(null);
 
@@ -99,6 +108,11 @@ export default function ProfileScreen() {
     const passwordValidation = validatePasswordRules(newPassword);
     if (!passwordValidation.isValid) {
       setPasswordError(passwordValidation.message || "Invalid password");
+      return;
+    }
+
+    if (!isPasswordStrong) {
+      setPasswordError("Password must be strong");
       return;
     }
 
@@ -368,13 +382,17 @@ export default function ProfileScreen() {
 
               <TouchableOpacity
                 onPress={handleChangePassword}
-                className="flex-1 rounded-2xl bg-teal-600 p-4 items-center justify-center"
-                disabled={passwordLoading}
+                className={`flex-1 rounded-2xl p-4 items-center justify-center ${
+                  passwordLoading || !isChangePasswordFormValid ? "bg-gray-300" : "bg-teal-600"
+                }`}
+                disabled={passwordLoading || !isChangePasswordFormValid}
               >
                 {passwordLoading ? (
                   <View className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  <Text className="text-base font-semibold text-white">
+                  <Text className={`text-base font-semibold ${
+                    passwordLoading || !isChangePasswordFormValid ? "text-gray-500" : "text-white"
+                  }`}>
                     Change Password
                   </Text>
                 )}

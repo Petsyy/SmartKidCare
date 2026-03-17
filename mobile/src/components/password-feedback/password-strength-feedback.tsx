@@ -14,16 +14,6 @@ export default function PasswordStrengthFeedback({
     [password],
   );
 
-  if (!password) {
-    return (
-      <View className="mt-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2">
-        <Text className="text-base text-gray-600">
-          Use a strong password that follows the rules below.
-        </Text>
-      </View>
-    );
-  }
-
   return (
     <View className="mt-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-3">
       <View className="mb-2 flex-row items-center justify-between">
