@@ -504,7 +504,7 @@ export function useReportAnalytics() {
     const statusDistribution: StatusDistributionPoint[] = [
       { name: "Present", value: attendancePresent, color: "#10b981" },
       { name: "Absent", value: attendanceAbsent, color: "#f43f5e" },
-      { name: "Fed", value: feedingCompleted, color: "#14b8a6" },
+      { name: "Completed", value: feedingCompleted, color: "#14b8a6" },
       { name: "Missed Meal", value: feedingMissed, color: "#f59e0b" },
     ].filter((item) => item.value > 0);
 
@@ -602,7 +602,7 @@ export function useReportAnalytics() {
 
     lines.push("Daily Trend");
     lines.push(
-      "Date,Attendance Rate,Feeding Rate,Present,Absent,Fed,Missed Meal",
+      "Date,Attendance Rate,Feeding Rate,Present,Absent,Completed,Missed Meal",
     );
     computed.dailyTrends.forEach((row) => {
       lines.push(

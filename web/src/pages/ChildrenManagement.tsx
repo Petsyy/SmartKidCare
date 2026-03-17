@@ -31,6 +31,7 @@ import type {
 export default function ChildrenManagement() {
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSavingChild, setIsSavingChild] = useState(false);
   const [editingChild, setEditingChild] = useState<Child | null>(null);
   const [viewingChild, setViewingChild] = useState<Child | null>(null);
   const [viewError, setViewError] = useState<string | null>(null);
@@ -436,21 +437,32 @@ export default function ChildrenManagement() {
 
       <AddChildModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          if (isSavingChild) return;
+          setIsModalOpen(false);
+        }}
+        isLoading={isSavingChild}
         onSave={async (childData, files) => {
           if (!childData.studentId) {
             console.error("Student ID is required");
             return;
           }
-          const success = await handleSaveChild(
-            {
-              ...childData,
-              studentId: childData.studentId,
-            },
-            files,
-          );
-          if (success) {
-            setIsModalOpen(false);
+          setIsSavingChild(true);
+          try {
+            await handleSaveChild(
+              {
+                ...childData,
+                studentId: childData.studentId,
+              },
+              files,
+              {
+                onCreatedSuccess: () => {
+                  setIsModalOpen(false);
+                },
+              },
+            );
+          } finally {
+            setIsSavingChild(false);
           }
         }}
       />

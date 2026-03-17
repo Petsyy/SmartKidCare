@@ -365,7 +365,7 @@ export default function FeedingProgram() {
           )}
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[820px] border-collapse lg:min-w-0">
+            <table className="w-full min-w-205 border-collapse lg:min-w-0">
               <thead className="border-b border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-900/50">
                 <tr>
                   <th className="whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">

@@ -138,6 +138,9 @@ export default function AdminSettings() {
     success: null,
     error: null,
   });
+  const [profileFieldErrors, setProfileFieldErrors] = useState<
+    Partial<Record<keyof AdminProfileForm, string>>
+  >({});
 
   const [preferenceState, setPreferenceState] = useState<{
     saving: boolean;
@@ -177,6 +180,55 @@ export default function AdminSettings() {
       ...previous,
       [key]: value,
     }));
+
+    if (isProfileEditing) {
+      setProfileFieldErrors((previous) => ({
+        ...previous,
+        [key]: validateProfileField(key, value),
+      }));
+    }
+  };
+
+  const validateProfileField = (
+    key: keyof AdminProfileForm,
+    value: string,
+  ): string | undefined => {
+    const trimmedValue = String(value || "").trim();
+    const requiredMessages: Partial<Record<keyof AdminProfileForm, string>> = {
+      username: "Username is required.",
+      firstName: "First name is required.",
+      middleName: "Middle name is required.",
+      lastName: "Last name is required.",
+      email: "Email is required.",
+      phone: "Phone number is required.",
+    };
+
+    const requiredMessage = requiredMessages[key];
+    if (requiredMessage && trimmedValue.length === 0) {
+      return requiredMessage;
+    }
+
+    if (key === "email" && trimmedValue.length > 0) {
+      const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedValue);
+      if (!isValidEmail) {
+        return "Email is invalid.";
+      }
+    }
+
+    return undefined;
+  };
+
+  const validateProfileForm = (
+    data: AdminProfileForm,
+  ): Partial<Record<keyof AdminProfileForm, string>> => {
+    const nextErrors: Partial<Record<keyof AdminProfileForm, string>> = {};
+    (Object.keys(data) as Array<keyof AdminProfileForm>).forEach((key) => {
+      const error = validateProfileField(key, String(data[key] ?? ""));
+      if (error) {
+        nextErrors[key] = error;
+      }
+    });
+    return nextErrors;
   };
 
   const handlePreferenceToggle = (
@@ -196,21 +248,18 @@ export default function AdminSettings() {
       return;
     }
 
-    setProfileState({ saving: true, success: null, error: null });
-
-    if (
-      !profile.username.trim() ||
-      !profile.firstName.trim() ||
-      !profile.lastName.trim() ||
-      !profile.email.trim()
-    ) {
+    const nextFieldErrors = validateProfileForm(profile);
+    setProfileFieldErrors(nextFieldErrors);
+    if (Object.keys(nextFieldErrors).length > 0) {
       setProfileState({
         saving: false,
         success: null,
-        error: "Username, first name, last name, and email are required.",
+        error: "Please fix the highlighted fields.",
       });
       return;
     }
+
+    setProfileState({ saving: true, success: null, error: null });
 
     try {
       await saveProfile(profile);
@@ -252,6 +301,7 @@ export default function AdminSettings() {
   const handleEnableProfileEdit = () => {
     setProfileSnapshot({ ...profile });
     setProfileState({ saving: false, success: null, error: null });
+    setProfileFieldErrors({});
     setIsProfileEditing(true);
   };
 
@@ -262,15 +312,18 @@ export default function AdminSettings() {
     setIsProfileEditing(false);
     setProfileSnapshot(null);
     setProfileState({ saving: false, success: null, error: null });
+    setProfileFieldErrors({});
   };
 
   const requiredProfileCount = [
     profile.username,
     profile.firstName,
+    profile.middleName,
     profile.lastName,
     profile.email,
+    profile.phone,
   ].filter((value) => value.trim().length > 0).length;
-  const profileCompletion = Math.round((requiredProfileCount / 4) * 100);
+  const profileCompletion = Math.round((requiredProfileCount / 6) * 100);
 
   const enabledPreferenceCount = [
     preferences.adminMfaEnabled,
@@ -441,6 +494,11 @@ export default function AdminSettings() {
                         disabled={!isProfileEditing}
                         required
                       />
+                      {profileFieldErrors.username && (
+                        <p className="mt-1 text-xs text-red-600">
+                          {profileFieldErrors.username}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <label className={LABEL_CLASS_NAME}>
@@ -454,6 +512,11 @@ export default function AdminSettings() {
                         placeholder="Email cannot be edited"
                         required
                       />
+                      {profileFieldErrors.email && (
+                        <p className="mt-1 text-xs text-red-600">
+                          {profileFieldErrors.email}
+                        </p>
+                      )}
                       <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                         Email cannot be edited here.
                       </p>
@@ -479,9 +542,16 @@ export default function AdminSettings() {
                         disabled={!isProfileEditing}
                         required
                       />
+                      {profileFieldErrors.firstName && (
+                        <p className="mt-1 text-xs text-red-600">
+                          {profileFieldErrors.firstName}
+                        </p>
+                      )}
                     </div>
                     <div>
-                      <label className={LABEL_CLASS_NAME}>Middle Name</label>
+                      <label className={LABEL_CLASS_NAME}>
+                        Middle Name <span className="text-red-500">*</span>
+                      </label>
                       <input
                         type="text"
                         value={profile.middleName}
@@ -494,7 +564,13 @@ export default function AdminSettings() {
                         className={INPUT_CLASS_NAME}
                         placeholder="Enter middle name"
                         disabled={!isProfileEditing}
+                        required
                       />
+                      {profileFieldErrors.middleName && (
+                        <p className="mt-1 text-xs text-red-600">
+                          {profileFieldErrors.middleName}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <label className={LABEL_CLASS_NAME}>
@@ -514,11 +590,18 @@ export default function AdminSettings() {
                         disabled={!isProfileEditing}
                         required
                       />
+                      {profileFieldErrors.lastName && (
+                        <p className="mt-1 text-xs text-red-600">
+                          {profileFieldErrors.lastName}
+                        </p>
+                      )}
                     </div>
                   </div>
 
                   <div>
-                    <label className={LABEL_CLASS_NAME}>Phone</label>
+                    <label className={LABEL_CLASS_NAME}>
+                      Phone <span className="text-red-500">*</span>
+                    </label>
                     <input
                       type="tel"
                       value={profile.phone}
@@ -528,7 +611,13 @@ export default function AdminSettings() {
                       className={INPUT_CLASS_NAME}
                       placeholder="Enter phone number"
                       disabled={!isProfileEditing}
+                      required
                     />
+                    {profileFieldErrors.phone && (
+                      <p className="mt-1 text-xs text-red-600">
+                        {profileFieldErrors.phone}
+                      </p>
+                    )}
                   </div>
 
                   {profileState.error && (

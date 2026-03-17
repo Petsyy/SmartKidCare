@@ -54,6 +54,9 @@ export function useChildrenManagement() {
       birthCertificate?: File | null;
       parentId?: File | null;
     },
+    options?: {
+      onCreatedSuccess?: () => void;
+    },
   ) => {
     try {
       const data = await createChild(
@@ -67,7 +70,9 @@ export function useChildrenManagement() {
         },
       );
 
-      await fetchChildren();
+      options?.onCreatedSuccess?.();
+
+      void fetchChildren();
 
       if (data.parentCredentials) {
         const creds = {

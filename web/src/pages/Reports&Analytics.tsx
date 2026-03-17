@@ -328,7 +328,7 @@ export default function ReportAnalytics() {
                     Daily Outcomes
                   </h3>
                   <p className="text-sm text-gray-500 dark:text-slate-400">
-                    Present, absent, fed, and missed counts by day.
+                    Present, absent, Completed, and missed counts by day.
                   </p>
                 </div>
                 {dailyTrends.length === 0 ? (
@@ -360,7 +360,7 @@ export default function ReportAnalytics() {
                       <Legend wrapperStyle={{ fontSize: "12px" }} />
                       <Bar dataKey="present" fill="#10b981" name="Present" />
                       <Bar dataKey="absent" fill="#f43f5e" name="Absent" />
-                      <Bar dataKey="completed" fill="#14b8a6" name="Fed" />
+                      <Bar dataKey="completed" fill="#14b8a6" name="Completed" />
                       <Bar dataKey="missed" fill="#f59e0b" name="Missed Meal" />
                     </BarChart>
                   </ResponsiveContainer>
@@ -491,7 +491,7 @@ export default function ReportAnalytics() {
                           Present / Absent
                         </th>
                         <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
-                          Fed / Missed
+                          Completed / Missed
                         </th>
                       </tr>
                     </thead>
