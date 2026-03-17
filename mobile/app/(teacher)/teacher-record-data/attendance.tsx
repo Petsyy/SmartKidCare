@@ -375,13 +375,27 @@ export default function RecordAttendance() {
         {/* Children List */}
         <View className="px-6">
           {filteredChildren.length === 0 ? (
-            <View className="items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white py-12">
+            <View className="items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white py-12 px-6">
               <Users size={48} color="#D1D5DB" />
-              <Text className="mt-4 text-center text-gray-500">
-                {searchQuery
-                  ? "No children found matching your search"
-                  : "No children enrolled yet"}
-              </Text>
+              {searchQuery ? (
+                <>
+                  <Text className="mt-4 text-center text-base font-semibold text-gray-500">
+                    No children found
+                  </Text>
+                  <Text className="mt-1 text-center text-sm text-gray-400">
+                    Try a different name or student ID
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Text className="mt-4 text-center text-base font-semibold text-gray-500">
+                    No children assigned yet
+                  </Text>
+                  <Text className="mt-1 text-center text-sm text-gray-400">
+                    Contact your administrator to assign children to your class
+                  </Text>
+                </>
+              )}
             </View>
           ) : (
             filteredChildren.map((item) => (
@@ -458,25 +472,33 @@ export default function RecordAttendance() {
 
       {/* Submit Button */}
       <View className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white/95 px-6 py-4">
-        <Pressable
-          onPress={handleSubmit}
-          android_ripple={{ color: "transparent" }}
-          className="items-center justify-center rounded-2xl bg-emerald-600 py-4 active:opacity-90"
-          style={({ pressed }) => [
-            {
-              shadowColor: "#059669",
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.28,
-              shadowRadius: 8,
-              elevation: 5,
-              opacity: pressed ? 0.9 : 1,
-            },
-          ]}
-        >
-          <Text className="text-xl font-bold text-white">
-            {isReadOnly ? "View Feeding Record" : "Submit Attendance"}
-          </Text>
-        </Pressable>
+        {children.length === 0 ? (
+          <View className="items-center justify-center rounded-2xl bg-gray-100 py-4">
+            <Text className="text-base font-semibold text-gray-400">
+              No children assigned to submit
+            </Text>
+          </View>
+        ) : (
+          <Pressable
+            onPress={handleSubmit}
+            android_ripple={{ color: "transparent" }}
+            className="items-center justify-center rounded-2xl bg-emerald-600 py-4 active:opacity-90"
+            style={({ pressed }) => [
+              {
+                shadowColor: "#059669",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.28,
+                shadowRadius: 8,
+                elevation: 5,
+                opacity: pressed ? 0.9 : 1,
+              },
+            ]}
+          >
+            <Text className="text-xl font-bold text-white">
+              {isReadOnly ? "View Feeding Record" : "Submit Attendance"}
+            </Text>
+          </Pressable>
+        )}
       </View>
     </SafeAreaView>
   );
