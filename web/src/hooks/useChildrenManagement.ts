@@ -1,30 +1,11 @@
 import { useState, useEffect } from "react";
 import type { Child } from "@/types/child";
 import {
-  createChild,
   deleteChild,
   getChildren,
   updateChild,
 } from "../api/child.api";
-import { showErrorModal, showParentCredentialsModal } from "../utils/sweetalert.modal";
-
-export type ChildFormData = {
-  firstName: string;
-  middleName: string;
-  lastName: string;
-  dateOfBirth: string;
-  age: string | number;
-  gender: "male" | "female";
-  enrollmentDate: string;
-  schoolYear: string;
-  parentLastName: string;
-  parentFirstName: string;
-  parentMiddleName: string;
-  parentEmail: string;
-  parentPhone: string;
-  teacherId?: string;
-  studentId: string;
-};
+import { showErrorModal } from "../utils/sweetalert.modal";
 
 export function useChildrenManagement() {
   const [children, setChildren] = useState<Child[]>([]);
@@ -47,50 +28,6 @@ export function useChildrenManagement() {
   useEffect(() => {
     fetchChildren();
   }, []);
-
-  const handleSaveChild = async (
-    childData: ChildFormData,
-    files?: {
-      birthCertificate?: File | null;
-      parentId?: File | null;
-    },
-    options?: {
-      onCreatedSuccess?: () => void;
-    },
-  ) => {
-    try {
-      const data = await createChild(
-        {
-          ...childData,
-          status: "Active",
-        },
-        {
-          birthCertificate: files?.birthCertificate ?? undefined,
-          parentId: files?.parentId ?? undefined,
-        },
-      );
-
-      options?.onCreatedSuccess?.();
-
-      void fetchChildren();
-
-      if (data.parentCredentials) {
-        const creds = {
-          email: data.parentCredentials.email ?? "",
-          password: data.parentCredentials.tempPassword ?? "",
-        };
-        setTimeout(() => showParentCredentialsModal(creds), 350);
-      }
-
-      return true;
-    } catch (error) {
-      console.error("Failed to save child:", error);
-      showErrorModal(
-        error instanceof Error ? error.message : "Failed to save child",
-      );
-      return false;
-    }
-  };
 
   const handleChangeStatus = async (child: Child, newStatus: string) => {
     if (!newStatus) return;
@@ -131,16 +68,6 @@ export function useChildrenManagement() {
   const filteredChildren = children.filter((child) => {
     if (!search.trim()) return true;
     const q = search.toLowerCase().trim();
-    const name =
-      `${child.firstName} ${child.lastName} ${child.middleName || ""}`.toLowerCase();
-    const nameLastFirstMiddle = [
-      child.lastName,
-      child.firstName,
-      child.middleName,
-    ]
-      .filter((value) => String(value || "").trim().length > 0)
-      .join(", ")
-      .toLowerCase();
     const studentId = (child.studentId || "").toLowerCase();
     const age = String(child.age ?? "").toLowerCase();
     const gender = (child.gender || "").toLowerCase();
@@ -149,15 +76,17 @@ export function useChildrenManagement() {
     const teacherName = child.teacher
       ? `${child.teacher.firstName} ${child.teacher.middleName || ""} ${child.teacher.lastName}`.toLowerCase()
       : "";
+    const centerName = (child.daycareCenter?.name || "").toLowerCase();
+    const centerBarangay = (child.daycareCenter?.barangay || "").toLowerCase();
     return (
-      name.includes(q) ||
-      nameLastFirstMiddle.includes(q) ||
       studentId.includes(q) ||
       age.includes(q) ||
       gender.includes(q) ||
       schoolYear.includes(q) ||
       status.includes(q) ||
-      teacherName.includes(q)
+      teacherName.includes(q) ||
+      centerName.includes(q) ||
+      centerBarangay.includes(q)
     );
   });
 
@@ -169,7 +98,6 @@ export function useChildrenManagement() {
     isLoading,
     filteredChildren,
     fetchChildren,
-    handleSaveChild,
     handleChangeStatus,
     handleUnlinkParent,
     handleDeleteChild,

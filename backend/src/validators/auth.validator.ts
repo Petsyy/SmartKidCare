@@ -29,12 +29,13 @@ const validate =
 
 const nonEmptyString = z.string().trim().min(1, "Field is required.");
 const emailSchema = z.email("Invalid email format.").trim();
+const loginIdentifierSchema = z.string().trim().min(1, "Field is required.");
 
 const loginSchema = z
   .object({
-    email: emailSchema.optional(),
-    username: nonEmptyString.optional(),
-    identifier: nonEmptyString.optional(),
+    email: loginIdentifierSchema.optional(),
+    username: loginIdentifierSchema.optional(),
+    identifier: loginIdentifierSchema.optional(),
     password: nonEmptyString,
   })
   .refine((data) => Boolean(data.email || data.username || data.identifier), {

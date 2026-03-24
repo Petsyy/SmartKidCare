@@ -7,12 +7,77 @@ import {
   notifyFeedingSubmitted,
 } from "../../services/notifications/recordEventNotification.service";
 
+const MANILA_OFFSET_MS = 8 * 60 * 60 * 1000;
+const MANILA_DAY_MS = 24 * 60 * 60 * 1000;
+const DATE_KEY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+type DateParts = {
+  year: number;
+  month: number;
+  day: number;
+};
+
 const resolveChildId = (value: unknown): string => {
   if (value && typeof value === "object") {
     const asObject = value as { _id?: unknown };
     if (asObject._id) return String(asObject._id).trim();
   }
   return String(value ?? "").trim();
+};
+
+const toValidDateParts = (
+  year: number,
+  month: number,
+  day: number,
+): DateParts | null => {
+  if (!Number.isInteger(year) || year < 1900 || year > 9999) return null;
+  if (!Number.isInteger(month) || month < 1 || month > 12) return null;
+  if (!Number.isInteger(day) || day < 1 || day > 31) return null;
+
+  const probe = new Date(Date.UTC(year, month - 1, day));
+  if (
+    probe.getUTCFullYear() !== year ||
+    probe.getUTCMonth() !== month - 1 ||
+    probe.getUTCDate() !== day
+  ) {
+    return null;
+  }
+
+  return { year, month, day };
+};
+
+const parseRecordDateParts = (value: unknown): DateParts | null => {
+  const raw = String(value ?? "").trim();
+  if (!raw) return null;
+
+  const dateOnlyMatch = DATE_KEY_PATTERN.exec(raw);
+  if (dateOnlyMatch) {
+    return toValidDateParts(
+      Number(dateOnlyMatch[1]),
+      Number(dateOnlyMatch[2]),
+      Number(dateOnlyMatch[3]),
+    );
+  }
+
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return null;
+
+  const shiftedToManila = new Date(parsed.getTime() + MANILA_OFFSET_MS);
+  return toValidDateParts(
+    shiftedToManila.getUTCFullYear(),
+    shiftedToManila.getUTCMonth() + 1,
+    shiftedToManila.getUTCDate(),
+  );
+};
+
+const getManilaDayRange = (parts: DateParts): { start: Date; end: Date } => {
+  const startMs =
+    Date.UTC(parts.year, parts.month - 1, parts.day, 0, 0, 0, 0) -
+    MANILA_OFFSET_MS;
+  return {
+    start: new Date(startMs),
+    end: new Date(startMs + MANILA_DAY_MS - 1),
+  };
 };
 
 const validateTeacherChildAssignments = async (
@@ -89,12 +154,19 @@ export const submitFeeding = async (req: Request, res: Response) => {
       });
     }
 
-    const feedingDate = new Date(date);
-    feedingDate.setHours(0, 0, 0, 0);
+    const parsedDateParts = parseRecordDateParts(date);
+    if (!parsedDateParts) {
+      return res.status(400).json({
+        message: "Invalid date format. Use ISO date or YYYY-MM-DD.",
+      });
+    }
+
+    const feedingDayRange = getManilaDayRange(parsedDateParts);
+    const feedingDate = feedingDayRange.start;
 
     const existingFeeding = await Feeding.findOne({
       teacher: req.user.id,
-      date: feedingDate,
+      date: { $gte: feedingDayRange.start, $lte: feedingDayRange.end },
     });
 
     if (existingFeeding) {
@@ -105,7 +177,7 @@ export const submitFeeding = async (req: Request, res: Response) => {
       await existingFeeding.save();
 
       void notifyFeedingSubmitted({
-        date: feedingDate,
+        date: existingFeeding.date || feedingDate,
         foodServed,
         records: newRecords as Array<{
           child: unknown;
@@ -172,12 +244,19 @@ export const submitAttendance = async (req: Request, res: Response) => {
       });
     }
 
-    const attendanceDate = new Date(date);
-    attendanceDate.setHours(0, 0, 0, 0);
+    const parsedDateParts = parseRecordDateParts(date);
+    if (!parsedDateParts) {
+      return res.status(400).json({
+        message: "Invalid date format. Use ISO date or YYYY-MM-DD.",
+      });
+    }
+
+    const attendanceDayRange = getManilaDayRange(parsedDateParts);
+    const attendanceDate = attendanceDayRange.start;
 
     const existingAttendance = await Attendance.findOne({
       teacher: req.user.id,
-      date: attendanceDate,
+      date: { $gte: attendanceDayRange.start, $lte: attendanceDayRange.end },
     });
 
     if (existingAttendance) {
@@ -187,7 +266,7 @@ export const submitAttendance = async (req: Request, res: Response) => {
       await existingAttendance.save();
 
       void notifyAttendanceSubmitted({
-        date: attendanceDate,
+        date: existingAttendance.date || attendanceDate,
         records: newRecords as Array<{
           child: unknown;
           status: "present" | "absent";

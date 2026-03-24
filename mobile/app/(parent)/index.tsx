@@ -13,7 +13,10 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import * as Icons from "lucide-react-native";
+import {
+  Ionicons,
+  MaterialCommunityIcons,
+} from "@expo/vector-icons";
 import { useAuth } from "@/src/hooks/use-auth";
 import { getMyChildren, Child } from "@/src/api/parent.api";
 import {
@@ -40,6 +43,42 @@ type ActionCardProps = {
   subtitle: string;
   icon: React.ReactNode;
   onPress?: () => void;
+};
+
+const Icons = {
+  Users: ({ size, color }: { size: number; color: string }) => (
+    <Ionicons name="people-outline" size={size} color={color} />
+  ),
+  Calendar: ({ size, color }: { size: number; color: string }) => (
+    <Ionicons name="calendar-outline" size={size} color={color} />
+  ),
+  Home: ({ size, color }: { size: number; color: string }) => (
+    <Ionicons name="home-outline" size={size} color={color} />
+  ),
+  UserCheck: ({ size, color }: { size: number; color: string }) => (
+    <MaterialCommunityIcons name="account-check-outline" size={size} color={color} />
+  ),
+  UserX: ({ size, color }: { size: number; color: string }) => (
+    <MaterialCommunityIcons name="account-remove-outline" size={size} color={color} />
+  ),
+  UtensilsCrossed: ({ size, color }: { size: number; color: string }) => (
+    <MaterialCommunityIcons name="silverware-fork-knife" size={size} color={color} />
+  ),
+  Zap: ({ size, color }: { size: number; color: string }) => (
+    <Ionicons name="flash-outline" size={size} color={color} />
+  ),
+  ClipboardCheck: ({ size, color }: { size: number; color: string }) => (
+    <MaterialCommunityIcons name="clipboard-check-outline" size={size} color={color} />
+  ),
+  Utensils: ({ size, color }: { size: number; color: string }) => (
+    <MaterialCommunityIcons name="silverware" size={size} color={color} />
+  ),
+  ChevronRight: ({ size, color }: { size: number; color: string }) => (
+    <Ionicons name="chevron-forward" size={size} color={color} />
+  ),
+  MessageCircle: ({ size, color }: { size: number; color: string }) => (
+    <Ionicons name="chatbubble-ellipses-outline" size={size} color={color} />
+  ),
 };
 
 export default function ParentDashboard() {
@@ -166,19 +205,19 @@ export default function ParentDashboard() {
   const childGender = child?.gender ? child.gender : "-";
   const enrolledText = child?.enrollmentDate
     ? (() => {
-        const parts = new Intl.DateTimeFormat("en-US", {
-          month: "long",
-          day: "numeric",
-          year: "numeric",
-          timeZone: "Asia/Manila",
-        }).formatToParts(new Date(child.enrollmentDate));
+      const parts = new Intl.DateTimeFormat("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+        timeZone: "Asia/Manila",
+      }).formatToParts(new Date(child.enrollmentDate));
 
-        const month = parts.find((part) => part.type === "month")?.value ?? "";
-        const day = parts.find((part) => part.type === "day")?.value ?? "";
-        const year = parts.find((part) => part.type === "year")?.value ?? "";
+      const month = parts.find((part) => part.type === "month")?.value ?? "";
+      const day = parts.find((part) => part.type === "day")?.value ?? "";
+      const year = parts.find((part) => part.type === "year")?.value ?? "";
 
-        return `${month}, ${day} ${year}`.trim();
-      })()
+      return `${month}, ${day} ${year}`.trim();
+    })()
     : "-";
 
   // Calculate statistics for the selected child
@@ -559,10 +598,10 @@ export default function ParentDashboard() {
               <Text className="text-teal-600 font-semibold">
                 {stats.mealsCompleted + stats.mealsMissed > 0
                   ? Math.round(
-                      (stats.mealsCompleted /
-                        (stats.mealsCompleted + stats.mealsMissed)) *
-                        100,
-                    )
+                    (stats.mealsCompleted /
+                      (stats.mealsCompleted + stats.mealsMissed)) *
+                    100,
+                  )
                   : 0}
                 %
               </Text>
@@ -572,10 +611,10 @@ export default function ParentDashboard() {
                 percent={
                   stats.mealsCompleted + stats.mealsMissed > 0
                     ? Math.round(
-                        (stats.mealsCompleted /
-                          (stats.mealsCompleted + stats.mealsMissed)) *
-                          100,
-                      )
+                      (stats.mealsCompleted /
+                        (stats.mealsCompleted + stats.mealsMissed)) *
+                      100,
+                    )
                     : 0
                 }
               />
@@ -611,9 +650,8 @@ export default function ParentDashboard() {
             recentNotifications.map((item, index) => (
               <View
                 key={item.id}
-                className={`rounded-2xl bg-gray-50 p-4 ${
-                  index > 0 ? "mt-3" : ""
-                }`}
+                className={`rounded-2xl bg-gray-50 p-4 ${index > 0 ? "mt-3" : ""
+                  }`}
               >
                 <View className="flex-row">
                   <View className="mr-4 w-1.5 rounded-full bg-emerald-600" />

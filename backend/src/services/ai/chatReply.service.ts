@@ -1,6 +1,6 @@
 import { AIResponseLanguage } from "./language.service";
 
-type NormalizedRole = "parent" | "teacher" | "admin";
+type NormalizedRole = "parent";
 
 const GREETING_PATTERN =
   /^(hi|hello|hey|good morning|good afternoon|good evening|kumusta|kamusta|magandang umaga|magandang hapon|magandang gabi)[.!?]*$/;
@@ -43,18 +43,10 @@ const GREETING_REPLIES: RoleReplyTable = {
   en: {
     parent:
       "Hello! I can help with your child's attendance and feeding records. What would you like to know?",
-    teacher:
-      "Hello! I can help with attendance and feeding summaries. What would you like to check?",
-    admin:
-      "Hello! I can help with attendance, feeding, and system verification insights. What would you like to check?",
   },
   tl: {
     parent:
       "Kumusta! Matutulungan kita sa attendance at feeding records ng anak mo. Ano ang gusto mong malaman?",
-    teacher:
-      "Kumusta! Matutulungan kita sa buod ng attendance at feeding. Ano ang gusto mong i-check?",
-    admin:
-      "Kumusta! Matutulungan kita sa attendance, feeding, at verification insights. Ano ang gusto mong i-check?",
   },
 };
 
@@ -62,15 +54,10 @@ const AFFIRMATIVE_REPLIES: RoleReplyTable = {
   en: {
     parent:
       "Sure. Do you want attendance details, feeding details, or both for your child?",
-    teacher: "Sure. Do you want attendance, feeding, or both?",
-    admin: "Sure. Do you want attendance, feeding, or verification insights?",
   },
   tl: {
     parent:
       "Sige. Attendance details, feeding details, o pareho para sa anak mo?",
-    teacher: "Sige. Attendance, feeding, o pareho ba ang gusto mong makita?",
-    admin:
-      "Sige. Attendance, feeding, o verification insights ang gusto mong makita?",
   },
 };
 
@@ -78,17 +65,10 @@ const ACKNOWLEDGEMENT_REPLIES: RoleReplyTable = {
   en: {
     parent:
       "You're welcome. Ask anytime about your child's attendance or feeding.",
-    teacher: "You're welcome. Ask anytime about attendance or feeding records.",
-    admin:
-      "You're welcome. Ask anytime about attendance, feeding, or verification.",
   },
   tl: {
     parent:
       "Walang anuman. Magtanong ka lang anumang oras tungkol sa attendance o feeding ng anak mo.",
-    teacher:
-      "Walang anuman. Magtanong ka lang anumang oras tungkol sa attendance o feeding records.",
-    admin:
-      "Walang anuman. Magtanong ka lang anumang oras tungkol sa attendance, feeding, o verification.",
   },
 };
 
@@ -96,18 +76,10 @@ const CLOSURE_REPLIES: RoleReplyTable = {
   en: {
     parent:
       "No problem. Thanks for asking. Ask me anytime about your child's attendance or feeding.",
-    teacher:
-      "No problem. Thanks for asking. Ask me anytime about attendance or feeding records.",
-    admin:
-      "No problem. Thanks for asking. Ask me anytime about attendance, feeding, or verification insights.",
   },
   tl: {
     parent:
       "Walang problema. Salamat sa pagtatanong. Magtanong ka lang anumang oras tungkol sa attendance o feeding ng anak mo.",
-    teacher:
-      "Walang problema. Salamat sa pagtatanong. Magtanong ka lang anumang oras tungkol sa attendance o feeding records.",
-    admin:
-      "Walang problema. Salamat sa pagtatanong. Magtanong ka lang anumang oras tungkol sa attendance, feeding, o verification insights.",
   },
 };
 
@@ -115,18 +87,10 @@ const LOW_SIGNAL_REPLIES: RoleReplyTable = {
   en: {
     parent:
       "I can help with attendance or feeding. What would you like to check for your child?",
-    teacher:
-      "I can help with attendance or feeding summaries. What would you like to check?",
-    admin:
-      "I can help with attendance, feeding, or verification insights. What would you like to check?",
   },
   tl: {
     parent:
       "Matutulungan kita sa attendance o feeding. Ano ang gusto mong i-check para sa anak mo?",
-    teacher:
-      "Matutulungan kita sa buod ng attendance o feeding. Ano ang gusto mong i-check?",
-    admin:
-      "Matutulungan kita sa attendance, feeding, o verification insights. Ano ang gusto mong i-check?",
   },
 };
 
@@ -135,10 +99,7 @@ function normalizeMessage(text: string): string {
 }
 
 function normalizeRole(role: string): NormalizedRole {
-  const normalized = String(role).trim().toLowerCase();
-  if (normalized === "parent") return "parent";
-  if (normalized === "teacher") return "teacher";
-  return "admin";
+  return "parent";
 }
 
 function normalizeLanguage(language: AIResponseLanguage): AIResponseLanguage {
@@ -222,8 +183,7 @@ export function buildQuotaFallbackReply(params: {
   retryAfterSeconds?: number;
   language?: AIResponseLanguage;
 }): string {
-  const { role, retryAfterSeconds, language = "en" } = params;
-  const normalizedRole = normalizeRole(role);
+  const { retryAfterSeconds, language = "en" } = params;
   const retryText = retryAfterSeconds
     ? ` Please try again in about ${retryAfterSeconds} seconds.`
     : " Please try again shortly.";
@@ -233,15 +193,8 @@ export function buildQuotaFallbackReply(params: {
       ? ` Pakisubukan muli pagkalipas ng humigit-kumulang ${retryAfterSeconds} segundo.`
       : " Pakisubukan muli maya-maya.";
 
-    if (normalizedRole === "parent") {
-      return `Pansamantalang na-rate limit ang AI.${retryTextTl} Maaari ka pa ring magtanong tungkol sa attendance o feeding ng anak mo kapag reset na ang limit.`;
-    }
-    return `Pansamantalang na-rate limit ang AI.${retryTextTl} Pakisubukang muli ang tanong mo tungkol sa attendance/feeding.`;
+    return `Pansamantalang na-rate limit ang AI.${retryTextTl} Maaari ka pa ring magtanong tungkol sa attendance o feeding ng anak mo kapag reset na ang limit.`;
   }
 
-  if (normalizedRole === "parent") {
-    return `AI is temporarily rate-limited.${retryText} You can still ask about your child's attendance or feeding once the limit resets.`;
-  }
-
-  return `AI is temporarily rate-limited.${retryText} Please retry your attendance/feeding question soon.`;
+  return `AI is temporarily rate-limited.${retryText} You can still ask about your child's attendance or feeding once the limit resets.`;
 }

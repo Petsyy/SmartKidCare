@@ -7,15 +7,12 @@ import {
   Pencil,
   KeyRound,
   Power,
-  Users,
   MoreVertical,
   Search,
-  Baby,
   X,
 } from "lucide-react";
 import { getUsers, type User } from "@/api/authentication.api";
 import AddTeacherModal from "@/components/modals/user/AddTeacherModal";
-import AddChildForParentModal from "@/components/modals/child/AddChildForParentModal";
 import Layout from "@/components/layout/Layout";
 import {
   showErrorModal,
@@ -24,22 +21,22 @@ import {
   showToggleUserStatusSuccessModal,
 } from "@/utils/sweetalert.modal";
 import {
-  getParentChildren,
   toggleUserStatus,
   resetUserPassword,
   deleteUser,
 } from "@/api/admin.api";
 import Swal from "sweetalert2";
-import { createChild } from "@/api/child.api";
 import EditUserModal from "@/components/modals/user/EditUserModal";
+import { formatConfidentialName } from "@/utils/namePrivacy";
 
-interface Child {
-  _id: string;
-  firstName: string;
-  middleName?: string;
-  lastName: string;
-  studentId: string;
-}
+type AccountStatusFilter = "all" | "active" | "inactive";
+
+const PAGE_SIZE_OPTIONS = [10, 20, 50];
+
+const getUserFullName = (user: User) =>
+  `${user.firstName} ${user.middleName || ""} ${user.lastName}`
+    .replace(/\s+/g, " ")
+    .trim();
 
 export default function UserManagement() {
   const navigate = useNavigate();
@@ -52,22 +49,18 @@ export default function UserManagement() {
   const [openMenuUserId, setOpenMenuUserId] = useState<string | null>(null);
   const [menuAnchorRect, setMenuAnchorRect] = useState<DOMRect | null>(null);
   const [menuUser, setMenuUser] = useState<User | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showAddChildModal, setShowAddChildModal] = useState(false);
-  const [selectedParentForChild, setSelectedParentForChild] =
-    useState<User | null>(null);
+  const [teacherSearchQuery, setTeacherSearchQuery] = useState("");
+  const [parentSearchQuery, setParentSearchQuery] = useState("");
+  const [teacherStatusFilter, setTeacherStatusFilter] =
+    useState<AccountStatusFilter>("all");
+  const [parentStatusFilter, setParentStatusFilter] =
+    useState<AccountStatusFilter>("all");
+  const [teacherCenterFilter, setTeacherCenterFilter] = useState("all");
+  const [teacherPage, setTeacherPage] = useState(1);
+  const [parentPage, setParentPage] = useState(1);
+  const [teacherPageSize, setTeacherPageSize] = useState(10);
+  const [parentPageSize, setParentPageSize] = useState(10);
   const [viewingUser, setViewingUser] = useState<User | null>(null);
-  const [viewingChildrenParentName, setViewingChildrenParentName] = useState<
-    string | null
-  >(null);
-  const [viewingChildren, setViewingChildren] = useState<Child[]>([]);
-  const [parentChildren, setParentChildren] = useState<Record<string, Child[]>>(
-    {},
-  );
-
-  const MAX_TEACHERS = 2;
-  const teacherCount = activeTab === "teacher" ? users.length : 0;
-  const isTeacherLimitReached = teacherCount >= MAX_TEACHERS;
 
   const openMenu = (user: User, buttonEl: HTMLButtonElement) => {
     setMenuUser(user);
@@ -124,66 +117,6 @@ export default function UserManagement() {
     }
   };
 
-  const handleAddChildForParent = (parent: User) => {
-    setSelectedParentForChild(parent);
-    setShowAddChildModal(true);
-  };
-
-  const handleSaveChildForParent = async (
-    data: {
-      parent: {
-        firstName: string;
-        middleName?: string;
-        lastName: string;
-        email: string;
-      };
-    } & {
-      firstName: string;
-      middleName: string;
-      lastName: string;
-      dateOfBirth: string;
-      age: string;
-      gender: string;
-      enrollmentDate: string;
-      schoolYear: string;
-    },
-    files: {
-      birthCertificate: File;
-      parentId: File;
-    },
-  ) => {
-    try {
-      const p = data.parent;
-      await createChild(
-        {
-          firstName: data.firstName,
-          middleName: data.middleName || undefined,
-          lastName: data.lastName,
-          dateOfBirth: data.dateOfBirth,
-          age: data.age,
-          gender: data.gender,
-          enrollmentDate: data.enrollmentDate,
-          schoolYear: data.schoolYear,
-          status: "Active",
-          parentFirstName: p.firstName,
-          parentLastName: p.lastName,
-          parentMiddleName: p.middleName || undefined,
-          parentEmail: p.email,
-        },
-        {
-          birthCertificate: files.birthCertificate,
-          parentId: files.parentId,
-        },
-      );
-      setShowAddChildModal(false);
-      setSelectedParentForChild(null);
-      fetchUsers(); // Refresh to update the linked children
-    } catch (err: any) {
-      showErrorModal(err.message || "Failed to add child");
-      throw err;
-    }
-  };
-
   const handleDeleteUser = async (user: User) => {
     const result = await Swal.fire({
       title: "Delete User?",
@@ -212,16 +145,6 @@ export default function UserManagement() {
     }
   };
 
-  const handleViewChildren = async (parentId: string, parentName: string) => {
-    try {
-      const children = await getParentChildren(parentId);
-      setViewingChildren(children);
-      setViewingChildrenParentName(parentName);
-    } catch (err: any) {
-      showErrorModal(err.message || "Failed to load children");
-    }
-  };
-
   useEffect(() => {
     fetchUsers();
   }, [activeTab]);
@@ -232,22 +155,6 @@ export default function UserManagement() {
     try {
       const data = await getUsers({ role: activeTab });
       setUsers(data);
-
-      // Fetch children for each parent if activeTab is parent
-      if (activeTab === "parent" && data.length > 0) {
-        const childrenData: Record<string, Child[]> = {};
-        await Promise.all(
-          data.map(async (parent) => {
-            try {
-              const children = await getParentChildren(parent._id);
-              childrenData[parent._id] = children;
-            } catch (err) {
-              childrenData[parent._id] = [];
-            }
-          }),
-        );
-        setParentChildren(childrenData);
-      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -255,15 +162,161 @@ export default function UserManagement() {
     }
   };
 
+  const handleSearchChange = (value: string) => {
+    if (activeTab === "teacher") {
+      setTeacherPage(1);
+      setTeacherSearchQuery(value);
+      return;
+    }
+
+    setParentPage(1);
+    setParentSearchQuery(value);
+  };
+
+  const handleStatusFilterChange = (value: AccountStatusFilter) => {
+    if (activeTab === "teacher") {
+      setTeacherPage(1);
+      setTeacherStatusFilter(value);
+      return;
+    }
+
+    setParentPage(1);
+    setParentStatusFilter(value);
+  };
+
+  const handlePageSizeChange = (value: number) => {
+    if (activeTab === "teacher") {
+      setTeacherPage(1);
+      setTeacherPageSize(value);
+      return;
+    }
+
+    setParentPage(1);
+    setParentPageSize(value);
+  };
+
+  const handlePageChange = (nextPage: number) => {
+    const boundedPage = Math.max(1, Math.min(nextPage, totalPages));
+    if (activeTab === "teacher") {
+      setTeacherPage(boundedPage);
+      return;
+    }
+
+    setParentPage(boundedPage);
+  };
+
+  const clearFilters = () => {
+    if (activeTab === "teacher") {
+      setTeacherSearchQuery("");
+      setTeacherStatusFilter("all");
+      setTeacherCenterFilter("all");
+      setTeacherPage(1);
+      return;
+    }
+
+    setParentSearchQuery("");
+    setParentStatusFilter("all");
+    setParentPage(1);
+  };
+
+  const teacherCenterOptions = Array.from(
+    new Map(
+      users
+        .filter((user) => Boolean(user.daycareCenter?._id))
+        .map((user) => [
+          user.daycareCenter!._id,
+          user.daycareCenter as NonNullable<User["daycareCenter"]>,
+        ]),
+    ).values(),
+  ).sort((left, right) =>
+    `${left.barangay} ${left.name}`.localeCompare(
+      `${right.barangay} ${right.name}`,
+    ),
+  );
+
   const filteredUsers = users.filter((user) => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase().trim();
-    const fullName =
-      `${user.firstName} ${user.middleName} ${user.lastName}`.toLowerCase();
+    const searchQuery =
+      activeTab === "teacher" ? teacherSearchQuery : parentSearchQuery;
+    const statusFilter =
+      activeTab === "teacher" ? teacherStatusFilter : parentStatusFilter;
+    const q = searchQuery.trim().toLowerCase();
+    const fullName = getUserFullName(user).toLowerCase();
     const email = user.email.toLowerCase();
     const phone = (user.phone || "").toLowerCase();
-    return fullName.includes(q) || email.includes(q) || phone.includes(q);
+
+    if (q) {
+      const searchableValues = [fullName, email, phone];
+      if (activeTab === "teacher") {
+        searchableValues.push(
+          user.daycareCenter?.name?.toLowerCase() || "",
+          user.daycareCenter?.barangay?.toLowerCase() || "",
+        );
+      }
+
+      const matchesSearch = searchableValues.some((value) => value.includes(q));
+      if (!matchesSearch) return false;
+    }
+
+    if (statusFilter === "active" && user.isActive === false) return false;
+    if (statusFilter === "inactive" && user.isActive !== false) return false;
+
+    if (activeTab === "teacher") {
+      if (teacherCenterFilter === "assigned" && !user.daycareCenter) {
+        return false;
+      }
+      if (teacherCenterFilter === "unassigned" && user.daycareCenter) {
+        return false;
+      }
+      if (
+        teacherCenterFilter !== "all" &&
+        teacherCenterFilter !== "assigned" &&
+        teacherCenterFilter !== "unassigned" &&
+        user.daycareCenter?._id !== teacherCenterFilter
+      ) {
+        return false;
+      }
+    }
+
+    return true;
   });
+
+  const currentPage = activeTab === "teacher" ? teacherPage : parentPage;
+  const currentPageSize =
+    activeTab === "teacher" ? teacherPageSize : parentPageSize;
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredUsers.length / currentPageSize || 1),
+  );
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedUsers = filteredUsers.slice(
+    (safeCurrentPage - 1) * currentPageSize,
+    safeCurrentPage * currentPageSize,
+  );
+  const currentSearchQuery =
+    activeTab === "teacher" ? teacherSearchQuery : parentSearchQuery;
+  const currentStatusFilter =
+    activeTab === "teacher" ? teacherStatusFilter : parentStatusFilter;
+  const hasActiveFilters =
+    Boolean(currentSearchQuery.trim()) ||
+    currentStatusFilter !== "all" ||
+    (activeTab === "teacher" && teacherCenterFilter !== "all");
+  const paginationRangeLabel =
+    filteredUsers.length === 0
+      ? "0 of 0"
+      : `${(safeCurrentPage - 1) * currentPageSize + 1}-${Math.min(
+        safeCurrentPage * currentPageSize,
+        filteredUsers.length,
+      )} of ${filteredUsers.length}`;
+
+  type LinkedChild = NonNullable<User["linkedChildren"]>[number];
+  const maskChildName = (child: LinkedChild) =>
+    formatConfidentialName({
+      lastName: child.lastName,
+      firstName: child.firstName,
+      middleName: child.middleName,
+    }) || "Unknown";
+
+  const tableColumnCount = activeTab === "teacher" ? 6 : 6;
 
   return (
     <Layout
@@ -286,22 +339,20 @@ export default function UserManagement() {
         <div className="flex gap-2">
           <button
             onClick={() => setActiveTab("teacher")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-              activeTab === "teacher"
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${activeTab === "teacher"
                 ? "border border-teal-200 bg-teal-50 text-teal-700 shadow-sm hover:bg-teal-100 dark:border-teal-700 dark:bg-teal-900/40 dark:text-teal-200 dark:hover:bg-teal-900/55"
                 : "border border-transparent text-gray-600 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800/60 dark:hover:text-slate-100 cursor-pointer"
-            }`}
+              }`}
           >
             Teacher Accounts
           </button>
 
           <button
             onClick={() => setActiveTab("parent")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-              activeTab === "parent"
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${activeTab === "parent"
                 ? "border border-teal-200 bg-teal-50 text-teal-700 shadow-sm hover:bg-teal-100 dark:border-teal-700 dark:bg-teal-900/40 dark:text-teal-200 dark:hover:bg-teal-900/55"
                 : "border border-transparent text-gray-600 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800/60 dark:hover:text-slate-100 cursor-pointer"
-            }`}
+              }`}
           >
             Parent Accounts
           </button>
@@ -315,42 +366,99 @@ export default function UserManagement() {
 
         {/* Table */}
         <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex flex-col gap-4 border-b border-gray-200 p-6 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
-              {activeTab === "teacher" ? "Teacher Accounts" : "Parent Accounts"}
-            </h2>
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1 sm:flex-initial">
-                <Search
-                  size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-400"
-                />
-                <input
-                  type="text"
-                  placeholder={`Search ${activeTab === "teacher" ? "teachers" : "parents"}...`}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 bg-white py-2 pl-9 pr-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 sm:w-56"
-                />
-              </div>
+          <div className="flex flex-col gap-4 border-b border-gray-200 p-6 dark:border-slate-800">
+            <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
+                {activeTab === "teacher" ? "Teacher Accounts" : "Parent Accounts"}
+              </h2>
               {activeTab === "teacher" && (
                 <button
-                  onClick={() => {
-                    if (!isTeacherLimitReached) {
-                      setShowAddTeacherModal(true);
-                    }
-                  }}
-                  disabled={isTeacherLimitReached}
-                  className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium shadow-sm transition shrink-0 ${
-                    isTeacherLimitReached
-                      ? "cursor-not-allowed bg-gray-300 text-gray-500 dark:bg-slate-700 dark:text-slate-500"
-                      : "cursor-pointer border border-teal-500/20 bg-linear-to-r from-teal-600 to-cyan-500 text-white hover:from-teal-700 hover:to-cyan-600 dark:border-cyan-400/20 dark:from-teal-600 dark:to-cyan-600 dark:hover:from-teal-500 dark:hover:to-cyan-500"
-                  }`}
+                  onClick={() => setShowAddTeacherModal(true)}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-teal-500/20 bg-linear-to-r from-teal-600 to-cyan-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:from-teal-700 hover:to-cyan-600 dark:border-cyan-400/20 dark:from-teal-600 dark:to-cyan-600 dark:hover:from-teal-500 dark:hover:to-cyan-500 lg:self-start"
                 >
                   <Plus size={16} />
                   Add Teacher
                 </button>
               )}
+            </div>
+
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+              <div className="flex flex-1 flex-wrap items-center gap-2">
+                <div className="relative min-w-55 flex-1 sm:max-w-xs">
+                  <Search
+                    size={16}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-400"
+                  />
+                  <input
+                    type="text"
+                    placeholder={`Search ${activeTab === "teacher" ? "teachers" : "parents"}...`}
+                    value={currentSearchQuery}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                    className="w-full rounded-lg border border-gray-300 bg-white py-2 pl-9 pr-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
+                  />
+                </div>
+
+                <select
+                  value={currentStatusFilter}
+                  onChange={(e) =>
+                    handleStatusFilterChange(
+                      e.target.value as AccountStatusFilter,
+                    )
+                  }
+                  className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+
+                {activeTab === "teacher" && (
+                  <select
+                    value={teacherCenterFilter}
+                    onChange={(e) => {
+                      setTeacherPage(1);
+                      setTeacherCenterFilter(e.target.value);
+                    }}
+                    className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
+                  >
+                    <option value="all">All Centers</option>
+                    <option value="assigned">Assigned Only</option>
+                    <option value="unassigned">Unassigned</option>
+                    {teacherCenterOptions.map((center) => (
+                      <option key={center._id} value={center._id}>
+                        {center.barangay} - {center.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+
+                <select
+                  value={String(currentPageSize)}
+                  onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                  className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
+                >
+                  {PAGE_SIZE_OPTIONS.map((size) => (
+                    <option key={size} value={size}>
+                      {size} per page
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 xl:justify-end">
+                <p className="text-sm text-gray-500 dark:text-slate-400">
+                  {filteredUsers.length} result
+                  {filteredUsers.length === 1 ? "" : "s"}
+                </p>
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  disabled={!hasActiveFilters}
+                  className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                >
+                  Clear Filters
+                </button>
+              </div>
             </div>
           </div>
 
@@ -369,7 +477,12 @@ export default function UserManagement() {
                   </th>
                   {activeTab === "parent" && (
                     <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
-                      Linked Child
+                      Child Name
+                    </th>
+                  )}
+                  {activeTab === "teacher" && (
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
+                      Assigned Center
                     </th>
                   )}
                   <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
@@ -385,7 +498,7 @@ export default function UserManagement() {
                 {isLoading && (
                   <tr>
                     <td
-                      colSpan={activeTab === "parent" ? 6 : 5}
+                      colSpan={tableColumnCount}
                       className="px-6 py-10 text-center text-gray-500 dark:text-slate-400"
                     >
                       Loading users...
@@ -396,7 +509,7 @@ export default function UserManagement() {
                 {!isLoading && users.length === 0 && (
                   <tr>
                     <td
-                      colSpan={activeTab === "parent" ? 6 : 5}
+                      colSpan={tableColumnCount}
                       className="px-6 py-12 text-center text-gray-500 dark:text-slate-400"
                     >
                       No {activeTab === "teacher" ? "teachers" : "parents"}{" "}
@@ -410,7 +523,7 @@ export default function UserManagement() {
                   filteredUsers.length === 0 && (
                     <tr>
                       <td
-                        colSpan={activeTab === "parent" ? 6 : 5}
+                        colSpan={tableColumnCount}
                         className="px-6 py-12 text-center text-gray-500 dark:text-slate-400"
                       >
                         No {activeTab === "teacher" ? "teachers" : "parents"}{" "}
@@ -419,7 +532,7 @@ export default function UserManagement() {
                     </tr>
                   )}
 
-                {filteredUsers.map((user) => (
+                {paginatedUsers.map((user) => (
                   <tr
                     key={user._id}
                     className="transition-colors hover:bg-gray-50 dark:hover:bg-slate-800/60"
@@ -435,38 +548,46 @@ export default function UserManagement() {
                     </td>
                     {activeTab === "parent" && (
                       <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-300">
-                        {parentChildren[user._id] &&
-                        parentChildren[user._id].length > 0 ? (
-                          <div className="space-y-1">
-                            {parentChildren[user._id].map((child) => (
-                              <div key={child._id} className="flex flex-col">
-                                <span className="font-medium text-gray-900 dark:text-slate-100">
-                                  {child.firstName}{" "}
-                                  {child.middleName
-                                    ? child.middleName + " "
-                                    : ""}
-                                  {child.lastName}
-                                </span>
-                                <span className="text-xs text-gray-500 dark:text-slate-400">
-                                  ID: {child.studentId}
-                                </span>
-                              </div>
+                        {(user.linkedChildren || []).length === 0 ? (
+                          <span className="text-xs text-gray-500 dark:text-slate-400">
+                            No linked child
+                          </span>
+                        ) : (
+                          <div className="flex flex-wrap gap-2">
+                            {(user.linkedChildren || []).map((child) => (
+                              <span
+                                key={`${user._id}-${child._id}-${child.studentId || "no-id"}`}
+                                className="text-xs text-gray-700 dark:text-slate-300"
+                              >
+                                {maskChildName(child)}
+                              </span>
                             ))}
                           </div>
+                        )}
+                      </td>
+                    )}
+                    {activeTab === "teacher" && (
+                      <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-300">
+                        {user.daycareCenter ? (
+                          <div className="flex flex-col">
+                            <span className="font-medium text-gray-900 dark:text-slate-100">
+                              {user.daycareCenter.name}
+                            </span>
+                            <span className="text-xs text-gray-500 dark:text-slate-400">
+                              {user.daycareCenter.barangay}
+                            </span>
+                          </div>
                         ) : (
-                          <span className="text-gray-400 dark:text-slate-500">
-                            No linked children
-                          </span>
+                          <span className="text-gray-400 dark:text-slate-500">Unassigned</span>
                         )}
                       </td>
                     )}
                     <td className="px-6 py-4 text-sm">
                       <span
-                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                          user.isActive !== false
+                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${user.isActive !== false
                             ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200"
                             : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200"
-                        }`}
+                          }`}
                       >
                         {user.isActive !== false ? "Active" : "Inactive"}
                       </span>
@@ -495,25 +616,6 @@ export default function UserManagement() {
                           />
                           Edit
                         </button>
-                        {activeTab === "parent" && (
-                          <button
-                            onClick={() => {
-                              const parentName =
-                                `${user.firstName} ${user.middleName || ""} ${user.lastName}`
-                                  .replace(/\s+/g, " ")
-                                  .trim();
-                              handleViewChildren(user._id, parentName);
-                            }}
-                            className="group inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-indigo-300 hover:bg-indigo-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-indigo-500/30 dark:border-indigo-900/50 dark:bg-indigo-900/20 dark:text-indigo-300 dark:hover:bg-indigo-900/40"
-                            title="View children"
-                          >
-                            <Users
-                              size={14}
-                              className="transition-transform duration-200 group-hover:scale-110"
-                            />
-                            Children
-                          </button>
-                        )}
                         <div className="inline-block shrink-0">
                           <button
                             onClick={(e) => {
@@ -536,6 +638,36 @@ export default function UserManagement() {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          <div className="flex flex-col gap-3 border-t border-gray-200 px-6 py-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-gray-500 dark:text-slate-400">
+              Showing {paginationRangeLabel}
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handlePageChange(safeCurrentPage - 1)}
+                disabled={safeCurrentPage <= 1 || filteredUsers.length === 0}
+                className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+              >
+                Previous
+              </button>
+              <span className="px-2 text-sm text-gray-600 dark:text-slate-300">
+                Page {filteredUsers.length === 0 ? 0 : safeCurrentPage} of{" "}
+                {filteredUsers.length === 0 ? 0 : totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => handlePageChange(safeCurrentPage + 1)}
+                disabled={
+                  filteredUsers.length === 0 || safeCurrentPage >= totalPages
+                }
+                className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+              >
+                Next
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -612,73 +744,34 @@ export default function UserManagement() {
                     {viewingUser.role}
                   </p>
                 </div>
+                {viewingUser.role === "teacher" && (
+                  <div className="rounded-lg border border-gray-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
+                      Assigned Center
+                    </p>
+                    <p className="mt-1 text-gray-900 dark:text-slate-100">
+                      {viewingUser.daycareCenter?.name || "Unassigned"}
+                    </p>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">
+                      {viewingUser.daycareCenter?.barangay || "-"}
+                    </p>
+                  </div>
+                )}
                 <div className="rounded-lg border border-gray-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
                     Status
                   </p>
                   <span
-                    className={`mt-1 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                      viewingUser.isActive !== false
+                    className={`mt-1 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${viewingUser.isActive !== false
                         ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200"
                         : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200"
-                    }`}
+                      }`}
                   >
                     <span className="h-1.5 w-1.5 rounded-full bg-current" />
                     {viewingUser.isActive !== false ? "Active" : "Inactive"}
                   </span>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {viewingChildrenParentName && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-lg rounded-xl bg-white shadow-xl dark:bg-slate-900">
-            <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-slate-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
-                Linked Children
-              </h3>
-              <button
-                onClick={() => {
-                  setViewingChildrenParentName(null);
-                  setViewingChildren([]);
-                }}
-                className="rounded-md px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
-              >
-                <X size={16} />
-              </button>
-            </div>
-            <div className="px-5 py-4">
-              <p className="mb-3 text-sm text-gray-600 dark:text-slate-300">
-                Parent:{" "}
-                <span className="font-semibold text-gray-900 dark:text-slate-100">
-                  {viewingChildrenParentName}
-                </span>
-              </p>
-              {viewingChildren.length > 0 ? (
-                <div className="space-y-3">
-                  {viewingChildren.map((child) => (
-                    <div
-                      key={child._id}
-                      className="rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-slate-700 dark:bg-slate-900"
-                    >
-                      <p className="font-medium text-gray-900 dark:text-slate-100">
-                        {child.firstName} {child.middleName || ""}{" "}
-                        {child.lastName}
-                      </p>
-                      <p className="text-xs text-gray-600 dark:text-slate-400">
-                        Student ID: {child.studentId}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500 dark:text-slate-500">
-                  No linked children.
-                </p>
-              )}
             </div>
           </div>
         </div>
@@ -696,18 +789,6 @@ export default function UserManagement() {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {activeTab === "parent" && (
-              <button
-                onClick={() => {
-                  closeMenu();
-                  handleAddChildForParent(menuUser);
-                }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-teal-700 transition hover:bg-teal-50 dark:hover:bg-teal-500/10 cursor-pointer"
-              >
-                <Baby size={14} />
-                Add Child
-              </button>
-            )}
             <button
               onClick={() => {
                 closeMenu();
@@ -760,24 +841,6 @@ export default function UserManagement() {
         <AddTeacherModal
           onClose={() => setShowAddTeacherModal(false)}
           onCreated={fetchUsers}
-        />
-      )}
-
-      {/* Add Child for Existing Parent Modal */}
-      {showAddChildModal && selectedParentForChild && (
-        <AddChildForParentModal
-          isOpen={showAddChildModal}
-          parent={{
-            firstName: selectedParentForChild.firstName,
-            middleName: selectedParentForChild.middleName,
-            lastName: selectedParentForChild.lastName,
-            email: selectedParentForChild.email,
-          }}
-          onClose={() => {
-            setShowAddChildModal(false);
-            setSelectedParentForChild(null);
-          }}
-          onSave={handleSaveChildForParent}
         />
       )}
     </Layout>

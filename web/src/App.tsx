@@ -7,6 +7,8 @@ import FeedingProgram from "./pages/FeedingProgram";
 import ReportAnalytics from "./pages/Reports&Analytics";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminSettings from "./pages/AdminSettings";
+import EnrollmentRequests from "./pages/EnrollmentRequests";
+import DaycareCenters from "./pages/DaycareCenters";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 export default function App() {
@@ -28,6 +30,22 @@ export default function App() {
           element={
             <ProtectedRoute>
               <ChildrenManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/enrollment-requests"
+          element={
+            <ProtectedRoute>
+              <EnrollmentRequests />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/centers"
+          element={
+            <ProtectedRoute>
+              <DaycareCenters />
             </ProtectedRoute>
           }
         />

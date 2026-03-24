@@ -86,9 +86,6 @@ function buildGroundTruthFromFacts(facts: WriterFacts): string {
 }
 
 function normalizeRole(role: string): AIRole {
-  const normalized = String(role).trim().toLowerCase();
-  if (normalized === "teacher") return "teacher";
-  if (normalized === "admin") return "admin";
   return "parent";
 }
 
@@ -811,12 +808,12 @@ function ensureActions(
   if (language === "tl") {
     return [
       "I-record ang attendance at feeding nang tuloy-tuloy para makita ang trend.",
-      "Mag-follow up sa teacher kung may na-miss na araw o pagkain.",
+      "Mag-follow up sa daycare center kung may na-miss na araw o pagkain.",
     ];
   }
   return [
     "Keep logging attendance and meals consistently to track trends.",
-    "Follow up with the teacher on any missed days or meals.",
+    "Follow up with the daycare center on any missed days or meals.",
   ];
 }
 
@@ -1467,7 +1464,7 @@ Return ONLY one valid JSON object with this exact shape:
 Hard constraints:
 - Response language: ${language === "tl" ? "Filipino/Tagalog" : "English"}.
 - Audience role: ${role}.
-- IMPORTANT: When addressing parents, use "your child" (or "anak mo" in Tagalog) instead of the child's name. For teachers/admins, use the actual child name.
+- IMPORTANT: Always address the user as a parent and use "your child" (or "anak mo" in Tagalog) instead of the child's name.
 - Use FACTS as source of truth. Never invent or modify numbers, percentages, dates, or counts.
 - If a detail is not in FACTS (for example exact dates, reasons, comparisons, or meal names), explicitly say it is not available in the provided records.
 - Never mention a specific date unless that exact date string appears in FACTS.

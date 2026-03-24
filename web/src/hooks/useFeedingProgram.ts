@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { API_BASE } from "@/components/config/config.api";
+import {
+  formatConfidentialName,
+  maskCompositeName,
+} from "@/utils/namePrivacy";
 
 type ChildRef = {
   _id: string;
@@ -58,9 +62,13 @@ export type FeedingStatusFilter = "all" | "completed" | "missed";
 
 const formatChildName = (child?: ChildRef | null) => {
   if (!child) return "Unknown";
-  const middleName = child.middleName ?? child.middle ?? child.middle_name;
-  const trailing = [child.firstName, middleName].filter(Boolean).join(" ");
-  return trailing ? `${child.lastName}, ${trailing}` : child.lastName;
+  return (
+    formatConfidentialName({
+      lastName: child.lastName,
+      firstName: child.firstName,
+      middleName: child.middleName ?? child.middle ?? child.middle_name,
+    }) || "Unknown"
+  );
 };
 
 export function useFeedingProgram() {
@@ -69,7 +77,9 @@ export function useFeedingProgram() {
   const [datePreset, setDatePreset] = useState<DatePreset>("all");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
-  const [statusFilter, setStatusFilter] = useState<FeedingStatusFilter>("all");
+  const [statusFilter, setStatusFilter] =
+    useState<FeedingStatusFilter>("completed");
+  const [teacherId, setTeacherId] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [total, setTotal] = useState(0);
@@ -101,6 +111,15 @@ export function useFeedingProgram() {
   );
 
   const fetchFeeding = useCallback(async () => {
+    if (!teacherId) {
+      setRows([]);
+      setTotal(0);
+      setTotalPages(0);
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     try {
@@ -120,6 +139,7 @@ export function useFeedingProgram() {
       if (statusFilter !== "all") {
         params.set("status", statusFilter);
       }
+      params.set("teacherId", teacherId);
       const url = `${API_BASE}/records/feeding?${params.toString()}`;
       const response = await fetch(url, {
         credentials: "include",
@@ -143,7 +163,13 @@ export function useFeedingProgram() {
         setTotalPages(data.length > 0 ? 1 : 0);
       } else {
         const paginated = payload as PaginatedFeedingResponse;
-        setRows(Array.isArray(paginated.data) ? paginated.data : []);
+        const rowsFromApi = Array.isArray(paginated.data) ? paginated.data : [];
+        setRows(
+          rowsFromApi.map((row) => ({
+            ...row,
+            childName: maskCompositeName(row.childName) || row.childName || "Unknown",
+          })),
+        );
         if (Number.isFinite(Number(paginated.pagination?.page))) {
           setPage(Number(paginated.pagination.page));
         }
@@ -169,6 +195,7 @@ export function useFeedingProgram() {
     search,
     startDate,
     statusFilter,
+    teacherId,
   ]);
 
   useEffect(() => {
@@ -184,7 +211,6 @@ export function useFeedingProgram() {
 
   const hasActiveFilters =
     datePreset !== "all" ||
-    statusFilter !== "all" ||
     Boolean(startDate && endDate) ||
     search.trim().length > 0;
 
@@ -205,6 +231,11 @@ export function useFeedingProgram() {
     setStatusFilter(value);
   }, []);
 
+  const updateTeacherFilter = useCallback((value: string) => {
+    setPage(1);
+    setTeacherId(value);
+  }, []);
+
   const updateDateRange = useCallback((nextStart: string, nextEnd: string) => {
     setPage(1);
     setDatePreset("all");
@@ -218,7 +249,7 @@ export function useFeedingProgram() {
     setDatePreset("all");
     setStartDate("");
     setEndDate("");
-    setStatusFilter("all");
+    setStatusFilter("completed");
   }, []);
 
   const updateFeedingStatus = useCallback(
@@ -272,6 +303,7 @@ export function useFeedingProgram() {
     startDate,
     endDate,
     statusFilter,
+    teacherId,
     page,
     limit,
     totalPages,
@@ -285,6 +317,7 @@ export function useFeedingProgram() {
     updateDatePreset,
     updateDateRange,
     updateStatusFilter,
+    updateTeacherFilter,
     clearFilters,
     updateFeedingStatus,
     deleteFeeding,

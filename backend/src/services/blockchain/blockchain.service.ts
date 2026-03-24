@@ -1,5 +1,5 @@
 import {
-  attendanceContract,
+  documentsRegistryContract,
   buildChildIdHash,
   buildDocumentsHash,
   hashFileBuffer,
@@ -11,6 +11,46 @@ import {
 let totalGasSpent = 0;
 let totalTransactions = 0;
 let startingBalance = 0;
+const ZERO_HASH =
+  "0x0000000000000000000000000000000000000000000000000000000000000000";
+
+function normalizeDocumentHash(
+  value: string | null | undefined,
+  label: string,
+): string | null {
+  const normalized = String(value || "").trim();
+  if (!normalized) {
+    return null;
+  }
+
+  if (!/^0x[a-fA-F0-9]{64}$/.test(normalized)) {
+    throw new Error(`${label} hash is invalid.`);
+  }
+
+  return normalized.toLowerCase();
+}
+
+function getDocumentsRegistryErrorMessage(error: any): string {
+  const errorName = String(
+    error?.revert?.name || error?.errorName || error?.info?.errorName || "",
+  ).trim();
+
+  if (errorName === "NotAuthorized") {
+    return "The configured wallet is not authorized to write to DocumentsRegistry.";
+  }
+
+  if (errorName === "InvalidInput") {
+    return "DocumentsRegistry rejected the request because one or more hashes were invalid.";
+  }
+
+  return (
+    error?.reason ||
+    error?.shortMessage ||
+    error?.info?.error?.message ||
+    error?.message ||
+    "Unknown error"
+  );
+}
 
 export async function getWalletBalance() {
   const balance = await provider.getBalance(wallet.address);
@@ -39,33 +79,40 @@ export async function getGasComparison() {
   };
 }
 
-export async function storeChildDocumentsHash(
+export async function storeChildDocumentHashes(
   studentId: string,
-  birthCertificateBuffer?: Buffer | null,
-  parentIdBuffer?: Buffer | null,
+  birthCertificateHash?: string | null,
+  parentIdHash?: string | null,
 ) {
   const safeStudentId = String(studentId || "").trim();
   if (!safeStudentId) {
     throw new Error("studentId is required for document anchoring.");
   }
 
-  const hasBirthCertificate = Boolean(birthCertificateBuffer?.length);
-  const hasParentId = Boolean(parentIdBuffer?.length);
-  if (!hasBirthCertificate && !hasParentId) {
+  const normalizedBirthCertificateHash = normalizeDocumentHash(
+    birthCertificateHash,
+    "Birth certificate",
+  );
+  const normalizedParentIdHash = normalizeDocumentHash(
+    parentIdHash,
+    "Parent ID",
+  );
+
+  if (!normalizedBirthCertificateHash && !normalizedParentIdHash) {
     return null;
   }
 
-  const zeroHash =
-    "0x0000000000000000000000000000000000000000000000000000000000000000";
   const childIdHash = buildChildIdHash(safeStudentId);
-  const birthCertificateHash = hasBirthCertificate
-    ? hashFileBuffer(birthCertificateBuffer as Buffer)
-    : zeroHash;
-  const parentIdHash = hasParentId ? hashFileBuffer(parentIdBuffer as Buffer) : zeroHash;
-  const documentsHash = buildDocumentsHash(birthCertificateHash, parentIdHash);
+  const resolvedBirthCertificateHash =
+    normalizedBirthCertificateHash || ZERO_HASH;
+  const resolvedParentIdHash = normalizedParentIdHash || ZERO_HASH;
+  const documentsHash = buildDocumentsHash(
+    resolvedBirthCertificateHash,
+    resolvedParentIdHash,
+  );
 
   try {
-    const tx = await attendanceContract.storeDocumentsHash(
+    const tx = await documentsRegistryContract.storeDocumentsHash(
       childIdHash,
       documentsHash,
     );
@@ -84,19 +131,32 @@ export async function storeChildDocumentsHash(
       blockNumber: receipt.blockNumber,
       childIdHash,
       documentsHash,
-      birthCertificateHash,
-      parentIdHash,
+      birthCertificateHash: resolvedBirthCertificateHash,
+      parentIdHash: resolvedParentIdHash,
       gasUsed: gasUsed.toString(),
       gasPrice: gasPrice.toString(),
       gasCostInEth: gasCostInEth.toFixed(8),
     };
   } catch (error: any) {
-    const reason =
-      error?.reason ||
-      error?.shortMessage ||
-      error?.info?.error?.message ||
-      error?.message ||
-      "Unknown error";
-    throw new Error(reason);
+    throw new Error(getDocumentsRegistryErrorMessage(error));
   }
+}
+
+export async function storeChildDocumentsHash(
+  studentId: string,
+  birthCertificateBuffer?: Buffer | null,
+  parentIdBuffer?: Buffer | null,
+) {
+  const birthCertificateHash = birthCertificateBuffer?.length
+    ? hashFileBuffer(birthCertificateBuffer as Buffer)
+    : null;
+  const parentIdHash = parentIdBuffer?.length
+    ? hashFileBuffer(parentIdBuffer as Buffer)
+    : null;
+
+  return storeChildDocumentHashes(
+    studentId,
+    birthCertificateHash,
+    parentIdHash,
+  );
 }

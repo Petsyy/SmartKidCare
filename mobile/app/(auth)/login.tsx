@@ -42,19 +42,19 @@ const FormField = ({
 export default function Login() {
   const { login } = useAuth();
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [focusedField, setFocusedField] = useState<"email" | "password" | null>(
+  const [focusedField, setFocusedField] = useState<"identifier" | "password" | null>(
     null,
   );
   const [errorMessage, setErrorMessage] = useState("");
 
   const handleLogin = async () => {
-    const trimmedEmail = email.trim();
-    if (!trimmedEmail || !password) {
-      setErrorMessage("Please enter both email and password.");
+    const trimmedIdentifier = identifier.trim();
+    if (!trimmedIdentifier || !password) {
+      setErrorMessage("Please enter both login credential and password.");
       return;
     }
 
@@ -63,7 +63,7 @@ export default function Login() {
 
     try {
       const response = await apiLogin({
-        email: trimmedEmail,
+        identifier: trimmedIdentifier,
         password,
       });
 
@@ -167,25 +167,25 @@ export default function Login() {
 
               <View className="-mt-10 pb-4">
                 <View className="bg-white rounded-3xl p-6 shadow-xl shadow-emerald-100 border border-emerald-50">
-                  <FormField label="Email Address" icon={Mail}>
+                  <FormField label="Email Address or Phone Number" icon={Mail}>
                     <TextInput
                       className={`px-4 py-3.5 rounded-xl text-lg text-gray-900 border ${
-                        focusedField === "email"
+                        focusedField === "identifier"
                           ? "border-emerald-500 bg-white"
                           : "border-gray-200 bg-gray-50"
                       }`}
-                      placeholder="email@example.com"
+                      placeholder="Email address or phone number"
                       placeholderTextColor="#9CA3AF"
-                      value={email}
+                      value={identifier}
                       onChangeText={(text) => {
                         if (errorMessage) setErrorMessage("");
-                        setEmail(text);
+                        setIdentifier(text);
                       }}
-                      keyboardType="email-address"
+                      keyboardType="default"
                       autoCapitalize="none"
                       autoCorrect={false}
                       returnKeyType="next"
-                      onFocus={() => setFocusedField("email")}
+                      onFocus={() => setFocusedField("identifier")}
                       onBlur={() => setFocusedField(null)}
                     />
                   </FormField>

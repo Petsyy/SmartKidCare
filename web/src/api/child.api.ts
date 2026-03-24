@@ -1,58 +1,6 @@
 import { API_BASE } from "../components/config/config.api";
 import type { ChildBlockchainProof } from "@/types/child";
 
-export type CreateChildPayload = {
-  firstName: string;
-  middleName?: string;
-  lastName: string;
-  dateOfBirth: string;
-  age: string | number;
-  gender: string;
-  enrollmentDate: string;
-  schoolYear: string;
-  status: string;
-  teacherId?: string;
-  parentFirstName: string;
-  parentLastName: string;
-  parentMiddleName?: string;
-  parentEmail: string;
-  parentPhone?: string;
-};
-
-export const createChild = async (
-  payload: CreateChildPayload,
-  files: {
-    birthCertificate?: File;
-    parentId?: File;
-  },
-) => {
-  const formData = new FormData();
-
-  (Object.keys(payload) as (keyof CreateChildPayload)[]).forEach((key) => {
-    const value = payload[key];
-    if (value !== undefined && value !== null) {
-      formData.append(key, String(value));
-    }
-  });
-
-  if (files.birthCertificate) {
-    formData.append("birthCertificate", files.birthCertificate);
-  }
-  if (files.parentId) {
-    formData.append("parentId", files.parentId);
-  }
-
-  const res = await fetch(`${API_BASE}/children`, {
-    method: "POST",
-    credentials: "include",
-    body: formData,
-  });
-
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || "Failed to create child");
-  return data;
-};
-
 export const getChildren = async () => {
   const res = await fetch(`${API_BASE}/children`, {
     credentials: "include",

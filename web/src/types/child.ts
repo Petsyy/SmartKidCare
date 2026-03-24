@@ -26,6 +26,13 @@ export type Child = {
     lastName: string;
     email?: string;
   } | null;
+  daycareCenter?: {
+    _id: string;
+    name: string;
+    barangay: string;
+    code?: string;
+    isActive?: boolean;
+  } | null;
   documents?: {
     birthCertificate?: {
       publicId?: string;

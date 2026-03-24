@@ -1,4 +1,9 @@
 import { API_BASE_URL } from "../config/config.api";
+import {
+  getManilaDateKey,
+  getManilaIsoRangeForDateKey,
+  toManilaDateKey,
+} from "@/src/utils/manila-date";
 
 export interface AttendanceRecord {
   child: string;
@@ -158,32 +163,38 @@ export const getFeedingHistory = async (
 export const getTodayAttendance = async (
   token: string,
 ): Promise<any | null> => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  const todayDateKey = getManilaDateKey();
+  const todayRange = getManilaIsoRangeForDateKey(todayDateKey);
+  if (!todayRange) return null;
 
   const records = await getAttendanceHistory(
     token,
-    today.toISOString(),
-    tomorrow.toISOString(),
+    todayRange.startIso,
+    todayRange.endIso,
   );
 
-  return records.length > 0 ? records[0] : null;
+  return (
+    records.find((record) => toManilaDateKey(record?.date) === todayDateKey) ||
+    records[0] ||
+    null
+  );
 };
 
 // Get today's feeding record
 export const getTodayFeeding = async (token: string): Promise<any | null> => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  const todayDateKey = getManilaDateKey();
+  const todayRange = getManilaIsoRangeForDateKey(todayDateKey);
+  if (!todayRange) return null;
 
   const records = await getFeedingHistory(
     token,
-    today.toISOString(),
-    tomorrow.toISOString(),
+    todayRange.startIso,
+    todayRange.endIso,
   );
 
-  return records.length > 0 ? records[0] : null;
+  return (
+    records.find((record) => toManilaDateKey(record?.date) === todayDateKey) ||
+    records[0] ||
+    null
+  );
 };

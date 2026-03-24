@@ -100,6 +100,21 @@ export const resolveDocumentField = (
 export const resolveTeacherId = async (
   value: unknown,
 ): Promise<mongoose.Types.ObjectId | null> => {
+  const assignment = await resolveTeacherAssignment(value);
+  return assignment?.teacherId || null;
+};
+
+export type TeacherAssignment = {
+  teacherId: mongoose.Types.ObjectId;
+  daycareCenterId: mongoose.Types.ObjectId | null;
+};
+
+/**
+ * Validates teacher and returns both teacher ID and assigned daycare center ID
+ */
+export const resolveTeacherAssignment = async (
+  value: unknown,
+): Promise<TeacherAssignment | null> => {
   const normalizedTeacherId = String(value ?? "").trim();
   if (!normalizedTeacherId) {
     return null;
@@ -114,12 +129,19 @@ export const resolveTeacherId = async (
     role: "teacher",
     isActive: true,
   })
-    .select("_id")
+    .select("_id daycareCenter")
     .lean();
 
   if (!teacher) {
     throw new Error("teacher_not_found");
   }
 
-  return new mongoose.Types.ObjectId(normalizedTeacherId);
+  const assignedDaycareCenterId = (teacher as any)?.daycareCenter
+    ? new mongoose.Types.ObjectId(String((teacher as any).daycareCenter))
+    : null;
+
+  return {
+    teacherId: new mongoose.Types.ObjectId(normalizedTeacherId),
+    daycareCenterId: assignedDaycareCenterId,
+  };
 };

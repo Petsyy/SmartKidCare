@@ -298,8 +298,11 @@ export default function ViewFeedingDetails() {
         className="bg-teal-600 px-5 pb-5"
       >
         <View className="flex-row items-center">
-          <Pressable onPress={() => router.push("/(parent)")} className="mr-4">
-            <ChevronLeft size={24} color="white" />
+          <Pressable
+            onPress={() => router.push("/(parent)")}
+            className="h-10 w-10 items-center justify-center rounded-full bg-white/20 mr-3"
+          >
+            <ChevronLeft size={22} color="white" />
           </Pressable>
           <View className="flex-1">
             <Text className="text-3xl font-extrabold text-white">Feeding</Text>
@@ -319,22 +322,21 @@ export default function ViewFeedingDetails() {
         }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Feeding Subheader */}
-        <View className="mb-6">
-          <Text className="text-lg font-semibold text-gray-700">Feeding</Text>
-          <Text className="text-base text-gray-500 mt-1">
-            View your child's daily feeding records
-          </Text>
-        </View>
-
         {/* Child Selector */}
         <View className="mb-6">
           <Pressable
             onPress={() => setShowChildDropdown(!showChildDropdown)}
-            className="bg-white rounded-xl p-4 flex-row items-center justify-between border border-gray-200"
+            className="bg-white rounded-2xl p-4 flex-row items-center justify-between border border-gray-200"
+            style={{
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.06,
+              shadowRadius: 6,
+              elevation: 2,
+            }}
           >
             <View className="flex-row items-center flex-1">
-              <View className="w-10 h-10 rounded-full bg-teal-500 items-center justify-center mr-3">
+              <View className="w-11 h-11 rounded-2xl bg-teal-500 items-center justify-center mr-3">
                 <Text className="text-white font-semibold text-lg">
                   {selectedChild?.firstName.charAt(0)}
                 </Text>
@@ -350,7 +352,15 @@ export default function ViewFeedingDetails() {
 
           {/* Dropdown Menu */}
           {showChildDropdown && children.length > 1 && (
-            <View className="bg-white rounded-xl mt-2 border border-gray-200 overflow-hidden">
+            <View className="bg-white rounded-2xl mt-2 border border-gray-200 overflow-hidden"
+              style={{
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.06,
+                shadowRadius: 6,
+                elevation: 2,
+              }}
+            >
               {children.map((child, index) => (
                 <Pressable
                   key={child._id}
@@ -360,7 +370,7 @@ export default function ViewFeedingDetails() {
                   }}
                   className={`p-4 flex-row items-center ${index !== children.length - 1 ? "border-b border-gray-100" : ""}`}
                 >
-                  <View className="w-10 h-10 rounded-full bg-teal-500 items-center justify-center mr-3">
+                  <View className="w-11 h-11 rounded-2xl bg-teal-500 items-center justify-center mr-3">
                     <Text className="text-white font-semibold text-lg">
                       {child.firstName.charAt(0)}
                     </Text>
@@ -375,7 +385,16 @@ export default function ViewFeedingDetails() {
         </View>
 
         {/* Calendar Card */}
-        <View className="bg-white rounded-xl p-5 mb-6 border border-gray-200">
+        <View
+          className="bg-white rounded-3xl p-5 mb-6 border border-gray-100"
+          style={{
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.06,
+            shadowRadius: 8,
+            elevation: 3,
+          }}
+        >
           {/* Month Navigation */}
           <View className="flex-row items-center justify-between mb-4">
             <Pressable onPress={() => navigateMonth("prev")} className="p-2">
@@ -415,13 +434,30 @@ export default function ViewFeedingDetails() {
         </View>
 
         {/* Monthly Summary */}
-        <View className="bg-white rounded-xl p-5 mb-6 border border-gray-200">
+        <View
+          className="bg-white rounded-3xl p-5 mb-6 border border-gray-100"
+          style={{
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.06,
+            shadowRadius: 8,
+            elevation: 3,
+          }}
+        >
           <Text className="text-lg font-semibold text-gray-800 mb-4">
             Monthly Summary
           </Text>
           <View className="flex-row flex-wrap">
             <View className="w-[48%] mr-[4%] mb-4">
-              <View className="bg-green-50 rounded-lg p-4 items-start border-l-4 border-green-500">
+              <View className="bg-green-50 rounded-2xl p-4 items-start border-l-4 border-green-500"
+                style={{
+                  shadowColor: "#059669",
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.08,
+                  shadowRadius: 4,
+                  elevation: 1,
+                }}
+              >
                 <Text className="text-3xl font-bold text-green-700">
                   {summary.completed}
                 </Text>
@@ -434,7 +470,15 @@ export default function ViewFeedingDetails() {
               </View>
             </View>
             <View className="w-[48%]">
-              <View className="bg-red-50 rounded-lg p-4 items-start border-l-4 border-red-500">
+              <View className="bg-red-50 rounded-2xl p-4 items-start border-l-4 border-red-500"
+                style={{
+                  shadowColor: "#DC2626",
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.08,
+                  shadowRadius: 4,
+                  elevation: 1,
+                }}
+              >
                 <Text className="text-3xl font-bold text-red-700">
                   {summary.missed}
                 </Text>

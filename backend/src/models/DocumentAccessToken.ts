@@ -35,7 +35,7 @@ const DocumentAccessTokenSchema = new mongoose.Schema<IDocumentAccessToken>(
       ref: "User",
       required: true,
     },
-    expiresAt: { type: Date, required: true, index: true },
+    expiresAt: { type: Date, required: true },
     usedAt: { type: Date },
     used: { type: Boolean, default: false },
   },

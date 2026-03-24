@@ -20,6 +20,7 @@ module.exports = function (api) {
             "@services": "./services",
             "@constants": "./constants",
             "@types": "./types",
+            "lucide-react-native": "./src/shims/lucide-react-native",
           },
         },
       ],

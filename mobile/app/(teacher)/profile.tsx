@@ -13,11 +13,15 @@ import { useRouter, useFocusEffect } from "expo-router";
 import { useAuthContext } from "../../src/context/auth-context";
 import { getTeacherProfile } from "@/src/api/teacher.api";
 import { API_BASE_URL } from "@/src/config/config.api";
-import { validatePasswordRules } from "@/src/validations/password-validation";
+import {
+  validatePasswordRules,
+  getPasswordStrengthFeedback,
+} from "@/src/validations/password-validation";
 import PasswordStrengthFeedback from "@/src/components/password-feedback/password-strength-feedback";
 import UserGuideModal from "@/src/components/user-guide";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import * as Icons from "lucide-react-native";
+import { getDaycareCenterDisplay } from "@/src/utils/daycare-center-format";
 
 type UserProfile = {
   id: string;
@@ -29,6 +33,16 @@ type UserProfile = {
   employeeId?: string;
   isActive?: boolean;
   phone?: string;
+  daycareCenter?:
+  | {
+    _id?: string;
+    name?: string;
+    barangay?: string;
+    code?: string;
+    isActive?: boolean;
+  }
+  | string
+  | null;
   assignedCenter?: string;
 };
 
@@ -43,6 +57,9 @@ export default function ProfileScreen() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [hideCurrentPassword, setHideCurrentPassword] = useState(true);
+  const [hideNewPassword, setHideNewPassword] = useState(true);
+  const [hideConfirmPassword, setHideConfirmPassword] = useState(true);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordLoading, setPasswordLoading] = useState(false);
 
@@ -83,6 +100,17 @@ export default function ProfileScreen() {
     ]);
   };
 
+  const passwordFeedback = useMemo(
+    () => getPasswordStrengthFeedback(newPassword),
+    [newPassword],
+  );
+
+  const isPasswordsMatching =
+    newPassword && confirmPassword && newPassword === confirmPassword;
+  const isPasswordStrong = passwordFeedback.label === "Strong";
+  const isChangePasswordFormValid =
+    currentPassword && isPasswordStrong && isPasswordsMatching;
+
   const handleChangePassword = async () => {
     setPasswordError(null);
 
@@ -99,6 +127,11 @@ export default function ProfileScreen() {
     const passwordValidation = validatePasswordRules(newPassword);
     if (!passwordValidation.isValid) {
       setPasswordError(passwordValidation.message || "Invalid password");
+      return;
+    }
+
+    if (!isPasswordStrong) {
+      setPasswordError("Password must be strong");
       return;
     }
 
@@ -129,6 +162,9 @@ export default function ProfileScreen() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
+      setHideCurrentPassword(true);
+      setHideNewPassword(true);
+      setHideConfirmPassword(true);
       setShowPasswordModal(false);
     } catch (error: any) {
       setPasswordError(error.message || "Failed to change password");
@@ -136,6 +172,16 @@ export default function ProfileScreen() {
       setPasswordLoading(false);
     }
   };
+
+  const fullName =
+    `${profile?.firstName || ""} ${profile?.lastName || ""}`.trim();
+  const assignedCenterDisplayInfo = useMemo(
+    () =>
+      getDaycareCenterDisplay(
+        profile?.daycareCenter || profile?.assignedCenter || "",
+      ),
+    [profile],
+  );
 
   if (loading) {
     return (
@@ -147,9 +193,6 @@ export default function ProfileScreen() {
       </SafeAreaView>
     );
   }
-
-  const fullName =
-    `${profile?.firstName || ""} ${profile?.lastName || ""}`.trim();
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
@@ -236,8 +279,13 @@ export default function ProfileScreen() {
                   Assigned Center
                 </Text>
                 <Text className="text-base font-medium text-gray-900">
-                  {profile?.assignedCenter || "Child Development Center"}
+                  {assignedCenterDisplayInfo.primary}
                 </Text>
+                {assignedCenterDisplayInfo.secondary ? (
+                  <Text className="mt-0.5 text-sm text-gray-600">
+                    {assignedCenterDisplayInfo.secondary}
+                  </Text>
+                ) : null}
               </View>
             </View>
           </View>
@@ -328,28 +376,54 @@ export default function ProfileScreen() {
                 <Text className="text-sm font-semibold text-gray-700 mb-2">
                   Current Password
                 </Text>
-                <TextInput
-                  secureTextEntry
-                  value={currentPassword}
-                  onChangeText={setCurrentPassword}
-                  placeholder="Enter current password"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-2xl text-gray-900"
-                  editable={!passwordLoading}
-                />
+                <View className="relative">
+                  <TextInput
+                    secureTextEntry={hideCurrentPassword}
+                    value={currentPassword}
+                    onChangeText={setCurrentPassword}
+                    placeholder="Enter current password"
+                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-2xl text-gray-900"
+                    editable={!passwordLoading}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setHideCurrentPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2"
+                    disabled={passwordLoading}
+                  >
+                    {hideCurrentPassword ? (
+                      <Icons.Eye size={20} color="#6B7280" />
+                    ) : (
+                      <Icons.EyeOff size={20} color="#6B7280" />
+                    )}
+                  </TouchableOpacity>
+                </View>
               </View>
 
               <View>
                 <Text className="text-sm font-semibold text-gray-700 mb-2">
                   New Password
                 </Text>
-                <TextInput
-                  secureTextEntry
-                  value={newPassword}
-                  onChangeText={setNewPassword}
-                  placeholder="Enter new password"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-2xl text-gray-900"
-                  editable={!passwordLoading}
-                />
+                <View className="relative">
+                  <TextInput
+                    secureTextEntry={hideNewPassword}
+                    value={newPassword}
+                    onChangeText={setNewPassword}
+                    placeholder="Enter new password"
+                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-2xl text-gray-900"
+                    editable={!passwordLoading}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setHideNewPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2"
+                    disabled={passwordLoading}
+                  >
+                    {hideNewPassword ? (
+                      <Icons.Eye size={20} color="#6B7280" />
+                    ) : (
+                      <Icons.EyeOff size={20} color="#6B7280" />
+                    )}
+                  </TouchableOpacity>
+                </View>
                 <PasswordStrengthFeedback password={newPassword} />
               </View>
 
@@ -357,14 +431,27 @@ export default function ProfileScreen() {
                 <Text className="text-sm font-semibold text-gray-700 mb-2">
                   Confirm Password
                 </Text>
-                <TextInput
-                  secureTextEntry
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  placeholder="Confirm new password"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-2xl text-gray-900"
-                  editable={!passwordLoading}
-                />
+                <View className="relative">
+                  <TextInput
+                    secureTextEntry={hideConfirmPassword}
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    placeholder="Confirm new password"
+                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-2xl text-gray-900"
+                    editable={!passwordLoading}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setHideConfirmPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2"
+                    disabled={passwordLoading}
+                  >
+                    {hideConfirmPassword ? (
+                      <Icons.Eye size={20} color="#6B7280" />
+                    ) : (
+                      <Icons.EyeOff size={20} color="#6B7280" />
+                    )}
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
 
@@ -381,13 +468,23 @@ export default function ProfileScreen() {
 
               <TouchableOpacity
                 onPress={handleChangePassword}
-                className="flex-1 rounded-2xl bg-teal-600 p-4 items-center justify-center"
-                disabled={passwordLoading}
+                className={`flex-1 rounded-2xl p-4 items-center justify-center ${
+                  passwordLoading || !isChangePasswordFormValid
+                    ? "bg-gray-300"
+                    : "bg-teal-600"
+                }`}
+                disabled={passwordLoading || !isChangePasswordFormValid}
               >
                 {passwordLoading ? (
                   <View className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  <Text className="text-base font-semibold text-white">
+                  <Text
+                    className={`text-base font-semibold ${
+                      passwordLoading || !isChangePasswordFormValid
+                        ? "text-gray-500"
+                        : "text-white"
+                    }`}
+                  >
                     Change Password
                   </Text>
                 )}

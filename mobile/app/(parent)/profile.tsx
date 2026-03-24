@@ -43,6 +43,9 @@ export default function ProfileScreen() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [hideCurrentPassword, setHideCurrentPassword] = useState(true);
+  const [hideNewPassword, setHideNewPassword] = useState(true);
+  const [hideConfirmPassword, setHideConfirmPassword] = useState(true);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordLoading, setPasswordLoading] = useState(false);
 
@@ -140,6 +143,9 @@ export default function ProfileScreen() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
+      setHideCurrentPassword(true);
+      setHideNewPassword(true);
+      setHideConfirmPassword(true);
       setShowPasswordModal(false);
     } catch (error: any) {
       setPasswordError(error.message || "Failed to change password");
@@ -329,28 +335,54 @@ export default function ProfileScreen() {
                 <Text className="text-sm font-semibold text-gray-700 mb-2">
                   Current Password
                 </Text>
-                <TextInput
-                  secureTextEntry
-                  value={currentPassword}
-                  onChangeText={setCurrentPassword}
-                  placeholder="Enter current password"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-2xl text-gray-900"
-                  editable={!passwordLoading}
-                />
+                <View className="relative">
+                  <TextInput
+                    secureTextEntry={hideCurrentPassword}
+                    value={currentPassword}
+                    onChangeText={setCurrentPassword}
+                    placeholder="Enter current password"
+                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-2xl text-gray-900"
+                    editable={!passwordLoading}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setHideCurrentPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2"
+                    disabled={passwordLoading}
+                  >
+                    {hideCurrentPassword ? (
+                      <Icons.Eye size={20} color="#6B7280" />
+                    ) : (
+                      <Icons.EyeOff size={20} color="#6B7280" />
+                    )}
+                  </TouchableOpacity>
+                </View>
               </View>
 
               <View>
                 <Text className="text-sm font-semibold text-gray-700 mb-2">
                   New Password
                 </Text>
-                <TextInput
-                  secureTextEntry
-                  value={newPassword}
-                  onChangeText={setNewPassword}
-                  placeholder="Enter new password"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-2xl text-gray-900"
-                  editable={!passwordLoading}
-                />
+                <View className="relative">
+                  <TextInput
+                    secureTextEntry={hideNewPassword}
+                    value={newPassword}
+                    onChangeText={setNewPassword}
+                    placeholder="Enter new password"
+                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-2xl text-gray-900"
+                    editable={!passwordLoading}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setHideNewPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2"
+                    disabled={passwordLoading}
+                  >
+                    {hideNewPassword ? (
+                      <Icons.Eye size={20} color="#6B7280" />
+                    ) : (
+                      <Icons.EyeOff size={20} color="#6B7280" />
+                    )}
+                  </TouchableOpacity>
+                </View>
                 <PasswordStrengthFeedback password={newPassword} />
               </View>
 
@@ -358,14 +390,27 @@ export default function ProfileScreen() {
                 <Text className="text-sm font-semibold text-gray-700 mb-2">
                   Confirm Password
                 </Text>
-                <TextInput
-                  secureTextEntry
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  placeholder="Confirm new password"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-2xl text-gray-900"
-                  editable={!passwordLoading}
-                />
+                <View className="relative">
+                  <TextInput
+                    secureTextEntry={hideConfirmPassword}
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    placeholder="Confirm new password"
+                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-2xl text-gray-900"
+                    editable={!passwordLoading}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setHideConfirmPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2"
+                    disabled={passwordLoading}
+                  >
+                    {hideConfirmPassword ? (
+                      <Icons.Eye size={20} color="#6B7280" />
+                    ) : (
+                      <Icons.EyeOff size={20} color="#6B7280" />
+                    )}
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
 

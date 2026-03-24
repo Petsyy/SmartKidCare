@@ -6,6 +6,8 @@ import {
   BarChart3,
   Settings,
   Shield,
+  ClipboardList,
+  Building2,
 } from "lucide-react";
 
 type NavItem = {
@@ -16,7 +18,13 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { icon: LayoutDashboard, label: "Dashboard", path: "dashboard" },
+  { icon: Building2, label: "Centers", path: "centers" },
   { icon: Users, label: "Children Records", path: "children" },
+  {
+    icon: ClipboardList,
+    label: "Enrollment Requests",
+    path: "enrollment-requests",
+  },
   { icon: Users, label: "User Management", path: "users" },
   { icon: Calendar, label: "Attendance Tracking", path: "attendance" },
   { icon: Utensils, label: "Feeding Program", path: "feeding" },

@@ -1,5 +1,5 @@
 export interface AIChatRequest {
-  role: "parent" | "teacher" | "admin";
+  role: "parent";
   message: string;
 
   child?: {

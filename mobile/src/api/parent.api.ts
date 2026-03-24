@@ -1,5 +1,14 @@
 import { API_BASE_URL } from "../config/config.api";
 
+export interface ChildDocumentIntegrity {
+  childIdHash?: string | null;
+  documentsHash?: string | null;
+  txHash?: string | null;
+  blockNumber?: number | null;
+  blockchainVerified?: boolean;
+  anchoredAt?: string | null;
+}
+
 export interface Child {
   _id: string;
   firstName: string;
@@ -12,6 +21,7 @@ export interface Child {
   status: string;
   enrollmentDate: string;
   dateOfBirth?: string;
+  documentIntegrity?: ChildDocumentIntegrity | null;
 
   parent?: {
     phone: any;

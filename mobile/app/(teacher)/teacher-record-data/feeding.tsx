@@ -29,6 +29,11 @@ import {
   type FeedingRecord,
 } from "@/src/api/records.api";
 import type { Child } from "@/src/api/parent.api";
+import {
+  formatManilaDateLabel,
+  getManilaDateKey,
+  isValidManilaDateKey,
+} from "@/src/utils/manila-date";
 
 const foodMenuOptions = [
   "Sinigang, Adobo",
@@ -70,14 +75,27 @@ export default function RecordFeeding() {
     }
   }, [params.presentChildren]);
 
-  const attendanceDate =
-    (params.attendanceDate as string) ||
-    new Date().toLocaleDateString("en-PH", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      timeZone: "Asia/Manila",
-    });
+  const attendanceDateKey = useMemo(() => {
+    const rawDateKey = String(params.attendanceDateKey || "").trim();
+    return isValidManilaDateKey(rawDateKey)
+      ? rawDateKey
+      : getManilaDateKey();
+  }, [params.attendanceDateKey]);
+
+  const attendanceDateLabel = useMemo(() => {
+    const explicitLabel = String(params.attendanceDateLabel || "").trim();
+    if (explicitLabel) return explicitLabel;
+
+    const legacyDateLabel = String(params.attendanceDate || "").trim();
+    if (legacyDateLabel) {
+      const parsedLegacy = new Date(legacyDateLabel);
+      if (!Number.isNaN(parsedLegacy.getTime())) {
+        return formatManilaDateLabel(parsedLegacy);
+      }
+    }
+
+    return formatManilaDateLabel(attendanceDateKey);
+  }, [attendanceDateKey, params.attendanceDate, params.attendanceDateLabel]);
 
   const interactionDisabled = isReadOnly || isSubmitting;
 
@@ -215,8 +233,8 @@ export default function RecordFeeding() {
         }),
       );
 
-      const response = await submitFeeding(token, {
-        date: attendanceDate,
+      await submitFeeding(token, {
+        date: attendanceDateKey,
         foodServed,
         records,
       });
@@ -506,7 +524,7 @@ export default function RecordFeeding() {
 
   if (children.length === 0) {
     return (
-      <SafeAreaView className="flex-1 bg-emerald-50">
+      <SafeAreaView className="flex-1 bg-gray-50">
         <View className="bg-white px-6 pt-4 pb-3">
           <Pressable onPress={() => router.back()}>
             <ChevronLeft size={24} color="#1F2937" />
@@ -532,7 +550,7 @@ export default function RecordFeeding() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-emerald-50" edges={["bottom"]}>
+    <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
       <StatusBar
         barStyle="light-content"
         translucent
@@ -541,14 +559,19 @@ export default function RecordFeeding() {
 
       <View className="bg-teal-600 px-6 pt-12 pb-6">
         <View className="flex-row mb-2">
-          <Pressable onPress={() => router.push("/(teacher)")} className="mr-3 mt-4">
-            <ChevronLeft size={30} color="#FFFFFF" />
+          <Pressable
+            onPress={() => router.push("/(teacher)")}
+            className="h-10 w-10 items-center justify-center rounded-full bg-white/20 mr-3 mt-4"
+          >
+            <ChevronLeft size={22} color="#FFFFFF" />
           </Pressable>
           <View className="flex-1">
             <Text className="text-3xl font-extrabold text-white">
               Record Feeding
             </Text>
-            <Text className="text-base text-teal-100 mt-1">{attendanceDate}</Text>
+            <Text className="text-base text-teal-100 mt-1">
+              {attendanceDateLabel}
+            </Text>
           </View>
         </View>
       </View>
@@ -670,4 +693,3 @@ export default function RecordFeeding() {
     </SafeAreaView>
   );
 }
-

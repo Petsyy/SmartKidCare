@@ -8,6 +8,7 @@ import {
   type AddChildForParentFormValues,
   validateAddChildForParentForm,
 } from "@/utils/formValidation";
+import { formatConfidentialName, maskNamePart } from "@/utils/namePrivacy";
 
 export type ChildForEdit = {
   _id: string;
@@ -82,12 +83,14 @@ export default function EditChildModal({ child, onClose, onUpdated }: Props) {
     String(child.teacher?._id || ""),
   );
   const [loading, setLoading] = useState(false);
+  const [revealChildName, setRevealChildName] = useState(false);
 
   useEffect(() => {
     const nextForm = getInitialForm(child);
     setForm(nextForm);
     setErrors(validateAddChildForParentForm(nextForm));
     setSelectedTeacherId(String(child.teacher?._id || ""));
+    setRevealChildName(false);
   }, [child]);
 
   useEffect(() => {
@@ -212,6 +215,21 @@ export default function EditChildModal({ child, onClose, onUpdated }: Props) {
   )
     .toISOString()
     .slice(0, 10);
+  const maskedChildName =
+    formatConfidentialName({
+      firstName: form.firstName,
+      middleName: form.middleName,
+      lastName: form.lastName,
+    }) || "N/A";
+  const firstNameInputValue = revealChildName
+    ? form.firstName
+    : maskNamePart(form.firstName);
+  const middleNameInputValue = revealChildName
+    ? form.middleName
+    : maskNamePart(form.middleName);
+  const lastNameInputValue = revealChildName
+    ? form.lastName
+    : maskNamePart(form.lastName);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-4">
@@ -234,17 +252,38 @@ export default function EditChildModal({ child, onClose, onUpdated }: Props) {
             />
           </div>
 
+          <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-3.5 dark:border-amber-900/60 dark:bg-amber-900/15">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
+                  Confidential Child Name
+                </p>
+                <p className="mt-1 text-sm font-semibold text-amber-900 dark:text-amber-200">
+                  {maskedChildName}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRevealChildName((prev) => !prev)}
+                className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-200 dark:hover:bg-amber-900/45"
+              >
+                {revealChildName ? "Hide Name Fields" : "Reveal Name Fields"}
+              </button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5 dark:text-slate-300">First Name *</label>
               <input
                 type="text"
                 name="firstName"
-                value={form.firstName}
-                onChange={handleChange}
+                value={firstNameInputValue}
+                onChange={revealChildName ? handleChange : undefined}
                 maxLength={15}
-                onBlur={() => handleFieldBlur("firstName")}
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
+                onBlur={() => revealChildName && handleFieldBlur("firstName")}
+                readOnly={!revealChildName}
+                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent read-only:cursor-not-allowed read-only:bg-gray-100 read-only:text-gray-600 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50 dark:read-only:bg-slate-800 dark:read-only:text-slate-400"
                 required
               />
               {errors.firstName && (
@@ -256,11 +295,12 @@ export default function EditChildModal({ child, onClose, onUpdated }: Props) {
               <input
                 type="text"
                 name="middleName"
-                value={form.middleName}
+                value={middleNameInputValue}
                 maxLength={15}
-                onChange={handleChange}
-                onBlur={() => handleFieldBlur("middleName")}
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
+                onChange={revealChildName ? handleChange : undefined}
+                onBlur={() => revealChildName && handleFieldBlur("middleName")}
+                readOnly={!revealChildName}
+                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent read-only:cursor-not-allowed read-only:bg-gray-100 read-only:text-gray-600 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50 dark:read-only:bg-slate-800 dark:read-only:text-slate-400"
               />
               {errors.middleName && (
                 <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.middleName}</p>
@@ -273,11 +313,12 @@ export default function EditChildModal({ child, onClose, onUpdated }: Props) {
             <input
               type="text"
               name="lastName"
-              value={form.lastName}
+              value={lastNameInputValue}
               maxLength={15}
-              onChange={handleChange}
-              onBlur={() => handleFieldBlur("lastName")}
-              className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
+              onChange={revealChildName ? handleChange : undefined}
+              onBlur={() => revealChildName && handleFieldBlur("lastName")}
+              readOnly={!revealChildName}
+              className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent read-only:cursor-not-allowed read-only:bg-gray-100 read-only:text-gray-600 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50 dark:read-only:bg-slate-800 dark:read-only:text-slate-400"
               required
             />
             {errors.lastName && (

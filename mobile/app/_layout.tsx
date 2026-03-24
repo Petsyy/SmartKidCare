@@ -1,8 +1,6 @@
 import "@/global.css";
 import { Stack } from "expo-router";
-import { ActivityIndicator, LogBox, Platform, View } from "react-native";
-import * as Notifications from "expo-notifications";
-import Constants from "expo-constants";
+import { ActivityIndicator, LogBox, StyleSheet, View } from "react-native";
 import { AuthProvider } from "@/src/context/auth-context";
 import { useAuth } from "@/src/hooks/use-auth";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -10,163 +8,32 @@ import {
   configureReanimatedLogger,
   ReanimatedLogLevel,
 } from "react-native-reanimated";
-import { registerPushToken } from "@/src/api/notifications.api";
-import * as SecureStore from "expo-secure-store";
-import { useEffect, useRef } from "react";
-
-const PUSH_TOKEN_KEY = "expoPushToken";
-const PUSH_TOKEN_USER_ID_KEY = "expoPushTokenUserId";
+import { useEffect } from "react";
 
 configureReanimatedLogger({
   level: ReanimatedLogLevel.warn,
   strict: false,
 });
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
-
 function LayoutContent() {
-  const { user, role, token, loading } = useAuth();
-  const isRegisteringRef = useRef(false);
+  const { loading } = useAuth();
 
-  useEffect(() => {
-    if (!user || !token) return;
-    if (Platform.OS === "web") return;
-    if (isRegisteringRef.current) return;
-
-    isRegisteringRef.current = true;
-
-    const registerToken = async () => {
-      try {
-        const { status } = await Notifications.getPermissionsAsync();
-        let finalStatus = status;
-
-        if (status !== "granted") {
-          const request = await Notifications.requestPermissionsAsync();
-          finalStatus = request.status;
-        }
-
-        if (finalStatus !== "granted") {
-          return;
-        }
-
-        const projectId =
-          Constants.expoConfig?.extra?.eas?.projectId ||
-          Constants.easConfig?.projectId;
-
-        if (!projectId) {
-          return;
-        }
-
-        const { data: expoPushToken } =
-          await Notifications.getExpoPushTokenAsync({ projectId });
-
-        const savedToken = await SecureStore.getItemAsync(PUSH_TOKEN_KEY);
-        const savedUserId = await SecureStore.getItemAsync(
-          PUSH_TOKEN_USER_ID_KEY,
-        );
-        const currentUserId = String(user.id || "");
-        const shouldRegister =
-          savedToken !== expoPushToken || savedUserId !== currentUserId;
-
-        if (shouldRegister) {
-          await registerPushToken(token, {
-            pushToken: expoPushToken,
-            platform:
-              Platform.OS === "ios"
-                ? "ios"
-                : Platform.OS === "android"
-                  ? "android"
-                  : undefined,
-            deviceName: Constants.deviceName ?? null,
-            appOwnership: Constants.appOwnership ?? null,
-          });
-
-          await SecureStore.setItemAsync(PUSH_TOKEN_KEY, expoPushToken);
-          await SecureStore.setItemAsync(PUSH_TOKEN_USER_ID_KEY, currentUserId);
-        }
-      } catch (error: any) {
-        console.warn("Push registration failed:", error?.message || error);
-      } finally {
-        isRegisteringRef.current = false;
-      }
-    };
-
-    registerToken();
-  }, [user, token]);
-
-  useEffect(() => {
-    const subscription = Notifications.addPushTokenListener(
-      async (tokenData) => {
-        const newToken = tokenData.data;
-
-        if (!newToken.startsWith("ExponentPushToken")) {
-          return;
-        }
-
-        const savedToken = await SecureStore.getItemAsync(PUSH_TOKEN_KEY);
-        const savedUserId = await SecureStore.getItemAsync(
-          PUSH_TOKEN_USER_ID_KEY,
-        );
-        const currentUserId = String(user?.id || "");
-        const shouldRegister =
-          savedToken !== newToken || savedUserId !== currentUserId;
-
-        if (shouldRegister && user && token) {
-          try {
-            await registerPushToken(token, {
-              pushToken: newToken,
-              platform:
-                Platform.OS === "ios"
-                  ? "ios"
-                  : Platform.OS === "android"
-                    ? "android"
-                    : undefined,
-              deviceName: Constants.deviceName ?? null,
-              appOwnership: Constants.appOwnership ?? null,
-            });
-
-            await SecureStore.setItemAsync(PUSH_TOKEN_KEY, newToken);
-            await SecureStore.setItemAsync(
-              PUSH_TOKEN_USER_ID_KEY,
-              currentUserId,
-            );
-          } catch (err: any) {
-            console.warn("Token refresh sync failed:", err?.message || err);
-          }
-        }
-      },
-    );
-
-    return () => subscription.remove();
-  }, [user, token]);
-
-  if (loading) {
-    return (
-      <View className="flex-1 items-center justify-center">
-        <ActivityIndicator size="large" />
-      </View>
-    );
-  }
-
+  // Keep Stack mounted at all times so NavigationContainer exists (Redirect, useRouter, Tabs).
+  // index.tsx and each group layout handle auth redirects.
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      {!user ? (
-        <Stack.Screen name="(auth)" />
-      ) : role === "parent" ? (
-        <Stack.Screen name="(parent)" />
-      ) : role === "teacher" ? (
-        <Stack.Screen name="(teacher)" />
-      ) : (
-        <Stack.Screen name="(auth)" />
-      )}
-    </Stack>
+    <>
+      {/* File-based routes; do not list Stack.Screen manually (breaks Expo Router 6 linking). */}
+      <Stack screenOptions={{ headerShown: false }} />
+      {loading ? (
+        <View
+          pointerEvents="auto"
+          style={StyleSheet.absoluteFillObject}
+          className="z-50 items-center justify-center bg-white"
+        >
+          <ActivityIndicator size="large" />
+        </View>
+      ) : null}
+    </>
   );
 }
 
@@ -178,16 +45,8 @@ export default function RootLayout() {
     ]);
   }, []);
 
-  useEffect(() => {
-    if (Platform.OS !== "android") return;
-
-    void Notifications.setNotificationChannelAsync("default", {
-      name: "default",
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: "#14B8A6",
-    });
-  }, []);
+  // Temporarily disabled for Expo Go / local development while EAS push setup is being fixed.
+  // Re-enable Android notification channel setup here when notifications are ready again.
 
   return (
     <SafeAreaProvider>

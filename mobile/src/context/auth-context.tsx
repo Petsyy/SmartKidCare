@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   clearSession,
@@ -32,10 +38,37 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const decodeJwtExpMs = (token: string): number | null => {
+  try {
+    const payloadPart = String(token).split(".")[1];
+    if (!payloadPart || typeof globalThis.atob !== "function") {
+      return null;
+    }
+
+    const normalizedPayload = payloadPart
+      .replace(/-/g, "+")
+      .replace(/_/g, "/")
+      .padEnd(Math.ceil(payloadPart.length / 4) * 4, "=");
+
+    const payload = JSON.parse(globalThis.atob(normalizedPayload)) as {
+      exp?: number;
+    };
+
+    if (typeof payload.exp !== "number") {
+      return null;
+    }
+
+    return payload.exp * 1000;
+  } catch {
+    return null;
+  }
+};
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const expiryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const restoreSession = async () => {
@@ -83,7 +116,52 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     restoreSession();
+
+    return () => {
+      if (expiryTimerRef.current) {
+        clearTimeout(expiryTimerRef.current);
+      }
+    };
   }, []);
+
+  useEffect(() => {
+    if (expiryTimerRef.current) {
+      clearTimeout(expiryTimerRef.current);
+      expiryTimerRef.current = null;
+    }
+
+    if (!token) {
+      return;
+    }
+
+    const expiresAtMs = decodeJwtExpMs(token);
+    if (!expiresAtMs) {
+      return;
+    }
+
+    const msUntilExpiry = expiresAtMs - Date.now();
+
+    if (msUntilExpiry <= 0) {
+      setUser(null);
+      setToken(null);
+      void Promise.all([
+        clearSession(),
+        AsyncStorage.removeItem("token"),
+        AsyncStorage.removeItem("user"),
+      ]);
+      return;
+    }
+
+    expiryTimerRef.current = setTimeout(() => {
+      setUser(null);
+      setToken(null);
+      void Promise.all([
+        clearSession(),
+        AsyncStorage.removeItem("token"),
+        AsyncStorage.removeItem("user"),
+      ]);
+    }, msUntilExpiry);
+  }, [token]);
 
   const login = async (userData: User, authToken: string) => {
     setUser(userData);

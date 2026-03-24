@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import type { SignOptions } from "jsonwebtoken";
 import { createHash, randomInt } from "crypto";
 import User, { IUser } from "../../models/Users";
 import { sendEmail } from "../../services/notifications/email.service";
@@ -14,6 +15,21 @@ const PARENT_PASSWORD_SETUP_PURPOSE = "parent_password_setup";
 const FORGOT_PASSWORD_OTP_PURPOSE = "forgot_password_otp";
 const FORGOT_PASSWORD_RESET_TOKEN_PURPOSE = "forgot_password_reset";
 const CHANGE_PASSWORD_OTP_PURPOSE = "change_password_otp";
+
+const getAuthTokenTtl = (): SignOptions["expiresIn"] => {
+  const raw = String(process.env.AUTH_TOKEN_TTL || "").trim();
+  if (!raw) {
+    return "1d";
+  }
+
+  if (/^\d+$/.test(raw)) {
+    return Number(raw);
+  }
+
+  return raw as unknown as SignOptions["expiresIn"];
+};
+
+const AUTH_TOKEN_TTL = getAuthTokenTtl();
 
 const PASSWORD_MIN_LENGTH = 8;
 const startsWithUppercaseRegex = /^[A-Z]/;
@@ -77,7 +93,7 @@ const validatePasswordPolicy = (password: string): string | null => {
 };
 
 export const signAuthToken = (userId: string, role: string) =>
-  jwt.sign({ id: userId, role }, getJwtSecret(), { expiresIn: "1d" });
+  jwt.sign({ id: userId, role }, getJwtSecret(), { expiresIn: AUTH_TOKEN_TTL });
 
 const issuePasswordOtp = async (
   user: IUser,
@@ -375,6 +391,8 @@ export const completeTeacherPasswordSetup = async (
     user.passwordResetOtpHash = undefined;
     user.passwordResetOtpExpiresAt = undefined;
     user.passwordResetOtpPurpose = undefined;
+    user.latestTempPassword = undefined;
+    user.latestTempPasswordIssuedAt = undefined;
     await user.save();
 
     const token = signAuthToken(String(user._id), user.role);
@@ -542,6 +560,8 @@ export const resetForgotPassword = async (req: Request, res: Response) => {
     user.passwordResetOtpHash = undefined;
     user.passwordResetOtpExpiresAt = undefined;
     user.passwordResetOtpPurpose = undefined;
+    user.latestTempPassword = undefined;
+    user.latestTempPasswordIssuedAt = undefined;
     await user.save();
 
     return res.json({ message: "Password reset successful." });
@@ -693,6 +713,8 @@ export const changePassword = async (req: Request, res: Response) => {
     user.passwordResetOtpHash = undefined;
     user.passwordResetOtpExpiresAt = undefined;
     user.passwordResetOtpPurpose = undefined;
+    user.latestTempPassword = undefined;
+    user.latestTempPasswordIssuedAt = undefined;
     await user.save();
 
     return res.json({ message: "Password changed successfully." });

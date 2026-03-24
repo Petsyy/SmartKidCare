@@ -9,6 +9,12 @@ const ChildSchema = new mongoose.Schema(
     dateOfBirth: { type: Date, required: true },
     age: { type: Number, required: true },
     gender: { type: String, enum: ["male", "female"], required: true },
+    programType: {
+      type: String,
+      enum: ["4Ps Beneficiary", "Regular Enrollee (Non-beneficiary)"],
+      required: true,
+      trim: true,
+    },
 
     enrollmentDate: { type: Date, required: true },
     schoolYear: { type: String, required: true },
@@ -28,6 +34,11 @@ const ChildSchema = new mongoose.Schema(
     teacher: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      default: null,
+    },
+    daycareCenter: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ChildDevelopmentCenter",
       default: null,
     },
 

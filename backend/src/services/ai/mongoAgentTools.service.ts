@@ -472,34 +472,6 @@ export async function summarizeAttendanceTool(
   };
 }
 
-export async function summarizeAttendanceClassTool(
-  teacherId: string,
-  timeframe: ToolTimeframe,
-): Promise<SummarizeAttendanceClassResult> {
-  const teacherObjectId = toObjectId(teacherId);
-  const range = await getDateRange(timeframe);
-  const offsetMinutes = reportTimezoneOffsetMinutes();
-
-  const rows = await fetchAttendanceRows(range, { teacher: teacherObjectId });
-  const { present, absent, totalChildren, absentDates } = summarizeClassAttendanceRows(
-    rows,
-    offsetMinutes,
-  );
-
-  const totalRecords = present + absent;
-
-  return {
-    tool: "summarize_attendance_class",
-    timeframe,
-    present,
-    absent,
-    totalRecords,
-    totalChildren,
-    attendanceRate: safeRate(present, totalRecords),
-    absentDates,
-  };
-}
-
 export async function summarizeFeedingTool(
   childId: string,
   timeframe: ToolTimeframe,
@@ -521,30 +493,6 @@ export async function summarizeFeedingTool(
     missed,
     totalMeals,
     feedingRate: safeRate(completed, totalMeals),
-    foods,
-  };
-}
-
-export async function summarizeFeedingClassTool(
-  teacherId: string,
-  timeframe: ToolTimeframe,
-): Promise<SummarizeFeedingClassResult> {
-  const teacherObjectId = toObjectId(teacherId);
-  const range = await getDateRange(timeframe);
-
-  const rows = await fetchFeedingRows(range, { teacher: teacherObjectId });
-  const { completed, missed, totalChildren, foods } = summarizeClassFeedingRows(rows);
-
-  const totalRecords = completed + missed;
-
-  return {
-    tool: "summarize_feeding_class",
-    timeframe,
-    completed,
-    missed,
-    totalRecords,
-    totalChildren,
-    feedingRate: safeRate(completed, totalRecords),
     foods,
   };
 }

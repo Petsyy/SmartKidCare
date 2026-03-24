@@ -6,12 +6,28 @@ export interface TeacherData {
   lastName: string;
   email: string;
   phone: string;
+  daycareCenterId: string;
   status?: "Active" | "Inactive";
 }
 
-export interface Teacher extends TeacherData {
+export interface DaycareCenterSummary {
   _id: string;
+  name: string;
+  barangay: string;
+  code: string;
+  isActive?: boolean;
+}
+
+export interface Teacher {
+  _id: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  daycareCenterId?: string;
   role: 'teacher';
+  daycareCenter?: DaycareCenterSummary | null;
   status?: "Active" | "Inactive";
   verificationStatus: 'pending' | 'approved' | 'rejected';
   createdAt: string;

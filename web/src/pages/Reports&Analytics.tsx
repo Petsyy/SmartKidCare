@@ -16,10 +16,10 @@ import {
 } from "recharts";
 import {
   Users,
-  Calendar,
-  Utensils,
-  AlertCircle,
-  BarChart3,
+  Home,
+  UserCircle,
+  Heart,
+  Smile,
   Download,
   RefreshCw,
   Clock,
@@ -53,28 +53,27 @@ const StatCard = ({
   value: string;
   subtitle: string;
   icon: any;
-  color: "blue" | "teal" | "emerald" | "rose" | "slate";
+  color: "blue" | "teal" | "purple" | "rose";
 }) => {
   const colorMap = {
-    blue: "bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400",
-    teal: "bg-teal-50 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400",
-    emerald: "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
-    rose: "bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400",
-    slate: "bg-slate-50 text-slate-600 dark:bg-slate-700 dark:text-slate-400",
+    blue: "bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300",
+    teal: "bg-teal-50 text-teal-600 dark:bg-teal-500/15 dark:text-teal-300",
+    purple: "bg-purple-50 text-purple-600 dark:bg-purple-500/15 dark:text-purple-300",
+    rose: "bg-rose-50 text-rose-600 dark:bg-rose-500/15 dark:text-rose-300",
   };
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-      <div className="flex items-start justify-between">
-        <div className="space-y-1">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
-            {title}
-          </p>
-          <p className="text-2xl font-semibold text-gray-900 dark:text-slate-50">{value}</p>
-          <p className="text-sm text-gray-500 dark:text-slate-400">{subtitle}</p>
+    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-600 dark:text-slate-400">{title}</p>
+          <div className="mt-2 flex items-baseline gap-2">
+            <p className="text-3xl font-semibold text-gray-900 dark:text-slate-100">{value}</p>
+          </div>
+          <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">{subtitle}</p>
         </div>
         <div className={`rounded-lg p-3 ${colorMap[color]}`}>
-          <Icon className="h-5 w-5" />
+          <Icon className="h-6 w-6" />
         </div>
       </div>
     </div>
@@ -227,39 +226,39 @@ export default function ReportAnalytics() {
           <>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
               <StatCard
-                title="Active Students"
-                value={formatNumber(summary.activeChildren)}
-                subtitle={`${formatNumber(summary.totalChildren)} enrolled`}
-                icon={Users}
+                title="Total Child Development Centers"
+                value={formatNumber(summary.totalChildDevelopmentCenters)}
+                subtitle="Active centers"
+                icon={Home}
                 color="blue"
               />
               <StatCard
-                title="Teacher Accounts"
-                value={formatNumber(summary.totalTeachers)}
-                subtitle="Total teaching staff"
-                icon={BarChart3}
-                color="slate"
-              />
-              <StatCard
-                title="Attendance Rate"
-                value={`${summary.attendanceRate}%`}
-                subtitle={`${formatNumber(summary.attendanceRecords)} attendance checks`}
-                icon={Calendar}
+                title="Child Development Workers"
+                value={formatNumber(summary.childDevelopmentWorkers)}
+                subtitle="Active teacher accounts"
+                icon={Users}
                 color="teal"
               />
               <StatCard
-                title="Feeding Compliance"
-                value={`${summary.feedingRate}%`}
-                subtitle={`${formatNumber(summary.feedingRecords)} feeding checks`}
-                icon={Utensils}
-                color="emerald"
+                title="Total Enrolled Children"
+                value={formatNumber(summary.totalEnrolledDaycares)}
+                subtitle="Total enrolled children"
+                icon={UserCircle}
+                color="purple"
               />
               <StatCard
-                title="Exception Rate"
-                value={`${summary.exceptionRate}%`}
-                subtitle={`${formatNumber(summary.absentCount + summary.missedCount)} exceptions`}
-                icon={AlertCircle}
+                title="4P's Beneficiaries"
+                value={formatNumber(summary.fourPsBeneficiaries)}
+                subtitle="Children under 4Ps program"
+                icon={Heart}
                 color="rose"
+              />
+              <StatCard
+                title="Regular Attendees"
+                value={formatNumber(summary.regularAttendees)}
+                subtitle="Non-beneficiary enrollees"
+                icon={Smile}
+                color="blue"
               />
             </div>
 
@@ -325,29 +324,36 @@ export default function ReportAnalytics() {
               <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                 <div className="mb-4">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-50">
-                    Daily Outcomes
+                    Operational Comparison
                   </h3>
                   <p className="text-sm text-gray-500 dark:text-slate-400">
-                    Present, absent, Completed, and missed counts by day.
+                    Side-by-side comparison of your core child development metrics.
                   </p>
                 </div>
-                {dailyTrends.length === 0 ? (
+                {!hasRealStatusData ? (
                   <div className="flex h-64 items-center justify-center text-sm text-gray-500 dark:text-slate-400">
-                    No outcome data for the selected range.
+                    No overview data available.
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height={280}>
-                    <BarChart data={dailyTrends}>
+                    <BarChart
+                      data={statusDistribution}
+                      layout="vertical"
+                      margin={{ top: 8, right: 16, left: 24, bottom: 8 }}
+                    >
                       <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                       <XAxis
-                        dataKey="label"
-                        stroke="#6b7280"
-                        style={{ fontSize: "12px" }}
-                      />
-                      <YAxis
+                        type="number"
                         stroke="#6b7280"
                         style={{ fontSize: "12px" }}
                         allowDecimals={false}
+                      />
+                      <YAxis
+                        type="category"
+                        dataKey="name"
+                        width={175}
+                        stroke="#6b7280"
+                        style={{ fontSize: "12px" }}
                       />
                       <Tooltip
                         contentStyle={{
@@ -356,12 +362,16 @@ export default function ReportAnalytics() {
                           borderRadius: "0.5rem",
                           fontSize: "12px",
                         }}
+                        formatter={(value?: number | string) => [
+                          formatNumber(Number(value ?? 0)),
+                          "Count",
+                        ]}
                       />
-                      <Legend wrapperStyle={{ fontSize: "12px" }} />
-                      <Bar dataKey="present" fill="#10b981" name="Present" />
-                      <Bar dataKey="absent" fill="#f43f5e" name="Absent" />
-                      <Bar dataKey="completed" fill="#14b8a6" name="Completed" />
-                      <Bar dataKey="missed" fill="#f59e0b" name="Missed Meal" />
+                      <Bar dataKey="value" radius={[0, 6, 6, 0]} name="Count">
+                        {statusDistribution.map((entry, index) => (
+                          <Cell key={`overview-bar-${index}`} fill={entry.color} />
+                        ))}
+                      </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 )}
@@ -372,10 +382,10 @@ export default function ReportAnalytics() {
               <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                 <div className="mb-4">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-50">
-                    Status Distribution
+                    Overview Distribution
                   </h3>
                   <p className="text-sm text-gray-500 dark:text-slate-400">
-                    Combined distribution of attendance and feeding statuses.
+                    High-level share of centers, workers, enrollments, and program types.
                   </p>
                 </div>
                 <ResponsiveContainer width="100%" height={280}>
@@ -387,11 +397,7 @@ export default function ReportAnalytics() {
                       cy="50%"
                       outerRadius={95}
                       labelLine={false}
-                      label={
-                        hasRealStatusData
-                          ? (entry) => `${entry.name}: ${entry.value}`
-                          : false
-                      }
+                      label={false}
                     >
                       {statusDistribution.map((entry, index) => (
                         <Cell key={`status-cell-${index}`} fill={entry.color} />
@@ -410,7 +416,7 @@ export default function ReportAnalytics() {
                   </h3>
                   <p className="text-sm text-gray-500 dark:text-slate-400">
                     Children with the highest combined absences and missed
-                    meals.
+                    meals, shown with confidential masked names.
                   </p>
                 </div>
                 {topExceptions.length === 0 ? (
@@ -423,7 +429,7 @@ export default function ReportAnalytics() {
                       <thead className="border-b border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-900/50">
                         <tr>
                           <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
-                            Child
+                            Child (Confidential)
                           </th>
                           <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
                             Absences
@@ -440,7 +446,7 @@ export default function ReportAnalytics() {
                         {topExceptions.map((row) => (
                           <tr key={row.childId} className="hover:bg-gray-50 dark:hover:bg-slate-700/50">
                             <td className="px-4 py-3 font-medium text-gray-900 dark:text-slate-100">
-                              {row.childName}
+                              {row.childLabel}
                             </td>
                             <td className="px-4 py-3 text-right text-gray-700 dark:text-slate-300">
                               {formatNumber(row.absentCount)}

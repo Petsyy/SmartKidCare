@@ -14,7 +14,7 @@ import { storeChildDocumentsHash } from "../../services/blockchain/blockchain.se
 import {
   attachUploadedDocuments,
   ensureCanAccessChild,
-  resolveTeacherId,
+  resolveTeacherAssignment,
 } from "./child.helpers";
 
 // Re-export controllers from other modules for convenience
@@ -25,6 +25,31 @@ export {
   streamChildDocument,
   viewDocument,
 } from "./child.documents.controller";
+
+const teacherWithCenterPopulate = {
+  path: "teacher",
+  select: "firstName middleName lastName email phone daycareCenter",
+  populate: {
+    path: "daycareCenter",
+    select: "name barangay code isActive",
+  },
+};
+
+const withDerivedDaycareCenter = (child: any) => {
+  if (!child || child.daycareCenter) {
+    return child;
+  }
+
+  const teacherCenter = child?.teacher?.daycareCenter;
+  if (!teacherCenter) {
+    return child;
+  }
+
+  return {
+    ...child,
+    daycareCenter: teacherCenter,
+  };
+};
 
 export const createChild = async (req: Request, res: Response) => {
   console.log("[createChild] Request debug", {
@@ -126,8 +151,11 @@ export const createChild = async (req: Request, res: Response) => {
     }
 
     let resolvedTeacherId: mongoose.Types.ObjectId | null = null;
+    let resolvedDaycareCenterId: mongoose.Types.ObjectId | null = null;
     try {
-      resolvedTeacherId = await resolveTeacherId(teacherId);
+      const teacherAssignment = await resolveTeacherAssignment(teacherId);
+      resolvedTeacherId = teacherAssignment?.teacherId || null;
+      resolvedDaycareCenterId = teacherAssignment?.daycareCenterId || null;
     } catch (error: any) {
       if (error?.message === "invalid_teacher_id") {
         return res.status(400).json({ message: "Invalid teacher ID" });
@@ -167,7 +195,10 @@ export const createChild = async (req: Request, res: Response) => {
       };
 
       if (middleName) childData.middleName = middleName;
-      if (resolvedTeacherId) childData.teacher = resolvedTeacherId;
+      if (resolvedTeacherId) {
+        childData.teacher = resolvedTeacherId;
+        childData.daycareCenter = resolvedDaycareCenterId;
+      }
       attachUploadedDocuments(
         childData,
         birthUpload,
@@ -221,7 +252,10 @@ export const createChild = async (req: Request, res: Response) => {
         studentId: generateStudentId(year),
         parent: parent._id,
       };
-      if (resolvedTeacherId) childData.teacher = resolvedTeacherId;
+      if (resolvedTeacherId) {
+        childData.teacher = resolvedTeacherId;
+        childData.daycareCenter = resolvedDaycareCenterId;
+      }
       attachUploadedDocuments(
         childData,
         birthUpload,
@@ -300,7 +334,10 @@ export const createChild = async (req: Request, res: Response) => {
       studentId: generateStudentId(year),
       parent: parent._id,
     };
-    if (resolvedTeacherId) childData.teacher = resolvedTeacherId;
+    if (resolvedTeacherId) {
+      childData.teacher = resolvedTeacherId;
+      childData.daycareCenter = resolvedDaycareCenterId;
+    }
 
     attachUploadedDocuments(
       childData,
@@ -381,11 +418,12 @@ export const getChildren = async (req: Request, res: Response) => {
 
     const children = await Child.find(query)
       .populate("parent", "firstName lastName email phone")
-      .populate("teacher", "firstName middleName lastName email phone")
+      .populate(teacherWithCenterPopulate as any)
+      .populate("daycareCenter", "name barangay code isActive")
       .sort({ createdAt: -1 })
       .lean();
 
-    res.json(children);
+    res.json(children.map((child) => withDerivedDaycareCenter(child)));
   } catch {
     res.status(500).json({ message: "Failed to fetch children" });
   }
@@ -401,11 +439,12 @@ export const getMyChildren = async (req: Request, res: Response) => {
     }
 
     const children = await Child.find({ parent: req.user.id })
-      .populate("teacher", "firstName middleName lastName email phone")
+      .populate(teacherWithCenterPopulate as any)
+      .populate("daycareCenter", "name barangay code isActive")
       .sort({ createdAt: -1 })
       .lean();
 
-    res.json(children);
+    res.json(children.map((child) => withDerivedDaycareCenter(child)));
   } catch {
     res.status(500).json({ message: "Failed to fetch children" });
   }
@@ -426,18 +465,21 @@ export const getChildById = async (req: Request, res: Response) => {
 
     const child = await Child.findById(id)
       .populate("parent", "firstName lastName email phone")
-      .populate("teacher", "firstName middleName lastName email phone")
+      .populate(teacherWithCenterPopulate as any)
+      .populate("daycareCenter", "name barangay code isActive")
       .lean();
 
     if (!child) {
       return res.status(404).json({ message: "Child not found" });
     }
 
-    if (!ensureCanAccessChild(child, req)) {
+    const normalizedChild = withDerivedDaycareCenter(child);
+
+    if (!ensureCanAccessChild(normalizedChild, req)) {
       return res.status(403).json({ message: "Forbidden" });
     }
 
-    res.json(child);
+    res.json(normalizedChild);
   } catch {
     res.status(500).json({ message: "Failed to fetch child details" });
   }
@@ -483,10 +525,12 @@ export const updateChild = async (req: Request, res: Response) => {
 
     if (unlinkTeacher === true) {
       child.teacher = undefined;
+      child.daycareCenter = undefined;
     } else if (teacherId !== undefined) {
       try {
-        const resolvedTeacherId = await resolveTeacherId(teacherId);
-        child.teacher = resolvedTeacherId || undefined;
+        const teacherAssignment = await resolveTeacherAssignment(teacherId);
+        child.teacher = teacherAssignment?.teacherId || undefined;
+        child.daycareCenter = teacherAssignment?.daycareCenterId || undefined;
       } catch (error: any) {
         if (error?.message === "invalid_teacher_id") {
           return res.status(400).json({ message: "Invalid teacher ID" });
@@ -504,10 +548,11 @@ export const updateChild = async (req: Request, res: Response) => {
 
     const updated = await Child.findById(child._id)
       .populate("parent", "firstName lastName email phone")
-      .populate("teacher", "firstName middleName lastName email phone")
+      .populate(teacherWithCenterPopulate as any)
+      .populate("daycareCenter", "name barangay code isActive")
       .lean();
 
-    res.json(updated);
+    res.json(withDerivedDaycareCenter(updated));
   } catch (error: any) {
     res.status(500).json({
       message: "Server error",

@@ -29,9 +29,10 @@ const limiter = rateLimit({
   skip: (req) => {
     const method = String(req.method || "").toUpperCase();
     const hasSessionCookie = Boolean(req.cookies?.authToken);
+    const hasAuthHeader = Boolean(req.headers.authorization?.startsWith("Bearer "));
 
     // Prevent refresh bursts from tripping global limits for authenticated reads.
-    return method === "GET" && hasSessionCookie;
+    return method === "GET" && (hasSessionCookie || hasAuthHeader);
   },
   standardHeaders: true,
   legacyHeaders: false,

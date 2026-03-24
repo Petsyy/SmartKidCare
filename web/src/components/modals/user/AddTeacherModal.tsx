@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { createTeacher } from "@/api/teacher.api";
+import { getDaycareCenters, type DaycareCenter } from "@/api/daycare-center.api";
 import { showTeacherCredentialsModal, showErrorModal } from "@/utils/sweetalert.modal";
 import {
   type AddTeacherField,
@@ -22,15 +23,36 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
     lastName: "",
     email: "",
     phone: "",
+    daycareCenterId: "",
   });
 
   const [loading, setLoading] = useState(false);
+  const [centers, setCenters] = useState<DaycareCenter[]>([]);
+  const [loadingCenters, setLoadingCenters] = useState(true);
   const [errors, setErrors] = useState<AddTeacherFormErrors>({});
 
   useEffect(() => {
     // Show validation immediately even before typing.
     setErrors(validateAddTeacherForm(form));
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const loadCenters = async () => {
+      setLoadingCenters(true);
+      try {
+        const result = await getDaycareCenters();
+        setCenters(result.filter((center) => center.isActive !== false));
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Failed to load centers";
+        showErrorModal(message);
+      } finally {
+        setLoadingCenters(false);
+      }
+    };
+
+    void loadCenters();
   }, []);
 
   const setFieldError = (field: AddTeacherField, nextForm = form) => {
@@ -230,6 +252,42 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
                 )}
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">
+                  Assigned Center <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="daycareCenterId"
+                  value={form.daycareCenterId}
+                  onChange={(e) => {
+                    const nextForm = {
+                      ...form,
+                      daycareCenterId: e.target.value,
+                    };
+                    setForm(nextForm);
+                    if (errors.daycareCenterId) {
+                      setFieldError("daycareCenterId", nextForm);
+                    }
+                  }}
+                  onBlur={() => handleFieldBlur("daycareCenterId")}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
+                  disabled={loadingCenters}
+                  required
+                >
+                  <option value="">
+                    {loadingCenters ? "Loading centers..." : "Select a center"}
+                  </option>
+                  {centers.map((center) => (
+                    <option key={center._id} value={center._id}>
+                      {center.barangay} - {center.name}
+                    </option>
+                  ))}
+                </select>
+                {errors.daycareCenterId && (
+                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.daycareCenterId}</p>
+                )}
+              </div>
+
             </div>
           </div>
 
@@ -276,4 +334,3 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
     </div >
   );
 }
-

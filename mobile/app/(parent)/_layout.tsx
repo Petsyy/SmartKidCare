@@ -1,41 +1,62 @@
-import { Tabs, Redirect } from "expo-router";
+import { Tabs, Redirect, useRootNavigationState } from "expo-router";
 import { useAuth } from "@/src/hooks/use-auth";
-import { Home, Users, Bell, User } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 import ParentGate from "@/src/components/parent-gate";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function ParentLayout() {
   const { user, role, loading } = useAuth();
+  const rootNavigationState = useRootNavigationState();
   const insets = useSafeAreaInsets();
   const bottomInset = Math.max(insets.bottom, 10);
-  const tabBarHeight = 62 + bottomInset;
+  const tabBarHeight = 64 + bottomInset;
 
-  if (loading) return null;
-  if (!user || role !== "parent") {
+  if (!rootNavigationState?.key) {
+    return null;
+  }
+
+  if (!loading && (!user || role !== "parent")) {
     return <Redirect href="/(auth)/login" />;
   }
 
   return (
+    <>
     <ParentGate>
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#14B8A6",
-        tabBarInactiveTintColor: "#9CA3AF",
+        tabBarActiveTintColor: "#0D9488",
+        tabBarInactiveTintColor: "#94A3B8",
+        tabBarHideOnKeyboard: true,
+        tabBarActiveBackgroundColor: "#F0FDFA",
         tabBarStyle: {
           backgroundColor: "#FFFFFF",
           borderTopWidth: 1,
-          borderTopColor: "#E5E7EB",
+          borderTopColor: "#E2E8F0",
           height: tabBarHeight,
-          paddingTop: 8,
-          paddingBottom: bottomInset,
+          paddingTop: 12,
+          paddingBottom: bottomInset + 8,
+          paddingHorizontal: 12,
+          elevation: 8,
+          shadowColor: "#0F172A",
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.06,
+          shadowRadius: 12,
         },
         tabBarItemStyle: {
-          paddingVertical: 2,
+          marginHorizontal: 6,
+          marginVertical: 4,
+          borderRadius: 20,
         },
         tabBarLabelStyle: {
-          marginBottom: 2,
-          fontSize: 12,
+          fontSize: 11,
+          fontWeight: "600",
+          letterSpacing: 0.3,
+          marginTop: 2,
+        },
+        tabBarIconStyle: {
+          marginBottom: 0,
         },
       }}
     >
@@ -43,28 +64,52 @@ export default function ParentLayout() {
         name="index"
         options={{
           title: "Home",
-          tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "home" : "home-outline"}
+              color={color}
+              size={focused ? 22 : 20}
+            />
+          ),
         }}
       />
       <Tabs.Screen
         name="children"
         options={{
           title: "My Child",
-          tabBarIcon: ({ color, size }) => <Users color={color} size={size} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "people" : "people-outline"}
+              color={color}
+              size={focused ? 22 : 20}
+            />
+          ),
         }}
       />
       <Tabs.Screen
         name="notifications"
         options={{
           title: "Notifications",
-          tabBarIcon: ({ color, size }) => <Bell color={color} size={size} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "notifications" : "notifications-outline"}
+              color={color}
+              size={focused ? 22 : 20}
+            />
+          ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: "Profile",
-          tabBarIcon: ({ color, size }) => <User color={color} size={size} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "person-circle" : "person-outline"}
+              color={color}
+              size={focused ? 22 : 20}
+            />
+          ),
         }}
       />
       <Tabs.Screen
@@ -85,9 +130,20 @@ export default function ParentLayout() {
         name="parent-child-details"
         options={{
           href: null,
+          tabBarStyle: { display: "none" },
         }}
       />
     </Tabs>
     </ParentGate>
+    {loading ? (
+      <View
+        pointerEvents="auto"
+        style={[StyleSheet.absoluteFillObject, { zIndex: 100 }]}
+        className="items-center justify-center bg-white"
+      >
+        <ActivityIndicator size="large" />
+      </View>
+    ) : null}
+    </>
   );
 }

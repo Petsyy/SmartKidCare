@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import User from "../../models/Users";
+import Child from "../../models/Child";
 import {
   maybeRequireParentPasswordChange,
   maybeRequireTeacherPasswordChange,
@@ -24,6 +25,7 @@ export const login = async (req: Request, res: Response) => {
     const loginIdentifier = String(
       email || username || identifier || "",
     ).trim();
+    const isAdminLoginRoute = req.originalUrl.includes("/auth/admin/login");
 
     if (!loginIdentifier || !password) {
       return res.status(400).json({
@@ -31,17 +33,33 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
-    const user = await User.findOne({
-      $or: [
-        {
-          email: {
-            $regex: `^${escapeRegex(loginIdentifier)}$`,
-            $options: "i",
-          },
-        },
-        { username: loginIdentifier },
-      ],
-    });
+    const user = isAdminLoginRoute
+      ? await User.findOne({
+          role: "admin",
+          $or: [
+            {
+              email: {
+                $regex: `^${escapeRegex(loginIdentifier)}$`,
+                $options: "i",
+              },
+            },
+            { username: loginIdentifier },
+          ],
+        })
+      : await User.findOne({
+          role: { $in: ["teacher", "parent"] },
+          $or: [
+            {
+              email: {
+                $regex: `^${escapeRegex(loginIdentifier)}$`,
+                $options: "i",
+              },
+            },
+            {
+              phone: loginIdentifier,
+            },
+          ],
+        });
 
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
@@ -49,14 +67,6 @@ export const login = async (req: Request, res: Response) => {
 
     if (user.isActive === false) {
       return res.status(403).json({ message: "Account is deactivated" });
-    }
-
-    // Teachers and parents must use email.
-    if (
-      user.role !== "admin" &&
-      user.email.toLowerCase() !== loginIdentifier.toLowerCase()
-    ) {
-      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     const isMatch = await bcrypt.compare(String(password), user.password);
@@ -119,7 +129,9 @@ export const getMe = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "Not authenticated." });
     }
 
-    const user = await User.findById(req.user.id).select("-password");
+    const user = await User.findById(req.user.id)
+      .select("-password")
+      .populate("daycareCenter", "name barangay code isActive");
     if (!user) {
       return res.status(404).json({ message: "User not found." });
     }
@@ -304,11 +316,53 @@ export const getAllUsers = async (req: Request, res: Response) => {
 
     const filter: any = {};
     if (role) filter.role = role;
+    if (role === "parent") {
+      // Only list parents linked to enrolled child records.
+      // This excludes parent accounts created from pending enrollment requests.
+      const enrolledParentIds = await Child.distinct("parent", {
+        parent: { $ne: null },
+      });
+      filter._id = { $in: enrolledParentIds };
+    }
 
     const users = await User.find(filter)
       .select("-password")
+      .populate("daycareCenter", "name barangay code isActive")
       .sort({ createdAt: -1 })
       .lean();
+
+    if (role === "parent" && users.length > 0) {
+      const parentIds = users.map((user: any) => user._id).filter(Boolean);
+
+      const linkedChildren = await Child.find({
+        parent: { $in: parentIds },
+      })
+        .select("_id firstName middleName lastName studentId parent")
+        .sort({ createdAt: -1 })
+        .lean();
+
+      const childrenByParentId = new Map<string, any[]>();
+      linkedChildren.forEach((child: any) => {
+        const parentId = String(child.parent || "");
+        if (!parentId) return;
+        const list = childrenByParentId.get(parentId) ?? [];
+        list.push({
+          _id: String(child._id),
+          firstName: child.firstName,
+          middleName: child.middleName,
+          lastName: child.lastName,
+          studentId: child.studentId,
+          source: "child",
+          status: "linked",
+        });
+        childrenByParentId.set(parentId, list);
+      });
+
+      users.forEach((user: any) => {
+        const parentId = String(user._id || "");
+        user.linkedChildren = childrenByParentId.get(parentId) ?? [];
+      });
+    }
 
     res.json({ users });
   } catch (error: any) {

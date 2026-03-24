@@ -12,7 +12,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { Users, Calendar, Utensils, AlertCircle, Clock } from "lucide-react";
+import { Home, Users, UserCircle, Heart, Smile, Clock } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 
@@ -20,14 +20,12 @@ const StatCard = ({
   title,
   value,
   subtitle,
-  trend,
   icon: Icon,
   color,
 }: {
   title: string;
   value: string;
   subtitle: string;
-  trend?: { value: string; isUp: boolean };
   icon: any;
   color: "blue" | "teal" | "purple" | "rose";
 }) => {
@@ -40,18 +38,11 @@ const StatCard = ({
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
           <p className="text-sm font-medium text-gray-600 dark:text-slate-400">{title}</p>
           <div className="mt-2 flex items-baseline gap-2">
             <p className="text-3xl font-semibold text-gray-900 dark:text-slate-100">{value}</p>
-            {trend && (
-              <span
-                className={`text-sm font-medium ${trend.isUp ? "text-emerald-600" : "text-rose-600"}`}
-              >
-                {trend.value}
-              </span>
-            )}
           </div>
           <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">{subtitle}</p>
         </div>
@@ -90,39 +81,41 @@ export default function AdminDashboard() {
           </div>
         ) : (
           <>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
               <StatCard
-                title="Total Enrollment"
-                value={String(stats.totalChildren)}
-                subtitle={`${stats.activeChildren} active students`}
-                icon={Users}
+                title="Total Child Development Centers"
+                value={String(stats.totalChildDevelopmentCenters)}
+                subtitle="Active centers"
+                icon={Home}
                 color="blue"
               />
               <StatCard
-                title="Attendance Rate"
-                value={`${stats.todayAttendanceRate}%`}
-                subtitle="Across all attendance records"
-                trend={{ value: "↑ 2%", isUp: true }}
-                icon={Calendar}
+                title="Child Development Workers"
+                value={String(stats.childDevelopmentWorkers)}
+                subtitle="Active teacher accounts"
+                icon={Users}
                 color="teal"
               />
               <StatCard
-                title="Lunch Feeding Compliance"
-                value={`${stats.todayFeedingRate}%`}
-                subtitle="Across all feeding records"
-                trend={{
-                  value: stats.todayFeedingRate >= 70 ? "↑ 3%" : "↓ 3%",
-                  isUp: stats.todayFeedingRate >= 70,
-                }}
-                icon={Utensils}
+                title="Total Enrolled Children"
+                value={String(stats.totalEnrolledDaycares)}
+                subtitle="Total enrolled children"
+                icon={UserCircle}
                 color="purple"
               />
               <StatCard
-                title="System Alerts"
-                value={String(stats.todayExceptions)}
-                subtitle="Across all attendance and feeding records"
-                icon={AlertCircle}
+                title="4P's Beneficiaries"
+                value={String(stats.fourPsBeneficiaries)}
+                subtitle="Children under 4Ps program"
+                icon={Heart}
                 color="rose"
+              />
+              <StatCard
+                title="Regular Attendees"
+                value={String(stats.regularAttendees)}
+                subtitle="Non-beneficiary enrollees"
+                icon={Smile}
+                color="blue"
               />
             </div>
 
@@ -131,10 +124,10 @@ export default function AdminDashboard() {
                 <div className="mb-4 flex items-center justify-between">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
-                      Weekly Attendance Trend
+                      Weekly Attendance & Feeding Trend
                     </h3>
                     <p className="text-sm text-gray-500 dark:text-slate-400">
-                      Attendance rate vs target for the past 7 days
+                      Attendance and feeding rates for the past 7 days
                     </p>
                   </div>
                   <div className="flex items-center gap-4 text-sm">
@@ -144,7 +137,7 @@ export default function AdminDashboard() {
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="h-3 w-3 rounded-full bg-emerald-500"></div>
-                      <span className="text-gray-600 dark:text-slate-300">Target</span>
+                      <span className="text-gray-600 dark:text-slate-300">Feeding Rate</span>
                     </div>
                   </div>
                 </div>
@@ -170,7 +163,7 @@ export default function AdminDashboard() {
                         borderRadius: "0.5rem",
                         fontSize: "12px",
                       }}
-                      formatter={(value: any) => [`${value}%`, ""]}
+                      formatter={(value: any) => [`${value}%`, "Rate"]}
                     />
                     <Legend wrapperStyle={{ fontSize: "12px" }} />
                     <Line
@@ -183,11 +176,10 @@ export default function AdminDashboard() {
                     />
                     <Line
                       type="monotone"
-                      dataKey="target"
+                      dataKey="feeding"
                       stroke="#10b981"
-                      strokeWidth={2}
-                      strokeDasharray="5 5"
-                      name="Target"
+                      strokeWidth={3}
+                      name="Feeding Rate"
                       dot={{ fill: "#10b981", r: 3 }}
                     />
                   </LineChart>
@@ -197,11 +189,10 @@ export default function AdminDashboard() {
               <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                 <div className="mb-4">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
-                    Attendance Status Distribution
+                    Center And Enrollment Overview
                   </h3>
                   <p className="text-sm text-gray-500 dark:text-slate-400">
-                    Distribution of present vs absent students across all
-                    records
+                    Distribution of your main child development metrics
                   </p>
                 </div>
 
@@ -212,7 +203,7 @@ export default function AdminDashboard() {
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={(entry) => `${entry.name}: ${entry.value}`}
+                      label={false}
                       outerRadius={100}
                       fill="#8884d8"
                       dataKey="value"
@@ -226,19 +217,18 @@ export default function AdminDashboard() {
                   </PieChart>
                 </ResponsiveContainer>
 
-                <div className="mt-4 flex items-center justify-center gap-6 text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="h-3 w-3 rounded-full bg-emerald-500"></div>
-                    <span className="text-gray-600 dark:text-slate-300">
-                      Present: {pieData[0]?.value || 0}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="h-3 w-3 rounded-full bg-rose-500"></div>
-                    <span className="text-gray-600 dark:text-slate-300">
-                      Absent: {pieData[1]?.value || 0}
-                    </span>
-                  </div>
+                <div className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
+                  {pieData.map((entry) => (
+                    <div key={entry.name} className="flex items-center gap-2">
+                      <div
+                        className="h-3 w-3 rounded-full"
+                        style={{ backgroundColor: entry.color }}
+                      ></div>
+                      <span className="text-gray-600 dark:text-slate-300">
+                        {entry.name}: {entry.value}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -295,9 +285,9 @@ export default function AdminDashboard() {
                                 }`}
                               >
                                 {activity.type === "attendance" ? (
-                                  <Calendar className="h-4 w-4 text-emerald-600" />
+                                  <Users className="h-4 w-4 text-emerald-600" />
                                 ) : (
-                                  <Utensils className="h-4 w-4 text-emerald-600" />
+                                  <Clock className="h-4 w-4 text-emerald-600" />
                                 )}
                               </div>
                               <span className="text-sm capitalize text-gray-900 dark:text-slate-100">

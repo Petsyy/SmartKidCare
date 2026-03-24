@@ -9,6 +9,13 @@ import {
   shouldPaginate,
 } from "./records.shared";
 
+const parseTeacherIdQuery = (value: unknown): string => {
+  if (Array.isArray(value)) {
+    return String(value[0] ?? "").trim();
+  }
+  return String(value ?? "").trim();
+};
+
 const buildSearchDateKeys = (value: unknown): string[] => {
   if (!value) return [];
   const raw = String(value).trim();
@@ -53,14 +60,18 @@ export const getAttendanceHistory = async (req: Request, res: Response) => {
       search,
       status,
       datePreset,
+      teacherId,
     } = req.query;
 
     const query: any = {};
 
     let parentChildIds: string[] = [];
+    const teacherFilter = parseTeacherIdQuery(teacherId);
 
     if (req.user.role === "teacher") {
       query.teacher = req.user.id;
+    } else if (req.user.role === "admin" && teacherFilter) {
+      query.teacher = teacherFilter;
     } else if (req.user.role === "parent") {
       parentChildIds = await getParentChildIds(req.user.id);
       if (!parentChildIds.length) {
@@ -222,14 +233,18 @@ export const getFeedingHistory = async (req: Request, res: Response) => {
       search,
       status,
       datePreset,
+      teacherId,
     } = req.query;
 
     const query: any = {};
 
     let parentChildIds: string[] = [];
+    const teacherFilter = parseTeacherIdQuery(teacherId);
 
     if (req.user.role === "teacher") {
       query.teacher = req.user.id;
+    } else if (req.user.role === "admin" && teacherFilter) {
+      query.teacher = teacherFilter;
     } else if (req.user.role === "parent") {
       parentChildIds = await getParentChildIds(req.user.id);
       if (!parentChildIds.length) {

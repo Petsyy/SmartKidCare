@@ -9,7 +9,7 @@ import {
 } from "../mongoAgentTools.service";
 import { AgentToolResult } from "../tools.service";
 
-export type AIRole = "parent" | "teacher" | "admin";
+export type AIRole = "parent";
 export type WriterRiskLevel = "LOW" | "MEDIUM" | "HIGH";
 export type WriterResponseTemplate = "fact" | "advice" | "alert";
 

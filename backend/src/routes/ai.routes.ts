@@ -266,7 +266,7 @@ function replyContainsNarrativeFollowUp(reply: string): boolean {
 }
 
 const aiChatRequestSchema = z.object({
-  role: z.enum(["parent", "teacher", "admin"]).optional(),
+  role: z.enum(["parent"]).optional(),
   message: z.string().max(5000, "Message is too long."),
   childId: z.string().optional(),
 });
@@ -322,6 +322,13 @@ router.post("/chat", authenticateToken, async (req, res) => {
     if (!role || !requesterId) {
       return res.status(400).json({
         message: "Invalid request: authenticated role and message are required.",
+      });
+    }
+
+    if (role !== "parent") {
+      return res.status(403).json({
+        message:
+          "AI chat is currently available only for parent accounts.",
       });
     }
 

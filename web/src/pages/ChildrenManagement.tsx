@@ -1,8 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
-  Plus,
   School,
   Search,
   Trash2,
@@ -11,9 +10,10 @@ import {
   UserCheck,
   UserX,
   Users,
+  ClipboardList,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import Layout from "@/components/layout/Layout";
-import AddChildModal from "@/components/modals/child/AddChildModal";
 import EditChildModal, {
   type ChildForEdit,
 } from "@/components/modals/child/EditChildModal";
@@ -30,8 +30,7 @@ import type {
 
 export default function ChildrenManagement() {
   const navigate = useNavigate();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isSavingChild, setIsSavingChild] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [editingChild, setEditingChild] = useState<Child | null>(null);
   const [viewingChild, setViewingChild] = useState<Child | null>(null);
   const [viewError, setViewError] = useState<string | null>(null);
@@ -53,7 +52,6 @@ export default function ChildrenManagement() {
     setSearch,
     isLoading,
     filteredChildren,
-    handleSaveChild,
     handleChangeStatus,
     handleUnlinkParent,
     handleDeleteChild,
@@ -65,12 +63,23 @@ export default function ChildrenManagement() {
   const [assignmentFilter, setAssignmentFilter] = useState<
     "all" | "assigned" | "unassigned"
   >("all");
+  const [centerFilter, setCenterFilter] = useState<string>("all");
   const [schoolYearFilter, setSchoolYearFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const [childNameSortDir, setChildNameSortDir] = useState<"asc" | "desc">(
-    "asc",
-  );
+  const prefillSearch = searchParams.get("prefillSearch");
+
+  useEffect(() => {
+    if (!prefillSearch) return;
+
+    setSearch(prefillSearch);
+    setPage(1);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete("prefillSearch");
+      return next;
+    }, { replace: true });
+  }, [prefillSearch, setPage, setSearch, setSearchParams]);
 
   const schoolYearOptions = useMemo(() => {
     const years = Array.from(
@@ -82,6 +91,37 @@ export default function ChildrenManagement() {
     ).sort((a, b) => b.localeCompare(a));
     return years;
   }, [children]);
+
+  const centerOptions = useMemo(() => {
+    const uniqueCenters = new Map<string, { id: string; label: string }>();
+
+    children.forEach((child) => {
+      const center = child.daycareCenter;
+      if (!center?._id) return;
+
+      if (!uniqueCenters.has(center._id)) {
+        const barangay = String(center.barangay || "").trim();
+        uniqueCenters.set(center._id, {
+          id: center._id,
+          label: barangay ? `${center.name} (${barangay})` : center.name,
+        });
+      }
+    });
+
+    return Array.from(uniqueCenters.values()).sort((a, b) =>
+      a.label.localeCompare(b.label),
+    );
+  }, [children]);
+
+  useEffect(() => {
+    if (centerFilter === "all") return;
+    const hasSelectedCenter = centerOptions.some(
+      (center) => center.id === centerFilter,
+    );
+    if (!hasSelectedCenter) {
+      setCenterFilter("all");
+    }
+  }, [centerFilter, centerOptions]);
 
   const filteredByControls = useMemo(() => {
     return filteredChildren.filter((child) => {
@@ -95,13 +135,24 @@ export default function ChildrenManagement() {
         if (assignmentFilter === "unassigned" && hasTeacher) return false;
       }
 
+      if (centerFilter !== "all") {
+        const centerId = String(child.daycareCenter?._id || "");
+        if (centerId !== centerFilter) return false;
+      }
+
       if (schoolYearFilter !== "all" && child.schoolYear !== schoolYearFilter) {
         return false;
       }
 
       return true;
     });
-  }, [assignmentFilter, filteredChildren, schoolYearFilter, statusFilter]);
+  }, [
+    assignmentFilter,
+    centerFilter,
+    filteredChildren,
+    schoolYearFilter,
+    statusFilter,
+  ]);
 
   const total = filteredByControls.length;
   const totalPages = total > 0 ? Math.ceil(total / limit) : 0;
@@ -111,37 +162,20 @@ export default function ChildrenManagement() {
   const rangeLabel = `${start}-${end} of ${total}`;
 
   const pagedChildren = useMemo(() => {
-    const compareText = (a: unknown, b: unknown) =>
-      String(a ?? "")
-        .toLowerCase()
-        .localeCompare(String(b ?? "").toLowerCase());
-
-    const getChildName = (child: Child) =>
-      `${child.lastName}, ${child.firstName}${child.middleName ? ` ${child.middleName}` : ""}`;
-
-    const multiplier = childNameSortDir === "asc" ? 1 : -1;
-    const sorted = [...filteredByControls].sort((a, b) => {
-      const cmp = compareText(getChildName(a), getChildName(b));
-      return cmp * multiplier;
-    });
-
     const sliceStart = (safePage - 1) * limit;
-    return sorted.slice(sliceStart, sliceStart + limit);
-  }, [childNameSortDir, filteredByControls, limit, safePage]);
-
-  const toggleChildNameSort = () => {
-    setPage(1);
-    setChildNameSortDir((prev) => (prev === "asc" ? "desc" : "asc"));
-  };
+    return filteredByControls.slice(sliceStart, sliceStart + limit);
+  }, [filteredByControls, limit, safePage]);
 
   const hasActiveFilters =
     statusFilter !== "all" ||
     assignmentFilter !== "all" ||
+    centerFilter !== "all" ||
     schoolYearFilter !== "all";
 
   const clearFilters = () => {
     setStatusFilter("all");
     setAssignmentFilter("all");
+    setCenterFilter("all");
     setSchoolYearFilter("all");
     setPage(1);
   };
@@ -303,7 +337,7 @@ export default function ChildrenManagement() {
                 />
                 <input
                   type="text"
-                  placeholder="Search students..."
+                  placeholder="Search records..."
                   value={search}
                   onChange={(e) => {
                     setPage(1);
@@ -358,6 +392,22 @@ export default function ChildrenManagement() {
                   ))}
                 </select>
 
+                <select
+                  value={centerFilter}
+                  onChange={(e) => {
+                    setPage(1);
+                    setCenterFilter(e.target.value);
+                  }}
+                  className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                >
+                  <option value="all">All Centers</option>
+                  {centerOptions.map((center) => (
+                    <option key={center.id} value={center.id}>
+                      {center.label}
+                    </option>
+                  ))}
+                </select>
+
                 <button
                   type="button"
                   disabled={!hasActiveFilters}
@@ -367,14 +417,12 @@ export default function ChildrenManagement() {
                   Clear
                 </button>
               </div>
-
-              {/* Add Child */}
               <button
-                onClick={() => setIsModalOpen(true)}
+                onClick={() => navigate("/enrollment-requests")}
                 className="flex cursor-pointer items-center gap-2 rounded-lg border border-teal-500/20 bg-linear-to-r from-teal-600 to-cyan-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:from-teal-700 hover:to-cyan-600 dark:border-cyan-400/20 dark:from-teal-600 dark:to-cyan-600 dark:hover:from-teal-500 dark:hover:to-cyan-500"
               >
-                <Plus size={16} />
-                Add Child
+                <ClipboardList size={16} />
+                Review Requests
               </button>
             </div>
           </div>
@@ -386,8 +434,6 @@ export default function ChildrenManagement() {
             onViewChild={openViewModal}
             onEditChild={setEditingChild}
             onMenuClick={openMenu}
-            childNameSortDir={childNameSortDir}
-            onToggleChildNameSort={toggleChildNameSort}
           />
 
           <div className="flex items-center justify-between border-t border-gray-200 px-6 py-4 dark:border-slate-700">
@@ -434,38 +480,6 @@ export default function ChildrenManagement() {
           </div>
         </div>
       </div>
-
-      <AddChildModal
-        isOpen={isModalOpen}
-        onClose={() => {
-          if (isSavingChild) return;
-          setIsModalOpen(false);
-        }}
-        isLoading={isSavingChild}
-        onSave={async (childData, files) => {
-          if (!childData.studentId) {
-            console.error("Student ID is required");
-            return;
-          }
-          setIsSavingChild(true);
-          try {
-            await handleSaveChild(
-              {
-                ...childData,
-                studentId: childData.studentId,
-              },
-              files,
-              {
-                onCreatedSuccess: () => {
-                  setIsModalOpen(false);
-                },
-              },
-            );
-          } finally {
-            setIsSavingChild(false);
-          }
-        }}
-      />
 
       {editingChild && (
         <EditChildModal
@@ -638,7 +652,7 @@ function StatCard({
   title: string;
   value: string;
   subtitle: string;
-  icon: any;
+  icon: LucideIcon;
   color: "blue" | "teal" | "purple" | "rose";
 }) {
   const colorMap = {

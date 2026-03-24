@@ -133,11 +133,11 @@ const RECOMMENDATION_LIBRARY = {
   feeding_monitor_completion: {
     key: "feeding_monitor_completion",
     goal:
-      "Recommend closer meal-completion monitoring and coordination with the teacher for missed meals.",
+      "Recommend closer meal-completion monitoring and coordination with the daycare center for missed meals.",
     fallbackEn:
-      "Monitor meal completion closely and coordinate with the teacher on missed meals.",
+      "Monitor meal completion closely and coordinate with the daycare center on missed meals.",
     fallbackTl:
-      "Mainam na bantayan nang mas malapitan ang meal completion at makipag-ugnayan sa guro sa missed meals.",
+      "Mainam na bantayan nang mas malapitan ang meal completion at makipag-ugnayan sa daycare center tungkol sa missed meals.",
   },
   feeding_review_patterns: {
     key: "feeding_review_patterns",
@@ -305,7 +305,7 @@ Rules:
 - Use ${language === "tl" ? "Tagalog" : "English"}.
 - Keep each recommendation to one concise sentence.
 - Use plain text only, no markdown and no numbering.
-- Be practical and supportive for parents and teachers.
+- Be practical and supportive for parents.
 - Do not invent facts, counts, dates, or outcomes.
 
 Context:

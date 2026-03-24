@@ -11,6 +11,7 @@ export interface IUserPushToken {
 export interface IUser extends Document {
   username?: string; // admin only
   employeeId?: string; // teacher only
+  daycareCenter?: mongoose.Types.ObjectId | null;
   firstName: string;
   middleName?: string;
   lastName: string;
@@ -29,6 +30,8 @@ export interface IUser extends Document {
   passwordResetOtpHash?: string;
   passwordResetOtpExpiresAt?: Date;
   passwordResetOtpPurpose?: string;
+  latestTempPassword?: string;
+  latestTempPasswordIssuedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -47,6 +50,12 @@ const UserSchema: Schema = new Schema(
       type: String,
       unique: true,
       sparse: true,
+    },
+
+    daycareCenter: {
+      type: Schema.Types.ObjectId,
+      ref: "ChildDevelopmentCenter",
+      default: null,
     },
 
     firstName: { type: String, required: true },
@@ -155,6 +164,16 @@ const UserSchema: Schema = new Schema(
 
     passwordResetOtpPurpose: {
       type: String,
+      default: undefined,
+    },
+
+    latestTempPassword: {
+      type: String,
+      default: undefined,
+    },
+
+    latestTempPasswordIssuedAt: {
+      type: Date,
       default: undefined,
     },
   },

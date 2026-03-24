@@ -5,7 +5,7 @@ import {
   sanitizeAIMessageInput,
 } from "../utils/ai-input-sanitizer";
 
-export type AIRole = "parent" | "teacher" | "admin";
+export type AIRole = "parent";
 
 export interface AIChatPayload {
   role: AIRole;

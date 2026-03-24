@@ -165,7 +165,7 @@ function trendActions(
     if (risk === "HIGH") {
       return [
         "I-review ang daily routine para mabawasan ang absences at missed meals.",
-        "Makipag-coordinate sa teacher para sa regular follow-up ngayong linggo.",
+        "Makipag-coordinate sa daycare center para sa regular follow-up ngayong linggo.",
       ];
     }
     if (risk === "MEDIUM") {
@@ -183,7 +183,7 @@ function trendActions(
   if (risk === "HIGH") {
     return [
       "Review daily routines to reduce absences and missed meals.",
-      "Coordinate with the teacher for close weekly follow-up.",
+      "Coordinate with the daycare center for close weekly follow-up.",
     ];
   }
   if (risk === "MEDIUM") {

@@ -13,8 +13,9 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   useEffect(() => {
     let isMounted = true;
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
 
-    const verifySession = async () => {
+    const verifySession = async (isInitial = false) => {
       try {
         const response = await fetch(`${API_BASE}/auth/me`, {
           credentials: "include",
@@ -44,16 +45,24 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
           setAuthCheckError("Network issue while verifying your session.");
         }
       } finally {
-        if (isMounted) {
+        if (isMounted && isInitial) {
           setIsChecking(false);
         }
       }
     };
 
-    verifySession();
+    void verifySession(true);
+
+    // Poll keeps long-open tabs in sync with server-side token expiry.
+    pollTimer = setInterval(() => {
+      void verifySession(false);
+    }, 3000);
 
     return () => {
       isMounted = false;
+      if (pollTimer) {
+        clearInterval(pollTimer);
+      }
     };
   }, []);
 

@@ -1,7 +1,7 @@
 import { API_BASE_URL } from "../config/config.api";
 
 export interface LoginCredentials {
-  email: string;
+  identifier: string;
   password: string;
 }
 

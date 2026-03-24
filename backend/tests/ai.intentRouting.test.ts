@@ -133,22 +133,3 @@ test("handles plain typos in intent keywords", () => {
   assert.equal(detectToolForQuestion("asdasdas qwqwqw zxzxzx"), null);
 });
 
-test("teacher aggregate class questions require teacher session context", async () => {
-  const reply = await tryHandleAgentQuery({
-    role: "teacher",
-    question: "How many children were present today?",
-    language: "en",
-  });
-
-  assert.ok(reply);
-  assert.match(String(reply), /teacher session|sign in again/i);
-
-  const genericTeacherReply = await tryHandleAgentQuery({
-    role: "teacher",
-    question: "Summarize last week feeding and attendance",
-    language: "en",
-  });
-
-  assert.ok(genericTeacherReply);
-  assert.match(String(genericTeacherReply), /teacher session|sign in again/i);
-});

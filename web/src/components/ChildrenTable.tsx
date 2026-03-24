@@ -1,5 +1,6 @@
-import { ArrowDown, ArrowUp, Eye, MoreVertical, Pencil } from "lucide-react";
+import { Eye, MoreVertical, Pencil } from "lucide-react";
 import type { Child } from "@/types/child";
+import { formatConfidentialName } from "@/utils/namePrivacy";
 
 interface ChildrenTableProps {
   isLoading: boolean;
@@ -8,8 +9,6 @@ interface ChildrenTableProps {
   onViewChild: (child: Child) => void;
   onEditChild: (child: Child) => void;
   onMenuClick: (child: Child, buttonEl: HTMLButtonElement) => void;
-  childNameSortDir: "asc" | "desc";
-  onToggleChildNameSort: () => void;
 }
 
 export function ChildrenTable({
@@ -19,40 +18,21 @@ export function ChildrenTable({
   onViewChild,
   onEditChild,
   onMenuClick,
-  childNameSortDir,
-  onToggleChildNameSort,
 }: ChildrenTableProps) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse">
         <thead className="border-b bg-gray-50 dark:border-slate-700 dark:bg-slate-900">
           <tr>
-            <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
-              Student ID
-            </th>
-            <th className="px-6 py-0 text-left">
-              <button
-                type="button"
-                onClick={onToggleChildNameSort}
-                className="flex w-full items-center px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200"
-              >
-                Child Name{" "}
-                {childNameSortDir === "asc" ? (
-                  <ArrowUp
-                    size={14}
-                    className="ml-2 inline-block align-middle text-gray-400 dark:text-slate-500"
-                  />
-                ) : (
-                  <ArrowDown
-                    size={14}
-                    className="ml-2 inline-block align-middle text-gray-400 dark:text-slate-500"
-                  />
-                )}
-              </button>
-            </th>
-            <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
-              Age
-            </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
+                  Student ID
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
+                  Child Name
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
+                  Age
+                </th>
             <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
               Gender
             </th>
@@ -66,6 +46,9 @@ export function ChildrenTable({
               Assigned Teacher
             </th>
             <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
+              Assigned Center
+            </th>
+            <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
               Actions
             </th>
           </tr>
@@ -75,7 +58,7 @@ export function ChildrenTable({
           {isLoading ? (
             <tr>
               <td
-                colSpan={8}
+                colSpan={9}
                 className="px-6 py-10 text-center text-sm text-gray-500 dark:text-slate-400"
               >
                 Loading students...
@@ -84,7 +67,7 @@ export function ChildrenTable({
           ) : children.length === 0 ? (
             <tr>
               <td
-                colSpan={8}
+                colSpan={9}
                 className="px-6 py-10 text-center text-sm text-gray-500 dark:text-slate-400"
               >
                 No children records found.
@@ -93,7 +76,7 @@ export function ChildrenTable({
           ) : filteredChildren.length === 0 ? (
             <tr>
               <td
-                colSpan={8}
+                colSpan={9}
                 className="px-6 py-10 text-center text-sm text-gray-500 dark:text-slate-400"
               >
                 No students match your search.
@@ -108,8 +91,12 @@ export function ChildrenTable({
                 <td className="px-6 py-4 font-mono text-sm text-gray-900 dark:text-slate-100">
                   {child.studentId}
                 </td>
-                <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-slate-100">
-                  {`${child.lastName}, ${child.firstName}${child.middleName ? ` ${child.middleName}` : ""}`}
+                <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-300">
+                  {formatConfidentialName({
+                    lastName: child.lastName,
+                    firstName: child.firstName,
+                    middleName: child.middleName,
+                  }) || "-"}
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-300">
                   {child.age}
@@ -137,6 +124,20 @@ export function ChildrenTable({
                   {child.teacher
                     ? `${child.teacher.lastName}, ${child.teacher.firstName}${child.teacher.middleName ? ` ${child.teacher.middleName}` : ""}`
                     : "Unassigned"}
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-300">
+                  {child.daycareCenter ? (
+                    <div className="flex flex-col">
+                      <span className="font-medium text-gray-900 dark:text-slate-100">
+                        {child.daycareCenter.name}
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-slate-400">
+                        {child.daycareCenter.barangay}
+                      </span>
+                    </div>
+                  ) : (
+                    "Unassigned"
+                  )}
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex flex-wrap items-center gap-1.5">

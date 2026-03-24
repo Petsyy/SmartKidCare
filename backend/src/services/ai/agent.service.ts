@@ -1,9 +1,7 @@
 import {
   summarizeAttendanceTool,
-  summarizeAttendanceClassTool,
   summarizeChildTrendTool,
   summarizeFeedingTool,
-  summarizeFeedingClassTool,
   ToolTimeframe,
 } from "./mongoAgentTools.service";
 import { executeAgentTool, AgentToolName } from "./tools.service";
@@ -11,69 +9,15 @@ import { AIResponseLanguage, detectResponseLanguage } from "./language.service";
 import {
   AttendanceComparisonResult,
   buildConversationId,
-  ClassReportResult,
   FeedingComparisonResult,
   writeToolNarrative,
 } from "./aiWriter.service";
 import { inputIsGibberish } from "../../utils/aiInputSanitizer";
 
-type AIRole = "parent" | "teacher" | "admin";
+type AIRole = "parent";
 
 function normalizeRole(role: string): AIRole {
-  const normalized = String(role).trim().toLowerCase();
-  if (normalized === "teacher") return "teacher";
-  if (normalized === "admin") return "admin";
   return "parent";
-}
-
-function isClassAggregateQuestion(question: string, role: AIRole): boolean {
-  if (role !== "teacher" && role !== "admin") return false;
-  const lower = question.toLowerCase();
-  const classWords = /\b(children|class|students|pupils|kids)\b/.test(lower);
-  const attendanceWords =
-    /\b(attendance|present|absent|attendance rate|check[- ]?in)\b/.test(lower);
-  const feedingWords =
-    /\b(meals?|feeding|food|lunch|snack|breakfast|dinner)\b/.test(lower);
-  const domainWords = attendanceWords || feedingWords;
-  const explicitSingle =
-    /\b(my child|anak ko|my kid|my student|this child)\b/.test(lower);
-  const genericChildMention = /\b(child|anak|student|kid|bata)\b/.test(lower);
-
-  return !explicitSingle && domainWords && (classWords || !genericChildMention);
-}
-
-function inferClassQuestionDomain(
-  question: string,
-): "attendance" | "feeding" | "both" {
-  const lower = question.toLowerCase();
-  const hasAttendance =
-    /\b(attendance|present|absent|check[- ]?in|pumasok|lumiban|pagdalo|pasok|pagliban)\b/.test(
-      lower,
-    );
-  const hasFeeding =
-    /\b(feeding|feed|food|meal|meals|eat|ate|eaten|pagkain|kain|kumain|kinain|ulam)\b/.test(
-      lower,
-    );
-
-  if (hasAttendance && hasFeeding) return "both";
-  if (hasFeeding) return "feeding";
-  return "attendance";
-}
-
-function inferClassTimeframe(question: string): ToolTimeframe {
-  const lower = question.toLowerCase();
-  if (
-    lower.includes("last week") ||
-    lower.includes("previous week") ||
-    lower.includes("nakaraang linggo") ||
-    lower.includes("huling linggo")
-  ) {
-    return "last_week";
-  }
-  if (lower.includes("today") || lower.includes("ngayon")) return "today";
-  if (lower.includes("month") || lower.includes("buwan")) return "month";
-  if (lower.includes("week") || lower.includes("linggo")) return "week";
-  return "today";
 }
 
 function shouldTriggerAbsenceAgent(lower: string): boolean {
@@ -316,61 +260,6 @@ export async function tryHandleAgentQuery(params: {
     language,
     conversationId: params.conversationId,
   });
-
-  if (isClassAggregateQuestion(params.question, normalizedRole)) {
-    if (!params.requesterId) {
-      return language === "tl"
-        ? "Hindi matukoy ang teacher session para sa class-level summary. Pakisubukang mag-login muli."
-        : "Unable to resolve teacher session for class-level summary. Please sign in again.";
-    }
-
-    const timeframe = inferClassTimeframe(params.question);
-    const domain = inferClassQuestionDomain(params.question);
-
-    if (domain === "attendance") {
-      const result = await summarizeAttendanceClassTool(params.requesterId, timeframe);
-      return writeToolNarrative({
-        result,
-        role: normalizedRole,
-        question: params.question,
-        language,
-        conversationId,
-        suppressFollowUp: params.suppressFollowUp,
-      });
-    }
-
-    if (domain === "feeding") {
-      const result = await summarizeFeedingClassTool(params.requesterId, timeframe);
-      return writeToolNarrative({
-        result,
-        role: normalizedRole,
-        question: params.question,
-        language,
-        conversationId,
-        suppressFollowUp: params.suppressFollowUp,
-      });
-    }
-
-    const [attendance, feeding] = await Promise.all([
-      summarizeAttendanceClassTool(params.requesterId, timeframe),
-      summarizeFeedingClassTool(params.requesterId, timeframe),
-    ]);
-    const result: ClassReportResult = {
-      tool: "generate_class_report",
-      timeframe,
-      attendance,
-      feeding,
-    };
-
-    return writeToolNarrative({
-      result,
-      role: normalizedRole,
-      question: params.question,
-      language,
-      conversationId,
-      suppressFollowUp: params.suppressFollowUp,
-    });
-  }
 
   if (!shouldUseAIAgent(params.question)) {
     return null;

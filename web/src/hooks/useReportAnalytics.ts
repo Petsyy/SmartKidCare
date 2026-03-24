@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { API_BASE } from "@/components/config/config.api";
+import { formatConfidentialName } from "@/utils/namePrivacy";
 
 type ChildRef = {
   _id: string;
@@ -8,6 +9,7 @@ type ChildRef = {
   middle?: string;
   middle_name?: string;
   lastName: string;
+  studentId?: string;
 };
 
 type AttendanceEntry = {
@@ -49,13 +51,18 @@ export type StatusDistributionPoint = {
 
 export type ExceptionRow = {
   childId: string;
-  childName: string;
+  childLabel: string;
   absentCount: number;
   missedCount: number;
   totalExceptions: number;
 };
 
 export type ReportSummary = {
+  totalChildDevelopmentCenters: number;
+  childDevelopmentWorkers: number;
+  totalEnrolledDaycares: number;
+  fourPsBeneficiaries: number;
+  regularAttendees: number;
   totalChildren: number;
   activeChildren: number;
   totalTeachers: number;
@@ -72,6 +79,7 @@ export type ReportSummary = {
 type RawPayload = {
   children: any[];
   users: any[];
+  centers: any[];
   attendance: AttendanceEntry[];
   feeding: FeedingEntry[];
 };
@@ -86,6 +94,7 @@ type ActiveRange = {
 const DEFAULT_RAW: RawPayload = {
   children: [],
   users: [],
+  centers: [],
   attendance: [],
   feeding: [],
 };
@@ -115,15 +124,28 @@ const formatDateKey = (key: string) => {
   }).format(new Date(year, month - 1, day));
 };
 
-const formatChildName = (child?: ChildRef | null) => {
-  if (!child) return "Unknown Child";
-  const middleName = child.middleName ?? child.middle ?? child.middle_name;
-  const trailing = [child.firstName, middleName].filter(Boolean).join(" ");
-  return trailing ? `${child.lastName}, ${trailing}` : child.lastName;
-};
-
 const getChildId = (child: ChildRef | string) =>
   typeof child === "string" ? child : String(child?._id || "");
+
+const getChildLabel = (child?: ChildRef | null, fallbackId?: string) => {
+  const middleName = child?.middleName ?? child?.middle ?? child?.middle_name;
+  const confidentialName = child
+    ? formatConfidentialName({
+        lastName: child.lastName,
+        firstName: child.firstName,
+        middleName,
+      })
+    : "";
+  const studentId = String(child?.studentId || "").trim();
+  const fallback = String(fallbackId || "").trim();
+
+  if (confidentialName && studentId) {
+    return `${confidentialName} (${studentId})`;
+  }
+  if (confidentialName) return confidentialName;
+  if (studentId) return studentId;
+  return fallback || "Unknown";
+};
 
 const buildDateKeysBetween = (startKey: string, endKey: string) => {
   const [startYear, startMonth, startDay] = startKey.split("-").map(Number);
@@ -201,18 +223,28 @@ export function useReportAnalytics() {
         return payload;
       };
 
-      const [childrenPayload, usersPayload, attendancePayload, feedingPayload] =
+      const [
+        childrenPayload,
+        usersPayload,
+        attendancePayload,
+        feedingPayload,
+        centersPayload,
+      ] =
         await Promise.all([
           fetchJson(`${API_BASE}/children`),
           fetchJson(`${API_BASE}/auth/users`),
           fetchJson(`${API_BASE}/records/attendance`),
           fetchJson(`${API_BASE}/records/feeding`),
+          fetchJson(`${API_BASE}/admin/daycare-centers`),
         ]);
 
       setRaw({
         children: Array.isArray(childrenPayload) ? childrenPayload : [],
         users: Array.isArray((usersPayload as { users?: unknown[] }).users)
           ? ((usersPayload as { users?: unknown[] }).users as any[])
+          : [],
+        centers: Array.isArray((centersPayload as { centers?: unknown[] }).centers)
+          ? ((centersPayload as { centers?: unknown[] }).centers as any[])
           : [],
         attendance: Array.isArray(attendancePayload)
           ? (attendancePayload as AttendanceEntry[])
@@ -347,7 +379,7 @@ export function useReportAnalytics() {
       string,
       {
         childId: string;
-        childName: string;
+        childLabel: string;
         absentCount: number;
         missedCount: number;
       }
@@ -369,13 +401,13 @@ export function useReportAnalytics() {
 
     const upsertChildException = (
       childId: string,
-      childName: string,
+      childLabel: string,
       field: "absentCount" | "missedCount",
     ) => {
       if (!exceptionsByChild.has(childId)) {
         exceptionsByChild.set(childId, {
           childId,
-          childName,
+          childLabel,
           absentCount: 0,
           missedCount: 0,
         });
@@ -407,7 +439,7 @@ export function useReportAnalytics() {
               : childMap.get(childId) || null;
           upsertChildException(
             childId,
-            formatChildName(childObj),
+            getChildLabel(childObj, childId),
             "absentCount",
           );
         }
@@ -437,7 +469,7 @@ export function useReportAnalytics() {
               : childMap.get(childId) || null;
           upsertChildException(
             childId,
-            formatChildName(childObj),
+            getChildLabel(childObj, childId),
             "missedCount",
           );
         }
@@ -497,15 +529,51 @@ export function useReportAnalytics() {
         if (b.totalExceptions !== a.totalExceptions) {
           return b.totalExceptions - a.totalExceptions;
         }
-        return a.childName.localeCompare(b.childName);
+        return a.childLabel.localeCompare(b.childLabel);
       })
       .slice(0, 8);
 
+    const totalChildDevelopmentCenters = raw.centers.filter(
+      (center: any) => center?.isActive !== false,
+    ).length;
+    const childDevelopmentWorkers = raw.users.filter(
+      (user: any) => user.role === "teacher",
+    ).length;
+    const totalEnrolledDaycares = raw.children.length;
+    const fourPsBeneficiaries = raw.children.filter(
+      (child: any) => child?.programType === "4Ps Beneficiary",
+    ).length;
+    const regularAttendees = raw.children.filter(
+      (child: any) =>
+        child?.programType === "Regular Enrollee (Non-beneficiary)",
+    ).length;
+
     const statusDistribution: StatusDistributionPoint[] = [
-      { name: "Present", value: attendancePresent, color: "#10b981" },
-      { name: "Absent", value: attendanceAbsent, color: "#f43f5e" },
-      { name: "Completed", value: feedingCompleted, color: "#14b8a6" },
-      { name: "Missed Meal", value: feedingMissed, color: "#f59e0b" },
+      {
+        name: "Total Child Development Centers",
+        value: totalChildDevelopmentCenters,
+        color: "#38bdf8",
+      },
+      {
+        name: "Child Development Workers",
+        value: childDevelopmentWorkers,
+        color: "#14b8a6",
+      },
+      {
+        name: "Total Enrolled Daycares",
+        value: totalEnrolledDaycares,
+        color: "#f59e0b",
+      },
+      {
+        name: "4P's Beneficiaries",
+        value: fourPsBeneficiaries,
+        color: "#f43f5e",
+      },
+      {
+        name: "Regular Attendees",
+        value: regularAttendees,
+        color: "#6366f1",
+      },
     ].filter((item) => item.value > 0);
 
     if (statusDistribution.length === 0) {
@@ -536,6 +604,9 @@ export function useReportAnalytics() {
     childMap,
     filteredAttendance,
     filteredFeeding,
+    raw.centers,
+    raw.children,
+    raw.users,
   ]);
 
   const summary = useMemo<ReportSummary>(() => {
@@ -544,12 +615,30 @@ export function useReportAnalytics() {
       (child: any) => child.status === "Active",
     ).length;
     const totalTeachers = raw.users.filter(
-      (user: any) => user.role === "teacher",
+      (user: any) =>
+        user.role === "teacher" &&
+        user.isActive !== false &&
+        Boolean(user.daycareCenter),
+    ).length;
+    const totalChildDevelopmentCenters = raw.centers.filter(
+      (center: any) => center?.isActive !== false,
+    ).length;
+    const fourPsBeneficiaries = raw.children.filter(
+      (child: any) => child?.programType === "4Ps Beneficiary",
+    ).length;
+    const regularAttendees = raw.children.filter(
+      (child: any) =>
+        child?.programType === "Regular Enrollee (Non-beneficiary)",
     ).length;
     const totalChecks = computed.attendanceTotal + computed.feedingTotal;
     const exceptionCount = computed.attendanceAbsent + computed.feedingMissed;
 
     return {
+      totalChildDevelopmentCenters,
+      childDevelopmentWorkers: totalTeachers,
+      totalEnrolledDaycares: totalChildren,
+      fourPsBeneficiaries,
+      regularAttendees,
       totalChildren,
       activeChildren,
       totalTeachers,
@@ -570,7 +659,7 @@ export function useReportAnalytics() {
       absentCount: computed.attendanceAbsent,
       missedCount: computed.feedingMissed,
     };
-  }, [computed, raw.children, raw.users]);
+  }, [computed, raw.centers, raw.children, raw.users]);
 
   const hasData = summary.totalChecks > 0;
 
@@ -590,6 +679,15 @@ export function useReportAnalytics() {
 
     lines.push("Summary");
     lines.push("Metric,Value");
+    lines.push(
+      `Total Child Development Centers,${summary.totalChildDevelopmentCenters}`,
+    );
+    lines.push(
+      `Child Development Workers,${summary.childDevelopmentWorkers}`,
+    );
+    lines.push(`Total Enrolled Daycares,${summary.totalEnrolledDaycares}`);
+    lines.push(`4P's Beneficiaries,${summary.fourPsBeneficiaries}`);
+    lines.push(`Regular Attendees,${summary.regularAttendees}`);
     lines.push(`Total Children,${summary.totalChildren}`);
     lines.push(`Active Children,${summary.activeChildren}`);
     lines.push(`Total Teachers,${summary.totalTeachers}`);
@@ -620,11 +718,11 @@ export function useReportAnalytics() {
     lines.push("");
 
     lines.push("Top Exceptions by Child");
-    lines.push("Child Name,Absences,Missed Meals,Total Exceptions");
+    lines.push("Child (Confidential),Absences,Missed Meals,Total Exceptions");
     computed.topExceptions.forEach((row) => {
       lines.push(
         [
-          toCsvCell(row.childName),
+          toCsvCell(row.childLabel),
           toCsvCell(row.absentCount),
           toCsvCell(row.missedCount),
           toCsvCell(row.totalExceptions),

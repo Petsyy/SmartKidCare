@@ -13,7 +13,6 @@ import { useRouter } from "expo-router";
 import {
   ChevronLeft,
   Search,
-  Calendar,
   CheckCircle2,
   XCircle,
   Users,
@@ -23,6 +22,10 @@ import { useAuth } from "@/src/hooks/use-auth";
 import { getChildren } from "@/src/api/teacher.api";
 import { submitAttendance, getTodayAttendance } from "@/src/api/records.api";
 import type { Child } from "@/src/api/parent.api";
+import {
+  formatManilaDateLabel,
+  getManilaDateKey,
+} from "@/src/utils/manila-date";
 
 export default function RecordAttendance() {
   const router = useRouter();
@@ -31,16 +34,12 @@ export default function RecordAttendance() {
   const [loading, setLoading] = useState(true);
   const [attendance, setAttendance] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedDate, setSelectedDate] = useState(
-    new Date().toLocaleDateString("en-PH", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      timeZone: "Asia/Manila",
-    }),
+  const selectedDateKey = useMemo(() => getManilaDateKey(), []);
+  const selectedDateLabel = useMemo(
+    () => formatManilaDateLabel(selectedDateKey),
+    [selectedDateKey],
   );
   const [isReadOnly, setIsReadOnly] = useState(false);
-  const [submittedAt, setSubmittedAt] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -57,7 +56,6 @@ export default function RecordAttendance() {
           if (todayRecord) {
             // Record already exists for today - show read-only view
             setIsReadOnly(true);
-            setSubmittedAt(todayRecord.createdAt);
 
             // Populate attendance from existing record
             const existingAttendance: Record<string, boolean> = {};
@@ -143,7 +141,8 @@ export default function RecordAttendance() {
           pathname: "/(teacher)/teacher-record-data/feeding",
           params: {
             presentChildren: JSON.stringify(presentChildrenIds),
-            attendanceDate: selectedDate,
+            attendanceDateKey: selectedDateKey,
+            attendanceDateLabel: selectedDateLabel,
           },
         });
         return;
@@ -158,8 +157,8 @@ export default function RecordAttendance() {
       );
 
       // Submit to backend
-      const response = await submitAttendance(token, {
-        date: new Date().toISOString(),
+      await submitAttendance(token, {
+        date: selectedDateKey,
         records,
       });
 
@@ -168,7 +167,8 @@ export default function RecordAttendance() {
         pathname: "/(teacher)/teacher-record-data/feeding",
         params: {
           presentChildren: JSON.stringify(presentChildrenIds),
-          attendanceDate: selectedDate,
+          attendanceDateKey: selectedDateKey,
+          attendanceDateLabel: selectedDateLabel,
         },
       });
     } catch (error: any) {
@@ -187,7 +187,7 @@ export default function RecordAttendance() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-emerald-50" edges={["bottom"]}>
+    <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
       <StatusBar
         barStyle="light-content"
         translucent
@@ -199,15 +199,17 @@ export default function RecordAttendance() {
         <View className="flex-row mb-2">
           <Pressable
             onPress={() => router.push("/(teacher)")}
-            className="mr-3 mt-4"
+            className="h-10 w-10 items-center justify-center rounded-full bg-white/20 mr-3 mt-4"
           >
-            <ChevronLeft size={30} color="#FFFFFF" />
+            <ChevronLeft size={22} color="#FFFFFF" />
           </Pressable>
           <View className="flex-1">
             <Text className="text-3xl font-extrabold text-white">
               Record Attendance
             </Text>
-            <Text className="text-base text-teal-100 mt-1">{selectedDate}</Text>
+            <Text className="text-base text-teal-100 mt-1">
+              {selectedDateLabel}
+            </Text>
           </View>
         </View>
       </View>

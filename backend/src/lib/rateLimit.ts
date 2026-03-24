@@ -11,6 +11,11 @@ const mfaKeyGenerator = (req: any) =>
 const authenticatedUserKeyGenerator = (req: any) =>
   `${ipKeyGenerator(req.ip)}:${String(req.user?.id || "anonymous")}`;
 
+const parsePositiveInt = (value: string | undefined, fallback: number): number => {
+  const parsed = Number.parseInt(String(value || "").trim(), 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
 export const loginLimiter = rateLimit({
   windowMs: 5 * 60 * 1000,
   max: 5,
@@ -108,6 +113,24 @@ export const authenticatedOtpResendCooldownLimiter = rateLimit({
   keyGenerator: authenticatedUserKeyGenerator,
   message: {
     message: "Please wait 1 minute before requesting another OTP.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const parentAiChatWindowMs = parsePositiveInt(
+  process.env.AI_PARENT_CHAT_WINDOW_MS,
+  30 * 1000,
+);
+const parentAiChatMax = parsePositiveInt(process.env.AI_PARENT_CHAT_MAX, 5);
+
+export const parentAiChatLimiter = rateLimit({
+  windowMs: parentAiChatWindowMs,
+  max: parentAiChatMax,
+  keyGenerator: authenticatedUserKeyGenerator,
+  skip: (req: any) => String(req.user?.role || "").toLowerCase() !== "parent",
+  message: {
+    message: "Too many AI chat requests. Please wait before asking again.",
   },
   standardHeaders: true,
   legacyHeaders: false,

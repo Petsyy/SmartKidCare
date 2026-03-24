@@ -9,8 +9,26 @@ export interface User {
   email: string;
   phone: string;                // teacher/parent
   role: "admin" | "teacher" | "parent";
+  daycareCenter?: {
+    _id: string;
+    name: string;
+    barangay: string;
+    code: string;
+    isActive?: boolean;
+  } | null;
   isActive?: boolean;
   mustChangePassword: boolean;
+  latestTempPassword?: string;
+  latestTempPasswordIssuedAt?: string;
+  linkedChildren?: Array<{
+    _id: string;
+    firstName: string;
+    middleName?: string;
+    lastName: string;
+    studentId?: string;
+    source?: "child" | "request";
+    status?: string;
+  }>;
   createdAt: string;
   updatedAt: string;
 }

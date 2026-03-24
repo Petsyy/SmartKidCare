@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import { Request, Response } from "express";
 import Child from "../../models/Child";
 import {
-  attendanceContract,
+  documentsRegistryContract,
   buildChildIdHash,
   buildDocumentsHash,
 } from "../../blockchain/ethers";
@@ -55,14 +55,14 @@ export const getChildBlockchainProof = async (req: Request, res: Response) => {
     let onChainDocumentsHash: string | null = null;
 
     try {
-      verifiedOnChain = await attendanceContract.verifyDocuments(
+      verifiedOnChain = await documentsRegistryContract.verifyDocuments(
         childIdHash,
         documentsHash,
       );
       onChainDocumentsHash =
-        await attendanceContract.getDocumentsHash(childIdHash);
+        await documentsRegistryContract.getDocumentsHash(childIdHash);
     } catch (error) {
-      console.error("Blockchain proof read failed:", error);
+      console.error("DocumentsRegistry proof read failed:", error);
     }
 
     const txHash = String(

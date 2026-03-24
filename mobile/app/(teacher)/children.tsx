@@ -18,7 +18,7 @@ import { getChildren } from "@/src/api/teacher.api";
 import { getTodayAttendance, getTodayFeeding } from "@/src/api/records.api";
 import { useAuth } from "@/src/hooks/use-auth";
 import ChildCard from "@/src/components/child-card";
-import { Search, X, Users, UserPlus, AlertCircle } from "lucide-react-native";
+import { Search, Users, AlertCircle } from "lucide-react-native";
 
 interface ChildStatus {
   attendance: "Present" | "Absent" | "Not Recorded";
@@ -188,20 +188,31 @@ export default function ChildScreen() {
         style={{ paddingTop: insets.top + 12 }}
         className="bg-teal-600 px-5 pb-5"
       >
-        <Text className="text-3xl font-extrabold text-white">
-          Children List
-        </Text>
-        <Text className="text-lg text-teal-100 mt-1">
-          {children.length} Enrolled Children
-        </Text>
+        <View className="flex-row items-start">
+          <View className="flex-1">
+            <Text className="text-3xl font-extrabold text-white">Children List</Text>
+            <Text className="text-lg text-teal-100 mt-1">
+              {children.length} Enrolled Children
+            </Text>
+          </View>
+        </View>
       </View>
 
       {/* Search Bar */}
       <View className="px-5 pt-4 pb-2 bg-gray-50">
-        <View className="flex-row items-center bg-white rounded-lg px-4 py-3 border border-gray-200">
-          <Search size={20} color="#9CA3AF" />
+        <View
+          className="flex-row items-center bg-white rounded-2xl px-4 py-3.5 border border-gray-200"
+          style={{
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.05,
+            shadowRadius: 6,
+            elevation: 2,
+          }}
+        >
+          <Search size={24} color="#9CA3AF" />
           <TextInput
-            className="flex-1 ml-3 text-lg text-gray-800"
+            className="flex-1 ml-3 text-lg font-bold text-gray-800"
             placeholder="Search by name or student ID..."
             placeholderTextColor="#9CA3AF"
             value={searchQuery}
@@ -222,13 +233,13 @@ export default function ChildScreen() {
               {searchQuery ? (
                 <>
                   {/* No Search Results */}
-                  <View className="w-24 h-24 rounded-full bg-gray-100 items-center justify-center mb-6">
-                    <AlertCircle size={48} color="#9CA3AF" />
+                  <View className="h-16 w-16 items-center justify-center rounded-2xl bg-gray-100 mb-4">
+                    <Search size={40} color="#9CA3AF" />
                   </View>
-                  <Text className="text-2xl font-bold text-gray-800 mb-3 text-center">
+                  <Text className="text-2xl font-black text-gray-800 mb-2 text-center">
                     No Children Found
                   </Text>
-                  <Text className="text-lg text-gray-600 text-center mb-6 leading-6">
+                  <Text className="text-lg font-bold text-gray-500 text-center leading-7">
                     No children match your search.{"\n"}
                     Try a different search term.
                   </Text>
@@ -236,16 +247,15 @@ export default function ChildScreen() {
               ) : (
                 <>
                   {/* Empty State */}
-                  <View className="w-32 h-32 rounded-full bg-teal-50 items-center justify-center mb-6">
-                    <Users size={64} color="#14B8A6" />
+                  <View className="h-20 w-20 items-center justify-center rounded-3xl bg-teal-50 mb-4">
+                    <Users size={56} color="#14B8A6" />
                   </View>
-                  <Text className="text-2xl font-bold text-gray-800 mb-3 text-center">
+                  <Text className="text-2xl font-black text-gray-800 mb-2 text-center">
                     No Children Enrolled Yet
                   </Text>
-                  <Text className="text-lg text-gray-600 text-center mb-8 leading-6">
-                    There are currently no children enrolled in your class.
-                    {"\n"}
-                    Children will appear here once they are added by the admin.
+                  <Text className="text-lg font-bold text-gray-500 text-center mb-6 leading-7">
+                    Submit a child enrollment request and wait for admin
+                    approval.
                   </Text>
                 </>
               )}
@@ -258,7 +268,7 @@ export default function ChildScreen() {
                   <View
                     key={child._id}
                     className={
-                      index < filteredChildren.length - 1 ? "mb-4" : ""
+                      index < filteredChildren.length - 1 ? "mb-3" : ""
                     }
                   >
                     <ChildCard

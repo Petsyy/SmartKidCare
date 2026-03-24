@@ -36,11 +36,13 @@ function InfoRow({
   value: string;
 }) {
   return (
-    <View className="flex-row items-center py-3">
-      <View className="mr-3">{icon}</View>
+    <View className="flex-row items-center py-2">
+      <View className="h-8 w-8 items-center justify-center rounded-xl bg-gray-50 mr-3">
+        {icon}
+      </View>
       <View className="flex-1">
-        <Text className="text-sm text-gray-500 mb-1">{label}</Text>
-        <Text className="text-base font-semibold text-gray-800">{value}</Text>
+        <Text className="text-xs font-semibold uppercase tracking-wide text-gray-400">{label}</Text>
+        <Text className="text-base font-semibold text-gray-800 mt-0.5">{value}</Text>
       </View>
     </View>
   );
@@ -70,7 +72,6 @@ export default function ParentChildDetailsScreen() {
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
 
-        // Fetch child details and today's records in parallel
         const [childData, attendanceList, feedingList] = await Promise.all([
           getChildById(token, id as string).catch((err) => {
             console.error("Failed to fetch child details:", err);
@@ -94,7 +95,6 @@ export default function ParentChildDetailsScreen() {
           }),
         ]);
 
-        // Verify that the child belongs to the logged-in parent
         if (childData.parent?.email !== user?.email) {
           throw new Error("You don't have permission to view this child");
         }
@@ -124,14 +124,12 @@ export default function ParentChildDetailsScreen() {
     loadData();
   }, [token, id, user]);
 
-  // Get status for this child
   const getChildStatus = () => {
     if (!child) return { attendance: "Not Recorded", feeding: "Not Recorded" };
 
     let attendance = "Not Recorded";
     let feeding = "Not Recorded";
 
-    // Check attendance
     if (attendanceRecord?.records) {
       const attendanceEntry = attendanceRecord.records.find(
         (r: any) => (r.child._id || r.child) === child._id,
@@ -142,7 +140,6 @@ export default function ParentChildDetailsScreen() {
       }
     }
 
-    // Check feeding
     if (feedingRecord?.records) {
       const feedingEntry = feedingRecord.records.find(
         (r: any) => (r.child._id || r.child) === child._id,
@@ -158,14 +155,21 @@ export default function ParentChildDetailsScreen() {
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
-        <StatusBar
-          barStyle="light-content"
-          translucent
-          backgroundColor="transparent"
-        />
+        <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+        <View
+          style={{ paddingTop: insets.top + 12 }}
+          className="bg-teal-600 px-5 pb-6"
+        >
+          <View className="flex-row items-center">
+            <Pressable onPress={() => router.back()} className="mr-3">
+              <ChevronLeft size={28} color="white" />
+            </Pressable>
+            <Text className="text-3xl font-extrabold text-white">Child Details</Text>
+          </View>
+        </View>
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#14B8A6" />
-          <Text className="mt-4 text-gray-600">Loading child details...</Text>
+          <Text className="mt-4 text-base font-medium text-gray-500">Loading details...</Text>
         </View>
       </SafeAreaView>
     );
@@ -174,26 +178,40 @@ export default function ParentChildDetailsScreen() {
   if (error || !child) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
-        <StatusBar
-          barStyle="light-content"
-          translucent
-          backgroundColor="transparent"
-        />
-        <View className="flex-1 items-center justify-center px-6">
-          <View className="items-center mb-6">
-            <AlertCircle size={64} color="#EF4444" />
-            <Text className="text-red-500 text-center text-lg font-semibold mt-4">
-              {error || "Child not found"}
-            </Text>
-            <Text className="text-gray-600 text-center mt-2">
-              Please make sure you have permission to view this child's details.
-            </Text>
+        <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+        <View
+          style={{ paddingTop: insets.top + 12 }}
+          className="bg-teal-600 px-5 pb-6"
+        >
+          <View className="flex-row items-center">
+            <Pressable onPress={() => router.back()} className="mr-3">
+              <ChevronLeft size={28} color="white" />
+            </Pressable>
+            <Text className="text-3xl font-extrabold text-white">Child Details</Text>
           </View>
+        </View>
+        <View className="flex-1 items-center justify-center px-6">
+          <View className="h-16 w-16 items-center justify-center rounded-2xl bg-red-50 mb-4">
+            <AlertCircle size={28} color="#EF4444" />
+          </View>
+          <Text className="text-lg font-bold text-gray-800 mb-2 text-center">
+            {error || "Child not found"}
+          </Text>
+          <Text className="text-sm text-gray-500 text-center mb-4">
+            Please make sure you have permission to view this child&apos;s details.
+          </Text>
           <Pressable
             onPress={() => router.back()}
-            className="mt-6 bg-teal-600 px-8 py-4 rounded-xl"
+            className="mt-2 bg-teal-600 px-6 py-3 rounded-2xl active:scale-95"
+            style={{
+              shadowColor: "#0D9488",
+              shadowOffset: { width: 0, height: 3 },
+              shadowOpacity: 0.2,
+              shadowRadius: 6,
+              elevation: 3,
+            }}
           >
-            <Text className="text-white font-semibold text-base">
+            <Text className="text-white font-bold text-base">
               Back to Children
             </Text>
           </Pressable>
@@ -208,11 +226,7 @@ export default function ParentChildDetailsScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
-      <StatusBar
-        barStyle="light-content"
-        translucent
-        backgroundColor="transparent"
-      />
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
       {/* HEADER */}
       <View
@@ -220,15 +234,18 @@ export default function ParentChildDetailsScreen() {
         className="bg-teal-600 px-5 pb-6"
       >
         <View className="flex-row items-center">
-          <Pressable onPress={() => router.back()} className="mr-3">
-            <ChevronLeft size={28} color="white" />
+          <Pressable
+            onPress={() => router.back()}
+            className="h-10 w-10 items-center justify-center rounded-full bg-white/20 mr-3"
+          >
+            <ChevronLeft size={22} color="white" />
           </Pressable>
 
           <View className="flex-1">
-            <Text className="text-3xl font-extrabold text-white">
+            <Text className="text-2xl font-extrabold text-white" numberOfLines={1}>
               {fullName}
             </Text>
-            <Text className="text-lg text-teal-100 mt-1">
+            <Text className="text-base text-teal-100 mt-0.5">
               Student ID: {child.studentId}
             </Text>
           </View>
@@ -237,148 +254,142 @@ export default function ParentChildDetailsScreen() {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingBottom: 24 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 32 }}
         showsVerticalScrollIndicator={false}
       >
-        <View className="px-5 pt-5 space-y-4">
-          {/* Today's Status Card */}
-          <View className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 border-l-4 border-l-green-500 mb-5">
-            <View className="flex-row items-center mb-4">
-              <Activity size={24} color="#14B8A6" />
-              <Text className="text-xl font-bold text-gray-800 ml-2">
-                Today's Status
+        {/* Today's Status Card */}
+        <View
+          className="rounded-3xl bg-white p-5 mb-4"
+          style={{
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.06,
+            shadowRadius: 8,
+            elevation: 3,
+          }}
+        >
+          <View className="flex-row items-center mb-4 gap-3">
+            <View className="h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50">
+              <Activity size={20} color="#059669" />
+            </View>
+            <Text className="text-xl font-bold text-gray-900">
+              Today&apos;s Status
+            </Text>
+          </View>
+
+          <View className="flex-row gap-3 mb-3">
+            <View
+              className={`flex-1 rounded-2xl px-4 py-3 ${
+                status.attendance === "Present"
+                  ? "bg-emerald-50 border border-emerald-100"
+                  : status.attendance === "Absent"
+                    ? "bg-red-50 border border-red-100"
+                    : "bg-gray-50 border border-gray-200"
+              }`}
+            >
+              <Text className="text-xs font-semibold uppercase tracking-wide text-gray-500">Attendance</Text>
+              <Text
+                className={`text-lg font-bold mt-0.5 ${
+                  status.attendance === "Present"
+                    ? "text-emerald-700"
+                    : status.attendance === "Absent"
+                      ? "text-red-700"
+                      : "text-gray-600"
+                }`}
+              >
+                {status.attendance}
               </Text>
             </View>
 
-            <View className="space-y-3">
-              <View className="flex-row justify-between items-center py-2">
-                <Text className="text-base text-gray-600">Attendance:</Text>
-                <View
-                  className={`px-3 py-1 rounded-lg ${
-                    status.attendance === "Present"
-                      ? "bg-green-100"
-                      : status.attendance === "Absent"
-                        ? "bg-red-100"
-                        : "bg-gray-100"
-                  }`}
-                >
-                  <Text
-                    className={`text-base font-semibold ${
-                      status.attendance === "Present"
-                        ? "text-green-700"
-                        : status.attendance === "Absent"
-                          ? "text-red-700"
-                          : "text-gray-700"
-                    }`}
-                  >
-                    {status.attendance}
-                  </Text>
-                </View>
-              </View>
-
-              <View className="h-px bg-gray-200" />
-
-              <View className="flex-row justify-between items-center py-2">
-                <Text className="text-base text-gray-600">Feeding:</Text>
-                <View
-                  className={`px-3 py-1 rounded-lg ${
-                    status.feeding === "Completed"
-                      ? "bg-green-100"
-                      : status.feeding === "Missed"
-                        ? "bg-red-100"
-                        : "bg-gray-100"
-                  }`}
-                >
-                  <Text
-                    className={`text-base font-semibold ${
-                      status.feeding === "Completed"
-                        ? "text-green-700"
-                        : status.feeding === "Missed"
-                          ? "text-red-700"
-                          : "text-gray-700"
-                    }`}
-                  >
-                    {status.feeding}
-                  </Text>
-                </View>
-              </View>
-
-              {feedingRecord && (
-                <>
-                  <View className="h-px bg-gray-200" />
-                  <View className="py-2">
-                    <Text className="text-sm text-gray-500 mb-1">
-                      Today's Menu:
-                    </Text>
-                    <Text className="text-base font-semibold text-gray-800">
-                      {feedingRecord.foodServed || "Not specified"}
-                    </Text>
-                  </View>
-                </>
-              )}
+            <View
+              className={`flex-1 rounded-2xl px-4 py-3 ${
+                status.feeding === "Completed"
+                  ? "bg-emerald-50 border border-emerald-100"
+                  : status.feeding === "Missed"
+                    ? "bg-red-50 border border-red-100"
+                    : "bg-gray-50 border border-gray-200"
+              }`}
+            >
+              <Text className="text-xs font-semibold uppercase tracking-wide text-gray-500">Feeding</Text>
+              <Text
+                className={`text-lg font-bold mt-0.5 ${
+                  status.feeding === "Completed"
+                    ? "text-emerald-700"
+                    : status.feeding === "Missed"
+                      ? "text-red-700"
+                      : "text-gray-600"
+                }`}
+              >
+                {status.feeding}
+              </Text>
             </View>
           </View>
 
-          {/* Child Information Card */}
-          <View className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 border-l-4 border-l-green-500 mb-5">
-            <View className="flex-row items-center mb-4">
-              <User size={24} color="#14B8A6" />
-              <Text className="text-xl font-bold text-gray-800 ml-2">
-                Child Information
+          {feedingRecord && (
+            <View className="rounded-2xl bg-gray-50 border border-gray-100 px-4 py-3">
+              <Text className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">
+                Today&apos;s Menu
+              </Text>
+              <Text className="text-base font-semibold text-gray-800">
+                {feedingRecord.foodServed || "Not specified"}
               </Text>
             </View>
+          )}
+        </View>
 
-            <View className="flex-row flex-wrap">
+        {/* Child Information Card */}
+        <View
+          className="rounded-3xl bg-white p-5 mb-4"
+          style={{
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.06,
+            shadowRadius: 8,
+            elevation: 3,
+          }}
+        >
+          <View className="flex-row items-center mb-4 gap-3">
+            <View className="h-10 w-10 items-center justify-center rounded-2xl bg-teal-50">
+              <User size={20} color="#0D9488" />
+            </View>
+            <Text className="text-xl font-bold text-gray-900">Child Information</Text>
+          </View>
+
+          <View className="flex-row flex-wrap">
+            <View className="w-1/2 pr-2 mb-4">
+              <InfoRow
+                icon={<BookOpen size={18} color="#0D9488" />}
+                label="Age"
+                value={`${child.age} years old`}
+              />
+            </View>
+            <View className="w-1/2 pl-2 mb-4">
+              <InfoRow
+                icon={<User size={18} color="#0D9488" />}
+                label="Gender"
+                value={child.gender}
+              />
+            </View>
+            <View className="w-1/2 pr-2 mb-4">
+              <InfoRow
+                icon={<Calendar size={18} color="#0D9488" />}
+                label="School Year"
+                value={child.schoolYear}
+              />
+            </View>
+            <View className="w-1/2 pl-2 mb-4">
+              <InfoRow
+                icon={<Activity size={18} color="#0D9488" />}
+                label="Status"
+                value={child.status}
+              />
+            </View>
+            {child.dateOfBirth && (
               <View className="w-1/2 pr-2 mb-4">
                 <InfoRow
-                  icon={<BookOpen size={20} color="#6B7280" />}
-                  label="Age"
-                  value={`${child.age} years old`}
-                />
-              </View>
-              <View className="w-1/2 pl-2 mb-4">
-                <InfoRow
-                  icon={<User size={20} color="#6B7280" />}
-                  label="Gender"
-                  value={child.gender}
-                />
-              </View>
-              <View className="w-1/2 pr-2 mb-4">
-                <InfoRow
-                  icon={<Calendar size={20} color="#6B7280" />}
-                  label="School Year"
-                  value={child.schoolYear}
-                />
-              </View>
-              <View className="w-1/2 pl-2 mb-4">
-                <InfoRow
-                  icon={<Activity size={20} color="#6B7280" />}
-                  label="Status"
-                  value={child.status}
-                />
-              </View>
-              {child.dateOfBirth && (
-                <View className="w-1/2 pr-2 mb-4">
-                  <InfoRow
-                    icon={<Calendar size={20} color="#6B7280" />}
-                    label="Date of Birth"
+                  icon={<Calendar size={18} color="#0D9488" />}
+                  label="Date of Birth"
                   value={new Date(child.dateOfBirth).toLocaleDateString(
-                      "en-PH",
-                      {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                        timeZone: "Asia/Manila",
-                      },
-                    )}
-                  />
-                </View>
-              )}
-              <View className="w-1/2 pl-2 mb-4">
-                <InfoRow
-                  icon={<Calendar size={20} color="#6B7280" />}
-                  label="Enrollment Date"
-                  value={new Date(child.enrollmentDate).toLocaleDateString(
                     "en-PH",
                     {
                       year: "numeric",
@@ -389,54 +400,91 @@ export default function ParentChildDetailsScreen() {
                   )}
                 />
               </View>
+            )}
+            <View className="w-1/2 pl-2 mb-4">
+              <InfoRow
+                icon={<Calendar size={18} color="#0D9488" />}
+                label="Enrollment Date"
+                value={new Date(child.enrollmentDate).toLocaleDateString(
+                  "en-PH",
+                  {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                    timeZone: "Asia/Manila",
+                  },
+                )}
+              />
             </View>
           </View>
+        </View>
 
-          {/* Teacher Information Card */}
-          {teacher ? (
-            <View className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 border-l-4 border-l-green-500 mb-5">
-              <View className="flex-row items-center mb-4">
-                <User size={24} color="#14B8A6" />
-                <Text className="text-xl font-bold text-gray-800 ml-2">
-                  Teacher Information
+        {/* Teacher Information Card */}
+        {teacher ? (
+          <View
+            className="rounded-3xl bg-white p-5 mb-4"
+            style={{
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.06,
+              shadowRadius: 8,
+              elevation: 3,
+            }}
+          >
+            <View className="flex-row items-center mb-4 gap-3">
+              <View className="h-10 w-10 items-center justify-center rounded-2xl bg-sky-50">
+                <User size={20} color="#0284C7" />
+              </View>
+              <Text className="text-xl font-bold text-gray-900">
+                Teacher Information
+              </Text>
+            </View>
+
+            <View className="gap-1">
+              <InfoRow
+                icon={<User size={18} color="#0284C7" />}
+                label="Name"
+                value={`${teacher.firstName} ${teacher.lastName}`}
+              />
+              <InfoRow
+                icon={<Mail size={18} color="#0284C7" />}
+                label="Email"
+                value={teacher.email || "Not available"}
+              />
+              <InfoRow
+                icon={<Phone size={18} color="#0284C7" />}
+                label="Contact Number"
+                value={teacher.phone && teacher.phone.trim() !== "" ? teacher.phone : "Not available"}
+              />
+            </View>
+          </View>
+        ) : (
+          <View
+            className="rounded-3xl bg-amber-50 p-5 border border-amber-200 mb-4"
+            style={{
+              shadowColor: "#F59E0B",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.08,
+              shadowRadius: 6,
+              elevation: 2,
+            }}
+          >
+            <View className="flex-row items-center gap-3">
+              <View className="h-10 w-10 items-center justify-center rounded-2xl bg-amber-100">
+                <User size={20} color="#D97706" />
+              </View>
+              <View className="flex-1">
+                <Text className="text-base font-bold text-amber-800">
+                  No Teacher Assigned
+                </Text>
+                <Text className="text-sm text-amber-700 mt-1">
+                  No teacher record found for today.
                 </Text>
               </View>
-
-              <View className="space-y-3">
-                <InfoRow
-                  icon={<User size={20} color="#6B7280" />}
-                  label="Name"
-                  value={`${teacher.firstName} ${teacher.lastName}`}
-                />
-                <InfoRow
-                  icon={<Mail size={20} color="#6B7280" />}
-                  label="Email"
-                  value={teacher.email || "Not available"}
-                />
-                <InfoRow
-                  icon={<Phone size={20} color="#6B7280" />}
-                  label="Contact Number"
-                  value={teacher.phone && teacher.phone.trim() !== "" ? teacher.phone : "Not available"}
-                />
-              </View>
             </View>
-          ) : (
-            <View className="bg-amber-50 rounded-2xl p-5 border border-amber-200">
-              <View className="flex-row items-center">
-                <User size={24} color="#F59E0B" />
-                <View className="flex-1 ml-3">
-                  <Text className="text-lg font-semibold text-amber-800">
-                    No Teacher Assigned
-                  </Text>
-                  <Text className="text-sm text-amber-700 mt-1">
-                    No teacher record found for today.
-                  </Text>
-                </View>
-              </View>
-            </View>
-          )}
           </View>
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
+        )}
+      </ScrollView>
+    </SafeAreaView>
+  );
+}

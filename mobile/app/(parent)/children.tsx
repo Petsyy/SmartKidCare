@@ -301,7 +301,7 @@ export default function ParentChildrenScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-emerald-50" edges={["bottom"]}>
+      <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
         <StatusBar
           barStyle="light-content"
           translucent
@@ -332,7 +332,7 @@ export default function ParentChildrenScreen() {
 
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-emerald-50" edges={["bottom"]}>
+      <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
         <StatusBar
           barStyle="light-content"
           translucent
@@ -378,7 +378,7 @@ export default function ParentChildrenScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-emerald-50" edges={["bottom"]}>
+    <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
       <StatusBar
         barStyle="light-content"
         translucent
@@ -413,8 +413,8 @@ export default function ParentChildrenScreen() {
         }
       >
         {children.length === 0 ? (
-          <View className="mt-2 rounded-3xl border border-emerald-100 bg-white p-6">
-            <View className="h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100">
+          <View className="mt-2 rounded-3xl border border-gray-100 bg-white p-6">
+            <View className="h-14 w-14 items-center justify-center rounded-2xl bg-teal-50">
               <Icons.Users size={24} color="#0F766E" />
             </View>
             <Text className="mt-4 text-2xl font-bold text-gray-900">
@@ -451,7 +451,7 @@ export default function ParentChildrenScreen() {
                         }`}
                       >
                         <Text
-                          className={`text-base font-semibold ${isActive ? "text-white" : "text-gray-700"}`}
+                          className={`text-lg font-black ${isActive ? "text-white" : "text-gray-700"}`}
                           numberOfLines={1}
                         >
                           {child.firstName}
@@ -470,7 +470,7 @@ export default function ParentChildrenScreen() {
                     `/(parent)/parent-child-details/${selectedChild._id}`,
                   )
                 }
-                className="mb-6 overflow-hidden rounded-[28px] border border-emerald-100 bg-white p-5 active:opacity-90"
+                className="mb-6 overflow-hidden rounded-[28px] border border-gray-100 bg-white p-5 active:opacity-90"
                 style={{
                   shadowColor: "#0F172A",
                   shadowOffset: { width: 0, height: 8 },
@@ -481,25 +481,25 @@ export default function ParentChildrenScreen() {
               >
                 <View className="flex-row items-start justify-between">
                   <View className="flex-row flex-1 pr-3">
-                    <View className="h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100">
-                      <Icons.Baby size={24} color="#0F766E" />
+                    <View className="h-16 w-16 items-center justify-center rounded-2xl bg-teal-50">
+                      <Icons.Baby size={32} color="#0F766E" />
                     </View>
 
                     <View className="ml-3 flex-1">
                       <Text
-                        className="text-2xl font-extrabold text-gray-900"
+                        className="text-3xl font-black text-gray-900"
                         numberOfLines={1}
                       >
                         {getFullName(selectedChild)}
                       </Text>
-                      <Text className="mt-1.5 text-base font-medium text-gray-500">
+                      <Text className="mt-1.5 text-lg font-bold text-gray-500">
                         {selectedChild.age} years old -{" "}
                         {String(selectedChild.gender).toLowerCase()}
                       </Text>
                     </View>
                   </View>
 
-                  <Icons.ChevronRight size={22} color="#94A3B8" />
+                  <Icons.ChevronRight size={28} color="#94A3B8" />
                 </View>
 
                 <View className="mt-4 rounded-2xl border border-gray-100 bg-gray-50 p-3">
@@ -555,23 +555,23 @@ export default function ParentChildrenScreen() {
                     />
                   </View>
 
-                  <Text className="mt-3 text-sm font-medium text-gray-500">
+                  <Text className="mt-3 text-base font-bold text-gray-500">
                     Last update: {childStatus.lastUpdated}
                   </Text>
                 </View>
               </Pressable>
             ) : null}
 
-            <View className="mb-6 rounded-[28px] border border-emerald-100 bg-white p-5">
+            <View className="mb-6 rounded-[28px] border border-gray-100 bg-white p-5">
               <View className="mb-4 flex-row items-center">
                 <View className="h-10 w-10 items-center justify-center rounded-2xl bg-teal-50">
                   <Icons.BarChart3 size={19} color="#0F766E" />
                 </View>
                 <View className="ml-3 flex-1">
-                  <Text className="text-xl font-bold text-gray-900">
+                  <Text className="text-2xl font-black text-gray-900">
                     {monthLabel} Overview
                   </Text>
-                  <Text className="text-sm font-medium text-gray-500">
+                  <Text className="text-base font-bold text-gray-500">
                     Progress this month for selected child
                   </Text>
                 </View>
@@ -593,12 +593,12 @@ export default function ParentChildrenScreen() {
               />
             </View>
 
-            <View className="mb-6 rounded-[28px] border border-emerald-100 bg-white p-5">
+            <View className="mb-6 rounded-[28px] border border-gray-100 bg-white p-5">
               <View className="mb-4 flex-row items-center">
                 <View className="h-10 w-10 items-center justify-center rounded-2xl bg-amber-50">
                   <Icons.Grid2X2 size={18} color="#B45309" />
                 </View>
-                <Text className="ml-3 text-xl font-bold text-gray-900">
+                <Text className="ml-3 text-2xl font-black text-gray-900">
                   Quick Actions
                 </Text>
               </View>
@@ -637,10 +637,10 @@ export default function ParentChildrenScreen() {
             <View className="rounded-2xl border border-amber-100 bg-amber-50 p-5">
               <View className="flex-row items-start">
                 <Icons.Lightbulb size={18} color="#B45309" />
-                <Text className="ml-2 flex-1 text-base font-medium leading-6 text-amber-800">
-                  Tip: Updates appear after your child&apos;s teacher submits
-                  today&apos;s record.
-                </Text>
+                 <Text className="ml-2 flex-1 text-lg font-bold leading-7 text-amber-800">
+                   Tip: Updates appear after your child&apos;s teacher submits
+                   today&apos;s record.
+                 </Text>
               </View>
             </View>
           </>
@@ -667,8 +667,8 @@ function StatusBadge({
         : { wrap: "bg-slate-200", text: "text-slate-600" };
 
   return (
-    <View className={`mr-2 mt-2 rounded-full px-3.5 py-1.5 ${colors.wrap}`}>
-      <Text className={`text-sm font-semibold ${colors.text}`}>
+    <View className={`mr-2 mt-2 rounded-full px-4 py-2 ${colors.wrap}`}>
+      <Text className={`text-base font-black ${colors.text}`}>
         {label}: {value}
       </Text>
     </View>
@@ -693,11 +693,11 @@ function ProgressMetric({
   return (
     <View className="mb-4 last:mb-0">
       <View className="flex-row items-center justify-between">
-        <Text className="text-base font-semibold text-gray-700">{label}</Text>
-        <Text className="text-base font-bold text-gray-900">{value}%</Text>
+        <Text className="text-lg font-bold text-gray-700">{label}</Text>
+        <Text className="text-xl font-black text-gray-900">{value}%</Text>
       </View>
 
-      <View className="mt-2 h-2.5 overflow-hidden rounded-full bg-gray-200">
+      <View className="mt-2 h-4 overflow-hidden rounded-full bg-gray-200">
         <View
           className="h-full rounded-full"
           style={{
@@ -707,7 +707,7 @@ function ProgressMetric({
         />
       </View>
 
-      <Text className="mt-2 text-sm font-medium text-gray-500">
+      <Text className="mt-2 text-base font-bold text-gray-500">
         {total > 0
           ? `${done}/${total} recorded days`
           : "No records for this month yet"}
@@ -730,21 +730,21 @@ function QuickActionRow({
   return (
     <Pressable
       onPress={onPress}
-      className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4 active:opacity-80"
+      className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-5 active:opacity-80"
     >
       <View className="flex-row items-center">
-        <View className="h-10 w-10 items-center justify-center rounded-xl bg-white">
+        <View className="h-12 w-12 items-center justify-center rounded-xl bg-white">
           {icon}
         </View>
 
-        <View className="ml-3 flex-1">
-          <Text className="text-base font-bold text-gray-900">{title}</Text>
-          <Text className="mt-1 text-sm font-medium text-gray-500">
+        <View className="ml-4 flex-1">
+          <Text className="text-lg font-black text-gray-900">{title}</Text>
+          <Text className="mt-1 text-base font-bold text-gray-500">
             {subtitle}
           </Text>
         </View>
 
-        <Icons.ChevronRight size={18} color="#64748B" />
+        <Icons.ChevronRight size={24} color="#64748B" />
       </View>
     </Pressable>
   );

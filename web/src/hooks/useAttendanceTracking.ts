@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { API_BASE } from "@/components/config/config.api";
+import {
+  formatConfidentialName,
+  maskCompositeName,
+} from "@/utils/namePrivacy";
 
 type ChildRef = {
   _id: string;
@@ -56,9 +60,13 @@ export type AttendanceStatusFilter = "all" | "present" | "absent";
 
 const formatChildName = (child?: ChildRef | null) => {
   if (!child) return "Unknown";
-  const middleName = child.middleName ?? child.middle ?? child.middle_name;
-  const trailing = [child.firstName, middleName].filter(Boolean).join(" ");
-  return trailing ? `${child.lastName}, ${trailing}` : child.lastName;
+  return (
+    formatConfidentialName({
+      lastName: child.lastName,
+      firstName: child.firstName,
+      middleName: child.middleName ?? child.middle ?? child.middle_name,
+    }) || "Unknown"
+  );
 };
 
 export function useAttendanceTracking() {
@@ -69,6 +77,7 @@ export function useAttendanceTracking() {
   const [endDate, setEndDate] = useState<string>("");
   const [statusFilter, setStatusFilter] =
     useState<AttendanceStatusFilter>("all");
+  const [teacherId, setTeacherId] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [total, setTotal] = useState(0);
@@ -99,6 +108,15 @@ export function useAttendanceTracking() {
   );
 
   const fetchAttendance = useCallback(async () => {
+    if (!teacherId) {
+      setRows([]);
+      setTotal(0);
+      setTotalPages(0);
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     try {
@@ -118,6 +136,7 @@ export function useAttendanceTracking() {
       if (statusFilter !== "all") {
         params.set("status", statusFilter);
       }
+      params.set("teacherId", teacherId);
       const url = `${API_BASE}/records/attendance?${params.toString()}`;
       const response = await fetch(url, {
         credentials: "include",
@@ -141,7 +160,13 @@ export function useAttendanceTracking() {
         setTotalPages(data.length > 0 ? 1 : 0);
       } else {
         const paginated = payload as PaginatedAttendanceResponse;
-        setRows(Array.isArray(paginated.data) ? paginated.data : []);
+        const rowsFromApi = Array.isArray(paginated.data) ? paginated.data : [];
+        setRows(
+          rowsFromApi.map((row) => ({
+            ...row,
+            childName: maskCompositeName(row.childName) || row.childName || "Unknown",
+          })),
+        );
         if (Number.isFinite(Number(paginated.pagination?.page))) {
           setPage(Number(paginated.pagination.page));
         }
@@ -167,6 +192,7 @@ export function useAttendanceTracking() {
     search,
     startDate,
     statusFilter,
+    teacherId,
   ]);
 
   useEffect(() => {
@@ -201,6 +227,11 @@ export function useAttendanceTracking() {
   const updateStatusFilter = useCallback((value: AttendanceStatusFilter) => {
     setPage(1);
     setStatusFilter(value);
+  }, []);
+
+  const updateTeacherFilter = useCallback((value: string) => {
+    setPage(1);
+    setTeacherId(value);
   }, []);
 
   const updateDateRange = useCallback((nextStart: string, nextEnd: string) => {
@@ -270,6 +301,7 @@ export function useAttendanceTracking() {
     startDate,
     endDate,
     statusFilter,
+    teacherId,
     page,
     limit,
     totalPages,
@@ -283,6 +315,7 @@ export function useAttendanceTracking() {
     updateDatePreset,
     updateDateRange,
     updateStatusFilter,
+    updateTeacherFilter,
     clearFilters,
     updateAttendanceStatus,
     deleteAttendance,

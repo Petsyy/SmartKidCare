@@ -1,8 +1,11 @@
-import { Stack, Redirect } from "expo-router";
+import { Stack, Redirect, useRootNavigationState } from "expo-router";
 import { useAuth } from "@/src/hooks/use-auth";
 
 export default function AuthLayout() {
   const { user, loading } = useAuth();
+  const rootNavigationState = useRootNavigationState();
+
+  if (!rootNavigationState?.key) return null;
 
   if (loading) return null;
 

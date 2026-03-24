@@ -67,12 +67,12 @@ test("reply builders normalize role casing", () => {
     "Hello! I can help with your child's attendance and feeding records. What would you like to know?",
   );
   assert.equal(
-    buildGreetingReply("TEACHER", "en"),
-    "Hello! I can help with attendance and feeding summaries. What would you like to check?",
+    buildGreetingReply("unknown-role", "en"),
+    "Hello! I can help with your child's attendance and feeding records. What would you like to know?",
   );
   assert.equal(
-    buildAcknowledgementReply("Teacher", "en"),
-    "You're welcome. Ask anytime about attendance or feeding records.",
+    buildAcknowledgementReply("unknown-role", "en"),
+    "You're welcome. Ask anytime about your child's attendance or feeding.",
   );
   assert.match(
     buildQuotaFallbackReply({ role: "PaReNt", language: "en" }),

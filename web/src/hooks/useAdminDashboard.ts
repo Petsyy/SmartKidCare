@@ -2,6 +2,11 @@ import { useCallback, useEffect, useState } from "react";
 import { API_BASE } from "@/components/config/config.api";
 
 export type DashboardStats = {
+  totalChildDevelopmentCenters: number;
+  childDevelopmentWorkers: number;
+  totalEnrolledDaycares: number;
+  fourPsBeneficiaries: number;
+  regularAttendees: number;
   totalChildren: number;
   activeChildren: number;
   totalTeachers: number;
@@ -13,7 +18,7 @@ export type DashboardStats = {
 export type ChartDataPoint = {
   day: string;
   attendance: number;
-  target: number;
+  feeding: number;
 };
 
 export type PieDataPoint = {
@@ -39,6 +44,11 @@ export type DashboardDateMeta = {
 };
 
 const DEFAULT_STATS: DashboardStats = {
+  totalChildDevelopmentCenters: 0,
+  childDevelopmentWorkers: 0,
+  totalEnrolledDaycares: 0,
+  fourPsBeneficiaries: 0,
+  regularAttendees: 0,
   totalChildren: 0,
   activeChildren: 0,
   totalTeachers: 0,
@@ -140,12 +150,19 @@ export function useAdminDashboard() {
         weekKeys.add(getLocalDateKey(d));
       }
 
-      const [childrenPayload, usersPayload, attendancePayload, feedingPayload] =
+      const [
+        childrenPayload,
+        usersPayload,
+        attendancePayload,
+        feedingPayload,
+        centersPayload,
+      ] =
         await Promise.all([
           fetchJson(`${API_BASE}/children`),
           fetchJson(`${API_BASE}/auth/users`),
           fetchJson(`${API_BASE}/records/attendance`),
           fetchJson(`${API_BASE}/records/feeding`),
+          fetchJson(`${API_BASE}/admin/daycare-centers`),
         ]);
 
       const childrenArray = Array.isArray(childrenPayload)
@@ -158,6 +175,9 @@ export function useAdminDashboard() {
         ? attendancePayload
         : [];
       const feedingArray = Array.isArray(feedingPayload) ? feedingPayload : [];
+      const centersArray = Array.isArray((centersPayload as any)?.centers)
+        ? (centersPayload as any).centers
+        : [];
       const latestAttendanceKey = getLatestDateKey(attendanceArray);
       const latestFeedingKey = getLatestDateKey(feedingArray);
       setDateMeta({
@@ -166,6 +186,10 @@ export function useAdminDashboard() {
         feedingKey: latestFeedingKey || todayKey,
       });
       const weekAttendanceArray = attendanceArray.filter((entry: any) => {
+        const entryKey = getRecordDateKey(entry.date);
+        return weekKeys.has(entryKey);
+      });
+      const weekFeedingArray = feedingArray.filter((entry: any) => {
         const entryKey = getRecordDateKey(entry.date);
         return weekKeys.has(entryKey);
       });
@@ -184,7 +208,20 @@ export function useAdminDashboard() {
         (c: any) => c.status === "Active",
       ).length;
       const totalTeachers = usersArray.filter(
-        (u: any) => u.role === "teacher",
+        (u: any) =>
+          u.role === "teacher" &&
+          u.isActive !== false &&
+          Boolean(u.daycareCenter),
+      ).length;
+      const activeCenters = centersArray.filter(
+        (center: any) => center?.isActive !== false,
+      ).length;
+      const fourPsBeneficiaries = childrenArray.filter(
+        (c: any) => c?.programType === "4Ps Beneficiary",
+      ).length;
+      const regularAttendees = childrenArray.filter(
+        (c: any) =>
+          c?.programType === "Regular Enrollee (Non-beneficiary)",
       ).length;
 
       let allAttTotal = 0;
@@ -215,6 +252,11 @@ export function useAdminDashboard() {
         allAttTotal - allAttPresent + (allFeedTotal - allFeedCompleted);
 
       setStats({
+        totalChildDevelopmentCenters: activeCenters,
+        childDevelopmentWorkers: totalTeachers,
+        totalEnrolledDaycares: totalChildren,
+        fourPsBeneficiaries,
+        regularAttendees,
         totalChildren,
         activeChildren,
         totalTeachers,
@@ -223,18 +265,50 @@ export function useAdminDashboard() {
         todayExceptions,
       });
 
-      const dayMap = new Map<string, { total: number; present: number }>();
+      const dayMap = new Map<
+        string,
+        {
+          attendanceTotal: number;
+          attendancePresent: number;
+          feedingTotal: number;
+          feedingCompleted: number;
+        }
+      >();
       weekAttendanceArray.forEach((entry: any) => {
         const key = getRecordDateKey(entry.date);
 
         if (!dayMap.has(key)) {
-          dayMap.set(key, { total: 0, present: 0 });
+          dayMap.set(key, {
+            attendanceTotal: 0,
+            attendancePresent: 0,
+            feedingTotal: 0,
+            feedingCompleted: 0,
+          });
         }
         const bucket = dayMap.get(key)!;
 
         entry.records?.forEach((record: any) => {
-          bucket.total += 1;
-          if (record.status === "present") bucket.present += 1;
+          bucket.attendanceTotal += 1;
+          if (record.status === "present") bucket.attendancePresent += 1;
+        });
+      });
+
+      weekFeedingArray.forEach((entry: any) => {
+        const key = getRecordDateKey(entry.date);
+
+        if (!dayMap.has(key)) {
+          dayMap.set(key, {
+            attendanceTotal: 0,
+            attendancePresent: 0,
+            feedingTotal: 0,
+            feedingCompleted: 0,
+          });
+        }
+        const bucket = dayMap.get(key)!;
+
+        entry.records?.forEach((record: any) => {
+          bucket.feedingTotal += 1;
+          if (record.status === "completed") bucket.feedingCompleted += 1;
         });
       });
 
@@ -246,17 +320,25 @@ export function useAdminDashboard() {
         d.setDate(d.getDate() - i);
         d.setHours(0, 0, 0, 0);
         const key = getLocalDateKey(d);
-        const data = dayMap.get(key) || { total: 0, present: 0 };
-        const rate = data.total
-          ? Math.round((data.present / data.total) * 100)
+        const data = dayMap.get(key) || {
+          attendanceTotal: 0,
+          attendancePresent: 0,
+          feedingTotal: 0,
+          feedingCompleted: 0,
+        };
+        const attendanceRate = data.attendanceTotal
+          ? Math.round((data.attendancePresent / data.attendanceTotal) * 100)
+          : 0;
+        const feedingRate = data.feedingTotal
+          ? Math.round((data.feedingCompleted / data.feedingTotal) * 100)
           : 0;
 
         const dayName = days[d.getDay()] || `Day ${i}`;
 
         chartPoints.push({
           day: dayName,
-          attendance: rate,
-          target: 95,
+          attendance: attendanceRate,
+          feeding: feedingRate,
         });
       }
 
@@ -264,14 +346,29 @@ export function useAdminDashboard() {
 
       const pieChartData: PieDataPoint[] = [
         {
-          name: "Present",
-          value: allAttPresent,
-          color: "#10b981",
+          name: "Total Child Development Centers",
+          value: activeCenters,
+          color: "#38bdf8",
         },
         {
-          name: "Absent",
-          value: allAttTotal - allAttPresent,
+          name: "Child Development Workers",
+          value: totalTeachers,
+          color: "#14b8a6",
+        },
+        {
+          name: "Total Enrolled Daycares",
+          value: totalChildren,
+          color: "#f59e0b",
+        },
+        {
+          name: "4P's Beneficiaries",
+          value: fourPsBeneficiaries,
           color: "#f43f5e",
+        },
+        {
+          name: "Regular Attendees",
+          value: regularAttendees,
+          color: "#6366f1",
         },
       ];
       setPieData(pieChartData);

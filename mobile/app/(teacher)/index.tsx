@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter, useFocusEffect } from "expo-router";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import {
   View,
   Text,
@@ -9,13 +8,17 @@ import {
   StatusBar,
   RefreshControl,
   ActivityIndicator,
+  Dimensions,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import * as Icons from "lucide-react-native";
+import {
+  Ionicons,
+  MaterialCommunityIcons,
+} from "@expo/vector-icons";
 import { useAuth } from "@/src/hooks/use-auth";
 import { getChildren, getTeacherProfile } from "@/src/api/teacher.api";
 import { getTodayAttendance, getTodayFeeding } from "@/src/api/records.api";
@@ -79,9 +82,44 @@ const NOTICE_TYPE_UI: Record<
   },
 };
 
+const Icons = {
+  Bell: ({ size, color }: { size: number; color: string }) => (
+    <Ionicons name="notifications-outline" size={size} color={color} />
+  ),
+  Calendar: ({ size, color }: { size: number; color: string }) => (
+    <Ionicons name="calendar-outline" size={size} color={color} />
+  ),
+  Home: ({ size, color }: { size: number; color: string }) => (
+    <Ionicons name="home-outline" size={size} color={color} />
+  ),
+  Users: ({ size, color }: { size: number; color: string }) => (
+    <Ionicons name="people-outline" size={size} color={color} />
+  ),
+  UserCheck: ({ size, color }: { size: number; color: string }) => (
+    <MaterialCommunityIcons name="account-check-outline" size={size} color={color} />
+  ),
+  UserX: ({ size, color }: { size: number; color: string }) => (
+    <MaterialCommunityIcons name="account-remove-outline" size={size} color={color} />
+  ),
+  UtensilsCrossed: ({ size, color }: { size: number; color: string }) => (
+    <MaterialCommunityIcons name="silverware-fork-knife" size={size} color={color} />
+  ),
+  Zap: ({ size, color }: { size: number; color: string }) => (
+    <Ionicons name="flash-outline" size={size} color={color} />
+  ),
+  ClipboardCheck: ({ size, color }: { size: number; color: string }) => (
+    <MaterialCommunityIcons name="clipboard-check-outline" size={size} color={color} />
+  ),
+  Utensils: ({ size, color }: { size: number; color: string }) => (
+    <MaterialCommunityIcons name="silverware" size={size} color={color} />
+  ),
+  ChevronRight: ({ size, color }: { size: number; color: string }) => (
+    <Ionicons name="chevron-forward" size={size} color={color} />
+  ),
+};
+
 export default function TeacherDashboard() {
   const insets = useSafeAreaInsets();
-  const tabBarHeight = useBottomTabBarHeight();
   const router = useRouter();
   const { token } = useAuth();
   const [children, setChildren] = useState<Child[]>([]);
@@ -188,13 +226,8 @@ export default function TeacherDashboard() {
     ).length;
   }, [feedingData]);
 
-  const pendingCount = totalChildren;
   const scrollBottomPadding = useMemo(
-    () => Math.max(120, tabBarHeight + 72),
-    [tabBarHeight],
-  );
-  const fabBottom = useMemo(
-    () => 16 + Math.max(insets.bottom - 12, 0),
+    () => Math.max(120, insets.bottom + 88),
     [insets.bottom],
   );
 
@@ -212,10 +245,22 @@ export default function TeacherDashboard() {
           style={{ paddingTop: insets.top + 12 }}
           className="bg-teal-600 px-5 pb-5"
         >
-          <Text className="text-3xl font-extrabold text-white">Dashboard</Text>
-          <Text className="text-lg text-teal-100 mt-1">
-            Loading your overview...
-          </Text>
+          <View className="flex-row items-start justify-between">
+            <View className="flex-1 pr-3">
+              <Text className="text-3xl font-extrabold text-white">
+                Dashboard
+              </Text>
+              <Text className="text-lg text-teal-100 mt-1">
+                Loading your overview...
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => router.push("/(teacher)/notifications")}
+              className="h-11 w-11 items-center justify-center rounded-full bg-white/20"
+            >
+              <Icons.Bell size={20} color="#FFFFFF" />
+            </Pressable>
+          </View>
         </View>
 
         <View className="flex-1 items-center justify-center">
@@ -241,12 +286,22 @@ export default function TeacherDashboard() {
         style={{ paddingTop: insets.top + 12 }}
         className="bg-teal-600 px-5 pb-5"
       >
-        <Text className="text-3xl font-extrabold text-white">
-          Today's Overview, {teacherName}
-        </Text>
-        <Text className="text-lg text-teal-100 mt-1">
-          Here's your dashboard for today
-        </Text>
+        <View className="flex-row items-start justify-between">
+          <View className="flex-1 pr-3">
+            <Text className="text-3xl font-extrabold text-white">
+              Today's Overview, {teacherName}
+            </Text>
+            <Text className="text-lg text-teal-100 mt-1">
+              Here's your dashboard for today
+            </Text>
+          </View>
+          <Pressable
+            onPress={() => router.push("/(teacher)/notifications")}
+            className="h-11 w-11 items-center justify-center rounded-full bg-white/20"
+          >
+            <Icons.Bell size={20} color="#FFFFFF" />
+          </Pressable>
+        </View>
       </View>
 
       <ScrollView
@@ -405,29 +460,6 @@ export default function TeacherDashboard() {
           )}
         </View>
       </ScrollView>
-
-      {/* Floating AI Chat button */}
-      <Pressable
-        onPress={() => router.push("/(teacher)/chat")}
-        className="absolute right-4 h-16 w-16 overflow-hidden rounded-full active:opacity-90"
-        style={{
-          bottom: fabBottom,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.2,
-          shadowRadius: 6,
-          elevation: 6,
-        }}
-      >
-        <LinearGradient
-          colors={["#14b8a6", "#0f766e"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          className="h-full w-full items-center justify-center"
-        >
-          <Icons.MessageCircle size={28} color="white" />
-        </LinearGradient>
-      </Pressable>
     </SafeAreaView>
   );
 }

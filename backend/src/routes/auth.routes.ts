@@ -11,7 +11,7 @@ import {
 import {
   verifyAdminLoginMfa,
   resendAdminLoginMfa,
-} from "../controllers/auth/adminMfa.controller";
+} from "../controllers/auth/admin-mfa.controller";
 import {
   verifyTeacherPasswordOtp,
   resendTeacherPasswordOtp,
