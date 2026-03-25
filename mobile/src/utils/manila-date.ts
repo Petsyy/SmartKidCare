@@ -36,11 +36,7 @@ export const parseManilaDateKey = (value: string): ManilaDateParts | null => {
   const match = DATE_KEY_PATTERN.exec(String(value || "").trim());
   if (!match) return null;
 
-  return toValidDateParts(
-    Number(match[1]),
-    Number(match[2]),
-    Number(match[3]),
-  );
+  return toValidDateParts(Number(match[1]), Number(match[2]), Number(match[3]));
 };
 
 export const isValidManilaDateKey = (value: string): boolean =>

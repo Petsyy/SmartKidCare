@@ -2,7 +2,7 @@ import { Tabs, Redirect, useRootNavigationState } from "expo-router";
 import { useAuth } from "@/src/hooks/use-auth";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { House, UserPlus, UserRound, Users } from "lucide-react-native";
 
 export default function TeacherLayout() {
   const { user, role, loading } = useAuth();
@@ -64,10 +64,10 @@ export default function TeacherLayout() {
         options={{
           title: "Home",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? "home" : "home-outline"}
+            <House
               color={color}
               size={focused ? 22 : 20}
+              strokeWidth={focused ? 2.4 : 2}
             />
           ),
         }}
@@ -77,10 +77,10 @@ export default function TeacherLayout() {
         options={{
           title: "Children",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? "people" : "people-outline"}
+            <Users
               color={color}
               size={focused ? 22 : 20}
+              strokeWidth={focused ? 2.4 : 2}
             />
           ),
         }}
@@ -106,10 +106,10 @@ export default function TeacherLayout() {
                 shadowRadius: 12,
               },
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? "person-add" : "person-add-outline"}
+            <UserPlus
               color={color}
               size={focused ? 22 : 20}
+              strokeWidth={focused ? 2.4 : 2}
             />
           ),
         })}
@@ -119,10 +119,10 @@ export default function TeacherLayout() {
         options={{
           title: "Profile",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? "person-circle" : "person-outline"}
+            <UserRound
               color={color}
               size={focused ? 22 : 20}
+              strokeWidth={focused ? 2.4 : 2}
             />
           ),
         }}

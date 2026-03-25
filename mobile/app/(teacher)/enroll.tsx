@@ -60,7 +60,7 @@ import {
   validateDocument,
 } from "@/src/features/enrollment";
 import { getDaycareCenterDisplay } from "@/src/utils/daycare-center-format";
-import { ChevronLeft } from "@/src/shims/lucide-react-native";
+import { ChevronLeft } from "lucide-react-native";
 import { useNavigation } from "expo-router";
 
 type DatePickerNativeModule = typeof import("@react-native-community/datetimepicker");

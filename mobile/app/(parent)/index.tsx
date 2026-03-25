@@ -14,9 +14,18 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import {
-  Ionicons,
-  MaterialCommunityIcons,
-} from "@expo/vector-icons";
+  Calendar,
+  ChevronRight,
+  ClipboardCheck,
+  House,
+  MessageCircle,
+  UserCheck,
+  UserX,
+  Users,
+  Utensils,
+  UtensilsCrossed,
+  Zap,
+} from "lucide-react-native";
 import { useAuth } from "@/src/hooks/use-auth";
 import { getMyChildren, Child } from "@/src/api/parent.api";
 import {
@@ -46,39 +55,17 @@ type ActionCardProps = {
 };
 
 const Icons = {
-  Users: ({ size, color }: { size: number; color: string }) => (
-    <Ionicons name="people-outline" size={size} color={color} />
-  ),
-  Calendar: ({ size, color }: { size: number; color: string }) => (
-    <Ionicons name="calendar-outline" size={size} color={color} />
-  ),
-  Home: ({ size, color }: { size: number; color: string }) => (
-    <Ionicons name="home-outline" size={size} color={color} />
-  ),
-  UserCheck: ({ size, color }: { size: number; color: string }) => (
-    <MaterialCommunityIcons name="account-check-outline" size={size} color={color} />
-  ),
-  UserX: ({ size, color }: { size: number; color: string }) => (
-    <MaterialCommunityIcons name="account-remove-outline" size={size} color={color} />
-  ),
-  UtensilsCrossed: ({ size, color }: { size: number; color: string }) => (
-    <MaterialCommunityIcons name="silverware-fork-knife" size={size} color={color} />
-  ),
-  Zap: ({ size, color }: { size: number; color: string }) => (
-    <Ionicons name="flash-outline" size={size} color={color} />
-  ),
-  ClipboardCheck: ({ size, color }: { size: number; color: string }) => (
-    <MaterialCommunityIcons name="clipboard-check-outline" size={size} color={color} />
-  ),
-  Utensils: ({ size, color }: { size: number; color: string }) => (
-    <MaterialCommunityIcons name="silverware" size={size} color={color} />
-  ),
-  ChevronRight: ({ size, color }: { size: number; color: string }) => (
-    <Ionicons name="chevron-forward" size={size} color={color} />
-  ),
-  MessageCircle: ({ size, color }: { size: number; color: string }) => (
-    <Ionicons name="chatbubble-ellipses-outline" size={size} color={color} />
-  ),
+  Users,
+  Calendar,
+  Home: House,
+  UserCheck,
+  UserX,
+  UtensilsCrossed,
+  Zap,
+  ClipboardCheck,
+  Utensils,
+  ChevronRight,
+  MessageCircle,
 };
 
 export default function ParentDashboard() {

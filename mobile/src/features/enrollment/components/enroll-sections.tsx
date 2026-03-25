@@ -1,5 +1,18 @@
-import { Ionicons } from "@expo/vector-icons";
-import { Clock3, FileText, Plus, Search, XCircle, CheckCircle2 } from "lucide-react-native";
+import {
+  CheckCircle2,
+  Clock3,
+  Eye,
+  FileText,
+  Info,
+  Key,
+  Mail,
+  Phone,
+  Plus,
+  Search,
+  User,
+  Users,
+  XCircle,
+} from "lucide-react-native";
 import { Pressable, Text, TextInput, View } from "react-native";
 import type * as DocumentPicker from "expo-document-picker";
 import type { TeacherEnrollmentRequest } from "@/src/api/teacher.api";
@@ -196,7 +209,7 @@ export function ChildInfoStepSection({
     >
       <View className="mb-2 flex-row items-center gap-3">
         <View className="h-10 w-10 items-center justify-center rounded-2xl bg-teal-50">
-          <Ionicons name="person-outline" size={20} color="#0D9488" />
+          <User size={20} color="#0D9488" />
         </View>
         <Text className="text-2xl font-bold text-gray-900">Child Information</Text>
       </View>
@@ -440,7 +453,7 @@ export function ParentInfoStepSection({
     >
       <View className="mb-2 flex-row items-center gap-3">
         <View className="h-10 w-10 items-center justify-center rounded-2xl bg-sky-50">
-          <Ionicons name="people-outline" size={20} color="#0284C7" />
+          <Users size={20} color="#0284C7" />
         </View>
         <Text className="text-2xl font-bold text-gray-900">Parent Information</Text>
       </View>
@@ -521,7 +534,7 @@ export function DocumentsStepSection({
     >
       <View className="mb-2 flex-row items-center gap-3">
         <View className="h-10 w-10 items-center justify-center rounded-2xl bg-amber-50">
-          <Ionicons name="document-text-outline" size={20} color="#D97706" />
+          <FileText size={20} color="#D97706" />
         </View>
         <Text className="text-2xl font-bold text-gray-900">Required Documents</Text>
       </View>
@@ -623,11 +636,7 @@ export function ReviewSubmitStepSection({
     >
       <View className="mb-2 flex-row items-center gap-3">
         <View className="h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50">
-          <Ionicons
-            name="checkmark-circle-outline"
-            size={20}
-            color="#059669"
-          />
+          <CheckCircle2 size={20} color="#059669" />
         </View>
         <Text className="text-2xl font-bold text-gray-900">Review & Submit</Text>
       </View>
@@ -674,7 +683,7 @@ export function ReviewSubmitStepSection({
       </ReviewSection>
 
       <View className="flex-row gap-3 rounded-2xl border border-teal-200 bg-teal-50 p-4">
-        <Ionicons name="information-circle-outline" size={24} color="#0D9488" />
+        <Info size={24} color="#0D9488" />
         <Text className="flex-1 text-base leading-6 text-teal-700">
           By submitting, you confirm the information has been verified with the
           family and is ready for enrollment review.
@@ -891,11 +900,7 @@ export function SubmittedRequestsPanel({
                             justifyContent: "center",
                           }}
                         >
-                          <Ionicons
-                            name="document-text-outline"
-                            size={20}
-                            color={statusAccentColor}
-                          />
+                          <FileText size={20} color={statusAccentColor} />
                         </View>
                         <View style={{ flex: 1, marginLeft: 10 }}>
                           <Text
@@ -1051,7 +1056,7 @@ export function SubmittedRequestsPanel({
                     </Text>
                     <View style={{ marginTop: 8, gap: 8 }}>
                       <View style={{ flexDirection: "row", alignItems: "center" }}>
-                        <Ionicons name="mail-outline" size={14} color="#475569" />
+                        <Mail size={14} color="#475569" />
                         <Text
                           numberOfLines={1}
                           style={{
@@ -1066,7 +1071,7 @@ export function SubmittedRequestsPanel({
                         </Text>
                       </View>
                       <View style={{ flexDirection: "row", alignItems: "center" }}>
-                        <Ionicons name="call-outline" size={14} color="#475569" />
+                        <Phone size={14} color="#475569" />
                         <Text style={{ marginLeft: 8, fontSize: 13, fontWeight: "700", color: "#334155" }}>
                           {request.parent.phone || "No phone provided"}
                         </Text>
@@ -1149,7 +1154,7 @@ export function SubmittedRequestsPanel({
                         paddingVertical: 10,
                       }}
                     >
-                      <Ionicons name="eye-outline" size={14} color="#1D4ED8" />
+                      <Eye size={14} color="#1D4ED8" />
                       <Text style={{ fontSize: 15, fontWeight: "700", color: "#1E40AF" }}>
                         View Password
                       </Text>
@@ -1169,7 +1174,7 @@ export function SubmittedRequestsPanel({
                           paddingVertical: 10,
                         }}
                       >
-                        <Ionicons name="key" size={14} color="#B45309" />
+                        <Key size={14} color="#B45309" />
                         <Text style={{ fontSize: 15, fontWeight: "700", color: "#92400E" }}>
                           Reset Password
                         </Text>

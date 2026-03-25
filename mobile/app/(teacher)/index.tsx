@@ -16,9 +16,18 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import {
-  Ionicons,
-  MaterialCommunityIcons,
-} from "@expo/vector-icons";
+  Bell,
+  Calendar,
+  ChevronRight,
+  ClipboardCheck,
+  House,
+  UserCheck,
+  UserX,
+  Users,
+  Utensils,
+  UtensilsCrossed,
+  Zap,
+} from "lucide-react-native";
 import { useAuth } from "@/src/hooks/use-auth";
 import { getChildren, getTeacherProfile } from "@/src/api/teacher.api";
 import { getTodayAttendance, getTodayFeeding } from "@/src/api/records.api";
@@ -83,39 +92,17 @@ const NOTICE_TYPE_UI: Record<
 };
 
 const Icons = {
-  Bell: ({ size, color }: { size: number; color: string }) => (
-    <Ionicons name="notifications-outline" size={size} color={color} />
-  ),
-  Calendar: ({ size, color }: { size: number; color: string }) => (
-    <Ionicons name="calendar-outline" size={size} color={color} />
-  ),
-  Home: ({ size, color }: { size: number; color: string }) => (
-    <Ionicons name="home-outline" size={size} color={color} />
-  ),
-  Users: ({ size, color }: { size: number; color: string }) => (
-    <Ionicons name="people-outline" size={size} color={color} />
-  ),
-  UserCheck: ({ size, color }: { size: number; color: string }) => (
-    <MaterialCommunityIcons name="account-check-outline" size={size} color={color} />
-  ),
-  UserX: ({ size, color }: { size: number; color: string }) => (
-    <MaterialCommunityIcons name="account-remove-outline" size={size} color={color} />
-  ),
-  UtensilsCrossed: ({ size, color }: { size: number; color: string }) => (
-    <MaterialCommunityIcons name="silverware-fork-knife" size={size} color={color} />
-  ),
-  Zap: ({ size, color }: { size: number; color: string }) => (
-    <Ionicons name="flash-outline" size={size} color={color} />
-  ),
-  ClipboardCheck: ({ size, color }: { size: number; color: string }) => (
-    <MaterialCommunityIcons name="clipboard-check-outline" size={size} color={color} />
-  ),
-  Utensils: ({ size, color }: { size: number; color: string }) => (
-    <MaterialCommunityIcons name="silverware" size={size} color={color} />
-  ),
-  ChevronRight: ({ size, color }: { size: number; color: string }) => (
-    <Ionicons name="chevron-forward" size={size} color={color} />
-  ),
+  Bell,
+  Calendar,
+  Home: House,
+  Users,
+  UserCheck,
+  UserX,
+  UtensilsCrossed,
+  Zap,
+  ClipboardCheck,
+  Utensils,
+  ChevronRight,
 };
 
 export default function TeacherDashboard() {
