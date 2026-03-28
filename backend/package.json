@@ -16,6 +16,7 @@
     "install:py-deps": "pip install -r requirements.txt",
     "diagnose:python": "python scripts/diagnose_python.py",
     "seed:records": "ts-node scripts/seedRecords.ts",
+    "seed:children:targets": "ts-node scripts/seedChildrenByTargets.ts",
     "check-balance": "ts-node scripts/check-sepolia-balance.ts",
     "import-dataset": "ts-node scripts/importDataset.ts",
     "sanitize-input": "ts-node scripts/sanitizeInput.ts",

@@ -7,7 +7,7 @@ import {
   buildConversationId,
   getConversationHistory,
   writeConversationClosure,
-} from "../services/ai/aiWriter.service";
+} from "../services/ai/ai-writer.service";
 import {
   buildAcknowledgementReply,
   buildGreetingReply,
@@ -16,7 +16,7 @@ import {
   isAffirmative,
   isConversationClosure,
   isGreeting,
-} from "../services/ai/chatReply.service";
+} from "../services/ai/chat-reply.services";
 import { detectResponseLanguage } from "../services/ai/language.service";
 import {
   AI_INPUT_LIMITS,
@@ -81,7 +81,7 @@ function recoverPendingFollowUpFromHistory(
     .find((turn) => turn.role === "user" && turn.content.trim());
 
   if (!lastAssistantTurn || !lastUserTurn) return undefined;
-  if (!replyContainsNarrativeFollowUp(lastAssistantTurn.content)) return undefined;
+
 
   return {
     kind: "detailed_review_confirmation",
@@ -261,9 +261,6 @@ function buildScopedFollowUpQuestion(
   return `Show both attendance and feeding details${scope}.`;
 }
 
-function replyContainsNarrativeFollowUp(reply: string): boolean {
-  return /(?:^|\n)\s*follow[- ]?up\s*:/i.test(reply);
-}
 
 const aiChatRequestSchema = z.object({
   role: z.enum(["parent"]).optional(),
@@ -440,18 +437,6 @@ router.post("/chat", authenticateToken, async (req, res) => {
         console.log(`${accuracyMatch[1]}%`);
       }
 
-      if (replyContainsNarrativeFollowUp(agentReply)) {
-        setPendingFollowUp(conversationId, {
-          kind: "detailed_review_confirmation",
-          timeframe: inferPendingTimeframe(trimmedMessage),
-          domain: inferPendingDomain({
-            question: trimmedMessage,
-            reply: agentReply,
-          }),
-        });
-      } else {
-        clearPendingFollowUp(conversationId);
-      }
 
       return res.json({ reply: agentReply });
     }

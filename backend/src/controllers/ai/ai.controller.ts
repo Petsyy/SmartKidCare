@@ -1,5 +1,4 @@
 import { Request, Response } from "express";
-import { logAIInteraction } from "../../services/ai/datasetLogging.service";
 import { tryHandleAgentQuery } from "../../services/ai/agent.service";
 import { detectResponseLanguage } from "../../services/ai/language.service";
 import { inputIsGibberish } from "../../utils/aiInputSanitizer";
@@ -30,9 +29,6 @@ export async function aiChatController(req: Request, res: Response) {
     if (isGreeting(message)) {
       const greeting =
         "Hello, you can ask about a child's attendance, feeding status, or record verification.";
-
-      // Log greeting interaction
-      await logAIInteraction(message, {}, greeting);
 
       return res.status(200).json({ reply: greeting });
     }
@@ -75,9 +71,6 @@ export async function aiChatController(req: Request, res: Response) {
 
     const fallbackReply =
       "I couldn't process that request through the attendance/feeding agent. Please ask a clear question about attendance or feeding for this child.";
-
-    // Log the fallback interaction to keep the legacy controller consistent.
-    await logAIInteraction(message, interactionContext, fallbackReply);
 
     return res.status(200).json({ reply: fallbackReply });
   } catch (error) {

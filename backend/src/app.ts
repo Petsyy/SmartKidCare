@@ -47,30 +47,6 @@ const connectSrc = ["'self'", ...allowedOrigins];
 
 app.disable("x-powered-by");
 
-app.use(
-  helmet({
-    contentSecurityPolicy: {
-      useDefaults: false,
-      directives: {
-        defaultSrc: ["'none'"],
-        baseUri: ["'none'"],
-        connectSrc,
-        fontSrc: ["'none'"],
-        formAction: ["'none'"],
-        frameAncestors: ["'none'"],
-        imgSrc: ["'none'"],
-        objectSrc: ["'none'"],
-        scriptSrc: ["'none'"],
-        styleSrc: ["'none'"],
-      },
-    },
-    crossOriginEmbedderPolicy: false,
-    crossOriginResourcePolicy: false,
-    xContentTypeOptions: true,
-    hsts: isProduction,
-    referrerPolicy: { policy: "no-referrer" },
-  }),
-);
 
 app.use(cookieParser());
 app.use(

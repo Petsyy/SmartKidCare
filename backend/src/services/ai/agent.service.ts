@@ -3,7 +3,7 @@ import {
   summarizeChildTrendTool,
   summarizeFeedingTool,
   ToolTimeframe,
-} from "./mongoAgentTools.service";
+} from "./agent-tools.service";
 import { executeAgentTool, AgentToolName } from "./tools.service";
 import { AIResponseLanguage, detectResponseLanguage } from "./language.service";
 import {
@@ -11,7 +11,7 @@ import {
   buildConversationId,
   FeedingComparisonResult,
   writeToolNarrative,
-} from "./aiWriter.service";
+} from "./ai-writer.service";
 import { inputIsGibberish } from "../../utils/aiInputSanitizer";
 
 type AIRole = "parent";

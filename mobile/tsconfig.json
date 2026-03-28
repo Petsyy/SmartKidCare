@@ -50,9 +50,6 @@
       ],
       "@types/*": [
         "./types/*"
-      ],
-      "lucide-react-native": [
-        "./src/shims/lucide-react-native"
       ]
     }
   },

@@ -6,7 +6,7 @@ import {
   SummarizeFeedingClassResult,
   SummarizeFeedingResult,
   SummarizeChildTrendResult,
-} from "../mongoAgentTools.service";
+} from "../agent-tools.service";
 import { AgentToolResult } from "../tools.service";
 
 export type AIRole = "parent";
@@ -32,6 +32,16 @@ export type WriterFacts = {
   riskLevel: WriterRiskLevel;
   observationLines: string[];
   recommendationLines: string[];
+};
+
+export type WriterStructuredOutput = {
+  responseTemplate: WriterResponseTemplate;
+  headline: string;
+  metricLines: string[];
+  riskLevel: WriterRiskLevel;
+  analysis: string;
+  suggestedActions?: string[];
+  followUp?: string;
 };
 
 export type ClassReportResult = {

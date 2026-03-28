@@ -79,7 +79,9 @@ export const issueAdminLoginOtp = async (user: IUser): Promise<string> => {
   const otp = randomInt(100000, 1000000).toString();
 
   user.passwordResetOtpHash = hashAdminLoginOtp(otp);
-  user.passwordResetOtpExpiresAt = new Date(Date.now() + ADMIN_LOGIN_MFA_OTP_TTL_MS);
+  user.passwordResetOtpExpiresAt = new Date(
+    Date.now() + ADMIN_LOGIN_MFA_OTP_TTL_MS,
+  );
   user.passwordResetOtpPurpose = ADMIN_LOGIN_MFA_PURPOSE;
   await user.save();
 

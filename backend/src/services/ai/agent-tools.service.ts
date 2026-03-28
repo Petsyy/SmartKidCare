@@ -304,44 +304,6 @@ function summarizeChildAttendanceRows(
   };
 }
 
-function summarizeClassAttendanceRows(
-  rows: AttendanceRow[],
-  offsetMinutes: number,
-): {
-  present: number;
-  absent: number;
-  totalChildren: number;
-  absentDates: string[];
-} {
-  let present = 0;
-  let absent = 0;
-  const childIdSet = new Set<string>();
-  const absentDateSet = new Set<string>();
-
-  rows.forEach((row) => {
-    const dateKey = toLocalDateKey(row.date, offsetMinutes);
-    row.records.forEach((record) => {
-      const childId = recordChildId(record.child);
-      if (childId) childIdSet.add(childId);
-
-      if (record.status === "present") {
-        present += 1;
-        return;
-      }
-      if (record.status === "absent") {
-        absent += 1;
-        absentDateSet.add(dateKey);
-      }
-    });
-  });
-
-  return {
-    present,
-    absent,
-    totalChildren: childIdSet.size,
-    absentDates: toSortedList(absentDateSet),
-  };
-}
 
 function summarizeChildFeedingRows(
   rows: FeedingRow[],
