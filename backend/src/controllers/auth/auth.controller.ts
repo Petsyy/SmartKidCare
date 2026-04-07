@@ -12,7 +12,7 @@ import {
   mapOtpDeliveryError,
   maskEmail,
   setAdminAuthCookie,
-} from "../../services/auth/adminLoginMfa.service";
+} from "../../services/auth/admin-login-mfa.service";
 import { clearCsrfCookie, setCsrfCookie } from "../../lib/csrf";
 import { getExpiredCookieOptions } from "../../lib/cookies";
 

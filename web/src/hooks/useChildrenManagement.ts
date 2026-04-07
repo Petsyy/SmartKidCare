@@ -5,7 +5,7 @@ import {
   getChildren,
   updateChild,
 } from "../api/child.api";
-import { showErrorModal } from "../utils/sweetalert.modal";
+import { showErrorModal } from "../utils/sweetAlertModal";
 
 export function useChildrenManagement() {
   const [children, setChildren] = useState<Child[]>([]);

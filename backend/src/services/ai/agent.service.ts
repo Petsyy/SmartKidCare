@@ -12,7 +12,7 @@ import {
   FeedingComparisonResult,
   writeToolNarrative,
 } from "./ai-writer.service";
-import { inputIsGibberish } from "../../utils/aiInputSanitizer";
+import { inputIsGibberish } from "../../utils/ai-input-sanitizer";
 
 type AIRole = "parent";
 

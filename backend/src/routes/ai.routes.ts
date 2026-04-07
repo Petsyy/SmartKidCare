@@ -16,14 +16,14 @@ import {
   isAffirmative,
   isConversationClosure,
   isGreeting,
-} from "../services/ai/chat-reply.services";
+} from "../services/ai/chat-reply.service";
 import { detectResponseLanguage } from "../services/ai/language.service";
 import {
   AI_INPUT_LIMITS,
   inputIsGibberish,
   sanitizeAIChildId,
   sanitizeAIMessageInput,
-} from "../utils/aiInputSanitizer";
+} from "../utils/ai-input-sanitizer";
 
 const router = Router();
 const FOLLOW_UP_STATE_TTL_MS = 10 * 60 * 1000;

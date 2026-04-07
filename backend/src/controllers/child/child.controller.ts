@@ -4,11 +4,11 @@ import { Request, Response } from "express";
 
 import Child from "../../models/Child";
 import User from "../../models/Users";
-import { generateStudentId } from "../../utils/generateStudentId";
+import { generateStudentId } from "../../utils/generate-child-id";
 import {
   uploadToCloudinary,
   UploadResult,
-} from "../../utils/uploadToCloudinary";
+} from "../../utils/upload-cloudinary";
 import { hashFileBuffer } from "../../blockchain/ethers";
 import { storeChildDocumentsHash } from "../../services/blockchain/blockchain.service";
 import {
@@ -17,7 +17,6 @@ import {
   resolveTeacherAssignment,
 } from "./child.helpers";
 
-// Re-export controllers from other modules for convenience
 export { getChildBlockchainProof } from "./child.blockchain.controller";
 export {
   getChildDocumentSignedUrl,

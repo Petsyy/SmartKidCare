@@ -7,7 +7,6 @@ import {
   provider,
 } from "../../blockchain/ethers";
 
-// Track cumulative gas costs for document anchoring transactions.
 let totalGasSpent = 0;
 let totalTransactions = 0;
 let startingBalance = 0;

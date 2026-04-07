@@ -24,7 +24,6 @@ const provider = new ethers.JsonRpcProvider(
   process.env.SEPOLIA_RPC_URL,
   undefined,
   {
-    // Disable client-side batching to avoid bursty requests that trigger RPC 429.
     batchMaxCount: 1,
   },
 );
@@ -49,14 +48,10 @@ export const documentsRegistryContract = new ethers.Contract(
   wallet,
 );
 
-// Backward-compatible alias for older imports while the codebase transitions.
 export const attendanceContract = documentsRegistryContract;
 
 export { wallet, provider };
 
-/**
- * Build the on-chain child identifier hash from the stored student ID.
- */
 export const buildChildIdHash = (studentId: string) => ethers.id(studentId.trim());
 
 export const hashFileBuffer = (buffer: Buffer): string => ethers.keccak256(buffer);

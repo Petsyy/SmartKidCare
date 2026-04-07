@@ -1,16 +1,13 @@
 import mongoose from "mongoose";
 import { Request } from "express";
 import User from "../../models/Users";
-import { UploadResult } from "../../utils/uploadToCloudinary";
+import { UploadResult } from "../../utils/upload-cloudinary";
 
 export type ChildDocumentKey = "birthCertificate" | "parentId";
 
 export const ZERO_HASH =
   "0x0000000000000000000000000000000000000000000000000000000000000000";
 
-/**
- * Attaches uploaded documents to child data object
- */
 export const attachUploadedDocuments = (
   childData: any,
   birthUpload: UploadResult | null,
@@ -43,9 +40,6 @@ export const attachUploadedDocuments = (
   }
 };
 
-/**
- * Checks if the current user can access a specific child record
- */
 export const ensureCanAccessChild = (child: any, req: Request): boolean => {
   if (!req.user?.id) {
     return false;
@@ -66,9 +60,6 @@ export const ensureCanAccessChild = (child: any, req: Request): boolean => {
   return false;
 };
 
-/**
- * Resolves document field name from various formats
- */
 export const resolveDocumentField = (
   value: string,
 ): ChildDocumentKey | null => {
@@ -94,9 +85,6 @@ export const resolveDocumentField = (
   return null;
 };
 
-/**
- * Validates and resolves teacher ID
- */
 export const resolveTeacherId = async (
   value: unknown,
 ): Promise<mongoose.Types.ObjectId | null> => {
@@ -109,9 +97,6 @@ export type TeacherAssignment = {
   daycareCenterId: mongoose.Types.ObjectId | null;
 };
 
-/**
- * Validates teacher and returns both teacher ID and assigned daycare center ID
- */
 export const resolveTeacherAssignment = async (
   value: unknown,
 ): Promise<TeacherAssignment | null> => {

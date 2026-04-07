@@ -1,38 +1,37 @@
-import { buildConversationClosureReply } from "./chat-reply.services";
-import { logAIInteraction } from "./dataset-logging.service";
-import { buildFacts } from "./writer/facts.builders";
+import { buildConversationClosureReply } from "./chat-reply.service";
+import { buildFacts } from "./ai-writer-helpers/facts.builders";
 import {
   buildDeterministicNarrative,
   buildDeterministicNarrativeForFacts,
   buildEvaluationArtifacts,
   buildEvaluationArtifactsForFacts,
-} from "./writer/writer.narrative";
+} from "./ai-writer-helpers/writer.narrative";
 import {
   buildWriterDisplayPolicy,
   WriterDisplayPolicy,
-} from "./writer/writer.policy";
+} from "./ai-writer-helpers/writer.policy";
 import {
   getConversationHistory,
   getHistory,
   hasRecentAssistantFollowUp,
   remember,
-} from "./writer/writer.memory";
+} from "./ai-writer-helpers/writer.memory";
 import {
   tryWriteConversationClosureWithLLM,
   tryWriteStructuredNarrativeWithLLM,
-} from "./writer/writer.llm";
+} from "./ai-writer-helpers/writer.llm";
 import {
   AIRole,
   WriterFacts,
   WriterSupportedResult,
-} from "./writer/types";
+} from "./ai-writer-helpers/types";
 import { AIResponseLanguage } from "./language.service";
 
 export type {
   AttendanceComparisonResult,
   ClassReportResult,
   FeedingComparisonResult,
-} from "./writer/types";
+} from "./ai-writer-helpers/types";
 
 export {
   buildDeterministicNarrativeForFacts,
@@ -179,15 +178,6 @@ export async function writeToolNarrative(params: {
     facts,
     policy: displayPolicy,
   });
-
-  await logAIInteraction(
-    params.question,
-    loggingContext,
-    finalReply,
-    ragasCategoryFromScenario(facts.scenario),
-    evaluationArtifacts.groundTruth,
-    evaluationArtifacts,
-  );
 
   remember(params.conversationId, { role: "user", content: params.question });
   remember(params.conversationId, { role: "assistant", content: finalReply });

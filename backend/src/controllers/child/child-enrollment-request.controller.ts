@@ -5,11 +5,11 @@ import Child from "../../models/Child";
 import User from "../../models/Users";
 import ChildEnrollmentRequest from "../../models/ChildEnrollmentRequest";
 import ChildDevelopmentCenter from "../../models/ChildDevelopmentCenter";
-import { generateStudentId } from "../../utils/generateStudentId";
+import { generateStudentId } from "../../utils/generate-child-id";
 import {
   uploadToCloudinary,
   type UploadResult,
-} from "../../utils/uploadToCloudinary";
+} from "../../utils/upload-cloudinary";
 import { hashFileBuffer } from "../../blockchain/ethers";
 import { storeChildDocumentHashes } from "../../services/blockchain/blockchain.service";
 

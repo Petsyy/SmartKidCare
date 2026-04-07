@@ -19,7 +19,7 @@ import {
   showResetPasswordModal,
   showToggleUserStatusModal,
   showToggleUserStatusSuccessModal,
-} from "@/utils/sweetalert.modal";
+} from "@/utils/sweetAlertModal";
 import {
   toggleUserStatus,
   resetUserPassword,

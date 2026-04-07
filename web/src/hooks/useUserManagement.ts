@@ -7,7 +7,7 @@ import {
   showToggleUserStatusModal,
   showToggleUserStatusSuccessModal,
   showLinkedChildrenModal,
-} from "@/utils/sweetalert.modal";
+} from "@/utils/sweetAlertModal";
 
 export function useUserManagement() {
   const [activeTab, setActiveTab] = useState<"teacher" | "parent">("teacher");

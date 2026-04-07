@@ -11,7 +11,6 @@ export default function TeacherLayout() {
   const bottomInset = Math.max(insets.bottom, 10);
   const tabBarHeight = 64 + bottomInset;
 
-  // Never return null here: unmounting Tabs removes navigation context for tab screens (e.g. enroll).
   if (!rootNavigationState?.key) {
     return null;
   }

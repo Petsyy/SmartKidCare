@@ -8,9 +8,6 @@ import {
 } from "../../blockchain/ethers";
 import { ensureCanAccessChild, ZERO_HASH } from "./child.helpers";
 
-/**
- * Get blockchain proof for child's documents
- */
 export const getChildBlockchainProof = async (req: Request, res: Response) => {
   try {
     if (!req.user?.id) {

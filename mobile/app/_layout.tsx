@@ -18,11 +18,8 @@ configureReanimatedLogger({
 function LayoutContent() {
   const { loading } = useAuth();
 
-  // Keep Stack mounted at all times so NavigationContainer exists (Redirect, useRouter, Tabs).
-  // index.tsx and each group layout handle auth redirects.
   return (
     <>
-      {/* File-based routes; do not list Stack.Screen manually (breaks Expo Router 6 linking). */}
       <Stack screenOptions={{ headerShown: false }} />
       {loading ? (
         <View
@@ -44,9 +41,6 @@ export default function RootLayout() {
       "[Reanimated] Reduced motion setting is enabled on this device.",
     ]);
   }, []);
-
-  // Temporarily disabled for Expo Go / local development while EAS push setup is being fixed.
-  // Re-enable Android notification channel setup here when notifications are ready again.
 
   return (
     <SafeAreaProvider>

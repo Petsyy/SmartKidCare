@@ -22,18 +22,14 @@ import {
   submitChildEnrollmentRequest,
 } from "../controllers/child/child-enrollment-request.controller";
 import { authenticateToken } from "../middlewares/auth.middleware";
-import upload from "../middlewares/uploadDocuments";
+import upload from "../middlewares/upload-documents";
 
 const router = express.Router();
 
 router.get("/", authenticateToken, getChildren);
 router.get("/my-children", authenticateToken, getMyChildren);
 router.get("/enrollment-centers", authenticateToken, getEnrollmentCenters);
-router.get(
-  "/enrollment-requests",
-  authenticateToken,
-  getEnrollmentRequests,
-);
+router.get("/enrollment-requests", authenticateToken, getEnrollmentRequests);
 router.get(
   "/enrollment-requests/mine",
   authenticateToken,
@@ -69,7 +65,11 @@ router.post(
   submitChildEnrollmentRequest,
 );
 router.get("/:id/blockchain-proof", authenticateToken, getChildBlockchainProof);
-router.get("/:id/documents/:documentType/url", authenticateToken, getChildDocumentSignedUrl);
+router.get(
+  "/:id/documents/:documentType/url",
+  authenticateToken,
+  getChildDocumentSignedUrl,
+);
 router.get("/document-access/:token", getChildDocumentUrl);
 router.get("/document-stream/:token", streamChildDocument);
 router.get("/:id", authenticateToken, getChildById);

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { createTeacher } from "@/api/teacher.api";
 import { getDaycareCenters, type DaycareCenter } from "@/api/daycare-center.api";
-import { showTeacherCredentialsModal, showErrorModal } from "@/utils/sweetalert.modal";
+import { showTeacherCredentialsModal, showErrorModal } from "@/utils/sweetAlertModal";
 import {
   type AddTeacherField,
   type AddTeacherFormErrors,

@@ -12,7 +12,7 @@ import {
   Filter,
   Search,
   Users,
-  UserCircle
+  UserCircle,
 } from "lucide-react";
 import Swal from "sweetalert2";
 import Layout from "@/components/layout/Layout";
@@ -26,7 +26,7 @@ import {
 import {
   showErrorModal,
   showParentCredentialsModal,
-} from "@/utils/sweetalert.modal";
+} from "@/utils/sweetAlertModal";
 
 const formatDateLabel = (value: string | Date) => {
   const parsed = new Date(value);
@@ -50,7 +50,9 @@ const formatName = (person: {
 };
 
 const formatSubmissionId = (value: string) =>
-  `ER-${String(value || "").slice(-6).toUpperCase()}`;
+  `ER-${String(value || "")
+    .slice(-6)
+    .toUpperCase()}`;
 
 const statusClassName: Record<EnrollmentRequestStatus, string> = {
   pending:
@@ -253,10 +255,30 @@ export default function EnrollmentRequests() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <StatCard title="Total" value={stats.total} icon={ClipboardList} color="blue" />
-          <StatCard title="Pending" value={stats.pending} icon={Clock} color="teal" />
-          <StatCard title="Approved" value={stats.approved} icon={CheckCircle} color="emerald" />
-          <StatCard title="Rejected" value={stats.rejected} icon={XCircle} color="rose" />
+          <StatCard
+            title="Total"
+            value={stats.total}
+            icon={ClipboardList}
+            color="blue"
+          />
+          <StatCard
+            title="Pending"
+            value={stats.pending}
+            icon={Clock}
+            color="teal"
+          />
+          <StatCard
+            title="Approved"
+            value={stats.approved}
+            icon={CheckCircle}
+            color="emerald"
+          />
+          <StatCard
+            title="Rejected"
+            value={stats.rejected}
+            icon={XCircle}
+            color="rose"
+          />
         </div>
 
         <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -283,7 +305,9 @@ export default function EnrollmentRequests() {
                 <select
                   value={statusFilter}
                   onChange={(event) =>
-                    setStatusFilter(event.target.value as EnrollmentRequestStatus)
+                    setStatusFilter(
+                      event.target.value as EnrollmentRequestStatus,
+                    )
                   }
                   className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 >
@@ -333,7 +357,8 @@ export default function EnrollmentRequests() {
                     const teacherName = request.requestedBy
                       ? formatName(request.requestedBy)
                       : "Unknown Teacher";
-                    const centerName = request.daycareCenter?.name || "Unassigned Center";
+                    const centerName =
+                      request.daycareCenter?.name || "Unassigned Center";
                     const centerBarangay =
                       request.daycareCenter?.barangay || "No barangay";
                     const isProcessing = processingId === request._id;
@@ -348,7 +373,8 @@ export default function EnrollmentRequests() {
                             {formatSubmissionId(request._id)}
                           </div>
                           <div className="mt-1 text-xs text-gray-500 dark:text-slate-400">
-                            {request.createdChild?.studentId || "Student ID pending"}
+                            {request.createdChild?.studentId ||
+                              "Student ID pending"}
                           </div>
                         </td>
                         <td className="px-6 py-4 align-top">
@@ -369,8 +395,9 @@ export default function EnrollmentRequests() {
                         </td>
                         <td className="px-6 py-4 align-top">
                           <span
-                            className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium capitalize ${statusClassName[request.status]
-                              }`}
+                            className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium capitalize ${
+                              statusClassName[request.status]
+                            }`}
                           >
                             {request.status}
                           </span>
@@ -395,20 +422,22 @@ export default function EnrollmentRequests() {
                                 <button
                                   onClick={() => void handleApprove(request)}
                                   disabled={isProcessing}
-                                  className={`inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 ${isProcessing
+                                  className={`inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 ${
+                                    isProcessing
                                       ? "cursor-not-allowed bg-emerald-300"
                                       : "bg-emerald-600 hover:-translate-y-0.5 hover:bg-emerald-700 hover:shadow"
-                                    }`}
+                                  }`}
                                 >
                                   Approve
                                 </button>
                                 <button
                                   onClick={() => void handleReject(request)}
                                   disabled={isProcessing}
-                                  className={`inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-rose-500/30 ${isProcessing
+                                  className={`inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-rose-500/30 ${
+                                    isProcessing
                                       ? "cursor-not-allowed bg-rose-300"
                                       : "bg-rose-600 hover:-translate-y-0.5 hover:bg-rose-700 hover:shadow"
-                                    }`}
+                                  }`}
                                 >
                                   Reject
                                 </button>
@@ -418,11 +447,16 @@ export default function EnrollmentRequests() {
                                 Reviewed
                               </span>
                             )}
-                            <div className="relative" ref={openMenuId === request._id ? menuRef : null}>
+                            <div
+                              className="relative"
+                              ref={openMenuId === request._id ? menuRef : null}
+                            >
                               <button
                                 onClick={() =>
                                   setOpenMenuId((current) =>
-                                    current === request._id ? null : request._id,
+                                    current === request._id
+                                      ? null
+                                      : request._id,
                                   )
                                 }
                                 className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-semibold text-gray-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-gray-300 hover:bg-gray-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-gray-400/30 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:bg-slate-800"
@@ -433,14 +467,19 @@ export default function EnrollmentRequests() {
                               </button>
 
                               {openMenuId === request._id ? (
-                                <div className="absolute right-0 top-10 z-20 min-w-[170px] rounded-xl border border-gray-200 bg-white p-1.5 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                                <div className="absolute right-0 top-10 z-20 min-w-42.5 rounded-xl border border-gray-200 bg-white p-1.5 shadow-xl dark:border-slate-700 dark:bg-slate-900">
                                   <button
                                     onClick={() => void handleDelete(request)}
-                                    disabled={isProcessing || request.status === "approved"}
-                                    className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium transition ${isProcessing || request.status === "approved"
+                                    disabled={
+                                      isProcessing ||
+                                      request.status === "approved"
+                                    }
+                                    className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium transition ${
+                                      isProcessing ||
+                                      request.status === "approved"
                                         ? "cursor-not-allowed text-gray-400 dark:text-slate-500"
                                         : "text-rose-600 hover:bg-rose-50 dark:text-rose-300 dark:hover:bg-rose-500/10"
-                                      }`}
+                                    }`}
                                   >
                                     <Trash2 size={14} />
                                     {request.status === "approved"
@@ -467,9 +506,7 @@ export default function EnrollmentRequests() {
           className="fixed inset-0 z-50 overflow-y-auto bg-black/50 p-4 sm:p-6"
           onClick={() => setSelectedRequest(null)}
         >
-          <div
-            className="mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-3xl items-center justify-center sm:min-h-[calc(100vh-3rem)]"
-          >
+          <div className="mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-3xl items-center justify-center sm:min-h-[calc(100vh-3rem)]">
             <div
               className="flex max-h-[min(90vh,820px)] w-full flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
               onClick={(event) => event.stopPropagation()}
@@ -499,7 +536,10 @@ export default function EnrollmentRequests() {
 
               <div className="flex-1 overflow-y-auto px-6 py-5">
                 <div className="space-y-6 pb-1">
-                  <DetailSection title="Submission Overview" icon={ClipboardList}>
+                  <DetailSection
+                    title="Submission Overview"
+                    icon={ClipboardList}
+                  >
                     <div className="grid gap-4 sm:grid-cols-2">
                       <DetailRow
                         label="Submission ID"
@@ -509,8 +549,9 @@ export default function EnrollmentRequests() {
                         label="Status"
                         value={
                           <span
-                            className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium capitalize ${statusClassName[selectedRequest.status]
-                              }`}
+                            className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium capitalize ${
+                              statusClassName[selectedRequest.status]
+                            }`}
                           >
                             {selectedRequest.status}
                           </span>
@@ -522,7 +563,10 @@ export default function EnrollmentRequests() {
                       />
                       <DetailRow
                         label="Student ID"
-                        value={selectedRequest.createdChild?.studentId || "Pending assignment"}
+                        value={
+                          selectedRequest.createdChild?.studentId ||
+                          "Pending assignment"
+                        }
                       />
                     </div>
                   </DetailSection>
@@ -566,11 +610,15 @@ export default function EnrollmentRequests() {
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                       <DetailRow
                         label="Enrollment Date"
-                        value={formatDateLabel(selectedRequest.child.enrollmentDate)}
+                        value={formatDateLabel(
+                          selectedRequest.child.enrollmentDate,
+                        )}
                       />
                       <DetailRow
                         label="Date of Birth"
-                        value={formatDateLabel(selectedRequest.child.dateOfBirth)}
+                        value={formatDateLabel(
+                          selectedRequest.child.dateOfBirth,
+                        )}
                       />
                       <DetailRow
                         label="Age"
@@ -601,7 +649,9 @@ export default function EnrollmentRequests() {
                         label="Parent Contact"
                         value={
                           <>
-                            <div className="font-medium">{selectedRequest.parent.phone || "No phone"}</div>
+                            <div className="font-medium">
+                              {selectedRequest.parent.phone || "No phone"}
+                            </div>
                             <div className="text-xs text-gray-500 dark:text-slate-400">
                               {selectedRequest.parent.email || "No email"}
                             </div>
@@ -612,15 +662,15 @@ export default function EnrollmentRequests() {
                     <div className="mt-4 grid gap-3 sm:grid-cols-2">
                       <DocumentStatusRow
                         label="Birth Certificate"
-                        uploaded={
-                          Boolean(
-                            selectedRequest.documents?.birthCertificate?.publicId,
-                          )
-                        }
+                        uploaded={Boolean(
+                          selectedRequest.documents?.birthCertificate?.publicId,
+                        )}
                       />
                       <DocumentStatusRow
                         label="Parent ID"
-                        uploaded={Boolean(selectedRequest.documents?.parentId?.publicId)}
+                        uploaded={Boolean(
+                          selectedRequest.documents?.parentId?.publicId,
+                        )}
                       />
                     </div>
                   </DetailSection>
@@ -648,20 +698,22 @@ export default function EnrollmentRequests() {
                     <button
                       onClick={() => void handleReject(selectedRequest)}
                       disabled={processingId === selectedRequest._id}
-                      className={`inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-rose-500/30 ${processingId === selectedRequest._id
+                      className={`inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-rose-500/30 ${
+                        processingId === selectedRequest._id
                           ? "cursor-not-allowed bg-rose-300"
                           : "bg-rose-600 hover:-translate-y-0.5 hover:bg-rose-700 hover:shadow"
-                        }`}
+                      }`}
                     >
                       Reject
                     </button>
                     <button
                       onClick={() => void handleApprove(selectedRequest)}
                       disabled={processingId === selectedRequest._id}
-                      className={`inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 ${processingId === selectedRequest._id
+                      className={`inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 ${
+                        processingId === selectedRequest._id
                           ? "cursor-not-allowed bg-emerald-300"
                           : "bg-emerald-600 hover:-translate-y-0.5 hover:bg-emerald-700 hover:shadow"
-                        }`}
+                      }`}
                     >
                       Approve
                     </button>
@@ -679,7 +731,7 @@ export default function EnrollmentRequests() {
 function DetailSection({
   title,
   children,
-  icon: Icon
+  icon: Icon,
 }: {
   title: string;
   children: ReactNode;
@@ -698,13 +750,7 @@ function DetailSection({
   );
 }
 
-function DetailRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: ReactNode;
-}) {
+function DetailRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
       <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
@@ -730,10 +776,11 @@ function DocumentStatusRow({
         {label}
       </span>
       <span
-        className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${uploaded
+        className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
+          uploaded
             ? "border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-300"
             : "border border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/15 dark:text-rose-300"
-          }`}
+        }`}
       >
         {uploaded ? "Uploaded" : "Missing"}
       </span>
@@ -745,7 +792,7 @@ function StatCard({
   title,
   value,
   icon: Icon,
-  color = "blue"
+  color = "blue",
 }: {
   title: string;
   value: number;
@@ -755,7 +802,8 @@ function StatCard({
   const colorMap = {
     blue: "bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300",
     teal: "bg-teal-50 text-teal-600 dark:bg-teal-500/15 dark:text-teal-300",
-    emerald: "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300",
+    emerald:
+      "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300",
     rose: "bg-rose-50 text-rose-600 dark:bg-rose-500/15 dark:text-rose-300",
   };
 
@@ -763,9 +811,13 @@ function StatCard({
     <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-sm font-medium text-gray-600 dark:text-slate-400">{title}</p>
+          <p className="text-sm font-medium text-gray-600 dark:text-slate-400">
+            {title}
+          </p>
           <div className="mt-2 flex items-baseline gap-2">
-            <p className="text-3xl font-semibold text-gray-900 dark:text-slate-100">{value}</p>
+            <p className="text-3xl font-semibold text-gray-900 dark:text-slate-100">
+              {value}
+            </p>
           </div>
         </div>
         <div className={`rounded-lg p-3 ${colorMap[color]}`}>

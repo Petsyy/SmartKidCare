@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { tryHandleAgentQuery } from "../../services/ai/agent.service";
 import { detectResponseLanguage } from "../../services/ai/language.service";
-import { inputIsGibberish } from "../../utils/aiInputSanitizer";
+import { inputIsGibberish } from "../../utils/ai-input-sanitizer";
 import { AIChatRequest } from "../../types/ai.types";
 
 function isGreeting(message: string) {

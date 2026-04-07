@@ -3,12 +3,9 @@ import { Request, Response } from "express";
 import { randomUUID } from "crypto";
 import Child from "../../models/Child";
 import DocumentAccessToken from "../../models/DocumentAccessToken";
-import { generateSecureUrl } from "../../utils/generateSecureUrl";
+import { generateSecureUrl } from "../../utils/generate-secure-url";
 import { ensureCanAccessChild, resolveDocumentField } from "./child.helpers";
 
-/**
- * Generate a signed URL token for accessing a child's document
- */
 export const getChildDocumentSignedUrl = async (
   req: Request,
   res: Response,
@@ -56,7 +53,6 @@ export const getChildDocumentSignedUrl = async (
       console.warn("Token cleanup failed silently");
     });
 
-    // Generate one-time access token
     const token = randomUUID();
     const expiresAt = new Date(Date.now() + 60 * 1000); // 60 seconds
 
@@ -84,9 +80,6 @@ export const getChildDocumentSignedUrl = async (
   }
 };
 
-/**
- * Get document URL from access token
- */
 export const getChildDocumentUrl = async (req: Request, res: Response) => {
   try {
     const token = String(req.params.token || "").trim();
@@ -94,13 +87,11 @@ export const getChildDocumentUrl = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Invalid token" });
     }
 
-    // Find and validate token
     const accessToken = await DocumentAccessToken.findOne({ token });
     if (!accessToken) {
       return res.status(404).json({ message: "Token not found or expired" });
     }
 
-    // Check if token is already used
     if (accessToken.used) {
       return res.status(410).json({
         message:
@@ -108,21 +99,18 @@ export const getChildDocumentUrl = async (req: Request, res: Response) => {
       });
     }
 
-    // Check if token has expired
     if (new Date() > accessToken.expiresAt) {
       return res.status(410).json({
         message: "This link has expired. Request a new document link.",
       });
     }
 
-    // Generate signed URL (valid for 60 seconds)
     const signedUrl = generateSecureUrl(
       accessToken.publicId,
       accessToken.resourceType,
       accessToken.format,
     );
 
-    // Delete token immediately after generating URL (one-time use)
     await DocumentAccessToken.deleteOne({ _id: accessToken._id });
 
     return res.status(200).json({
@@ -137,9 +125,6 @@ export const getChildDocumentUrl = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Stream child document directly (proxy through backend)
- */
 export const streamChildDocument = async (req: Request, res: Response) => {
   try {
     const token = String(req.params.token || "").trim();
@@ -147,13 +132,11 @@ export const streamChildDocument = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Invalid token" });
     }
 
-    // Find and validate token
     const accessToken = await DocumentAccessToken.findOne({ token });
     if (!accessToken) {
       return res.status(404).json({ message: "Token not found or expired" });
     }
 
-    // Check if token is already used
     if (accessToken.used) {
       return res.status(410).json({
         message:
@@ -161,24 +144,20 @@ export const streamChildDocument = async (req: Request, res: Response) => {
       });
     }
 
-    // Check if token has expired
     if (new Date() > accessToken.expiresAt) {
       return res.status(410).json({
         message: "This link has expired. Request a new document link.",
       });
     }
 
-    // Generate signed URL (never exposed to frontend)
     const signedUrl = generateSecureUrl(
       accessToken.publicId,
       accessToken.resourceType,
       accessToken.format,
     );
 
-    // Delete token immediately after generating URL (one-time use)
     await DocumentAccessToken.deleteOne({ _id: accessToken._id });
 
-    // Set proper headers for file download/display
     const isImage =
       accessToken.resourceType === "image" ||
       ["jpg", "jpeg", "png", "gif", "webp"].includes(
@@ -195,7 +174,6 @@ export const streamChildDocument = async (req: Request, res: Response) => {
     res.setHeader("Pragma", "no-cache");
     res.setHeader("Expires", "0");
 
-    // Proxy the request to Cloudinary without exposing the URL
     const axios = require("axios");
     try {
       const response = await axios.get(signedUrl, {
@@ -217,9 +195,6 @@ export const streamChildDocument = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * View document directly in browser
- */
 export const viewDocument = async (req: Request, res: Response) => {
   try {
     const token = String(req.query.token || "").trim();
@@ -227,13 +202,11 @@ export const viewDocument = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Invalid token" });
     }
 
-    // Find and validate token
     const accessToken = await DocumentAccessToken.findOne({ token });
     if (!accessToken) {
       return res.status(404).json({ message: "Token not found or expired" });
     }
 
-    // Check if token is already used
     if (accessToken.used) {
       return res.status(410).json({
         message:
@@ -241,24 +214,20 @@ export const viewDocument = async (req: Request, res: Response) => {
       });
     }
 
-    // Check if token has expired
     if (new Date() > accessToken.expiresAt) {
       return res.status(410).json({
         message: "This link has expired. Request a new document link.",
       });
     }
 
-    // Generate signed URL (never exposed to frontend)
     const signedUrl = generateSecureUrl(
       accessToken.publicId,
       accessToken.resourceType,
       accessToken.format,
     );
 
-    // Delete token immediately after use (one-time use)
     await DocumentAccessToken.deleteOne({ _id: accessToken._id });
 
-    // Set proper headers for file download/display
     const isImage =
       accessToken.resourceType === "image" ||
       ["jpg", "jpeg", "png", "gif", "webp"].includes(
@@ -276,7 +245,6 @@ export const viewDocument = async (req: Request, res: Response) => {
     res.setHeader("Expires", "0");
     res.setHeader("X-Content-Type-Options", "nosniff");
 
-    // Proxy the request to Cloudinary without exposing the URL
     const axios = require("axios");
     try {
       const response = await axios.get(signedUrl, {

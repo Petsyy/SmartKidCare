@@ -3,7 +3,7 @@ import { X, User as UserIcon, Save } from "lucide-react";
 import Swal from "sweetalert2";
 import { type User } from "@/api/authentication.api";
 import { updateUser } from "@/api/admin.api";
-import { showErrorModal } from "@/utils/sweetalert.modal";
+import { showErrorModal } from "@/utils/sweetAlertModal";
 
 type Props = {
   user: User;

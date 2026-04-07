@@ -5,7 +5,7 @@ import Child from "../../models/Child";
 import {
   notifyAttendanceSubmitted,
   notifyFeedingSubmitted,
-} from "../../services/notifications/recordEventNotification.service";
+} from "../../services/notifications/record-event-notification.service";
 
 const MANILA_OFFSET_MS = 8 * 60 * 60 * 1000;
 const MANILA_DAY_MS = 24 * 60 * 60 * 1000;

@@ -22,7 +22,7 @@ import { useAdminPassword2FA } from "@/hooks/useAdminPassword2FA";
 import {
   showAdminPasswordChangedModal,
   showAdminProfileSavedModal,
-} from "@/utils/sweetalert.modal";
+} from "@/utils/sweetAlertModal";
 import ThemeSwitch from "@/components/theme/ThemeSwitch";
 import { useTheme } from "@/context/ThemeContext";
 
