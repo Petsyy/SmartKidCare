@@ -26,7 +26,7 @@ export const useSubmittedRequests = (token: string | null) => {
   // Load on component mount
   useEffect(() => {
     void refreshSubmitted();
-  }, []);
+  }, [refreshSubmitted]);
 
   const submittedSummary = useMemo(() => {
     const pending = submittedRequests.filter((item) => item.status === "pending").length;

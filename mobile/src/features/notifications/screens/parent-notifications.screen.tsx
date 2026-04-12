@@ -73,6 +73,8 @@ export default function ParentNotificationsScreen() {
       markAllAsRead={feed.markAllAsRead}
       archiveNotification={feed.archiveNotification}
       restoreNotification={feed.restoreNotification}
+      deleteArchivedNotification={feed.deleteArchivedNotification}
+      deleteAllArchivedNotifications={feed.deleteAllArchivedNotifications}
       cardUi={PARENT_TYPE_UI}
     />
   );

@@ -318,9 +318,6 @@ export default function RecordFeeding() {
     return (
       <SafeAreaView className="flex-1 bg-gray-50">
         <View className="bg-white px-6 pt-4 pb-3">
-          <Pressable onPress={() => router.back()}>
-            <ChevronLeft size={24} color="#1F2937" />
-          </Pressable>
         </View>
         <View className="flex-1 items-center justify-center px-6">
           <CheckCircle size={64} color="#D1D5DB" />

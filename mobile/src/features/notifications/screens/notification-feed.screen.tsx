@@ -2,6 +2,7 @@ import type { ComponentType } from "react";
 import { AlertCircle } from "lucide-react-native";
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -57,6 +58,8 @@ type Props<T extends NotificationItemBase> = {
   markAllAsRead: () => void;
   archiveNotification: (item: T) => void;
   restoreNotification: (id: string) => void;
+  deleteArchivedNotification: (id: string) => void;
+  deleteAllArchivedNotifications: () => void;
   cardUi: Record<string, CardUI>;
   resolveTitle?: (item: T, fallbackTitle: string) => string;
 };
@@ -85,6 +88,8 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
   markAllAsRead,
   archiveNotification,
   restoreNotification,
+  deleteArchivedNotification,
+  deleteAllArchivedNotifications,
   cardUi,
   resolveTitle = defaultResolveTitle,
 }: Props<T>) {
@@ -164,11 +169,34 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
               </Pressable>
             </View>
 
-            <Pressable onPress={markAllAsRead} disabled={activeItems.length === 0 || activeFilter === "archived"}>
-              <Text className={`text-sm font-semibold ${activeItems.length === 0 || activeFilter === "archived" ? "text-gray-300" : "text-teal-700"}`}>
-                Mark all read
-              </Text>
-            </Pressable>
+            <View className="flex-row items-center gap-3">
+              {activeFilter === "archived" && archivedItems.length > 0 ? (
+                <Pressable
+                  onPress={() => {
+                    Alert.alert(
+                      "Clear All Archived",
+                      "This will permanently delete all archived notifications. This action cannot be undone.",
+                      [
+                        { text: "Cancel", onPress: () => {}, style: "cancel" },
+                        {
+                          text: "Delete",
+                          onPress: () => deleteAllArchivedNotifications(),
+                          style: "destructive",
+                        },
+                      ]
+                    );
+                  }}
+                  className="rounded-full bg-rose-50 px-3 py-1.5"
+                >
+                  <Text className="text-xs font-semibold text-rose-700">Clear all</Text>
+                </Pressable>
+              ) : null}
+              {activeFilter !== "archived" && activeItems.length > 0 ? (
+                <Pressable onPress={markAllAsRead}>
+                  <Text className="text-sm font-semibold text-teal-700">Mark all read</Text>
+                </Pressable>
+              ) : null}
+            </View>
           </View>
 
           {isLoading ? (
@@ -301,9 +329,30 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
                             </Text>
                           </View>
 
-                          <Pressable onPress={() => restoreNotification(item.id)} className="rounded-full border border-teal-200 px-3 py-1.5">
-                            <Text className="text-xs font-semibold text-teal-700">Restore</Text>
-                          </Pressable>
+                          <View className="flex-row gap-2">
+                            <Pressable onPress={() => restoreNotification(item.id)} className="rounded-full border border-teal-200 px-3 py-1.5">
+                              <Text className="text-xs font-semibold text-teal-700">Restore</Text>
+                            </Pressable>
+                            <Pressable
+                              onPress={() => {
+                                Alert.alert(
+                                  "Delete Notification",
+                                  "Are you sure you want to permanently delete this archived notification? This action cannot be undone.",
+                                  [
+                                    { text: "Cancel", onPress: () => {}, style: "cancel" },
+                                    {
+                                      text: "Delete",
+                                      onPress: () => deleteArchivedNotification(item.id),
+                                      style: "destructive",
+                                    },
+                                  ]
+                                );
+                              }}
+                              className="rounded-full border border-rose-200 px-3 py-1.5"
+                            >
+                              <Text className="text-xs font-semibold text-rose-700">Delete</Text>
+                            </Pressable>
+                          </View>
                         </View>
 
                         <Text className="mt-2 text-xs text-gray-400">{formatArchivedAt(item.archivedAt)}</Text>

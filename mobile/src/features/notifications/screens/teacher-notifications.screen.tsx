@@ -69,6 +69,8 @@ export default function TeacherNotificationsScreen() {
       markAllAsRead={feed.markAllAsRead}
       archiveNotification={feed.archiveNotification}
       restoreNotification={feed.restoreNotification}
+      deleteArchivedNotification={feed.deleteArchivedNotification}
+      deleteAllArchivedNotifications={feed.deleteAllArchivedNotifications}
       cardUi={TEACHER_TYPE_UI}
       resolveTitle={(item, fallbackTitle) =>
         item.title === "Reminder" ? fallbackTitle : item.title || fallbackTitle

@@ -33,9 +33,9 @@ export const useNotificationsFeed = <T extends NotificationArchiveBaseItem>({
   const [date, setDate] = useState<string | null>(null);
   const [items, setItems] = useState<T[]>([]);
   const [readIds, setReadIds] = useState<Record<string, boolean>>({});
-  const [archivedItems, setArchivedItems] = useState<ArchivedNotificationItem<T>[]>(
-    [],
-  );
+  const [archivedItems, setArchivedItems] = useState<
+    ArchivedNotificationItem<T>[]
+  >([]);
   const [storageReady, setStorageReady] = useState(false);
   const [activeFilter, setActiveFilter] = useState<NotificationFilter>("all");
 
@@ -172,8 +172,18 @@ export const useNotificationsFeed = <T extends NotificationArchiveBaseItem>({
     setArchivedItems((current) => current.filter((item) => item.id !== id));
   };
 
-  const unreadCount = useMemo(
-    () => activeItems.filter((item) => !readIds[item.id]).length,
+  const deleteArchivedNotification = (id: string) => {
+    setArchivedItems((current) => current.filter((item) => item.id !== id));
+    setItems((current) => current.filter((item) => item.id !== id));
+  };
+
+  const deleteAllArchivedNotifications = () => {
+    const deletedIds = new Set(archivedItems.map((item) => item.id));
+    setArchivedItems([]);
+    setItems((current) => current.filter((item) => !deletedIds.has(item.id)));
+  };
+
+  const unreadCount = useMemo(() => activeItems.filter((item) => !readIds[item.id]).length,
     [activeItems, readIds],
   );
 
@@ -207,6 +217,8 @@ export const useNotificationsFeed = <T extends NotificationArchiveBaseItem>({
     markAllAsRead,
     archiveNotification,
     restoreNotification,
+    deleteArchivedNotification,
+    deleteAllArchivedNotifications,
     loadNotifications,
   };
 };

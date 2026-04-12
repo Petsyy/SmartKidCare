@@ -88,7 +88,7 @@ export default function EnrollChildScreen() {
     if (activeTab === "submitted") {
       void submitted.refreshSubmitted();
     }
-  }, [activeTab, submitted]);
+  }, [activeTab, submitted.refreshSubmitted]);
 
   useEffect(() => {
     if (form.enrollmentDate) {
