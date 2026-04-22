@@ -1,6 +1,7 @@
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
 import { Alert } from "react-native";
 import * as Clipboard from "expo-clipboard";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   submitChildEnrollmentRequest,
   getEnrollmentRequestParentCredentials,
@@ -8,6 +9,7 @@ import {
   type TeacherEnrollmentRequest,
 } from "@/src/api/teacher.api";
 import { inferMimeType } from "@/src/features/enrollment/utils";
+import { mobileQueryKeys } from "@/src/lib/query-keys";
 
 interface SubmissionData {
   childData: {
@@ -36,7 +38,7 @@ interface SubmissionData {
 }
 
 export const useEnrollmentSubmit = (token: string | null, onSuccess?: () => void) => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const queryClient = useQueryClient();
 
   const copyToClipboard = useCallback(async (value: string, successMessage: string) => {
     try {
@@ -88,44 +90,58 @@ export const useEnrollmentSubmit = (token: string | null, onSuccess?: () => void
     [copyToClipboard]
   );
 
-  const submitEnrollment = useCallback(
-    async (data: SubmissionData, parentEmail: string, parentPhone: string) => {
+  const submitEnrollmentMutation = useMutation({
+    mutationFn: async ({
+      data,
+    }: {
+      data: SubmissionData;
+    }) => {
       if (!token) {
-        Alert.alert("Error", "No authentication token.");
-        return;
+        throw new Error("No authentication token.");
       }
 
-      setIsSubmitting(true);
+      return submitChildEnrollmentRequest(token, {
+        ...data.childData,
+        programType: data.childData.programType as "4Ps Beneficiary" | "Regular Enrollee (Non-beneficiary)",
+        parentFirstName: data.parentData.parentFirstName,
+        parentLastName: data.parentData.parentLastName,
+        parentMiddleName: data.parentData.parentMiddleName,
+        parentEmail: data.parentData.parentEmail,
+        parentPhone: data.parentData.parentPhone,
+      }, {
+        birthCertificate: data.documentData.birthCertificate
+          ? {
+              uri: data.documentData.birthCertificate.uri,
+              name: data.documentData.birthCertificate.name,
+              mimeType:
+                data.documentData.birthCertificate.mimeType ||
+                inferMimeType(data.documentData.birthCertificate.name || "") ||
+                "application/octet-stream",
+            }
+          : null,
+        parentId: data.documentData.parentId
+          ? {
+              uri: data.documentData.parentId.uri,
+              name: data.documentData.parentId.name,
+              mimeType:
+                data.documentData.parentId.mimeType ||
+                inferMimeType(data.documentData.parentId.name || "") ||
+                "application/octet-stream",
+            }
+          : null,
+      });
+    },
+  });
+
+  const submitEnrollment = useCallback(
+    async (data: SubmissionData, parentEmail: string, parentPhone: string) => {
       try {
-        const submission = await submitChildEnrollmentRequest(token, {
-          ...data.childData,
-          programType: data.childData.programType as "4Ps Beneficiary" | "Regular Enrollee (Non-beneficiary)",
-          parentFirstName: data.parentData.parentFirstName,
-          parentLastName: data.parentData.parentLastName,
-          parentMiddleName: data.parentData.parentMiddleName,
-          parentEmail: data.parentData.parentEmail,
-          parentPhone: data.parentData.parentPhone,
-        }, {
-          birthCertificate: data.documentData.birthCertificate
-            ? {
-                uri: data.documentData.birthCertificate.uri,
-                name: data.documentData.birthCertificate.name,
-                mimeType:
-                  data.documentData.birthCertificate.mimeType ||
-                  inferMimeType(data.documentData.birthCertificate.name || "") ||
-                  "application/octet-stream",
-              }
-            : null,
-          parentId: data.documentData.parentId
-            ? {
-                uri: data.documentData.parentId.uri,
-                name: data.documentData.parentId.name,
-                mimeType:
-                  data.documentData.parentId.mimeType ||
-                  inferMimeType(data.documentData.parentId.name || "") ||
-                  "application/octet-stream",
-              }
-            : null,
+        const submission = await submitEnrollmentMutation.mutateAsync({
+          data,
+        });
+
+        await queryClient.invalidateQueries({
+          queryKey: mobileQueryKeys.submittedRequests(token),
         });
 
         const credentials = submission.parentCredentials;
@@ -150,11 +166,9 @@ export const useEnrollmentSubmit = (token: string | null, onSuccess?: () => void
         );
       } catch (error: any) {
         Alert.alert("Submission Error", error?.message || "Failed to submit enrollment request.");
-      } finally {
-        setIsSubmitting(false);
       }
     },
-    [token, onSuccess]
+    [submitEnrollmentMutation, queryClient, token, onSuccess]
   );
 
   const viewParentPassword = useCallback(
@@ -202,7 +216,7 @@ export const useEnrollmentSubmit = (token: string | null, onSuccess?: () => void
   );
 
   return {
-    isSubmitting,
+    isSubmitting: submitEnrollmentMutation.isPending,
     submitEnrollment,
     viewParentPassword,
     resetParentPassword,

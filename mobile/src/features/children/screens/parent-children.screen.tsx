@@ -189,11 +189,10 @@ export default function ParentChildrenScreen() {
                       <Pressable
                         key={child._id}
                         onPress={() => setSelectedChildId(child._id)}
-                        className={`mr-3 rounded-full border px-5 py-2.5 ${
-                          isActive
+                        className={`mr-3 rounded-full border px-5 py-2.5 ${isActive
                             ? "border-teal-600 bg-teal-600"
                             : "border-emerald-200 bg-white"
-                        }`}
+                          }`}
                       >
                         <Text
                           className={`text-lg font-black ${isActive ? "text-white" : "text-gray-700"}`}

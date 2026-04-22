@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import {
@@ -24,10 +24,19 @@ import {
   toggleUserStatus,
   resetUserPassword,
   deleteUser,
+  getParentChildren,
+  type ParentLinkedChildItem,
 } from "@/api/admin.api";
 import Swal from "sweetalert2";
 import EditUserModal from "@/components/modals/user/EditUserModal";
 import { formatConfidentialName } from "@/utils/namePrivacy";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import { useUserManagementStore } from "@/stores/user-management.store";
+import { webQueryKeys } from "@/lib/query-keys";
 
 type AccountStatusFilter = "all" | "active" | "inactive";
 
@@ -38,29 +47,72 @@ const getUserFullName = (user: User) =>
     .replace(/\s+/g, " ")
     .trim();
 
+const withTimeout = <T,>(promise: Promise<T>, timeoutMs = 10000) =>
+  new Promise<T>((resolve, reject) => {
+    const timeoutId = window.setTimeout(() => {
+      reject(new Error("Request timeout"));
+    }, timeoutMs);
+
+    promise
+      .then((value) => {
+        window.clearTimeout(timeoutId);
+        resolve(value);
+      })
+      .catch((error) => {
+        window.clearTimeout(timeoutId);
+        reject(error);
+      });
+  });
+
 export default function UserManagement() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<"teacher" | "parent">("teacher");
-  const [users, setUsers] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showAddTeacherModal, setShowAddTeacherModal] = useState(false);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [openMenuUserId, setOpenMenuUserId] = useState<string | null>(null);
-  const [menuAnchorRect, setMenuAnchorRect] = useState<DOMRect | null>(null);
-  const [menuUser, setMenuUser] = useState<User | null>(null);
-  const [teacherSearchQuery, setTeacherSearchQuery] = useState("");
-  const [parentSearchQuery, setParentSearchQuery] = useState("");
-  const [teacherStatusFilter, setTeacherStatusFilter] =
-    useState<AccountStatusFilter>("all");
-  const [parentStatusFilter, setParentStatusFilter] =
-    useState<AccountStatusFilter>("all");
-  const [teacherCenterFilter, setTeacherCenterFilter] = useState("all");
-  const [teacherPage, setTeacherPage] = useState(1);
-  const [parentPage, setParentPage] = useState(1);
-  const [teacherPageSize, setTeacherPageSize] = useState(10);
-  const [parentPageSize, setParentPageSize] = useState(10);
-  const [viewingUser, setViewingUser] = useState<User | null>(null);
+  const queryClient = useQueryClient();
+  const isMountedRef = useRef(true);
+  const {
+    activeTab,
+    showAddTeacherModal,
+    editingUser,
+    openMenuUserId,
+    menuAnchorRect,
+    menuUser,
+    teacherSearchQuery,
+    parentSearchQuery,
+    teacherStatusFilter,
+    parentStatusFilter,
+    teacherCenterFilter,
+    teacherPage,
+    parentPage,
+    teacherPageSize,
+    parentPageSize,
+    viewingUser,
+    setActiveTab,
+    setShowAddTeacherModal,
+    setEditingUser,
+    setOpenMenuUserId,
+    setMenuAnchorRect,
+    setMenuUser,
+    setTeacherSearchQuery,
+    setParentSearchQuery,
+    setTeacherStatusFilter,
+    setParentStatusFilter,
+    setTeacherCenterFilter,
+    setTeacherPage,
+    setParentPage,
+    setTeacherPageSize,
+    setParentPageSize,
+    setViewingUser,
+  } = useUserManagementStore();
+  const [parentChildrenByUserId, setParentChildrenByUserId] = useState<
+    Record<string, ParentLinkedChildItem[]>
+  >({});
+  const [parentChildrenLoadingByUserId, setParentChildrenLoadingByUserId] =
+    useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const openMenu = (user: User, buttonEl: HTMLButtonElement) => {
     setMenuUser(user);
@@ -82,6 +134,31 @@ export default function UserManagement() {
     }
   }, [openMenuUserId]);
 
+  const {
+    data: users = [],
+    isLoading,
+    error,
+    refetch: fetchUsers,
+  } = useQuery({
+    queryKey: webQueryKeys.users(activeTab),
+    queryFn: () => getUsers({ role: activeTab }),
+  });
+  const resetPasswordMutation = useMutation({
+    mutationFn: (userId: string) => resetUserPassword(userId),
+  });
+  const toggleStatusMutation = useMutation({
+    mutationFn: (userId: string) => toggleUserStatus(userId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: webQueryKeys.usersRoot() });
+    },
+  });
+  const deleteUserMutation = useMutation({
+    mutationFn: (userId: string) => deleteUser(userId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: webQueryKeys.usersRoot() });
+    },
+  });
+
   const handleEditUser = (user: User) => {
     setEditingUser(user);
   };
@@ -92,7 +169,7 @@ export default function UserManagement() {
 
   const handleResetPassword = async (userId: string) => {
     try {
-      const res = await resetUserPassword(userId);
+      const res = await resetPasswordMutation.mutateAsync(userId);
 
       await showResetPasswordModal(res.credentials);
     } catch (err: any) {
@@ -109,9 +186,8 @@ export default function UserManagement() {
     });
     if (!confirmed) return;
     try {
-      await toggleUserStatus(user._id);
+      await toggleStatusMutation.mutateAsync(user._id);
       await showToggleUserStatusSuccessModal({ userName, isActivating });
-      fetchUsers(); // refresh table
     } catch (err: any) {
       showErrorModal(err.message || "Failed to update account status");
     }
@@ -132,35 +208,18 @@ export default function UserManagement() {
     if (!result.isConfirmed) return;
 
     try {
-      await deleteUser(user._id);
+      await deleteUserMutation.mutateAsync(user._id);
       await Swal.fire({
         title: "Deleted",
         text: "User has been deleted",
         icon: "success",
         confirmButtonColor: "#0D9488",
       });
-      fetchUsers();
     } catch (err: any) {
       showErrorModal(err.message || "Failed to delete user");
     }
   };
-
-  useEffect(() => {
-    fetchUsers();
-  }, [activeTab]);
-
-  const fetchUsers = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const data = await getUsers({ role: activeTab });
-      setUsers(data);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const errorMessage = error instanceof Error ? error.message : null;
 
   const handleSearchChange = (value: string) => {
     if (activeTab === "teacher") {
@@ -308,13 +367,71 @@ export default function UserManagement() {
         filteredUsers.length,
       )} of ${filteredUsers.length}`;
 
-  type LinkedChild = NonNullable<User["linkedChildren"]>[number];
-  const maskChildName = (child: LinkedChild) =>
+  const maskChildName = (child: ParentLinkedChildItem) =>
     formatConfidentialName({
       lastName: child.lastName,
       firstName: child.firstName,
       middleName: child.middleName,
     }) || "Unknown";
+
+  useEffect(() => {
+    if (activeTab !== "parent") return;
+
+    const parentIds = paginatedUsers.map((user) => user._id).filter(Boolean);
+    const missingParentIds = parentIds.filter(
+      (parentId) =>
+        parentChildrenByUserId[parentId] === undefined &&
+        !parentChildrenLoadingByUserId[parentId],
+    );
+
+    if (!missingParentIds.length) return;
+
+    setParentChildrenLoadingByUserId((prev) => {
+      const next = { ...prev };
+      let hasChanges = false;
+      missingParentIds.forEach((parentId) => {
+        if (!next[parentId]) {
+          next[parentId] = true;
+          hasChanges = true;
+        }
+      });
+      return hasChanges ? next : prev;
+    });
+
+    missingParentIds.forEach((parentId) => {
+      void (async () => {
+        let linkedChildren: ParentLinkedChildItem[] = [];
+        try {
+          linkedChildren = await withTimeout(getParentChildren(parentId), 10000);
+        } catch {
+          linkedChildren = [];
+        }
+
+        if (!isMountedRef.current) return;
+
+        setParentChildrenByUserId((prev) => {
+          if (prev[parentId] === linkedChildren) return prev;
+          return {
+            ...prev,
+            [parentId]: linkedChildren,
+          };
+        });
+
+        setParentChildrenLoadingByUserId((prev) => {
+          if (!prev[parentId]) return prev;
+          return {
+            ...prev,
+            [parentId]: false,
+          };
+        });
+      })();
+    });
+  }, [
+    activeTab,
+    paginatedUsers,
+    parentChildrenByUserId,
+    parentChildrenLoadingByUserId,
+  ]);
 
   const tableColumnCount = activeTab === "teacher" ? 6 : 6;
 
@@ -358,9 +475,9 @@ export default function UserManagement() {
           </button>
         </div>
 
-        {error && (
+        {errorMessage && (
           <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-300">
-            {error}
+            {errorMessage}
           </div>
         )}
 
@@ -548,19 +665,36 @@ export default function UserManagement() {
                     </td>
                     {activeTab === "parent" && (
                       <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-300">
-                        {(user.linkedChildren || []).length === 0 ? (
+                        {parentChildrenLoadingByUserId[user._id] ? (
+                          <span className="text-xs text-gray-500 dark:text-slate-400">
+                            Loading...
+                          </span>
+                        ) : (parentChildrenByUserId[user._id] || []).length === 0 ? (
                           <span className="text-xs text-gray-500 dark:text-slate-400">
                             No linked child
                           </span>
                         ) : (
                           <div className="flex flex-wrap gap-2">
-                            {(user.linkedChildren || []).map((child) => (
-                              <span
+                            {(parentChildrenByUserId[user._id] || []).map((child) => (
+                              <button
                                 key={`${user._id}-${child._id}-${child.studentId || "no-id"}`}
-                                className="text-xs text-gray-700 dark:text-slate-300"
+                                type="button"
+                                onClick={() =>
+                                  navigate(
+                                    `/children?prefillSearch=${encodeURIComponent(
+                                      child.studentId ||
+                                      `${child.lastName} ${child.firstName}`,
+                                    )}`,
+                                  )
+                                }
+                                className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-teal-200 bg-teal-50 px-2.5 py-1.5 text-xs text-teal-700 transition hover:border-teal-300 hover:bg-teal-100 dark:border-teal-900/50 dark:bg-teal-900/20 dark:text-teal-300 dark:hover:bg-teal-900/35"
+                                title="Open in Child Table"
                               >
-                                {maskChildName(child)}
-                              </span>
+                                <span className="font-mono">
+                                  {child.studentId || "No ID"}
+                                </span>
+                                <span>{maskChildName(child)}</span>
+                              </button>
                             ))}
                           </div>
                         )}
@@ -676,8 +810,12 @@ export default function UserManagement() {
         <EditUserModal
           user={editingUser}
           onClose={() => setEditingUser(null)}
-          onUpdated={fetchUsers}
-          onDeleted={fetchUsers}
+          onUpdated={async () => {
+            await fetchUsers();
+          }}
+          onDeleted={async () => {
+            await fetchUsers();
+          }}
         />
       )}
 
@@ -840,7 +978,9 @@ export default function UserManagement() {
       {showAddTeacherModal && (
         <AddTeacherModal
           onClose={() => setShowAddTeacherModal(false)}
-          onCreated={fetchUsers}
+          onCreated={async () => {
+            await fetchUsers();
+          }}
         />
       )}
     </Layout>

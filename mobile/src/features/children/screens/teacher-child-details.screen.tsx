@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import {
   Linking,
   Text,
@@ -32,57 +32,37 @@ import {
   getBlockchainStatusPalette,
   shortenHash,
 } from "@/src/utils/blockchain-status";
+import { useQuery } from "@tanstack/react-query";
+import { mobileQueryKeys } from "@/src/lib/query-keys";
 
 export default function TeacherChildDetailsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const { token } = useAuth();
+  const childId = typeof id === "string" ? id : null;
 
-  const [child, setChild] = useState<Child | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [attendanceRecord, setAttendanceRecord] = useState<any>(null);
-  const [feedingRecord, setFeedingRecord] = useState<any>(null);
-
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        if (!token || !id) throw new Error("Missing required data");
-
-        console.log("Loading child details for ID:", id);
-        console.log("Token available:", !!token);
-
-        const [childData, attendance, feeding] = await Promise.all([
-          getChildById(token, id as string).catch((err) => {
-            console.error("Failed to fetch child details:", err);
-            throw new Error(`Failed to fetch child: ${err.message}`);
-          }),
-          getTodayAttendance(token).catch((err) => {
-            console.warn("Failed to fetch attendance:", err);
-            return null;
-          }),
-          getTodayFeeding(token).catch((err) => {
-            console.warn("Failed to fetch feeding:", err);
-            return null;
-          }),
-        ]);
-
-        setChild(childData);
-        setAttendanceRecord(attendance);
-        setFeedingRecord(feeding);
-      } catch (err: any) {
-        console.error("Load data error:", err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
+  const { data, isLoading: loading, error } = useQuery({
+    queryKey: mobileQueryKeys.teacherChildDetails(token, childId),
+    enabled: Boolean(token && childId),
+    queryFn: async () => {
+      if (!token || !childId) {
+        throw new Error("Missing required data");
       }
-    };
+      const [child, attendanceRecord, feedingRecord] = await Promise.all([
+        getChildById(token, childId),
+        getTodayAttendance(token).catch(() => null),
+        getTodayFeeding(token).catch(() => null),
+      ]);
+      return { child, attendanceRecord, feedingRecord };
+    },
+  });
 
-    loadData();
-  }, [token, id]);
+  const child: Child | null = data?.child ?? null;
+  const attendanceRecord = data?.attendanceRecord ?? null;
+  const feedingRecord = data?.feedingRecord ?? null;
 
-  const getChildStatus = () => {
+  const status = useMemo(() => {
     if (!child) return { attendance: "Not Recorded", feeding: "Not Recorded" };
 
     let attendance = "Not Recorded";
@@ -108,7 +88,7 @@ export default function TeacherChildDetailsScreen() {
     }
 
     return { attendance, feeding };
-  };
+  }, [child, attendanceRecord, feedingRecord]);
 
   if (loading) {
     return (
@@ -173,7 +153,7 @@ export default function TeacherChildDetailsScreen() {
             <User size={28} color="#EF4444" />
           </View>
           <Text className="text-lg font-bold text-gray-800 mb-2 text-center">
-            {error || "Child not found"}
+            {error instanceof Error ? error.message : "Child not found"}
           </Text>
           <Pressable
             onPress={() => router.push("/(teacher)/children")}
@@ -193,7 +173,6 @@ export default function TeacherChildDetailsScreen() {
     );
   }
 
-  const status = getChildStatus();
   const fullName = `${child.firstName} ${child.middleName ? child.middleName + " " : ""}${child.lastName}`;
   const blockchainStatus = getBlockchainStatusInfo(child.documentIntegrity);
   const blockchainPalette = getBlockchainStatusPalette(blockchainStatus.key);

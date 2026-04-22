@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useMemo } from "react";
 import {
   Text,
   View,
@@ -19,6 +19,9 @@ import { getTodayAttendance, getTodayFeeding } from "@/src/api/records.api";
 import { useAuth } from "@/src/hooks/use-auth";
 import ChildCard from "@/src/components/child-card";
 import { Search, Users, AlertCircle } from "lucide-react-native";
+import { useQuery } from "@tanstack/react-query";
+import { mobileQueryKeys } from "@/src/lib/query-keys";
+import { useTeacherUiStore } from "@/src/features/teacher/stores/teacher-ui.store";
 
 interface ChildStatus {
   attendance: "Present" | "Absent" | "Not Recorded";
@@ -31,44 +34,30 @@ export default function ChildScreen() {
   const router = useRouter();
   const { token } = useAuth();
 
-  const [children, setChildren] = useState<Child[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [attendanceRecord, setAttendanceRecord] = useState<any>(null);
-  const [feedingRecord, setFeedingRecord] = useState<any>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const { childrenSearchQuery: searchQuery, setChildrenSearchQuery: setSearchQuery } =
+    useTeacherUiStore();
+  const {
+    data,
+    isLoading: loading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: mobileQueryKeys.teacherChildrenOverview(token),
+    enabled: Boolean(token),
+    queryFn: async () => {
+      if (!token) throw new Error("No authentication token");
+      const [children, attendanceRecord, feedingRecord] = await Promise.all([
+        getChildren(token),
+        getTodayAttendance(token).catch(() => null),
+        getTodayFeeding(token).catch(() => null),
+      ]);
+      return { children, attendanceRecord, feedingRecord };
+    },
+  });
 
-  const retryLoad = () => {
-    setError(null);
-    setLoading(true);
-    setRefreshKey((prev) => prev + 1);
-  };
-
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        if (!token) throw new Error("No authentication token");
-
-        // Fetch children and today's records in parallel
-        const [childrenData, attendance, feeding] = await Promise.all([
-          getChildren(token),
-          getTodayAttendance(token).catch(() => null),
-          getTodayFeeding(token).catch(() => null),
-        ]);
-
-        setChildren(childrenData);
-        setAttendanceRecord(attendance);
-        setFeedingRecord(feeding);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
-  }, [token, refreshKey]);
+  const children = data?.children ?? [];
+  const attendanceRecord = data?.attendanceRecord ?? null;
+  const feedingRecord = data?.feedingRecord ?? null;
 
   // Get status for a specific child
   const getChildStatus = (childId: string): ChildStatus => {
@@ -155,10 +144,12 @@ export default function ChildScreen() {
             Oops! Something Went Wrong
           </Text>
           <Text className="text-lg text-gray-600 text-center mb-6">
-            {error}
+            {error instanceof Error ? error.message : "Failed to load data."}
           </Text>
           <Pressable
-            onPress={retryLoad}
+            onPress={() => {
+              void refetch();
+            }}
             className="bg-teal-600 px-8 py-4 rounded-xl"
             style={{
               shadowColor: "#14B8A6",

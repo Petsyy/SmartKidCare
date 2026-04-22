@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { API_BASE } from "@/components/config/config.api";
 import { formatConfidentialName } from "@/utils/namePrivacy";
+import { useQuery } from "@tanstack/react-query";
+import { webQueryKeys } from "@/lib/query-keys";
 
 type ChildRef = {
   _id: string;
@@ -193,18 +195,17 @@ const formatDateTime = (value?: string) =>
     : "-";
 
 export function useReportAnalytics() {
-  const [raw, setRaw] = useState<RawPayload>(DEFAULT_RAW);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [datePreset, setDatePreset] = useState<ReportDatePreset>("30d");
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
-  const [lastUpdatedAt, setLastUpdatedAt] = useState<string>("");
-
-  const fetchReportData = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
+  const {
+    data: reportPayload,
+    isLoading,
+    error: queryError,
+    refetch,
+  } = useQuery({
+    queryKey: webQueryKeys.reportAnalyticsRaw(),
+    queryFn: async () => {
       const fetchJson = async (url: string) => {
         const response = await fetch(url, {
           credentials: "include",
@@ -229,16 +230,15 @@ export function useReportAnalytics() {
         attendancePayload,
         feedingPayload,
         centersPayload,
-      ] =
-        await Promise.all([
-          fetchJson(`${API_BASE}/children`),
-          fetchJson(`${API_BASE}/auth/users`),
-          fetchJson(`${API_BASE}/records/attendance`),
-          fetchJson(`${API_BASE}/records/feeding`),
-          fetchJson(`${API_BASE}/admin/daycare-centers`),
-        ]);
+      ] = await Promise.all([
+        fetchJson(`${API_BASE}/children`),
+        fetchJson(`${API_BASE}/auth/users`),
+        fetchJson(`${API_BASE}/records/attendance`),
+        fetchJson(`${API_BASE}/records/feeding`),
+        fetchJson(`${API_BASE}/admin/daycare-centers`),
+      ]);
 
-      setRaw({
+      const raw: RawPayload = {
         children: Array.isArray(childrenPayload) ? childrenPayload : [],
         users: Array.isArray((usersPayload as { users?: unknown[] }).users)
           ? ((usersPayload as { users?: unknown[] }).users as any[])
@@ -252,20 +252,25 @@ export function useReportAnalytics() {
         feeding: Array.isArray(feedingPayload)
           ? (feedingPayload as FeedingEntry[])
           : [],
-      });
-      setLastUpdatedAt(new Date().toISOString());
-    } catch (err: unknown) {
-      setError(
-        err instanceof Error ? err.message : "Unable to load report analytics",
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+      };
 
-  useEffect(() => {
-    void fetchReportData();
-  }, [fetchReportData]);
+      return {
+        raw,
+        lastUpdatedAt: new Date().toISOString(),
+      };
+    },
+  });
+  const raw = reportPayload?.raw ?? DEFAULT_RAW;
+  const lastUpdatedAt = reportPayload?.lastUpdatedAt ?? "";
+  const error =
+    queryError instanceof Error
+      ? queryError.message
+      : queryError
+        ? "Unable to load report analytics"
+        : null;
+  const fetchReportData = useCallback(async () => {
+    await refetch();
+  }, [refetch]);
 
   const customRangeError = useMemo(() => {
     if (datePreset !== "custom") return null;
@@ -768,5 +773,5 @@ export function useReportAnalytics() {
     hasData,
     fetchReportData,
     downloadCsv,
-  };
+  };  
 }

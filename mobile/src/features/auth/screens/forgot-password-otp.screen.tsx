@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useMutation } from "@tanstack/react-query";
 import { ChevronLeft, MailCheck } from "lucide-react-native";
 import {
   requestForgotPasswordOtp,
@@ -30,8 +31,13 @@ export default function ForgotPasswordOtpScreen() {
   }, [params.email]);
 
   const [otp, setOtp] = useState("");
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [isResending, setIsResending] = useState(false);
+  const verifyMutation = useMutation({
+    mutationFn: ({ email, otp }: { email: string; otp: string }) =>
+      verifyForgotPasswordOtp(email, otp),
+  });
+  const resendMutation = useMutation({
+    mutationFn: requestForgotPasswordOtp,
+  });
 
   const handleVerifyOtp = async () => {
     const normalizedOtp = otp.trim();
@@ -48,17 +54,14 @@ export default function ForgotPasswordOtpScreen() {
       return;
     }
 
-    setIsVerifying(true);
     try {
-      const data = await verifyForgotPasswordOtp(email, normalizedOtp);
+      const data = await verifyMutation.mutateAsync({ email, otp: normalizedOtp });
       router.replace({
         pathname: "/(auth)/forgot-password-reset",
         params: { resetToken: data.passwordResetToken },
       });
     } catch (error: any) {
       Alert.alert("Verification Failed", error.message || "Invalid OTP.");
-    } finally {
-      setIsVerifying(false);
     }
   };
 
@@ -71,14 +74,11 @@ export default function ForgotPasswordOtpScreen() {
       return;
     }
 
-    setIsResending(true);
     try {
-      await requestForgotPasswordOtp(email);
+      await resendMutation.mutateAsync(email);
       Alert.alert("OTP Sent", "A new OTP has been sent to your email.");
     } catch (error: any) {
       Alert.alert("Unable to Resend OTP", error.message || "Please try again.");
-    } finally {
-      setIsResending(false);
     }
   };
 
@@ -132,10 +132,10 @@ export default function ForgotPasswordOtpScreen() {
 
             <Pressable
               onPress={handleVerifyOtp}
-              disabled={isVerifying}
+              disabled={verifyMutation.isPending}
               className="mt-6 rounded-xl overflow-hidden"
               style={({ pressed }) => [
-                { opacity: isVerifying ? 0.7 : pressed ? 0.85 : 1 },
+                { opacity: verifyMutation.isPending ? 0.7 : pressed ? 0.85 : 1 },
               ]}
             >
               <LinearGradient
@@ -144,7 +144,7 @@ export default function ForgotPasswordOtpScreen() {
                 end={{ x: 1, y: 0 }}
                 className="w-full py-4 items-center justify-center rounded-xl"
               >
-                {isVerifying ? (
+                {verifyMutation.isPending ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
                   <Text className="text-white text-lg font-bold">
@@ -156,14 +156,14 @@ export default function ForgotPasswordOtpScreen() {
 
             <Pressable
               onPress={handleResendOtp}
-              disabled={isResending}
+              disabled={resendMutation.isPending}
               className="mt-4 items-center"
               style={({ pressed }) => [
-                { opacity: isResending ? 0.7 : pressed ? 0.8 : 1 },
+                { opacity: resendMutation.isPending ? 0.7 : pressed ? 0.8 : 1 },
               ]}
             >
               <Text className="text-lg text-teal-700 font-semibold">
-                {isResending ? "Resending..." : "Resend OTP"}
+                {resendMutation.isPending ? "Resending..." : "Resend OTP"}
               </Text>
             </Pressable>
           </View>

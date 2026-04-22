@@ -1,12 +1,16 @@
 import { useMemo, useState } from "react";
 import { Alert } from "react-native";
-import { useRouter, useFocusEffect } from "expo-router";
+import { useRouter, useFocusEffect, usePathname } from "expo-router";
 import { useAuthContext } from "@/src/context/auth-context";
 import { API_BASE_URL } from "@/src/config/config.api";
 import {
   getPasswordStrengthFeedback,
   validatePasswordRules,
 } from "@/src/validations/password-validation";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { mobileQueryKeys } from "@/src/lib/query-keys";
+import { useProfileUiStore } from "@/src/features/profile/stores/profile-ui.store";
+import { useTeacherUiStore } from "@/src/features/teacher/stores/teacher-ui.store";
 
 export type ProfileRole = "parent" | "teacher";
 
@@ -39,12 +43,26 @@ type Params = {
 
 export function useProfileScreen({ fetchProfile }: Params) {
   const router = useRouter();
+  const pathname = usePathname();
   const { logout, token } = useAuthContext();
-
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [showHelpModal, setShowHelpModal] = useState(false);
+  const profileRole: ProfileRole = pathname.includes("(teacher)")
+    ? "teacher"
+    : "parent";
+  const { data: profile = null, isLoading: loading, refetch } = useQuery({
+    queryKey: mobileQueryKeys.profile(token, profileRole),
+    enabled: Boolean(token),
+    queryFn: async () => {
+      if (!token) throw new Error("No authentication token");
+      return fetchProfile(token);
+    },
+  });
+  const {
+    showPasswordModal,
+    showHelpModal,
+    setShowPasswordModal,
+    setShowHelpModal,
+  } = useProfileUiStore();
+  const resetTeacherUi = useTeacherUiStore((state) => state.resetTeacherUi);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -52,28 +70,35 @@ export function useProfileScreen({ fetchProfile }: Params) {
   const [hideNewPassword, setHideNewPassword] = useState(true);
   const [hideConfirmPassword, setHideConfirmPassword] = useState(true);
   const [passwordError, setPasswordError] = useState<string | null>(null);
-  const [passwordLoading, setPasswordLoading] = useState(false);
+  const changePasswordMutation = useMutation({
+    mutationFn: async (payload: {
+      currentPassword: string;
+      newPassword: string;
+    }) => {
+      const response = await fetch(`${API_BASE_URL}/api/auth/change-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to change password");
+      }
+      return data;
+    },
+  });
+  const passwordLoading = changePasswordMutation.isPending;
 
   useFocusEffect(
     useMemo(
       () =>
         () => {
-          const run = async () => {
-            try {
-              if (token) {
-                const profileData = await fetchProfile(token);
-                setProfile(profileData);
-              }
-            } catch (error) {
-              console.error("Failed to fetch profile:", error);
-            } finally {
-              setLoading(false);
-            }
-          };
-
-          void run();
+          void refetch();
         },
-      [fetchProfile, token],
+      [refetch],
     ),
   );
 
@@ -98,6 +123,7 @@ export function useProfileScreen({ fetchProfile }: Params) {
       {
         text: "Logout",
         onPress: async () => {
+          resetTeacherUi();
           logout();
           router.push("/(auth)/login");
         },
@@ -130,25 +156,11 @@ export function useProfileScreen({ fetchProfile }: Params) {
       return;
     }
 
-    setPasswordLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/change-password`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          currentPassword,
-          newPassword,
-        }),
+      await changePasswordMutation.mutateAsync({
+        currentPassword,
+        newPassword,
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to change password");
-      }
 
       Alert.alert("Success", "Password changed successfully");
       setCurrentPassword("");
@@ -160,8 +172,6 @@ export function useProfileScreen({ fetchProfile }: Params) {
       setShowPasswordModal(false);
     } catch (error: any) {
       setPasswordError(error.message || "Failed to change password");
-    } finally {
-      setPasswordLoading(false);
     }
   };
 

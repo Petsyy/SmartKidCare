@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { useAuth } from "@/src/hooks/use-auth";
 import { getChildren, getTeacherProfile } from "@/src/api/teacher.api";
 import { getTodayAttendance, getTodayFeeding } from "@/src/api/records.api";
@@ -7,6 +7,8 @@ import {
   getTeacherNotificationsFeed,
   type TeacherNotificationFeedItem,
 } from "@/src/api/notifications.api";
+import { useQuery } from "@tanstack/react-query";
+import { mobileQueryKeys } from "@/src/lib/query-keys";
 
 export const toLocalDateKey = (value: Date = new Date()): string => {
   const year = value.getFullYear();
@@ -32,64 +34,42 @@ export interface TeacherDashboardData {
 
 export function useTeacherDashboard(): TeacherDashboardData {
   const { token } = useAuth();
-  const [children, setChildren] = useState<Child[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [attendanceData, setAttendanceData] = useState<any>(null);
-  const [feedingData, setFeedingData] = useState<any>(null);
-  const [recentNotifications, setRecentNotifications] = useState<
-    TeacherNotificationFeedItem[]
-  >([]);
-  const [teacherName, setTeacherName] = useState<string>("Teacher");
-
   const todayDateKey = useMemo(() => toLocalDateKey(), []);
-
-  const fetchData = useCallback(
-    async (isRefreshing = false) => {
-      try {
-        if (!isRefreshing) setLoading(true);
-
-        if (token) {
-          const [
-            childrenData,
-            todayAttendance,
-            todayFeeding,
-            profileData,
-            notificationsFeed,
-          ] = await Promise.all([
-            getChildren(token),
-            getTodayAttendance(token),
-            getTodayFeeding(token),
-            getTeacherProfile(token),
-            getTeacherNotificationsFeed(token, { date: todayDateKey }).catch(
-              () => null
-            ),
-          ]);
-          setChildren(childrenData);
-          setAttendanceData(todayAttendance);
-          setFeedingData(todayFeeding);
-          setRecentNotifications(notificationsFeed?.notifications || []);
-
-          // Set teacher name from profile
-          if (profileData?.firstName) {
-            setTeacherName(profileData.firstName);
-          }
-        } else {
-          setRecentNotifications([]);
-        }
-      } catch (error) {
-        console.error("Failed to fetch data:", error);
-      } finally {
-        setLoading(false);
-        if (isRefreshing) setRefreshing(false);
-      }
+  const { data, isLoading, isRefetching, refetch } = useQuery({
+    queryKey: mobileQueryKeys.teacherDashboard(token, todayDateKey),
+    enabled: Boolean(token),
+    queryFn: async () => {
+      if (!token) throw new Error("No authentication token");
+      const [
+        children,
+        attendanceData,
+        feedingData,
+        profileData,
+        notificationsFeed,
+      ] = await Promise.all([
+        getChildren(token),
+        getTodayAttendance(token),
+        getTodayFeeding(token),
+        getTeacherProfile(token),
+        getTeacherNotificationsFeed(token, { date: todayDateKey }).catch(
+          () => null,
+        ),
+      ]);
+      return {
+        children,
+        attendanceData,
+        feedingData,
+        recentNotifications: notificationsFeed?.notifications || [],
+        teacherName: profileData?.firstName || "Teacher",
+      };
     },
-    [token, todayDateKey]
-  );
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  });
+  const children: Child[] = data?.children ?? [];
+  const attendanceData = data?.attendanceData ?? null;
+  const feedingData = data?.feedingData ?? null;
+  const recentNotifications: TeacherNotificationFeedItem[] =
+    data?.recentNotifications ?? [];
+  const teacherName = data?.teacherName || "Teacher";
 
   const totalChildren = useMemo(() => children.length, [children.length]);
 
@@ -115,14 +95,13 @@ export function useTeacherDashboard(): TeacherDashboardData {
   }, [feedingData]);
 
   const onRefresh = () => {
-    setRefreshing(true);
-    fetchData(true);
+    void refetch();
   };
 
   return {
     children,
-    loading,
-    refreshing,
+    loading: isLoading,
+    refreshing: isRefetching,
     attendanceData,
     feedingData,
     recentNotifications,

@@ -12,13 +12,16 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import { useMutation } from "@tanstack/react-query";
 import { ChevronLeft, Mail } from "lucide-react-native";
 import { requestForgotPasswordOtp } from "@/src/api/authentication.api";
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const forgotPasswordMutation = useMutation({
+    mutationFn: requestForgotPasswordOtp,
+  });
 
   const handleSendOtp = async () => {
     const trimmedEmail = email.trim();
@@ -27,17 +30,14 @@ export default function ForgotPasswordScreen() {
       return;
     }
 
-    setIsSubmitting(true);
     try {
-      await requestForgotPasswordOtp(trimmedEmail);
+      await forgotPasswordMutation.mutateAsync(trimmedEmail);
       router.push({
         pathname: "/(auth)/forgot-password-otp",
         params: { email: trimmedEmail },
       });
     } catch (error: any) {
       Alert.alert("Request Failed", error.message || "Unable to send OTP.");
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -82,9 +82,9 @@ export default function ForgotPasswordScreen() {
 
             <Pressable
               onPress={handleSendOtp}
-              disabled={isSubmitting}
+              disabled={forgotPasswordMutation.isPending}
               className="mt-6 rounded-xl overflow-hidden"
-              style={({ pressed }) => [{ opacity: isSubmitting ? 0.7 : pressed ? 0.85 : 1 }]}
+              style={({ pressed }) => [{ opacity: forgotPasswordMutation.isPending ? 0.7 : pressed ? 0.85 : 1 }]}
             >
               <LinearGradient
                 colors={["#10b981", "#059669"]}
@@ -92,7 +92,7 @@ export default function ForgotPasswordScreen() {
                 end={{ x: 1, y: 0 }}
                 className="w-full py-4 items-center justify-center rounded-xl"
               >
-                {isSubmitting ? (
+                {forgotPasswordMutation.isPending ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
                   <Text className="text-white text-lg font-bold">Send OTP</Text>

@@ -1,0 +1,32 @@
+import { Router } from "express";
+import { authenticateToken } from "../../shared/middleware/auth.middleware";
+import {
+  createTeacher,
+  createDaycareCenter,
+  getDaycareCenters,
+  updateDaycareCenter,
+  resetPassword,
+  toggleUserStatus,
+  getParentChildren,
+  updateUserProfile,
+  deleteUser,
+  getAuditLogs,
+  getSmtpHealth,
+} from "./index";
+
+const router = Router();
+
+router.get("/daycare-centers", authenticateToken, getDaycareCenters);
+router.post("/daycare-centers", authenticateToken, createDaycareCenter);
+router.patch("/daycare-centers/:id", authenticateToken, updateDaycareCenter);
+router.post("/teachers", authenticateToken, createTeacher);
+
+router.post("/users/:id/reset-password", authenticateToken, resetPassword);
+router.patch("/users/:id", authenticateToken, updateUserProfile);
+router.patch("/users/:id/toggle-status", authenticateToken, toggleUserStatus);
+router.delete("/users/:id", authenticateToken, deleteUser);
+router.get("/parents/:parentId/children", authenticateToken, getParentChildren);
+router.get("/audit-logs", authenticateToken, getAuditLogs);
+router.get("/smtp-health", authenticateToken, getSmtpHealth);
+
+export default router;

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import {
   changeCurrentPassword,
   getCurrentUser,
@@ -6,6 +6,8 @@ import {
   updateAdminPreferences,
   updateCurrentUser,
 } from "@/api/settings.api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { webQueryKeys } from "@/lib/query-keys";
 
 export type AdminProfileForm = {
   username: string;
@@ -53,56 +55,62 @@ const mapPreferences = (user: any): AdminPreferencesForm => ({
 });
 
 export function useAdminSettings() {
+  const queryClient = useQueryClient();
   const [profile, setProfile] = useState<AdminProfileForm>(DEFAULT_PROFILE);
   const [preferences, setPreferences] =
     useState<AdminPreferencesForm>(DEFAULT_PREFERENCES);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
-
-  const loadSettings = useCallback(async () => {
-    setIsLoading(true);
-    setLoadError(null);
-
-    try {
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: webQueryKeys.adminSettings(),
+    queryFn: async () => {
       const user = await getCurrentUser();
-      setIsAdmin(user.role === "admin");
-      setProfile(mapProfile(user));
-      setPreferences(mapPreferences(user));
-    } catch (error: any) {
-      setLoadError(error?.message || "Failed to load admin settings.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadSettings();
-  }, [loadSettings]);
+      const mappedProfile = mapProfile(user);
+      const mappedPreferences = mapPreferences(user);
+      setProfile(mappedProfile);
+      setPreferences(mappedPreferences);
+      return {
+        isAdmin: user.role === "admin",
+        profile: mappedProfile,
+        preferences: mappedPreferences,
+      };
+    },
+  });
+  const isAdmin = data?.isAdmin ?? false;
+  const loadError = error instanceof Error ? error.message : null;
+  const profileMutation = useMutation({
+    mutationFn: async (nextProfile: AdminProfileForm) => {
+      const payload = {
+        username: nextProfile.username.trim(),
+        firstName: nextProfile.firstName.trim(),
+        middleName: nextProfile.middleName.trim(),
+        lastName: nextProfile.lastName.trim(),
+        email: nextProfile.email.trim(),
+        phone: nextProfile.phone.trim(),
+      };
+      return updateCurrentUser(payload);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: webQueryKeys.adminSettings() });
+      await queryClient.invalidateQueries({ queryKey: webQueryKeys.authSession() });
+    },
+  });
+  const preferencesMutation = useMutation({
+    mutationFn: (nextPreferences: AdminPreferencesForm) =>
+      updateAdminPreferences(nextPreferences),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: webQueryKeys.adminSettings() });
+    },
+  });
 
   const saveProfile = async (nextProfile: AdminProfileForm) => {
-    const payload = {
-      username: nextProfile.username.trim(),
-      firstName: nextProfile.firstName.trim(),
-      middleName: nextProfile.middleName.trim(),
-      lastName: nextProfile.lastName.trim(),
-      email: nextProfile.email.trim(),
-      phone: nextProfile.phone.trim(),
-    };
-
-    const user = await updateCurrentUser(payload);
+    const user = await profileMutation.mutateAsync(nextProfile);
     const mappedProfile = mapProfile(user);
     setProfile(mappedProfile);
-
-    if (mappedProfile.email) {
-      localStorage.setItem("adminEmail", mappedProfile.email);
-    }
 
     return mappedProfile;
   };
 
   const savePreferences = async (nextPreferences: AdminPreferencesForm) => {
-    const saved = await updateAdminPreferences(nextPreferences);
+    const saved = await preferencesMutation.mutateAsync(nextPreferences);
     const mappedPreferences: AdminPreferencesForm = {
       adminMfaEnabled: saved.adminMfaEnabled,
       adminNotifySecurityEvents: saved.adminNotifySecurityEvents,
@@ -136,7 +144,7 @@ export function useAdminSettings() {
     isAdmin,
     isLoading,
     loadError,
-    loadSettings,
+    loadSettings: refetch,
     saveProfile,
     savePreferences,
     sendPasswordChangeOtp,

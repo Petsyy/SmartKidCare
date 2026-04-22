@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useMemo } from "react";
 import { API_BASE } from "@/components/config/config.api";
+import { useQuery } from "@tanstack/react-query";
+import { webQueryKeys } from "@/lib/query-keys";
 
 export type DashboardStats = {
   totalChildDevelopmentCenters: number;
@@ -109,19 +111,9 @@ const getLatestDateKey = (entries: any[]): string =>
   }, "");
 
 export function useAdminDashboard() {
-  const [stats, setStats] = useState<DashboardStats>(DEFAULT_STATS);
-  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
-  const [pieData, setPieData] = useState<PieDataPoint[]>([]);
-  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>(
-    [],
-  );
-  const [isLoading, setIsLoading] = useState(true);
-  const [dateMeta, setDateMeta] =
-    useState<DashboardDateMeta>(DEFAULT_DATE_META);
-
-  const fetchDashboardData = useCallback(async () => {
-    setIsLoading(true);
-    try {
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: webQueryKeys.adminDashboard(),
+    queryFn: async () => {
       const fetchJson = async (url: string) => {
         const res = await fetch(url, {
           credentials: "include",
@@ -180,11 +172,11 @@ export function useAdminDashboard() {
         : [];
       const latestAttendanceKey = getLatestDateKey(attendanceArray);
       const latestFeedingKey = getLatestDateKey(feedingArray);
-      setDateMeta({
+      const dateMeta = {
         todayKey,
         attendanceKey: latestAttendanceKey || todayKey,
         feedingKey: latestFeedingKey || todayKey,
-      });
+      };
       const weekAttendanceArray = attendanceArray.filter((entry: any) => {
         const entryKey = getRecordDateKey(entry.date);
         return weekKeys.has(entryKey);
@@ -251,7 +243,7 @@ export function useAdminDashboard() {
       const todayExceptions =
         allAttTotal - allAttPresent + (allFeedTotal - allFeedCompleted);
 
-      setStats({
+      const stats = {
         totalChildDevelopmentCenters: activeCenters,
         childDevelopmentWorkers: totalTeachers,
         totalEnrolledDaycares: totalChildren,
@@ -263,7 +255,7 @@ export function useAdminDashboard() {
         todayAttendanceRate,
         todayFeedingRate,
         todayExceptions,
-      });
+      };
 
       const dayMap = new Map<
         string,
@@ -342,7 +334,7 @@ export function useAdminDashboard() {
         });
       }
 
-      setChartData(chartPoints);
+      const chartData = chartPoints;
 
       const pieChartData: PieDataPoint[] = [
         {
@@ -371,7 +363,7 @@ export function useAdminDashboard() {
           color: "#6366f1",
         },
       ];
-      setPieData(pieChartData);
+      const pieData = pieChartData;
 
       const activities: RecentActivity[] = [];
 
@@ -424,17 +416,16 @@ export function useAdminDashboard() {
       });
 
       activities.sort((a, b) => b.sortTime - a.sortTime);
-      setRecentActivities(activities.slice(0, 10));
-    } catch (error) {
-      console.error("Failed to fetch dashboard data:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void fetchDashboardData();
-  }, [fetchDashboardData]);
+      const recentActivities = activities.slice(0, 10);
+      return { stats, chartData, pieData, recentActivities, dateMeta };
+    },
+  });
+  const stats = data?.stats ?? DEFAULT_STATS;
+  const chartData = data?.chartData ?? [];
+  const pieData = data?.pieData ?? [];
+  const recentActivities = data?.recentActivities ?? [];
+  const dateMeta = data?.dateMeta ?? DEFAULT_DATE_META;
+  const fetchDashboardData = useMemo(() => refetch, [refetch]);
 
   return {
     stats,

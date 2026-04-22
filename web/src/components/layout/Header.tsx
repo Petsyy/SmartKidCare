@@ -1,7 +1,10 @@
 import { Search, Bell, ChevronRight, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { API_BASE } from "../config/config.api";
+import { useAuthSession } from "../auth/useAuthSession";
+import { webQueryKeys } from "@/lib/query-keys";
 
 type HeaderProps = {
   breadcrumbs?: string[];
@@ -11,9 +14,10 @@ export default function Header({
   breadcrumbs = ["Admin", "User Management"],
 }: HeaderProps) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { user } = useAuthSession();
   const [showDropdown, setShowDropdown] = useState(false);
-  const adminEmail =
-    localStorage.getItem("adminEmail") || "admin@smartkidcare.com";
+  const adminEmail = user?.email || "admin@smartkidcare.com";
 
   const handleLogout = async () => {
     try {
@@ -25,8 +29,7 @@ export default function Header({
       // Ignore logout network errors and still clear local UI state.
     }
 
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("adminEmail");
+    await queryClient.invalidateQueries({ queryKey: webQueryKeys.authSession() });
     navigate("/login");
   };
 

@@ -29,7 +29,6 @@ const provider = new ethers.JsonRpcProvider(
 );
 
 const wallet = new ethers.Wallet(process.env.METAMASK_PRIVATE_KEY, provider);
-console.log("Active Wallet:", wallet.address);
 
 const abi = [
   "error NotAuthorized()",

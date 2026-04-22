@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useRouter } from "expo-router";
+import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/src/hooks/use-auth";
 import type { User } from "@/src/context/auth-context";
 import { login as apiLogin } from "@/src/api/authentication.api";
@@ -10,9 +11,12 @@ export const useLoginForm = () => {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [focusedField, setFocusedField] = useState<"identifier" | "password" | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
+
+  const loginMutation = useMutation({
+    mutationFn: apiLogin,
+  });
 
   const handleLogin = async () => {
     const trimmedIdentifier = identifier.trim();
@@ -22,10 +26,9 @@ export const useLoginForm = () => {
     }
 
     setErrorMessage("");
-    setIsLoading(true);
 
     try {
-      const response = await apiLogin({
+      const response = await loginMutation.mutateAsync({
         identifier: trimmedIdentifier,
         password,
       });
@@ -65,8 +68,6 @@ export const useLoginForm = () => {
       await login(appUser, authToken);
     } catch (error: any) {
       setErrorMessage(error.message || "Login failed. Please check your credentials.");
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -77,7 +78,7 @@ export const useLoginForm = () => {
     setPassword,
     showPassword,
     setShowPassword,
-    isLoading,
+    isLoading: loginMutation.isPending,
     focusedField,
     setFocusedField,
     errorMessage,

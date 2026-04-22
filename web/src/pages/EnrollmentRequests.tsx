@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Eye,
@@ -27,6 +27,13 @@ import {
   showErrorModal,
   showParentCredentialsModal,
 } from "@/utils/sweetAlertModal";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import { useEnrollmentRequestsStore } from "@/stores/enrollment-requests.store";
+import { webQueryKeys } from "@/lib/query-keys";
 
 const formatDateLabel = (value: string | Date) => {
   const parsed = new Date(value);
@@ -74,32 +81,50 @@ const formatLabelValue = (value?: string | null) => {
 
 export default function EnrollmentRequests() {
   const navigate = useNavigate();
-  const [requests, setRequests] = useState<EnrollmentRequestItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [processingId, setProcessingId] = useState<string | null>(null);
-  const [selectedRequest, setSelectedRequest] =
-    useState<EnrollmentRequestItem | null>(null);
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] =
-    useState<EnrollmentRequestStatus>("pending");
+  const queryClient = useQueryClient();
+  const {
+    processingId,
+    selectedRequest,
+    openMenuId,
+    statusFilter,
+    setProcessingId,
+    setSelectedRequest,
+    setOpenMenuId,
+    setStatusFilter,
+  } = useEnrollmentRequestsStore();
   const menuRef = useRef<HTMLDivElement | null>(null);
-
-  const refreshRequests = async () => {
-    setLoading(true);
-    try {
-      const items = await getEnrollmentRequests(statusFilter);
-      setRequests(items);
-    } catch (error: any) {
-      showErrorModal(error?.message || "Failed to load enrollment requests");
-      setRequests([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    data: requests = [],
+    isLoading: loading,
+  } = useQuery({
+    queryKey: webQueryKeys.enrollmentRequests(statusFilter),
+    queryFn: () => getEnrollmentRequests(statusFilter),
+  });
+  const reviewMutation = useMutation({
+    mutationFn: (payload: {
+      id: string;
+      status: "approved" | "rejected";
+      reason?: string;
+    }) => reviewEnrollmentRequest(payload.id, payload.status, payload.reason),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: webQueryKeys.enrollmentRequestsRoot(),
+      });
+    },
+  });
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteEnrollmentRequest(id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: webQueryKeys.enrollmentRequestsRoot(),
+      });
+    },
+  });
 
   useEffect(() => {
-    void refreshRequests();
-  }, [statusFilter]);
+    if (!loading) return;
+    // no-op to keep existing modal error UX in actions
+  }, [loading]);
 
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
@@ -141,7 +166,10 @@ export default function EnrollmentRequests() {
 
     setProcessingId(request._id);
     try {
-      const response = await reviewEnrollmentRequest(request._id, "approved");
+      const response = await reviewMutation.mutateAsync({
+        id: request._id,
+        status: "approved",
+      });
       await Swal.fire({
         title: "Approved",
         text: response.message,
@@ -156,7 +184,6 @@ export default function EnrollmentRequests() {
         });
       }
 
-      await refreshRequests();
     } catch (error: any) {
       showErrorModal(error?.message || "Failed to approve request");
     } finally {
@@ -184,18 +211,17 @@ export default function EnrollmentRequests() {
     setProcessingId(request._id);
     try {
       const reason = typeof result.value === "string" ? result.value : "";
-      const response = await reviewEnrollmentRequest(
-        request._id,
-        "rejected",
+      const response = await reviewMutation.mutateAsync({
+        id: request._id,
+        status: "rejected",
         reason,
-      );
+      });
       await Swal.fire({
         title: "Rejected",
         text: response.message,
         icon: "success",
         confirmButtonColor: "#0D9488",
       });
-      await refreshRequests();
     } catch (error: any) {
       showErrorModal(error?.message || "Failed to reject request");
     } finally {
@@ -221,7 +247,7 @@ export default function EnrollmentRequests() {
 
     setProcessingId(request._id);
     try {
-      const response = await deleteEnrollmentRequest(request._id);
+      const response = await deleteMutation.mutateAsync(request._id);
       await Swal.fire({
         title: "Deleted",
         text: response.message,
@@ -231,7 +257,6 @@ export default function EnrollmentRequests() {
       if (selectedRequest?._id === request._id) {
         setSelectedRequest(null);
       }
-      await refreshRequests();
     } catch (error: any) {
       showErrorModal(error?.message || "Failed to delete request");
     } finally {
@@ -453,8 +478,8 @@ export default function EnrollmentRequests() {
                             >
                               <button
                                 onClick={() =>
-                                  setOpenMenuId((current) =>
-                                    current === request._id
+                                  setOpenMenuId(
+                                    openMenuId === request._id
                                       ? null
                                       : request._id,
                                   )

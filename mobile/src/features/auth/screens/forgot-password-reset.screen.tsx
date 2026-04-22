@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useMutation } from "@tanstack/react-query";
 import { ChevronLeft, Eye, EyeOff, Lock } from "lucide-react-native";
 import { resetForgotPassword } from "@/src/api/authentication.api";
 import { validatePasswordRules, getPasswordStrengthFeedback } from "@/src/validations/password-validation";
@@ -32,7 +33,10 @@ export default function ForgotPasswordResetScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const resetMutation = useMutation({
+    mutationFn: ({ resetToken, newPassword }: { resetToken: string; newPassword: string }) =>
+      resetForgotPassword(resetToken, newPassword),
+  });
 
   const passwordValidation = useMemo(() => {
     return validatePasswordRules(newPassword);
@@ -66,9 +70,8 @@ export default function ForgotPasswordResetScreen() {
       return;
     }
 
-    setIsSubmitting(true);
     try {
-      await resetForgotPassword(resetToken, newPassword);
+      await resetMutation.mutateAsync({ resetToken, newPassword });
       Alert.alert("Success", "Password reset successful. You can now log in.", [
         {
           text: "OK",
@@ -77,8 +80,6 @@ export default function ForgotPasswordResetScreen() {
       ]);
     } catch (error: any) {
       Alert.alert("Reset Failed", error.message || "Unable to reset password.");
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -165,10 +166,10 @@ export default function ForgotPasswordResetScreen() {
 
             <Pressable
               onPress={handleResetPassword}
-              disabled={isSubmitting || !isFormValid}
+              disabled={resetMutation.isPending || !isFormValid}
               className="mt-6 rounded-xl overflow-hidden"
               style={({ pressed }) => [
-                { opacity: isSubmitting || !isFormValid ? 0.5 : pressed ? 0.85 : 1 },
+                { opacity: resetMutation.isPending || !isFormValid ? 0.5 : pressed ? 0.85 : 1 },
               ]}
             >
               <LinearGradient
@@ -177,7 +178,7 @@ export default function ForgotPasswordResetScreen() {
                 end={{ x: 1, y: 0 }}
                 className="w-full py-4 items-center justify-center rounded-xl"
               >
-                {isSubmitting ? (
+                {resetMutation.isPending ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
                   <Text className="text-white text-lg font-bold">

@@ -4,6 +4,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/src/hooks/use-auth";
 import { getMyChildren, type Child } from "@/src/api/parent.api";
 import { getAttendanceHistory } from "@/src/api/records.api";
+import { useQuery } from "@tanstack/react-query";
+import { mobileQueryKeys } from "@/src/lib/query-keys";
 
 export type AttendanceStatus = "Present" | "Absent" | null;
 
@@ -20,93 +22,89 @@ export const useParentAttendance = () => {
   const { token } = useAuth();
   const [children, setChildren] = useState<Child[]>([]);
   const [selectedChild, setSelectedChild] = useState<Child | null>(null);
-  const [loading, setLoading] = useState(true);
   const [showChildDropdown, setShowChildDropdown] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date(2026, 1));
-  const [attendanceData, setAttendanceData] = useState<AttendanceDay[]>([]);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [showDayModal, setShowDayModal] = useState(false);
-
-  const loadChildren = useCallback(async () => {
-    try {
+  const monthKey = `${currentDate.getFullYear()}-${String(
+    currentDate.getMonth() + 1,
+  ).padStart(2, "0")}`;
+  const {
+    data: childrenData = [],
+    isLoading: isLoadingChildren,
+    refetch: refetchChildren,
+  } = useQuery({
+    queryKey: mobileQueryKeys.parentAttendanceChildren(token),
+    enabled: Boolean(token),
+    queryFn: async () => {
       if (!token) throw new Error("No authentication token");
-      const data = await getMyChildren(token);
-      setChildren(data);
-      setSelectedChild((currentSelectedChild) => {
-        if (!data.length) return null;
-        if (currentSelectedChild) {
-          const matchedChild = data.find((child) => child._id === currentSelectedChild._id);
-          if (matchedChild) return matchedChild;
-        }
-        return data[0];
-      });
-    } catch (err: any) {
-      console.error("Failed to load children:", err);
-      setChildren([]);
-      setSelectedChild(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [token]);
+      return getMyChildren(token);
+    },
+  });
 
   useEffect(() => {
-    void loadChildren();
-  }, [loadChildren]);
+    setChildren(childrenData);
+    setSelectedChild((currentSelectedChild) => {
+      if (!childrenData.length) return null;
+      if (currentSelectedChild) {
+        const matchedChild = childrenData.find(
+          (child) => child._id === currentSelectedChild._id,
+        );
+        if (matchedChild) return matchedChild;
+      }
+      return childrenData[0];
+    });
+  }, [childrenData]);
 
   useFocusEffect(
     useCallback(() => {
-      void loadChildren();
-    }, [loadChildren]),
+      void refetchChildren();
+    }, [refetchChildren]),
   );
-
-  useEffect(() => {
-    const loadAttendance = async () => {
-      if (!token || !selectedChild) {
-        setAttendanceData([]);
-        return;
-      }
-
-      try {
-        const year = currentDate.getFullYear();
-        const month = currentDate.getMonth();
-        const startDate = new Date(year, month, 1);
-        const endDate = new Date(year, month + 1, 0, 23, 59, 59, 999);
-
-        const history = await getAttendanceHistory(
-          token,
-          startDate.toISOString(),
-          endDate.toISOString(),
+  const { data: attendanceData = [], isLoading: isLoadingAttendance } = useQuery({
+    queryKey: mobileQueryKeys.parentAttendanceHistory(
+      token,
+      selectedChild?._id ?? null,
+      monthKey,
+    ),
+    enabled: Boolean(token && selectedChild),
+    queryFn: async () => {
+      if (!token || !selectedChild) return [];
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      const startDate = new Date(year, month, 1);
+      const endDate = new Date(year, month + 1, 0, 23, 59, 59, 999);
+      const history = await getAttendanceHistory(
+        token,
+        startDate.toISOString(),
+        endDate.toISOString(),
+      );
+      const byDay = new Map<number, AttendanceDay>();
+      history.forEach((record: any) => {
+        const recordDate = new Date(record.date);
+        const entry = record.records?.find(
+          (r: any) => (r.child?._id || r.child) === selectedChild._id,
         );
-
-        const byDay = new Map<number, AttendanceDay>();
-
-        history.forEach((record: any) => {
-          const recordDate = new Date(record.date);
-          const entry = record.records?.find((r: any) => (r.child?._id || r.child) === selectedChild._id);
-
-          if (entry) {
-            const status: AttendanceStatus = entry.status === "present" ? "Present" : "Absent";
-            const teacher = record.teacher;
-            const teacherName = teacher ? `${teacher.firstName} ${teacher.lastName}` : "Not available";
-            const recordedAt = record.updatedAt || record.createdAt || record.date || null;
-            byDay.set(recordDate.getDate(), {
-              day: recordDate.getDate(),
-              status,
-              teacherName,
-              recordedAt,
-            });
-          }
-        });
-
-        setAttendanceData(Array.from(byDay.values()));
-      } catch (err) {
-        console.error("Failed to load attendance history:", err);
-        setAttendanceData([]);
-      }
-    };
-
-    void loadAttendance();
-  }, [token, selectedChild, currentDate]);
+        if (entry) {
+          const status: AttendanceStatus =
+            entry.status === "present" ? "Present" : "Absent";
+          const teacher = record.teacher;
+          const teacherName = teacher
+            ? `${teacher.firstName} ${teacher.lastName}`
+            : "Not available";
+          const recordedAt = record.updatedAt || record.createdAt || record.date || null;
+          byDay.set(recordDate.getDate(), {
+            day: recordDate.getDate(),
+            status,
+            teacherName,
+            recordedAt,
+          });
+        }
+      });
+      return Array.from(byDay.values());
+    },
+  });
+  const loading = isLoadingChildren || isLoadingAttendance;
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
@@ -191,7 +189,6 @@ export const useParentAttendance = () => {
     setSelectedDay,
     showDayModal,
     setShowDayModal,
-    loadChildren,
     getDaysInMonth,
     getMonthName,
     getStatusForDay,

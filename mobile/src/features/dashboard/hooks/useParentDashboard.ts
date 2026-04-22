@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useAuth } from "@/src/hooks/use-auth";
 import { getMyChildren, Child } from "@/src/api/parent.api";
 import {
@@ -11,6 +11,9 @@ import {
   getParentNotificationsFeed,
   type ParentNotificationFeedItem,
 } from "@/src/api/notifications.api";
+import { useQuery } from "@tanstack/react-query";
+import { useDashboardUiStore } from "@/src/features/dashboard/stores/dashboard-ui.store";
+import { mobileQueryKeys } from "@/src/lib/query-keys";
 
 export interface ChildStats {
   present: number;
@@ -39,75 +42,52 @@ export interface ParentDashboardData {
 
 export function useParentDashboard(): ParentDashboardData {
   const { token } = useAuth();
-  const [children, setChildren] = useState<Child[]>([]);
-  const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
-  const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
-  const [feedingRecords, setFeedingRecords] = useState<any[]>([]);
-  const [todayAttendanceRecord, setTodayAttendanceRecord] = useState<any>(null);
-  const [todayFeedingRecord, setTodayFeedingRecord] = useState<any>(null);
-  const [recentNotifications, setRecentNotifications] = useState<
-    ParentNotificationFeedItem[]
-  >([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchData = useCallback(
-    async (isRefreshing = false) => {
-      try {
-        if (!isRefreshing) setLoading(true);
-        setError(null);
-
-        if (token) {
-          const data = await getMyChildren(token);
-          setChildren(data);
-
-          // Set first child as selected if none selected
-          if (!selectedChildId && data.length > 0) {
-            setSelectedChildId(data[0]._id);
-          }
-
-          // Fetch attendance and feeding records
-          const [
-            attendance,
-            feeding,
-            todayAttendance,
-            todayFeeding,
-            parentNotifications,
-          ] = await Promise.all([
-            getAttendanceHistory(token),
-            getFeedingHistory(token),
-            getTodayAttendance(token).catch(() => null),
-            getTodayFeeding(token).catch(() => null),
-            getParentNotificationsFeed(token).catch(() => null),
-          ]);
-
-          setAttendanceRecords(attendance);
-          setFeedingRecords(feeding);
-          setTodayAttendanceRecord(todayAttendance);
-          setTodayFeedingRecord(todayFeeding);
-
-          if (parentNotifications?.notifications?.length) {
-            setRecentNotifications(
-              parentNotifications.notifications.slice(0, 2)
-            );
-          } else {
-            setRecentNotifications([]);
-          }
-        }
-      } catch (err: any) {
-        setError(err?.message || "Failed to load children");
-      } finally {
-        setLoading(false);
-        if (isRefreshing) setRefreshing(false);
-      }
+  const { selectedChildId, setSelectedChildId } = useDashboardUiStore();
+  const { data, isLoading, isRefetching, error, refetch } = useQuery({
+    queryKey: mobileQueryKeys.parentDashboard(token),
+    enabled: Boolean(token),
+    queryFn: async () => {
+      if (!token) throw new Error("No authentication token");
+      const [
+        children,
+        attendanceRecords,
+        feedingRecords,
+        todayAttendanceRecord,
+        todayFeedingRecord,
+        parentNotifications,
+      ] = await Promise.all([
+        getMyChildren(token),
+        getAttendanceHistory(token),
+        getFeedingHistory(token),
+        getTodayAttendance(token).catch(() => null),
+        getTodayFeeding(token).catch(() => null),
+        getParentNotificationsFeed(token).catch(() => null),
+      ]);
+      return {
+        children,
+        attendanceRecords,
+        feedingRecords,
+        todayAttendanceRecord,
+        todayFeedingRecord,
+        recentNotifications: parentNotifications?.notifications?.length
+          ? parentNotifications.notifications.slice(0, 2)
+          : [],
+      };
     },
-    [token, selectedChildId]
-  );
+  });
+  const children: Child[] = data?.children ?? [];
+  const attendanceRecords = data?.attendanceRecords ?? [];
+  const feedingRecords = data?.feedingRecords ?? [];
+  const todayAttendanceRecord = data?.todayAttendanceRecord ?? null;
+  const todayFeedingRecord = data?.todayFeedingRecord ?? null;
+  const recentNotifications: ParentNotificationFeedItem[] =
+    data?.recentNotifications ?? [];
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (!selectedChildId && children.length > 0) {
+      setSelectedChildId(children[0]._id);
+    }
+  }, [children, selectedChildId, setSelectedChildId]);
 
   const selectedChild = useMemo(() => {
     if (!selectedChildId) return children[0] ?? null;
@@ -228,8 +208,7 @@ export function useParentDashboard(): ParentDashboardData {
   }, [todayFeedingRecord, children]);
 
   const onRefresh = () => {
-    setRefreshing(true);
-    fetchData(true);
+    void refetch();
   };
 
   return {
@@ -244,9 +223,9 @@ export function useParentDashboard(): ParentDashboardData {
     presentToday,
     absentToday,
     feedingDoneToday,
-    loading,
-    refreshing,
-    error,
+    loading: isLoading,
+    refreshing: isRefetching,
+    error: error instanceof Error ? error.message : null,
     onRefresh,
   };
 }

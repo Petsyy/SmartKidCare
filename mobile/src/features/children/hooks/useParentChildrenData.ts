@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useFocusEffect } from "expo-router";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/src/hooks/use-auth";
 import { getMyChildren, type Child } from "@/src/api/parent.api";
 import {
@@ -9,6 +10,8 @@ import {
   getTodayAttendance,
   getTodayFeeding,
 } from "@/src/api/records.api";
+import { useParentChildrenStore } from "@/src/features/children/stores/parent-children.store";
+import { mobileQueryKeys } from "@/src/lib/query-keys";
 
 export type DailyAttendance = "Present" | "Absent" | "No update yet";
 export type DailyFeeding = "Finished" | "Missed" | "No update yet";
@@ -63,52 +66,49 @@ const toPercent = (done: number, total: number): number => {
 export const useParentChildrenData = () => {
   const { token } = useAuth();
   const tabBarHeight = useBottomTabBarHeight();
-  const [children, setChildren] = useState<Child[]>([]);
-  const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
-  const [todayAttendanceRecord, setTodayAttendanceRecord] = useState<any>(null);
-  const [todayFeedingRecord, setTodayFeedingRecord] = useState<any>(null);
-  const [monthAttendanceRecords, setMonthAttendanceRecords] = useState<any[]>([]);
-  const [monthFeedingRecords, setMonthFeedingRecords] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const loadScreenData = useCallback(
-    async (isRefreshing = false) => {
-      try {
-        if (!isRefreshing) setLoading(true);
-        setError(null);
-
-        if (!token) throw new Error("No authentication token");
-
-        const { startDate, endDate } = getMonthRange();
-        const [childrenData, todayAttendance, todayFeeding, attendanceHistory, feedingHistory] = await Promise.all([
-          getMyChildren(token),
-          getTodayAttendance(token).catch(() => null),
-          getTodayFeeding(token).catch(() => null),
-          getAttendanceHistory(token, startDate, endDate).catch(() => []),
-          getFeedingHistory(token, startDate, endDate).catch(() => []),
-        ]);
-
-        setChildren(childrenData);
-        setTodayAttendanceRecord(todayAttendance);
-        setTodayFeedingRecord(todayFeeding);
-        setMonthAttendanceRecords(Array.isArray(attendanceHistory) ? attendanceHistory : []);
-        setMonthFeedingRecords(Array.isArray(feedingHistory) ? feedingHistory : []);
-
-        setSelectedChildId((prev) => {
-          if (prev && childrenData.some((child) => child._id === prev)) return prev;
-          return childrenData[0]?._id ?? null;
-        });
-      } catch (err: any) {
-        setError(err?.message || "Failed to load your children");
-      } finally {
-        setLoading(false);
-        if (isRefreshing) setRefreshing(false);
+  const { selectedChildId, setSelectedChildId } = useParentChildrenStore();
+  const { data, isLoading, isRefetching, error, refetch } = useQuery({
+    queryKey: mobileQueryKeys.parentChildrenDashboard(token),
+    enabled: Boolean(token),
+    queryFn: async () => {
+      if (!token) {
+        throw new Error("No authentication token");
       }
+      const { startDate, endDate } = getMonthRange();
+      const [
+        childrenData,
+        todayAttendance,
+        todayFeeding,
+        attendanceHistory,
+        feedingHistory,
+      ] = await Promise.all([
+        getMyChildren(token),
+        getTodayAttendance(token).catch(() => null),
+        getTodayFeeding(token).catch(() => null),
+        getAttendanceHistory(token, startDate, endDate).catch(() => []),
+        getFeedingHistory(token, startDate, endDate).catch(() => []),
+      ]);
+
+      return {
+        children: childrenData,
+        todayAttendanceRecord: todayAttendance,
+        todayFeedingRecord: todayFeeding,
+        monthAttendanceRecords: Array.isArray(attendanceHistory)
+          ? attendanceHistory
+          : [],
+        monthFeedingRecords: Array.isArray(feedingHistory) ? feedingHistory : [],
+      };
     },
-    [token],
-  );
+  });
+  const children = data?.children ?? [];
+  const todayAttendanceRecord = data?.todayAttendanceRecord ?? null;
+  const todayFeedingRecord = data?.todayFeedingRecord ?? null;
+  const monthAttendanceRecords = data?.monthAttendanceRecords ?? [];
+  const monthFeedingRecords = data?.monthFeedingRecords ?? [];
+
+  const loadScreenData = useCallback(async () => {
+    await refetch();
+  }, [refetch]);
 
   useFocusEffect(
     useCallback(() => {
@@ -117,8 +117,7 @@ export const useParentChildrenData = () => {
   );
 
   const onRefresh = () => {
-    setRefreshing(true);
-    void loadScreenData(true);
+    void loadScreenData();
   };
 
   const selectedChild = useMemo(() => {
@@ -227,13 +226,6 @@ export const useParentChildrenData = () => {
     };
   }, [selectedChild, monthAttendanceRecords, monthFeedingRecords]);
 
-  const todayStateText =
-    childStatus.tone === "good"
-      ? "All updates received"
-      : childStatus.tone === "warning"
-        // ? "Needs attention today"
-        // s: "Waiting for teacher update";
-
   const scrollBottomPadding = Math.max(100, tabBarHeight + 24);
 
   return {
@@ -241,9 +233,9 @@ export const useParentChildrenData = () => {
     selectedChild,
     selectedChildId,
     setSelectedChildId,
-    loading,
-    refreshing,
-    error,
+    loading: isLoading,
+    refreshing: isRefetching,
+    error: error instanceof Error ? error.message : null,
     loadScreenData,
     onRefresh,
     childStatus,

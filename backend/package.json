@@ -7,6 +7,7 @@
     "dev": "nodemon --watch src --exec ts-node src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "test:ai-chat-services": "node --test --require ts-node/register tests/ai.chat-intent.service.test.ts tests/ai.chat-followup.service.test.ts",
     "test:csrf": "node --test --require ts-node/register tests/csrf.api.test.ts",
     "test:ai-intent": "node --test --require ts-node/register tests/ai.intentRouting.test.ts",
     "seed:records": "ts-node scripts/seedRecords.ts",

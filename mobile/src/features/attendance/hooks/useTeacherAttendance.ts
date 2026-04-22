@@ -6,58 +6,86 @@ import { getChildren } from "@/src/api/teacher.api";
 import { submitAttendance, getTodayAttendance } from "@/src/api/records.api";
 import type { Child } from "@/src/api/parent.api";
 import { formatManilaDateLabel, getManilaDateKey } from "@/src/utils/manila-date";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { mobileQueryKeys } from "@/src/lib/query-keys";
+import { useTeacherUiStore } from "@/src/features/teacher/stores/teacher-ui.store";
 
 export const useTeacherAttendance = () => {
   const router = useRouter();
   const { token } = useAuth();
-  const [children, setChildren] = useState<Child[]>([]);
-  const [loading, setLoading] = useState(true);
   const [attendance, setAttendance] = useState<Record<string, boolean>>({});
-  const [searchQuery, setSearchQuery] = useState("");
   const [isReadOnly, setIsReadOnly] = useState(false);
+  const { attendanceSearchQuery: searchQuery, setAttendanceSearchQuery: setSearchQuery } =
+    useTeacherUiStore();
 
   const selectedDateKey = useMemo(() => getManilaDateKey(), []);
   const selectedDateLabel = useMemo(
     () => formatManilaDateLabel(selectedDateKey),
     [selectedDateKey],
   );
+  const { data, isLoading } = useQuery({
+    queryKey: mobileQueryKeys.teacherAttendanceSetup(token, selectedDateKey),
+    enabled: Boolean(token),
+    queryFn: async () => {
+      if (!token) throw new Error("No authentication token");
+      const [childrenData, todayRecord] = await Promise.all([
+        getChildren(token),
+        getTodayAttendance(token),
+      ]);
+      return { childrenData, todayRecord };
+    },
+  });
+  const submitAttendanceMutation = useMutation({
+    mutationFn: async (payload: {
+      date: string;
+      records: Array<{ child: string; status: "present" | "absent" }>;
+    }) => {
+      if (!token) throw new Error("Not authenticated");
+      return submitAttendance(token, payload);
+    },
+  });
+  const children: Child[] = data?.childrenData || [];
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        if (token) {
-          const [childrenData, todayRecord] = await Promise.all([
-            getChildren(token),
-            getTodayAttendance(token),
-          ]);
+    if (!data) return;
+    if (data.todayRecord) {
+      setIsReadOnly(true);
+      const existingAttendance: Record<string, boolean> = {};
+      data.todayRecord.records.forEach((record: any) => {
+        existingAttendance[record.child._id || record.child] =
+          record.status === "present";
+      });
+      setAttendance(existingAttendance);
+    } else {
+      setIsReadOnly(false);
+      const initialAttendance: Record<string, boolean> = {};
+      data.childrenData.forEach((child) => {
+        initialAttendance[child._id] = false;
+      });
+      setAttendance(initialAttendance);
+    }
+  }, [data]);
 
-          setChildren(childrenData);
-
-          if (todayRecord) {
-            setIsReadOnly(true);
-            const existingAttendance: Record<string, boolean> = {};
-            todayRecord.records.forEach((record: any) => {
-              existingAttendance[record.child._id || record.child] =
-                record.status === "present";
-            });
-            setAttendance(existingAttendance);
-          } else {
-            const initialAttendance: Record<string, boolean> = {};
-            childrenData.forEach((child) => {
-              initialAttendance[child._id] = false;
-            });
-            setAttendance(initialAttendance);
-          }
+  useEffect(() => {
+    if (!isReadOnly) {
+      const nextAttendance: Record<string, boolean> = {};
+      children.forEach((child) => {
+        nextAttendance[child._id] = attendance[child._id] ?? false;
+      });
+      setAttendance(nextAttendance);
+    } else {
+      const nextAttendance: Record<string, boolean> = {};
+      children.forEach((child) => {
+        if (attendance[child._id] !== undefined) {
+          nextAttendance[child._id] = attendance[child._id];
         }
-      } catch (error) {
-        console.error("Failed to fetch data:", error);
-      } finally {
-        setLoading(false);
+      });
+      if (Object.keys(nextAttendance).length > 0) {
+        setAttendance(nextAttendance);
       }
-    };
-
-    fetchData();
-  }, [token]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [children.length, isReadOnly]);
 
   const filteredChildren = useMemo(() => {
     return children.filter((child) => {
@@ -126,7 +154,7 @@ export const useTeacherAttendance = () => {
         status: isPresent ? ("present" as const) : ("absent" as const),
       }));
 
-      await submitAttendance(token, {
+      await submitAttendanceMutation.mutateAsync({
         date: selectedDateKey,
         records,
       });
@@ -147,7 +175,7 @@ export const useTeacherAttendance = () => {
 
   return {
     children,
-    loading,
+    loading: isLoading,
     attendance,
     searchQuery,
     setSearchQuery,

@@ -1,7 +1,9 @@
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { UserIcon, Lock, AlertCircle } from "lucide-react";
 import { API_BASE } from "@/components/config/config.api";
+import { useMutation } from "@tanstack/react-query";
+import { useAdminLoginStore } from "@/stores/admin-login.store";
 
 type ApiResponse = {
   status: number;
@@ -26,16 +28,87 @@ const parseApiResponse = async (response: Response): Promise<ApiResponse> => {
 
 export default function AdminLogin() {
   const navigate = useNavigate();
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [otp, setOtp] = useState("");
-  const [mfaToken, setMfaToken] = useState<string | null>(null);
-  const [mfaEmail, setMfaEmail] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isResendingOtp, setIsResendingOtp] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    username,
+    password,
+    otp,
+    mfaToken,
+    mfaEmail,
+    info,
+    error,
+    setUsername,
+    setPassword,
+    setOtp,
+    setMfaToken,
+    setMfaEmail,
+    setInfo,
+    setError,
+    resetMessages,
+  } = useAdminLoginStore();
   const otpInputRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const loginMutation = useMutation({
+    mutationFn: async (variables: { username: string; password: string }) => {
+      const response = await fetch(`${API_BASE}/auth/admin/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(variables),
+      });
+      const { status, data } = await parseApiResponse(response);
+      if (!response.ok) {
+        throw new Error(
+          data?.message || data?.error || `Login failed (HTTP ${status})`,
+        );
+      }
+      return data;
+    },
+  });
+  const verifyMutation = useMutation({
+    mutationFn: async (variables: { mfaToken: string; otp: string }) => {
+      const response = await fetch(`${API_BASE}/auth/admin/mfa/verify`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(variables),
+      });
+      const { status, data } = await parseApiResponse(response);
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
+            data?.error ||
+            `OTP verification failed (HTTP ${status})`,
+        );
+      }
+      return data;
+    },
+  });
+  const resendMutation = useMutation({
+    mutationFn: async (variables: { mfaToken: string }) => {
+      const response = await fetch(`${API_BASE}/auth/admin/mfa/resend`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(variables),
+      });
+      const { status, data } = await parseApiResponse(response);
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
+            data?.error ||
+            `Failed to resend OTP (HTTP ${status})`,
+        );
+      }
+      return data;
+    },
+  });
+  const isLoading = loginMutation.isPending || verifyMutation.isPending;
+  const isResendingOtp = resendMutation.isPending;
 
   const inputClassName =
     "w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-500 dark:disabled:bg-slate-900";
@@ -135,28 +208,10 @@ export default function AdminLogin() {
       return;
     }
 
-    setIsResendingOtp(true);
-    setError(null);
-    setInfo(null);
+    resetMessages();
 
     try {
-      const response = await fetch(`${API_BASE}/auth/admin/mfa/resend`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ mfaToken }),
-      });
-
-      const { status, data } = await parseApiResponse(response);
-      if (!response.ok) {
-        const message =
-          data?.message ||
-          data?.error ||
-          `Failed to resend OTP (HTTP ${status})`;
-        throw new Error(message);
-      }
+      const data = await resendMutation.mutateAsync({ mfaToken });
 
       if (data?.mfaToken) {
         setMfaToken(data.mfaToken);
@@ -168,16 +223,12 @@ export default function AdminLogin() {
       setInfo(data?.message || "A new OTP has been sent.");
     } catch (err: any) {
       setError(err.message || "Failed to resend OTP.");
-    } finally {
-      setIsResendingOtp(false);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError(null);
-    setInfo(null);
+    resetMessages();
 
     try {
       if (!mfaToken) {
@@ -185,21 +236,7 @@ export default function AdminLogin() {
           throw new Error("Please fill in all fields");
         }
 
-        const response = await fetch(`${API_BASE}/auth/admin/login`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({ username, password }),
-        });
-
-        const { status, data } = await parseApiResponse(response);
-        if (!response.ok) {
-          const message =
-            data?.message || data?.error || `Login failed (HTTP ${status})`;
-          throw new Error(message);
-        }
+        const data = await loginMutation.mutateAsync({ username, password });
 
         if (data?.requiresMfa) {
           if (!data?.mfaToken) {
@@ -215,10 +252,6 @@ export default function AdminLogin() {
           return;
         }
 
-        if (data?.user?.email) {
-          localStorage.setItem("adminEmail", data.user.email);
-        }
-
         navigate("/dashboard");
         return;
       }
@@ -227,33 +260,11 @@ export default function AdminLogin() {
         throw new Error("Please enter the verification code.");
       }
 
-      const response = await fetch(`${API_BASE}/auth/admin/mfa/verify`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ mfaToken, otp }),
-      });
-
-      const { status, data } = await parseApiResponse(response);
-      if (!response.ok) {
-        const message =
-          data?.message ||
-          data?.error ||
-          `OTP verification failed (HTTP ${status})`;
-        throw new Error(message);
-      }
-
-      if (data?.user?.email) {
-        localStorage.setItem("adminEmail", data.user.email);
-      }
+      await verifyMutation.mutateAsync({ mfaToken, otp });
 
       navigate("/dashboard");
     } catch (err: any) {
       setError(err.message || "Login failed. Please try again.");
-    } finally {
-      setIsLoading(false);
     }
   };
 

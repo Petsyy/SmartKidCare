@@ -22,14 +22,12 @@ type InputProps = {
   autoCapitalize?: "none" | "sentences" | "words" | "characters";
   containerStyle?: StyleProp<ViewStyle>;
   editable?: boolean;
-  /** Read-only field filled by the app (age, school year). */
   computed?: boolean;
   labelHint?: string;
 };
 
 const INPUT_PLACEHOLDER = "#9CA3AF";
 
-/** Avoid NativeWind dynamic className / active: on inputs - css-interop remounts break React Navigation context. */
 export function Input({
   label,
   value,
@@ -358,7 +356,7 @@ export function DocumentUploadField({
 }
 
 const fieldLayoutStyles = StyleSheet.create({
-  // ─── Label ───────────────────────────────────────────────────────────────
+
   labelRow: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -399,7 +397,6 @@ const fieldLayoutStyles = StyleSheet.create({
     color: "#0F766E",
   },
 
-  // ─── Input wrapper ────────────────────────────────────────────────────────
   inputWrapper: {
     borderRadius: 12,
     borderWidth: 1.5,
@@ -412,7 +409,6 @@ const fieldLayoutStyles = StyleSheet.create({
     backgroundColor: "#F0FDFA",
   },
 
-  // ─── Date / Select ────────────────────────────────────────────────────────
   sectionContainer: {
     marginBottom: 18,
   },
@@ -489,7 +485,6 @@ const fieldLayoutStyles = StyleSheet.create({
     fontWeight: "700",
   },
 
-  // ─── Document upload ──────────────────────────────────────────────────────
   documentLabel: {
     fontSize: 13,
     fontWeight: "700",

@@ -4,6 +4,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/src/hooks/use-auth";
 import { getMyChildren, type Child } from "@/src/api/parent.api";
 import { getFeedingHistory } from "@/src/api/records.api";
+import { useQuery } from "@tanstack/react-query";
+import { mobileQueryKeys } from "@/src/lib/query-keys";
 
 export type FeedingStatus = "Completed" | "Missed" | null;
 
@@ -21,81 +23,83 @@ export const useParentFeeding = () => {
   const { token } = useAuth();
   const [children, setChildren] = useState<Child[]>([]);
   const [selectedChild, setSelectedChild] = useState<Child | null>(null);
-  const [loading, setLoading] = useState(true);
   const [showChildDropdown, setShowChildDropdown] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date(2026, 1));
-  const [feedingData, setFeedingData] = useState<FeedingDay[]>([]);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [showDayModal, setShowDayModal] = useState(false);
+  const monthKey = `${currentDate.getFullYear()}-${String(
+    currentDate.getMonth() + 1,
+  ).padStart(2, "0")}`;
+
+  const { data: childrenData = [], isLoading: isLoadingChildren } = useQuery({
+    queryKey: mobileQueryKeys.parentFeedingChildren(token),
+    enabled: Boolean(token),
+    queryFn: async () => {
+      if (!token) throw new Error("No authentication token");
+      return getMyChildren(token);
+    },
+  });
 
   useEffect(() => {
-    const loadChildren = async () => {
-      try {
-        if (!token) throw new Error("No authentication token");
-        const data = await getMyChildren(token);
-        setChildren(data);
-        if (data.length > 0) setSelectedChild(data[0]);
-      } catch (err: any) {
-        console.error("Failed to load children:", err);
-      } finally {
-        setLoading(false);
+    setChildren(childrenData);
+    setSelectedChild((current) => {
+      if (!childrenData.length) return null;
+      if (current) {
+        const matched = childrenData.find((child) => child._id === current._id);
+        if (matched) return matched;
       }
-    };
+      return childrenData[0];
+    });
+  }, [childrenData]);
 
-    void loadChildren();
-  }, [token]);
+  const { data: feedingData = [], isLoading: isLoadingFeeding } = useQuery({
+    queryKey: mobileQueryKeys.parentFeedingHistory(
+      token,
+      selectedChild?._id ?? null,
+      monthKey,
+    ),
+    enabled: Boolean(token && selectedChild),
+    queryFn: async () => {
+      if (!token || !selectedChild) return [];
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      const startDate = new Date(year, month, 1);
+      const endDate = new Date(year, month + 1, 0, 23, 59, 59, 999);
+      const history = await getFeedingHistory(
+        token,
+        startDate.toISOString(),
+        endDate.toISOString(),
+      );
 
-  useEffect(() => {
-    const loadFeeding = async () => {
-      if (!token || !selectedChild) {
-        setFeedingData([]);
-        return;
-      }
-
-      try {
-        const year = currentDate.getFullYear();
-        const month = currentDate.getMonth();
-        const startDate = new Date(year, month, 1);
-        const endDate = new Date(year, month + 1, 0, 23, 59, 59, 999);
-
-        const history = await getFeedingHistory(
-          token,
-          startDate.toISOString(),
-          endDate.toISOString(),
+      const byDay = new Map<number, FeedingDay>();
+      history.forEach((record: any) => {
+        const recordDate = new Date(record.date);
+        const entry = record.records?.find(
+          (r: any) => (r.child?._id || r.child) === selectedChild._id,
         );
+        if (entry) {
+          const status: FeedingStatus =
+            entry.status === "completed" ? "Completed" : "Missed";
+          const teacher = record.teacher;
+          const teacherName = teacher
+            ? `${teacher.firstName} ${teacher.lastName}`
+            : "Not available";
+          const recordedAt = record.updatedAt || record.createdAt || record.date || null;
+          const foodServed = record.foodServed || "Not specified";
+          byDay.set(recordDate.getDate(), {
+            day: recordDate.getDate(),
+            status,
+            teacherName,
+            recordedAt,
+            foodServed,
+          });
+        }
+      });
 
-        const byDay = new Map<number, FeedingDay>();
-
-        history.forEach((record: any) => {
-          const recordDate = new Date(record.date);
-          const entry = record.records?.find((r: any) => (r.child?._id || r.child) === selectedChild._id);
-
-          if (entry) {
-            const status: FeedingStatus = entry.status === "completed" ? "Completed" : "Missed";
-            const teacher = record.teacher;
-            const teacherName = teacher ? `${teacher.firstName} ${teacher.lastName}` : "Not available";
-            const recordedAt = record.updatedAt || record.createdAt || record.date || null;
-            const foodServed = record.foodServed || "Not specified";
-
-            byDay.set(recordDate.getDate(), {
-              day: recordDate.getDate(),
-              status,
-              teacherName,
-              recordedAt,
-              foodServed,
-            });
-          }
-        });
-
-        setFeedingData(Array.from(byDay.values()));
-      } catch (err) {
-        console.error("Failed to load feeding history:", err);
-        setFeedingData([]);
-      }
-    };
-
-    void loadFeeding();
-  }, [token, selectedChild, currentDate]);
+      return Array.from(byDay.values());
+    },
+  });
+  const loading = isLoadingChildren || isLoadingFeeding;
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();

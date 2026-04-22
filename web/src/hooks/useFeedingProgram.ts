@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { API_BASE } from "@/components/config/config.api";
 import {
   formatConfidentialName,
   maskCompositeName,
 } from "@/utils/namePrivacy";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { webQueryKeys } from "@/lib/query-keys";
 
 type ChildRef = {
   _id: string;
@@ -72,7 +74,6 @@ const formatChildName = (child?: ChildRef | null) => {
 };
 
 export function useFeedingProgram() {
-  const [rows, setRows] = useState<FeedingRow[]>([]);
   const [search, setSearch] = useState("");
   const [datePreset, setDatePreset] = useState<DatePreset>("all");
   const [startDate, setStartDate] = useState<string>("");
@@ -82,10 +83,7 @@ export function useFeedingProgram() {
   const [teacherId, setTeacherId] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const flattenFeeding = useCallback(
     (data: FeedingApiResponse[]): FeedingRow[] =>
@@ -110,82 +108,75 @@ export function useFeedingProgram() {
     [],
   );
 
+  const paramsKey = useMemo(
+    () =>
+      JSON.stringify({
+        search,
+        datePreset,
+        startDate,
+        endDate,
+        statusFilter,
+        teacherId,
+        page,
+        limit,
+      }),
+    [search, datePreset, startDate, endDate, statusFilter, teacherId, page, limit],
+  );
   const fetchFeeding = useCallback(async () => {
     if (!teacherId) {
-      setRows([]);
-      setTotal(0);
-      setTotalPages(0);
-      setError(null);
-      setIsLoading(false);
-      return;
+      return {
+        rows: [] as FeedingRow[],
+        total: 0,
+        totalPages: 0,
+      };
+    }
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+    });
+    if (search.trim()) {
+      params.set("search", search.trim());
+    }
+    if (startDate && endDate) {
+      params.set("startDate", startDate);
+      params.set("endDate", endDate);
+    } else if (datePreset !== "all") {
+      params.set("datePreset", datePreset);
+    }
+    if (statusFilter !== "all") {
+      params.set("status", statusFilter);
+    }
+    params.set("teacherId", teacherId);
+    const url = `${API_BASE}/records/feeding?${params.toString()}`;
+    const response = await fetch(url, {
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    const payload = await response.json().catch(() => []);
+    if (!response.ok) {
+      const message =
+        (payload as { message?: string }).message ||
+        "Failed to fetch feeding records";
+      throw new Error(message);
     }
 
-    setIsLoading(true);
-    setError(null);
-    try {
-      const params = new URLSearchParams({
-        page: String(page),
-        limit: String(limit),
-      });
-      if (search.trim()) {
-        params.set("search", search.trim());
-      }
-      if (startDate && endDate) {
-        params.set("startDate", startDate);
-        params.set("endDate", endDate);
-      } else if (datePreset !== "all") {
-        params.set("datePreset", datePreset);
-      }
-      if (statusFilter !== "all") {
-        params.set("status", statusFilter);
-      }
-      params.set("teacherId", teacherId);
-      const url = `${API_BASE}/records/feeding?${params.toString()}`;
-      const response = await fetch(url, {
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      const payload = await response.json().catch(() => []);
-      if (!response.ok) {
-        const message =
-          (payload as { message?: string }).message ||
-          "Failed to fetch feeding records";
-        throw new Error(message);
-      }
-
-      if (Array.isArray(payload)) {
-        const data = flattenFeeding(payload as FeedingApiResponse[]);
-        setRows(data);
-        setTotal(data.length);
-        setTotalPages(data.length > 0 ? 1 : 0);
-      } else {
-        const paginated = payload as PaginatedFeedingResponse;
-        const rowsFromApi = Array.isArray(paginated.data) ? paginated.data : [];
-        setRows(
-          rowsFromApi.map((row) => ({
-            ...row,
-            childName: maskCompositeName(row.childName) || row.childName || "Unknown",
-          })),
-        );
-        if (Number.isFinite(Number(paginated.pagination?.page))) {
-          setPage(Number(paginated.pagination.page));
-        }
-        if (Number.isFinite(Number(paginated.pagination?.limit))) {
-          setLimit(Number(paginated.pagination.limit));
-        }
-        setTotal(Number(paginated.pagination?.total ?? 0));
-        setTotalPages(Number(paginated.pagination?.totalPages ?? 0));
-      }
-    } catch (err: unknown) {
-      setError(
-        err instanceof Error ? err.message : "Unable to fetch feeding records",
-      );
-    } finally {
-      setIsLoading(false);
+    if (Array.isArray(payload)) {
+      const rows = flattenFeeding(payload as FeedingApiResponse[]);
+      return { rows, total: rows.length, totalPages: rows.length > 0 ? 1 : 0 };
     }
+    const paginated = payload as PaginatedFeedingResponse;
+    const rowsFromApi = Array.isArray(paginated.data) ? paginated.data : [];
+    return {
+      rows: rowsFromApi.map((row) => ({
+        ...row,
+        childName: maskCompositeName(row.childName) || row.childName || "Unknown",
+      })),
+      total: Number(paginated.pagination?.total ?? 0),
+      totalPages: Number(paginated.pagination?.totalPages ?? 0),
+    };
   }, [
     datePreset,
     endDate,
@@ -197,10 +188,54 @@ export function useFeedingProgram() {
     statusFilter,
     teacherId,
   ]);
-
-  useEffect(() => {
-    void fetchFeeding();
-  }, [fetchFeeding]);
+  const { data, isLoading, error: queryError, refetch } = useQuery({
+    queryKey: webQueryKeys.feedingTracking(paramsKey),
+    queryFn: fetchFeeding,
+  });
+  const rows = data?.rows ?? [];
+  const total = data?.total ?? 0;
+  const totalPages = data?.totalPages ?? 0;
+  const error = queryError instanceof Error ? queryError.message : null;
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: "completed" | "missed" }) =>
+      fetch(`${API_BASE}/records/feeding/${id}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status }),
+      }).then(async (response) => {
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(
+            (payload as { message?: string }).message ||
+              "Failed to update feeding record",
+          );
+        }
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["feedingTracking"] });
+    },
+  });
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) =>
+      fetch(`${API_BASE}/records/feeding/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      }).then(async (response) => {
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(
+            (payload as { message?: string }).message ||
+              "Failed to delete feeding record",
+          );
+        }
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["feedingTracking"] });
+    },
+  });
 
   const rangeLabel = useMemo(() => {
     if (total === 0 || rows.length === 0) return "0 of 0";
@@ -254,46 +289,16 @@ export function useFeedingProgram() {
 
   const updateFeedingStatus = useCallback(
     async (id: string, status: "completed" | "missed") => {
-      const response = await fetch(`${API_BASE}/records/feeding/${id}`, {
-        method: "PATCH",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ status }),
-      });
-
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        const message =
-          (payload as { message?: string }).message ||
-          "Failed to update feeding record";
-        throw new Error(message);
-      }
-
-      await fetchFeeding();
+      await updateStatusMutation.mutateAsync({ id, status });
     },
-    [fetchFeeding],
+    [updateStatusMutation],
   );
 
   const deleteFeeding = useCallback(
     async (id: string) => {
-      const response = await fetch(`${API_BASE}/records/feeding/${id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        const message =
-          (payload as { message?: string }).message ||
-          "Failed to delete feeding record";
-        throw new Error(message);
-      }
-
-      await fetchFeeding();
+      await deleteMutation.mutateAsync(id);
     },
-    [fetchFeeding],
+    [deleteMutation],
   );
 
   return {
@@ -321,5 +326,6 @@ export function useFeedingProgram() {
     clearFilters,
     updateFeedingStatus,
     deleteFeeding,
+    fetchFeeding: refetch,
   };
 }

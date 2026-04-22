@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useMutation } from "@tanstack/react-query";
 import { ChevronLeft, Eye, EyeOff, Lock } from "lucide-react-native";
 import { useAuth } from "@/src/hooks/use-auth";
 import type { User } from "@/src/context/auth-context";
@@ -35,7 +36,10 @@ export default function ChangePasswordScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const passwordSetupMutation = useMutation({
+    mutationFn: ({ setupToken, newPassword }: { setupToken: string; newPassword: string }) =>
+      completeTeacherPasswordSetup(setupToken, newPassword),
+  });
 
   const passwordFeedback = useMemo(
     () => getPasswordStrengthFeedback(newPassword),
@@ -62,12 +66,9 @@ export default function ChangePasswordScreen() {
       return;
     }
 
-    setIsSubmitting(true);
     try {
-      const { token: authToken, user: apiUser } = await completeTeacherPasswordSetup(
-        setupToken,
-        newPassword
-      );
+      const { token: authToken, user: apiUser } =
+        await passwordSetupMutation.mutateAsync({ setupToken, newPassword });
 
       const appUser: User = {
         id: apiUser._id,
@@ -83,8 +84,6 @@ export default function ChangePasswordScreen() {
       router.replace("/");
     } catch (error: any) {
       Alert.alert("Setup Failed", error.message || "Unable to set password.");
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -168,7 +167,7 @@ export default function ChangePasswordScreen() {
 
             <Pressable
               onPress={handleSetPassword}
-              disabled={isSubmitting || !isFormValid}
+              disabled={passwordSetupMutation.isPending || !isFormValid}
               className="mt-6 rounded-xl overflow-hidden"
               style={({ pressed }) => [{ opacity: pressed && isFormValid ? 0.85 : 1 }]}
             >
@@ -178,7 +177,7 @@ export default function ChangePasswordScreen() {
                 end={{ x: 1, y: 0 }}
                 className="w-full py-4 items-center justify-center rounded-xl"
               >
-                {isSubmitting ? (
+                {passwordSetupMutation.isPending ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
                   <Text className={isFormValid ? "text-white text-lg font-bold" : "text-gray-500 text-lg font-bold"}>

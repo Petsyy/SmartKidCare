@@ -15,6 +15,9 @@ import {
   getManilaDateKey,
   isValidManilaDateKey,
 } from "@/src/utils/manila-date";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { mobileQueryKeys } from "@/src/lib/query-keys";
+import { useTeacherUiStore } from "@/src/features/teacher/stores/teacher-ui.store";
 
 const foodMenuOptions = [
   "Sinigang, Adobo",
@@ -36,13 +39,13 @@ export const useTeacherFeeding = () => {
   const { token } = useAuth();
 
   const [children, setChildren] = useState<Child[]>([]);
-  const [loading, setLoading] = useState(true);
   const [feedingStatus, setFeedingStatus] = useState<Record<string, boolean>>({});
   const [foodServed, setFoodServed] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
   const [showMenuModal, setShowMenuModal] = useState(false);
   const [isReadOnly, setIsReadOnly] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { feedingSearchQuery: searchQuery, setFeedingSearchQuery: setSearchQuery } =
+    useTeacherUiStore();
 
   const presentChildrenIds = useMemo(() => {
     try {
@@ -51,6 +54,10 @@ export const useTeacherFeeding = () => {
       return [];
     }
   }, [params.presentChildren]);
+  const presentChildrenIdsKey = useMemo(
+    () => [...presentChildrenIds].sort().join(","),
+    [presentChildrenIds],
+  );
 
   const attendanceDateKey = useMemo(() => {
     const rawDateKey = String(params.attendanceDateKey || "").trim();
@@ -73,69 +80,86 @@ export const useTeacherFeeding = () => {
   }, [attendanceDateKey, params.attendanceDate, params.attendanceDateLabel]);
 
   const interactionDisabled = isReadOnly || isSubmitting;
+  const { data, isLoading } = useQuery({
+    queryKey: mobileQueryKeys.teacherFeedingSetup(
+      token,
+      attendanceDateKey,
+      presentChildrenIdsKey,
+    ),
+    enabled: Boolean(token),
+    queryFn: async () => {
+      if (!token) throw new Error("No authentication token");
+      const [childrenData, todayRecord] = await Promise.all([
+        getChildren(token),
+        getTodayFeeding(token),
+      ]);
+
+      if (todayRecord) {
+        const recordedChildIds = new Set(
+          todayRecord.records.map((r: any) => String(r.child._id || r.child)),
+        );
+        const childrenToShow = childrenData.filter((child) =>
+          recordedChildIds.has(child._id),
+        );
+        const existingStatus: Record<string, boolean> = {};
+        todayRecord.records.forEach((record: any) => {
+          existingStatus[String(record.child._id || record.child)] =
+            record.status !== "completed";
+        });
+        return {
+          childrenToShow,
+          isReadOnly: true,
+          foodServed: String(todayRecord.foodServed || ""),
+          feedingStatus: existingStatus,
+        };
+      }
+
+      let childrenToShow: Child[] = [];
+      if (presentChildrenIds.length > 0) {
+        const presentIds = new Set(presentChildrenIds.map(String));
+        childrenToShow = childrenData.filter((child) => presentIds.has(child._id));
+      } else {
+        const todayAttendance = await getTodayAttendance(token);
+        if (todayAttendance?.records) {
+          const presentIds = new Set(
+            todayAttendance.records
+              .filter((r: any) => r.status === "present")
+              .map((r: any) => String(r.child._id || r.child)),
+          );
+          childrenToShow = childrenData.filter((child) => presentIds.has(child._id));
+        }
+      }
+
+      const initialStatus: Record<string, boolean> = {};
+      childrenToShow.forEach((child) => {
+        initialStatus[child._id] = true;
+      });
+      return {
+        childrenToShow,
+        isReadOnly: false,
+        foodServed: "",
+        feedingStatus: initialStatus,
+      };
+    },
+  });
+  const submitFeedingMutation = useMutation({
+    mutationFn: async (payload: {
+      date: string;
+      foodServed: string;
+      records: FeedingRecord[];
+    }) => {
+      if (!token) throw new Error("No authentication token");
+      return submitFeeding(token, payload);
+    },
+  });
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const [childrenData, todayRecord] = await Promise.all([
-          getChildren(token),
-          getTodayFeeding(token),
-        ]);
-
-        let childrenToShow: Child[] = [];
-
-        if (todayRecord) {
-          const recordedChildIds = new Set(
-            todayRecord.records.map((r: any) => String(r.child._id || r.child)),
-          );
-          childrenToShow = childrenData.filter((child) => recordedChildIds.has(child._id));
-
-          setIsReadOnly(true);
-          setFoodServed(todayRecord.foodServed);
-
-          const existingStatus: Record<string, boolean> = {};
-          todayRecord.records.forEach((record: any) => {
-            existingStatus[String(record.child._id || record.child)] = record.status !== "completed";
-          });
-          setFeedingStatus(existingStatus);
-        } else {
-          if (presentChildrenIds.length > 0) {
-            const presentIds = new Set(presentChildrenIds.map(String));
-            childrenToShow = childrenData.filter((child) => presentIds.has(child._id));
-          } else {
-            const todayAttendance = await getTodayAttendance(token);
-            if (todayAttendance?.records) {
-              const presentIds = new Set(
-                todayAttendance.records
-                  .filter((r: any) => r.status === "present")
-                  .map((r: any) => String(r.child._id || r.child)),
-              );
-              childrenToShow = childrenData.filter((child) => presentIds.has(child._id));
-            }
-          }
-
-          const initialStatus: Record<string, boolean> = {};
-          childrenToShow.forEach((child) => {
-            initialStatus[child._id] = true;
-          });
-          setFeedingStatus(initialStatus);
-        }
-
-        setChildren(childrenToShow);
-      } catch (error) {
-        console.error("Failed to fetch data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [token, presentChildrenIds]);
+    if (!data) return;
+    setChildren(data.childrenToShow);
+    setIsReadOnly(data.isReadOnly);
+    setFoodServed(data.foodServed);
+    setFeedingStatus(data.feedingStatus);
+  }, [data]);
 
   const filteredChildren = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -194,7 +218,7 @@ export const useTeacherFeeding = () => {
         status: !isMissed ? ("completed" as const) : ("missed" as const),
       }));
 
-      await submitFeeding(token, {
+      await submitFeedingMutation.mutateAsync({
         date: attendanceDateKey,
         foodServed,
         records,
@@ -211,7 +235,7 @@ export const useTeacherFeeding = () => {
 
   return {
     children,
-    loading,
+    loading: isLoading,
     feedingStatus,
     foodServed,
     setFoodServed,

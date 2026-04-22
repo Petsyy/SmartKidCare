@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { API_BASE } from "@/components/config/config.api";
 import {
   formatConfidentialName,
   maskCompositeName,
 } from "@/utils/namePrivacy";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { webQueryKeys } from "@/lib/query-keys";
 
 type ChildRef = {
   _id: string;
@@ -70,7 +72,6 @@ const formatChildName = (child?: ChildRef | null) => {
 };
 
 export function useAttendanceTracking() {
-  const [rows, setRows] = useState<AttendanceRow[]>([]);
   const [search, setSearch] = useState("");
   const [datePreset, setDatePreset] = useState<DatePreset>("all");
   const [startDate, setStartDate] = useState<string>("");
@@ -80,10 +81,7 @@ export function useAttendanceTracking() {
   const [teacherId, setTeacherId] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const flattenAttendance = useCallback(
     (data: AttendanceApiResponse[]): AttendanceRow[] =>
@@ -107,82 +105,79 @@ export function useAttendanceTracking() {
     [],
   );
 
+  const paramsKey = useMemo(
+    () =>
+      JSON.stringify({
+        search,
+        datePreset,
+        startDate,
+        endDate,
+        statusFilter,
+        teacherId,
+        page,
+        limit,
+      }),
+    [search, datePreset, startDate, endDate, statusFilter, teacherId, page, limit],
+  );
   const fetchAttendance = useCallback(async () => {
     if (!teacherId) {
-      setRows([]);
-      setTotal(0);
-      setTotalPages(0);
-      setError(null);
-      setIsLoading(false);
-      return;
+      return {
+        rows: [] as AttendanceRow[],
+        total: 0,
+        totalPages: 0,
+        page,
+        limit,
+      };
+    }
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+    });
+    if (search.trim()) {
+      params.set("search", search.trim());
+    }
+    if (startDate && endDate) {
+      params.set("startDate", startDate);
+      params.set("endDate", endDate);
+    } else if (datePreset !== "all") {
+      params.set("datePreset", datePreset);
+    }
+    if (statusFilter !== "all") {
+      params.set("status", statusFilter);
+    }
+    params.set("teacherId", teacherId);
+    const url = `${API_BASE}/records/attendance?${params.toString()}`;
+    const response = await fetch(url, {
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    const payload = await response.json().catch(() => []);
+    if (!response.ok) {
+      const message =
+        (payload as { message?: string }).message ||
+        "Failed to fetch attendance";
+      throw new Error(message);
     }
 
-    setIsLoading(true);
-    setError(null);
-    try {
-      const params = new URLSearchParams({
-        page: String(page),
-        limit: String(limit),
-      });
-      if (search.trim()) {
-        params.set("search", search.trim());
-      }
-      if (startDate && endDate) {
-        params.set("startDate", startDate);
-        params.set("endDate", endDate);
-      } else if (datePreset !== "all") {
-        params.set("datePreset", datePreset);
-      }
-      if (statusFilter !== "all") {
-        params.set("status", statusFilter);
-      }
-      params.set("teacherId", teacherId);
-      const url = `${API_BASE}/records/attendance?${params.toString()}`;
-      const response = await fetch(url, {
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      const payload = await response.json().catch(() => []);
-      if (!response.ok) {
-        const message =
-          (payload as { message?: string }).message ||
-          "Failed to fetch attendance";
-        throw new Error(message);
-      }
-
-      if (Array.isArray(payload)) {
-        const data = flattenAttendance(payload as AttendanceApiResponse[]);
-        setRows(data);
-        setTotal(data.length);
-        setTotalPages(data.length > 0 ? 1 : 0);
-      } else {
-        const paginated = payload as PaginatedAttendanceResponse;
-        const rowsFromApi = Array.isArray(paginated.data) ? paginated.data : [];
-        setRows(
-          rowsFromApi.map((row) => ({
-            ...row,
-            childName: maskCompositeName(row.childName) || row.childName || "Unknown",
-          })),
-        );
-        if (Number.isFinite(Number(paginated.pagination?.page))) {
-          setPage(Number(paginated.pagination.page));
-        }
-        if (Number.isFinite(Number(paginated.pagination?.limit))) {
-          setLimit(Number(paginated.pagination.limit));
-        }
-        setTotal(Number(paginated.pagination?.total ?? 0));
-        setTotalPages(Number(paginated.pagination?.totalPages ?? 0));
-      }
-    } catch (err: unknown) {
-      setError(
-        err instanceof Error ? err.message : "Unable to fetch attendance",
-      );
-    } finally {
-      setIsLoading(false);
+    if (Array.isArray(payload)) {
+      const rows = flattenAttendance(payload as AttendanceApiResponse[]);
+      return { rows, total: rows.length, totalPages: rows.length > 0 ? 1 : 0, page, limit };
     }
+    const paginated = payload as PaginatedAttendanceResponse;
+    const rowsFromApi = Array.isArray(paginated.data) ? paginated.data : [];
+    return {
+      rows: rowsFromApi.map((row) => ({
+        ...row,
+        childName: maskCompositeName(row.childName) || row.childName || "Unknown",
+      })),
+      total: Number(paginated.pagination?.total ?? 0),
+      totalPages: Number(paginated.pagination?.totalPages ?? 0),
+      page: Number(paginated.pagination?.page ?? page),
+      limit: Number(paginated.pagination?.limit ?? limit),
+    };
   }, [
     datePreset,
     endDate,
@@ -194,10 +189,54 @@ export function useAttendanceTracking() {
     statusFilter,
     teacherId,
   ]);
-
-  useEffect(() => {
-    void fetchAttendance();
-  }, [fetchAttendance]);
+  const { data, isLoading, error: queryError, refetch } = useQuery({
+    queryKey: webQueryKeys.attendanceTracking(paramsKey),
+    queryFn: fetchAttendance,
+  });
+  const rows = data?.rows ?? [];
+  const total = data?.total ?? 0;
+  const totalPages = data?.totalPages ?? 0;
+  const error = queryError instanceof Error ? queryError.message : null;
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: "present" | "absent" }) =>
+      fetch(`${API_BASE}/records/attendance/${id}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status }),
+      }).then(async (response) => {
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(
+            (payload as { message?: string }).message ||
+              "Failed to update attendance record",
+          );
+        }
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["attendanceTracking"] });
+    },
+  });
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) =>
+      fetch(`${API_BASE}/records/attendance/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      }).then(async (response) => {
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(
+            (payload as { message?: string }).message ||
+              "Failed to delete attendance record",
+          );
+        }
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["attendanceTracking"] });
+    },
+  });
 
   const rangeLabel = useMemo(() => {
     if (total === 0 || rows.length === 0) return "0 of 0";
@@ -252,46 +291,16 @@ export function useAttendanceTracking() {
 
   const updateAttendanceStatus = useCallback(
     async (id: string, status: "present" | "absent") => {
-      const response = await fetch(`${API_BASE}/records/attendance/${id}`, {
-        method: "PATCH",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ status }),
-      });
-
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        const message =
-          (payload as { message?: string }).message ||
-          "Failed to update attendance record";
-        throw new Error(message);
-      }
-
-      await fetchAttendance();
+      await updateStatusMutation.mutateAsync({ id, status });
     },
-    [fetchAttendance],
+    [updateStatusMutation],
   );
 
   const deleteAttendance = useCallback(
     async (id: string) => {
-      const response = await fetch(`${API_BASE}/records/attendance/${id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        const message =
-          (payload as { message?: string }).message ||
-          "Failed to delete attendance record";
-        throw new Error(message);
-      }
-
-      await fetchAttendance();
+      await deleteMutation.mutateAsync(id);
     },
-    [fetchAttendance],
+    [deleteMutation],
   );
 
   return {
@@ -319,5 +328,6 @@ export function useAttendanceTracking() {
     clearFilters,
     updateAttendanceStatus,
     deleteAttendance,
+    fetchAttendance: refetch,
   };
 }

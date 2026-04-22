@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   loadNotificationArchiveState,
   saveNotificationArchiveState,
@@ -8,6 +9,7 @@ import {
 } from "@/src/utils/notification-archive-storage";
 import { toLocalDateKey } from "@/src/features/notifications/utils";
 import type { NotificationFilter } from "@/src/features/notifications/types";
+import { mobileQueryKeys } from "@/src/lib/query-keys";
 
 type FeedResponse<T> = {
   date?: string;
@@ -27,11 +29,6 @@ export const useNotificationsFeed = <T extends NotificationArchiveBaseItem>({
   userId,
   fetchFeed,
 }: Params<T>) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [date, setDate] = useState<string | null>(null);
-  const [items, setItems] = useState<T[]>([]);
   const [readIds, setReadIds] = useState<Record<string, boolean>>({});
   const [archivedItems, setArchivedItems] = useState<
     ArchivedNotificationItem<T>[]
@@ -41,43 +38,43 @@ export const useNotificationsFeed = <T extends NotificationArchiveBaseItem>({
 
   const todayDateKey = useMemo(() => toLocalDateKey(), []);
 
-  const loadNotifications = useCallback(
-    async (asPullRefresh = false) => {
+  const {
+    data,
+    isLoading,
+    isRefetching,
+    error: queryError,
+    refetch,
+  } = useQuery({
+    queryKey: mobileQueryKeys.notificationsFeed(
+      audience,
+      token,
+      userId,
+      todayDateKey,
+    ),
+    enabled: Boolean(token),
+    queryFn: async () => {
       if (!token) {
-        setError("You need to sign in first.");
-        setItems([]);
-        return;
+        throw new Error("You need to sign in first.");
       }
-
-      if (asPullRefresh) {
-        setIsRefreshing(true);
-      } else {
-        setIsLoading(true);
-      }
-
-      setError(null);
-
-      try {
-        const result = await fetchFeed(token, todayDateKey);
-        setItems(result.notifications || []);
-        setDate(result.date || todayDateKey);
-      } catch (loadError: any) {
-        setError(loadError?.message || "Failed to load notifications.");
-        setItems([]);
-      } finally {
-        if (asPullRefresh) {
-          setIsRefreshing(false);
-        } else {
-          setIsLoading(false);
-        }
-      }
+      const result = await fetchFeed(token, todayDateKey);
+      return {
+        items: result.notifications || [],
+        date: result.date || todayDateKey,
+      };
     },
-    [fetchFeed, todayDateKey, token],
-  );
-
-  useEffect(() => {
-    void loadNotifications();
-  }, [loadNotifications]);
+  });
+  const items = data?.items || [];
+  const date = data?.date || null;
+  const error = !token
+    ? "You need to sign in first."
+    : queryError instanceof Error
+      ? queryError.message
+      : queryError
+        ? "Failed to load notifications."
+        : null;
+  const loadNotifications = useCallback(async () => {
+    await refetch();
+  }, [refetch]);
 
   useEffect(() => {
     let isMounted = true;
@@ -174,13 +171,20 @@ export const useNotificationsFeed = <T extends NotificationArchiveBaseItem>({
 
   const deleteArchivedNotification = (id: string) => {
     setArchivedItems((current) => current.filter((item) => item.id !== id));
-    setItems((current) => current.filter((item) => item.id !== id));
   };
 
   const deleteAllArchivedNotifications = () => {
     const deletedIds = new Set(archivedItems.map((item) => item.id));
     setArchivedItems([]);
-    setItems((current) => current.filter((item) => !deletedIds.has(item.id)));
+    setReadIds((current) => {
+      const next = { ...current };
+      Object.keys(next).forEach((id) => {
+        if (deletedIds.has(id)) {
+          delete next[id];
+        }
+      });
+      return next;
+    });
   };
 
   const unreadCount = useMemo(() => activeItems.filter((item) => !readIds[item.id]).length,
@@ -203,7 +207,7 @@ export const useNotificationsFeed = <T extends NotificationArchiveBaseItem>({
   return {
     date,
     isLoading,
-    isRefreshing,
+    isRefreshing: isRefetching,
     error,
     readIds,
     activeItems,

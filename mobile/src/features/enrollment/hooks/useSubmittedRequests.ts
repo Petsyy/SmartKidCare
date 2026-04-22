@@ -1,32 +1,32 @@
-import { useState, useCallback, useEffect, useMemo } from "react";
-import { Alert } from "react-native";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { getMyEnrollmentRequests, type TeacherEnrollmentRequest } from "@/src/api/teacher.api";
 import { buildRequestChildName } from "@/src/features/enrollment/utils";
+import { mobileQueryKeys } from "@/src/lib/query-keys";
+import { useSubmittedRequestsUiStore } from "@/src/features/enrollment/stores/submitted-requests-ui.store";
 
 export const useSubmittedRequests = (token: string | null) => {
-  const [submittedRequests, setSubmittedRequests] = useState<TeacherEnrollmentRequest[]>([]);
-  const [loadingSubmitted, setLoadingSubmitted] = useState(false);
-  const [submittedStatusFilter, setSubmittedStatusFilter] = useState<"all" | "pending" | "rejected">("all");
-  const [submittedSearchQuery, setSubmittedSearchQuery] = useState("");
+  const {
+    submittedStatusFilter,
+    submittedSearchQuery,
+    setSubmittedStatusFilter,
+    setSubmittedSearchQuery,
+  } = useSubmittedRequestsUiStore();
 
-  const refreshSubmitted = useCallback(async () => {
-    if (!token) return;
-    setLoadingSubmitted(true);
-    try {
+  const {
+    data: submittedRequests = [],
+    isLoading: loadingSubmitted,
+    refetch: refreshSubmitted,
+  } = useQuery({
+    queryKey: mobileQueryKeys.submittedRequests(token),
+    queryFn: async () => {
+      if (!token) return [];
       const data = await getMyEnrollmentRequests(token);
       // Filter out approved requests (once admin approval is done)
-      setSubmittedRequests(data.filter((request) => request.status !== "approved"));
-    } catch (error: any) {
-      Alert.alert("Load Error", error?.message || "Failed to load submitted requests.");
-    } finally {
-      setLoadingSubmitted(false);
-    }
-  }, [token]);
-
-  // Load on component mount
-  useEffect(() => {
-    void refreshSubmitted();
-  }, [refreshSubmitted]);
+      return data.filter((request) => request.status !== "approved");
+    },
+    enabled: !!token,
+  });
 
   const submittedSummary = useMemo(() => {
     const pending = submittedRequests.filter((item) => item.status === "pending").length;
@@ -54,7 +54,6 @@ export const useSubmittedRequests = (token: string | null) => {
 
   return {
     submittedRequests,
-    setSubmittedRequests,
     loadingSubmitted,
     submittedStatusFilter,
     setSubmittedStatusFilter,

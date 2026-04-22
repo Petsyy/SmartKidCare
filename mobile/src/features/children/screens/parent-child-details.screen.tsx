@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import {
   Text,
   View,
@@ -25,6 +25,8 @@ import {
   Activity,
   AlertCircle,
 } from "lucide-react-native";
+import { useQuery } from "@tanstack/react-query";
+import { mobileQueryKeys } from "@/src/lib/query-keys";
 
 function InfoRow({
   icon,
@@ -53,76 +55,49 @@ export default function ParentChildDetailsScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const { token, user } = useAuth();
+  const childId = typeof id === "string" ? id : null;
 
-  const [child, setChild] = useState<Child | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [attendanceRecord, setAttendanceRecord] = useState<any>(null);
-  const [feedingRecord, setFeedingRecord] = useState<any>(null);
-
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        if (!token || !id) throw new Error("Missing required data");
-
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-
-        const [childData, attendanceList, feedingList] = await Promise.all([
-          getChildById(token, id as string).catch((err) => {
-            console.error("Failed to fetch child details:", err);
-            throw new Error(`Failed to fetch child: ${err.message}`);
-          }),
-          getAttendanceHistory(
-            token,
-            today.toISOString(),
-            tomorrow.toISOString(),
-          ).catch((err) => {
-            console.warn("Failed to fetch attendance:", err);
-            return [];
-          }),
-          getFeedingHistory(
-            token,
-            today.toISOString(),
-            tomorrow.toISOString(),
-          ).catch((err) => {
-            console.warn("Failed to fetch feeding:", err);
-            return [];
-          }),
-        ]);
-
-        if (childData.parent?.email !== user?.email) {
-          throw new Error("You don't have permission to view this child");
-        }
-
-        const attendanceMatch = attendanceList.find((record: any) =>
-          record.records?.some(
-            (r: any) => (r.child?._id || r.child) === childData._id,
-          ),
-        );
-        const feedingMatch = feedingList.find((record: any) =>
-          record.records?.some(
-            (r: any) => (r.child?._id || r.child) === childData._id,
-          ),
-        );
-
-        setChild(childData);
-        setAttendanceRecord(attendanceMatch || null);
-        setFeedingRecord(feedingMatch || null);
-      } catch (err: any) {
-        console.error("Load data error:", err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
+  const { data, isLoading: loading, error } = useQuery({
+    queryKey: mobileQueryKeys.parentChildDetails(token, childId, user?.email),
+    enabled: Boolean(token && childId && user?.email),
+    queryFn: async () => {
+      if (!token || !childId) {
+        throw new Error("Missing required data");
       }
-    };
 
-    loadData();
-  }, [token, id, user]);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
 
-  const getChildStatus = () => {
+      const [child, attendanceList, feedingList] = await Promise.all([
+        getChildById(token, childId),
+        getAttendanceHistory(token, today.toISOString(), tomorrow.toISOString()).catch(() => []),
+        getFeedingHistory(token, today.toISOString(), tomorrow.toISOString()).catch(() => []),
+      ]);
+
+      if (child.parent?.email !== user?.email) {
+        throw new Error("You don't have permission to view this child");
+      }
+
+      const attendanceRecord =
+        attendanceList.find((record: any) =>
+          record.records?.some((r: any) => (r.child?._id || r.child) === child._id),
+        ) || null;
+      const feedingRecord =
+        feedingList.find((record: any) =>
+          record.records?.some((r: any) => (r.child?._id || r.child) === child._id),
+        ) || null;
+
+      return { child, attendanceRecord, feedingRecord };
+    },
+  });
+
+  const child: Child | null = data?.child ?? null;
+  const attendanceRecord = data?.attendanceRecord ?? null;
+  const feedingRecord = data?.feedingRecord ?? null;
+
+  const status = useMemo(() => {
     if (!child) return { attendance: "Not Recorded", feeding: "Not Recorded" };
 
     let attendance = "Not Recorded";
@@ -148,7 +123,7 @@ export default function ParentChildDetailsScreen() {
     }
 
     return { attendance, feeding };
-  };
+  }, [child, attendanceRecord, feedingRecord]);
 
   if (loading) {
     return (
@@ -193,7 +168,7 @@ export default function ParentChildDetailsScreen() {
             <AlertCircle size={28} color="#EF4444" />
           </View>
           <Text className="text-lg font-bold text-gray-800 mb-2 text-center">
-            {error || "Child not found"}
+            {error instanceof Error ? error.message : "Child not found"}
           </Text>
           <Text className="text-sm text-gray-500 text-center mb-4">
             Please make sure you have permission to view this child&apos;s details.
@@ -218,7 +193,6 @@ export default function ParentChildDetailsScreen() {
     );
   }
 
-  const status = getChildStatus();
   const fullName = `${child.firstName} ${child.middleName ? child.middleName + " " : ""}${child.lastName}`;
 
   return (

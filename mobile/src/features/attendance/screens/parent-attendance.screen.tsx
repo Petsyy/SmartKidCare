@@ -142,13 +142,13 @@ export default function ViewAttendanceDetails() {
       renderModalContent={(dayDetails, currentSelectedDay, selectedDateLabel, closeModal) => {
         const recordedLabel = dayDetails?.recordedAt
           ? (() => {
-              const recordedDate = new Date(dayDetails.recordedAt as string);
-              const month = recordedDate.toLocaleDateString("en-PH", { month: "long", timeZone: "Asia/Manila" });
-              const day = recordedDate.toLocaleDateString("en-PH", { day: "numeric", timeZone: "Asia/Manila" });
-              const year = recordedDate.toLocaleDateString("en-PH", { year: "numeric", timeZone: "Asia/Manila" });
-              const time = recordedDate.toLocaleTimeString("en-PH", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Manila" });
-              return `${month}, ${day} ${year}, ${time}`;
-            })()
+            const recordedDate = new Date(dayDetails.recordedAt as string);
+            const month = recordedDate.toLocaleDateString("en-PH", { month: "long", timeZone: "Asia/Manila" });
+            const day = recordedDate.toLocaleDateString("en-PH", { day: "numeric", timeZone: "Asia/Manila" });
+            const year = recordedDate.toLocaleDateString("en-PH", { year: "numeric", timeZone: "Asia/Manila" });
+            const time = recordedDate.toLocaleTimeString("en-PH", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Manila" });
+            return `${month}, ${day} ${year}, ${time}`;
+          })()
           : "Not available";
 
         return (
