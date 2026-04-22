@@ -1,87 +1,28 @@
 import { API_BASE_URL } from "../config/config.api";
 
-type Platform = "ios" | "android" | "web" | "unknown";
+export type {
+  Platform,
+  RegisterPushTokenPayload,
+  RegisterPushTokenResponse,
+  TeacherNotificationDispatchDetail,
+  TeacherNotificationDispatchResponse,
+  TeacherNotificationFeedItem,
+  TeacherNotificationFeedResponse,
+  ParentNotificationFeedItem,
+  ParentNotificationFeedResponse,
+} from "./api.types";
 
-export interface RegisterPushTokenPayload {
-  pushToken: string;
-  platform?: Platform;
-  deviceName?: string | null;
-  appOwnership?: string | null;
-}
-
-export interface RegisterPushTokenResponse {
-  message: string;
-  totalTokens: number;
-}
-
-export interface TeacherNotificationDispatchDetail {
-  teacherId: string;
-  teacherName: string;
-  sent: Array<
-    | "attendance_reminder"
-    | "attendance_incomplete"
-    | "feeding_reminder"
-    | "feeding_incomplete"
-  >;
-  skipped?: string;
-}
-
-export interface TeacherNotificationDispatchResponse {
-  message: string;
-  date: string;
-  totalTeachers: number;
-  processedTeachers: number;
-  notificationsSent: number;
-  attendanceReminderCount: number;
-  attendanceIncompleteCount: number;
-  feedingReminderCount: number;
-  feedingIncompleteCount: number;
-  details: TeacherNotificationDispatchDetail[];
-}
-
-export interface TeacherNotificationFeedItem {
-  id: string;
-  type:
-    | "attendance_reminder"
-    | "attendance_incomplete"
-    | "feeding_reminder"
-    | "feeding_incomplete";
-  title: string;
-  message: string;
-  timeLabel: string;
-  actionLabel: string;
-}
-
-export interface TeacherNotificationFeedResponse {
-  message: string;
-  date: string;
-  teacherId: string;
-  teacherName: string;
-  hasPushToken: boolean;
-  notifications: TeacherNotificationFeedItem[];
-}
-
-export interface ParentNotificationFeedItem {
-  id: string;
-  type:
-    | "attendance_submitted"
-    | "absence_alert"
-    | "feeding_submitted"
-    | "missed_meal_alert";
-  title: string;
-  message: string;
-  timeLabel: string;
-  actionLabel: string;
-}
-
-export interface ParentNotificationFeedResponse {
-  message: string;
-  date: string;
-  parentId: string;
-  parentName: string;
-  hasPushToken: boolean;
-  notifications: ParentNotificationFeedItem[];
-}
+import type {
+  Platform,
+  RegisterPushTokenPayload,
+  RegisterPushTokenResponse,
+  TeacherNotificationDispatchDetail,
+  TeacherNotificationDispatchResponse,
+  TeacherNotificationFeedItem,
+  TeacherNotificationFeedResponse,
+  ParentNotificationFeedItem,
+  ParentNotificationFeedResponse,
+} from "./api.types";
 
 export const registerPushToken = async (
   token: string,

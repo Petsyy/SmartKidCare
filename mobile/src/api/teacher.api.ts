@@ -1,112 +1,25 @@
 import { API_BASE_URL } from "../config/config.api";
-import { Child, ChildDocumentIntegrity } from "./parent.api";
+import type { Child, ChildDocumentIntegrity } from "./api.types";
 
-export interface ChildEnrollmentRequestPayload {
-  firstName: string;
-  middleName?: string;
-  lastName: string;
-  dateOfBirth: string;
-  age: number;
-  gender: "male" | "female";
-  programType: "4Ps Beneficiary" | "Regular Enrollee (Non-beneficiary)";
-  daycareCenterId: string;
-  enrollmentDate: string;
-  schoolYear: string;
-  parentFirstName: string;
-  parentMiddleName?: string;
-  parentLastName: string;
-  parentEmail: string;
-  parentPhone: string;
-}
+export type {
+  ChildEnrollmentRequestPayload,
+  ChildEnrollmentRequestFiles,
+  EnrollmentCenterOption,
+  ChildEnrollmentSubmissionResponse,
+  TeacherEnrollmentRequest,
+  ParentResetPasswordResponse,
+  ParentCredentialsResponse,
+} from "./api.types";
 
-export interface ChildEnrollmentRequestFiles {
-  birthCertificate?: {
-    uri: string;
-    name: string;
-    mimeType?: string | null;
-  } | null;
-  parentId?: {
-    uri: string;
-    name: string;
-    mimeType?: string | null;
-  } | null;
-}
-
-export interface EnrollmentCenterOption {
-  _id: string;
-  name: string;
-  barangay: string;
-  code: string;
-  isActive?: boolean;
-}
-
-export interface ChildEnrollmentSubmissionResponse {
-  message: string;
-  request: TeacherEnrollmentRequest;
-  parentCredentials?: {
-    email: string;
-    phone: string;
-    tempPassword: string | null;
-  };
-}
-
-export interface TeacherEnrollmentRequest {
-  _id: string;
-  status: "pending" | "approved" | "rejected";
-  child: {
-    fullName: string;
-    firstName: string;
-    middleName?: string;
-    lastName: string;
-    dateOfBirth: string;
-    age: number;
-    gender: "male" | "female";
-    programType: "4Ps Beneficiary" | "Regular Enrollee (Non-beneficiary)";
-    enrollmentDate: string;
-    schoolYear: string;
-  };
-  parent: {
-    firstName: string;
-    middleName?: string;
-    lastName: string;
-    email: string;
-    phone: string;
-  };
-  review?: {
-    reviewedAt?: string | null;
-    reason?: string;
-  };
-  createdChild?: {
-    _id: string;
-    firstName?: string;
-    middleName?: string;
-    lastName?: string;
-    studentId?: string;
-    documentIntegrity?: ChildDocumentIntegrity | null;
-  } | null;
-  /** When false, parent finished password setup / changed password; hide teacher reset action. */
-  showResetParentPassword?: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface ParentResetPasswordResponse {
-  message: string;
-  credentials: {
-    email: string;
-    phone: string;
-    tempPassword: string;
-  };
-}
-
-export interface ParentCredentialsResponse {
-  message: string;
-  credentials: {
-    email: string;
-    phone: string;
-    tempPassword: string | null;
-  };
-}
+import type {
+  ChildEnrollmentRequestPayload,
+  ChildEnrollmentRequestFiles,
+  EnrollmentCenterOption,
+  ChildEnrollmentSubmissionResponse,
+  TeacherEnrollmentRequest,
+  ParentResetPasswordResponse,
+  ParentCredentialsResponse,
+} from "./api.types";
 
 export const getChildren = async (token: string): Promise<Child[]> => {
   if (!token) throw new Error("No authentication token");

@@ -1,46 +1,7 @@
 import { API_BASE_URL } from "../config/config.api";
 
-export interface ChildDocumentIntegrity {
-  childIdHash?: string | null;
-  documentsHash?: string | null;
-  txHash?: string | null;
-  blockNumber?: number | null;
-  blockchainVerified?: boolean;
-  anchoredAt?: string | null;
-}
-
-export interface Child {
-  _id: string;
-  firstName: string;
-  middleName?: string;
-  lastName: string;
-  age: number;
-  gender: string;
-  studentId: string;
-  schoolYear: string;
-  status: string;
-  enrollmentDate: string;
-  dateOfBirth?: string;
-  documentIntegrity?: ChildDocumentIntegrity | null;
-
-  parent?: {
-    phone: any;
-    _id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    phoneNumber?: string;
-  };
-
-  teacher?: {
-    _id: string;
-    firstName: string;
-    middleName?: string;
-    lastName: string;
-    email: string;
-    phone?: string; // 🔥 ADD THIS
-  };
-}
+export type { Child, ChildDocumentIntegrity } from "./api.types";
+import type { Child, ChildDocumentIntegrity } from "./api.types";
 
 export const getMyChildren = async (token: string): Promise<Child[]> => {
   if (!token) throw new Error("No authentication token");

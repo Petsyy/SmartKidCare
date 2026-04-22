@@ -1,37 +1,20 @@
 import { API_BASE_URL } from "../config/config.api";
 
-export interface LoginCredentials {
-  identifier: string;
-  password: string;
-}
+export type {
+  LoginCredentials,
+  LoggedInUser,
+  AuthenticatedLoginResponse,
+  PasswordChangeChallengeResponse,
+  LoginResponse,
+} from "./api.types";
 
-export interface LoggedInUser {
-  _id: string;
-  email: string;
-  role: "teacher" | "parent";
-  firstName?: string;
-  lastName?: string;
-  mustChangePassword?: boolean;
-  needsToConfirmLink?: boolean;
-}
-
-export interface AuthenticatedLoginResponse {
-  requiresPasswordChange?: false;
-  token: string;
-  user: LoggedInUser;
-}
-
-export interface PasswordChangeChallengeResponse {
-  requiresPasswordChange: true;
-  email: string;
-  requiresOtp?: boolean;
-  passwordSetupToken?: string;
-  message?: string;
-}
-
-export type LoginResponse =
-  | AuthenticatedLoginResponse
-  | PasswordChangeChallengeResponse;
+import type {
+  LoginCredentials,
+  LoggedInUser,
+  AuthenticatedLoginResponse,
+  PasswordChangeChallengeResponse,
+  LoginResponse,
+} from "./api.types";
 
 export const login = async (
   credentials: LoginCredentials
@@ -204,5 +187,27 @@ export const getMe = async (token: string): Promise<LoggedInUser> => {
 };
 
 
+
+export const changePassword = async (
+  token: string,
+  payload: { currentPassword: string; newPassword: string }
+): Promise<{ message: string }> => {
+  const response = await fetch(`${API_BASE_URL}/api/auth/change-password`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "Failed to change password");
+  }
+
+  return data;
+};
 
 export default API_BASE_URL;

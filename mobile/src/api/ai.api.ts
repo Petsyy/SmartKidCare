@@ -5,13 +5,8 @@ import {
   sanitizeAIMessageInput,
 } from "../utils/ai-input-sanitizer";
 
-export type AIRole = "parent";
-
-export interface AIChatPayload {
-  role: AIRole;
-  message: string;
-  childId: string;
-}
+export type { AIRole, AIChatPayload } from "./api.types";
+import type { AIRole, AIChatPayload } from "./api.types";
 
 function toShortDate(year: string, month: string, day: string): string {
   const monthNames = [

@@ -5,53 +5,27 @@ import {
   toManilaDateKey,
 } from "@/src/utils/manila-date";
 
-export interface AttendanceRecord {
-  child: string;
-  status: "present" | "absent";
-}
+export type {
+  AttendanceRecord,
+  FeedingRecord,
+  BlockchainResult,
+  BlockchainConfirmation,
+  OnChainData,
+  SubmitResponse,
+  SubmitAttendanceData,
+  SubmitFeedingData,
+} from "./api.types";
 
-export interface FeedingRecord {
-  child: string;
-  status: "completed" | "missed";
-}
-
-export interface BlockchainResult {
-  txHash: string;
-  dateHash: string;
-  attendanceHash: string;
-  feedingHash: string;
-  blockNumber: number;
-  timestamp?: string;
-  gasUsed?: string;
-  gasPrice?: string;
-  gasCostInEth?: string;
-}
-
-export interface BlockchainConfirmation {
-  childId: string;
-  result: BlockchainResult;
-}
-
-export interface OnChainData {
-  successes: BlockchainConfirmation[];
-  failures: Array<{ childId: string; error: string }>;
-}
-
-export interface SubmitResponse {
-  message: string;
-  onChain?: OnChainData;
-}
-
-export interface SubmitAttendanceData {
-  date: string;
-  records: AttendanceRecord[];
-}
-
-export interface SubmitFeedingData {
-  date: string;
-  foodServed: string;
-  records: FeedingRecord[];
-}
+import type {
+  AttendanceRecord,
+  FeedingRecord,
+  BlockchainResult,
+  BlockchainConfirmation,
+  OnChainData,
+  SubmitResponse,
+  SubmitAttendanceData,
+  SubmitFeedingData,
+} from "./api.types";
 
 export const submitAttendance = async (
   token: string,
