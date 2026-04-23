@@ -54,14 +54,14 @@ export default function ParentChildDetailsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const { token, user } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const childId = typeof id === "string" ? id : null;
 
   const { data, isLoading: loading, error } = useQuery({
-    queryKey: mobileQueryKeys.parentChildDetails(token, childId, user?.email),
-    enabled: Boolean(token && childId && user?.email),
+    queryKey: mobileQueryKeys.parentChildDetails(childId, user?.email),
+    enabled: isAuthenticated && Boolean(childId && user?.email),
     queryFn: async () => {
-      if (!token || !childId) {
+      if (!childId) {
         throw new Error("Missing required data");
       }
 
@@ -71,9 +71,9 @@ export default function ParentChildDetailsScreen() {
       tomorrow.setDate(tomorrow.getDate() + 1);
 
       const [child, attendanceList, feedingList] = await Promise.all([
-        getChildById(token, childId),
-        getAttendanceHistory(token, today.toISOString(), tomorrow.toISOString()).catch(() => []),
-        getFeedingHistory(token, today.toISOString(), tomorrow.toISOString()).catch(() => []),
+        getChildById(childId),
+        getAttendanceHistory(today.toISOString(), tomorrow.toISOString()).catch(() => []),
+        getFeedingHistory(today.toISOString(), tomorrow.toISOString()).catch(() => []),
       ]);
 
       if (child.parent?.email !== user?.email) {

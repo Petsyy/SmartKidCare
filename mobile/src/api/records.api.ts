@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "../config/config.api";
+import { apiClient } from "./client";
 import {
   getManilaDateKey,
   getManilaIsoRangeForDateKey,
@@ -17,132 +17,62 @@ export type {
 } from "./api.types";
 
 import type {
-  AttendanceRecord,
-  FeedingRecord,
-  BlockchainResult,
-  BlockchainConfirmation,
-  OnChainData,
   SubmitResponse,
   SubmitAttendanceData,
   SubmitFeedingData,
 } from "./api.types";
 
 export const submitAttendance = async (
-  token: string,
   data: SubmitAttendanceData,
 ): Promise<SubmitResponse> => {
-  if (!token) throw new Error("No authentication token");
-
-  const response = await fetch(`${API_BASE_URL}/api/records/attendance`, {
+  return apiClient<SubmitResponse>("/api/records/attendance", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(data),
+    body: data,
   });
-
-  const result = await response.json();
-
-  if (!response.ok) {
-    throw new Error(result.message || "Failed to submit attendance");
-  }
-
-  return result;
 };
 
 export const submitFeeding = async (
-  token: string,
   data: SubmitFeedingData,
 ): Promise<SubmitResponse> => {
-  if (!token) throw new Error("No authentication token");
-
-  const response = await fetch(`${API_BASE_URL}/api/records/feeding`, {
+  return apiClient<SubmitResponse>("/api/records/feeding", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(data),
+    body: data,
   });
-
-  const result = await response.json();
-
-  if (!response.ok) {
-    throw new Error(result.message || "Failed to submit feeding");
-  }
-
-  return result;
 };
 
 export const getAttendanceHistory = async (
-  token: string,
   startDate?: string,
   endDate?: string,
 ): Promise<any[]> => {
-  if (!token) throw new Error("No authentication token");
-
-  let url = `${API_BASE_URL}/api/records/attendance`;
+  let path = "/api/records/attendance";
   if (startDate && endDate) {
-    url += `?startDate=${startDate}&endDate=${endDate}`;
+    path += `?startDate=${startDate}&endDate=${endDate}`;
   }
 
-  const response = await fetch(url, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || "Failed to fetch attendance history");
-  }
-
+  const data = await apiClient<any[]>(path);
   return Array.isArray(data) ? data : [];
 };
 
 export const getFeedingHistory = async (
-  token: string,
   startDate?: string,
   endDate?: string,
 ): Promise<any[]> => {
-  if (!token) throw new Error("No authentication token");
-
-  let url = `${API_BASE_URL}/api/records/feeding`;
+  let path = "/api/records/feeding";
   if (startDate && endDate) {
-    url += `?startDate=${startDate}&endDate=${endDate}`;
+    path += `?startDate=${startDate}&endDate=${endDate}`;
   }
 
-  const response = await fetch(url, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || "Failed to fetch feeding history");
-  }
-
+  const data = await apiClient<any[]>(path);
   return Array.isArray(data) ? data : [];
 };
 
 // Get today's attendance record
-export const getTodayAttendance = async (
-  token: string,
-): Promise<any | null> => {
+export const getTodayAttendance = async (): Promise<any | null> => {
   const todayDateKey = getManilaDateKey();
   const todayRange = getManilaIsoRangeForDateKey(todayDateKey);
   if (!todayRange) return null;
 
   const records = await getAttendanceHistory(
-    token,
     todayRange.startIso,
     todayRange.endIso,
   );
@@ -155,13 +85,12 @@ export const getTodayAttendance = async (
 };
 
 // Get today's feeding record
-export const getTodayFeeding = async (token: string): Promise<any | null> => {
+export const getTodayFeeding = async (): Promise<any | null> => {
   const todayDateKey = getManilaDateKey();
   const todayRange = getManilaIsoRangeForDateKey(todayDateKey);
   if (!todayRange) return null;
 
   const records = await getFeedingHistory(
-    token,
     todayRange.startIso,
     todayRange.endIso,
   );

@@ -1,4 +1,4 @@
-import { getTeacherProfile } from "@/src/api/teacher.api";
+import { getProfile } from "@/src/api/authentication.api";
 import ProfileScreen from "@/src/features/profile/screens/profile.screen";
 
 export default function TeacherProfileScreen() {
@@ -6,7 +6,7 @@ export default function TeacherProfileScreen() {
     <ProfileScreen
       role="teacher"
       roleLabel="Child Development Worker"
-      fetchProfile={getTeacherProfile}
+      fetchProfile={getProfile}
       showAssignedCenter={true}
     />
   );

@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "../config/config.api";
+import { apiClient } from "./client";
 
 export type {
   LoginCredentials,
@@ -10,34 +10,24 @@ export type {
 
 import type {
   LoginCredentials,
-  LoggedInUser,
-  AuthenticatedLoginResponse,
-  PasswordChangeChallengeResponse,
   LoginResponse,
+  AuthenticatedLoginResponse,
 } from "./api.types";
 
 export const login = async (
-  credentials: LoginCredentials
+  credentials: LoginCredentials,
 ): Promise<LoginResponse> => {
-  const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+  const data = await apiClient<LoginResponse>("/api/auth/login", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(credentials),
+    body: credentials,
+    authenticated: false,
   });
 
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || "Login failed");
-  }
-
-  if (data.requiresPasswordChange) {
+  if ("requiresPasswordChange" in data && data.requiresPasswordChange) {
     return data;
   }
 
-  if (data.user.role === "admin") {
+  if ((data as any).user?.role === "admin") {
     throw new Error("Admin accounts cannot log in on the mobile app");
   }
 
@@ -46,168 +36,83 @@ export const login = async (
 
 export const verifyTeacherPasswordOtp = async (
   email: string,
-  otp: string
+  otp: string,
 ): Promise<{ passwordSetupToken: string; message?: string }> => {
-  const response = await fetch(`${API_BASE_URL}/api/auth/password-otp/verify`, {
+  return apiClient("/api/auth/password-otp/verify", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ email, otp }),
+    body: { email, otp },
+    authenticated: false,
   });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || "OTP verification failed");
-  }
-
-  return data;
 };
 
 export const resendTeacherPasswordOtp = async (
-  email: string
+  email: string,
 ): Promise<{ message?: string }> => {
-  const response = await fetch(`${API_BASE_URL}/api/auth/password-otp/resend`, {
+  return apiClient("/api/auth/password-otp/resend", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ email }),
+    body: { email },
+    authenticated: false,
   });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || "Failed to resend OTP");
-  }
-
-  return data;
 };
 
 export const completeTeacherPasswordSetup = async (
   passwordSetupToken: string,
-  newPassword: string
+  newPassword: string,
 ): Promise<AuthenticatedLoginResponse> => {
-  const response = await fetch(`${API_BASE_URL}/api/auth/password/setup`, {
+  return apiClient("/api/auth/password/setup", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ passwordSetupToken, newPassword }),
+    body: { passwordSetupToken, newPassword },
+    authenticated: false,
   });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || "Failed to set new password");
-  }
-
-  return data;
 };
 
 export const requestForgotPasswordOtp = async (
-  email: string
+  email: string,
 ): Promise<{ message?: string }> => {
-  const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password/request`, {
+  return apiClient("/api/auth/forgot-password/request", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ email }),
+    body: { email },
+    authenticated: false,
   });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || "Failed to request forgot-password OTP");
-  }
-
-  return data;
 };
 
 export const verifyForgotPasswordOtp = async (
   email: string,
-  otp: string
+  otp: string,
 ): Promise<{ passwordResetToken: string; message?: string }> => {
-  const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password/verify`, {
+  return apiClient("/api/auth/forgot-password/verify", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ email, otp }),
+    body: { email, otp },
+    authenticated: false,
   });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || "Failed to verify forgot-password OTP");
-  }
-
-  return data;
 };
 
 export const resetForgotPassword = async (
   passwordResetToken: string,
-  newPassword: string
+  newPassword: string,
 ): Promise<{ message?: string }> => {
-  const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password/reset`, {
+  return apiClient("/api/auth/forgot-password/reset", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ passwordResetToken, newPassword }),
+    body: { passwordResetToken, newPassword },
+    authenticated: false,
   });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || "Failed to reset password");
-  }
-
-  return data;
 };
 
-export const getMe = async (token: string): Promise<LoggedInUser> => {
-  const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-  });
+export const getProfile = async (): Promise<any> => {
+  const data = await apiClient<{ user: any }>("/api/auth/me");
 
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || "Failed to fetch user");
+  if (!data?.user) {
+    throw new Error("Invalid profile response from server");
   }
 
   return data.user;
 };
 
-
-
 export const changePassword = async (
-  token: string,
-  payload: { currentPassword: string; newPassword: string }
+  payload: { currentPassword: string; newPassword: string },
 ): Promise<{ message: string }> => {
-  const response = await fetch(`${API_BASE_URL}/api/auth/change-password`, {
+  return apiClient("/api/auth/change-password", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(payload),
+    body: payload,
   });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || "Failed to change password");
-  }
-
-  return data;
 };
-
-export default API_BASE_URL;

@@ -1,45 +1,37 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   getEnrollmentCenters,
-  getTeacherProfile,
   type EnrollmentCenterOption,
 } from "@/src/api/teacher.api";
+import { getProfile } from "@/src/api/authentication.api";
+import { useAuth } from "@/src/hooks/use-auth";
 
-export const useEnrollmentCenters = (token: string | null) => {
+export const useEnrollmentCenters = () => {
+  const { isAuthenticated } = useAuth();
+
   const { data, isLoading: loadingCenters } = useQuery({
     queryKey: ["enrollmentCenters"],
     queryFn: async () => {
-      if (!token) return null;
-
       const [profileResult, centersResult] = await Promise.allSettled([
-        getTeacherProfile(token),
-        getEnrollmentCenters(token),
+        getProfile(),
+        getEnrollmentCenters(),
       ]);
 
-      if (
-        profileResult.status === "rejected" &&
-        centersResult.status === "rejected"
-      ) {
+      if (profileResult.status === "rejected" && centersResult.status === "rejected") {
         throw new Error(
-          profileResult.reason?.message ||
-            centersResult.reason?.message ||
-            "Failed to load assigned centers.",
+          profileResult.reason?.message || centersResult.reason?.message || "Failed to load assigned centers.",
         );
       }
 
-      const profile =
-        profileResult.status === "fulfilled" ? profileResult.value : null;
-      const centers =
-        centersResult.status === "fulfilled" ? centersResult.value : [];
+      const profile = profileResult.status === "fulfilled" ? profileResult.value : null;
+      const centers = centersResult.status === "fulfilled" ? centersResult.value : [];
 
       const activeCenters = centers.filter(
         (center: EnrollmentCenterOption) => center.isActive !== false,
       );
       const profileCenterRaw = profile?.daycareCenter;
       const profileCenterId =
-        typeof profileCenterRaw === "string"
-          ? profileCenterRaw
-          : String(profileCenterRaw?._id || "");
+        typeof profileCenterRaw === "string" ? profileCenterRaw : String(profileCenterRaw?._id || "");
       const profileCenterOption =
         profileCenterRaw && typeof profileCenterRaw === "object"
           ? {
@@ -53,27 +45,17 @@ export const useEnrollmentCenters = (token: string | null) => {
 
       const assignedTeacherCenter =
         profileCenterRaw && typeof profileCenterRaw === "object"
-          ? {
-              name: String(profileCenterRaw.name || ""),
-              barangay: String(profileCenterRaw.barangay || ""),
-            }
+          ? { name: String(profileCenterRaw.name || ""), barangay: String(profileCenterRaw.barangay || "") }
           : null;
 
       const mergedCenters = [...activeCenters];
-      if (
-        profileCenterOption?._id &&
-        !mergedCenters.some((center) => center._id === profileCenterOption._id)
-      ) {
+      if (profileCenterOption?._id && !mergedCenters.some((center) => center._id === profileCenterOption._id)) {
         mergedCenters.unshift(profileCenterOption);
       }
 
-      return {
-        enrollmentCenters: mergedCenters,
-        assignedTeacherCenterId: profileCenterId,
-        assignedTeacherCenter,
-      };
+      return { enrollmentCenters: mergedCenters, assignedTeacherCenterId: profileCenterId, assignedTeacherCenter };
     },
-    enabled: !!token,
+    enabled: isAuthenticated,
   });
 
   const enrollmentCenters = data?.enrollmentCenters || [];
@@ -81,26 +63,11 @@ export const useEnrollmentCenters = (token: string | null) => {
   const assignedTeacherCenter = data?.assignedTeacherCenter || null;
 
   const getDefaultCenterId = (selectedId: string) => {
-    if (
-      selectedId &&
-      enrollmentCenters.some((center) => center._id === selectedId)
-    ) {
-      return selectedId;
-    }
-    if (
-      assignedTeacherCenterId &&
-      enrollmentCenters.some((center) => center._id === assignedTeacherCenterId)
-    ) {
+    if (selectedId && enrollmentCenters.some((center) => center._id === selectedId)) return selectedId;
+    if (assignedTeacherCenterId && enrollmentCenters.some((center) => center._id === assignedTeacherCenterId))
       return assignedTeacherCenterId;
-    }
     return enrollmentCenters[0]?._id || "";
   };
 
-  return {
-    enrollmentCenters,
-    assignedTeacherCenterId,
-    assignedTeacherCenter,
-    loadingCenters,
-    getDefaultCenterId,
-  };
+  return { enrollmentCenters, assignedTeacherCenterId, assignedTeacherCenter, loadingCenters, getDefaultCenterId };
 };

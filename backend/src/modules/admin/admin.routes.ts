@@ -10,7 +10,6 @@ import {
   getParentChildren,
   updateUserProfile,
   deleteUser,
-  getAuditLogs,
   getSmtpHealth,
 } from "./index";
 
@@ -26,7 +25,7 @@ router.patch("/users/:id", authenticateToken, updateUserProfile);
 router.patch("/users/:id/toggle-status", authenticateToken, toggleUserStatus);
 router.delete("/users/:id", authenticateToken, deleteUser);
 router.get("/parents/:parentId/children", authenticateToken, getParentChildren);
-router.get("/audit-logs", authenticateToken, getAuditLogs);
+
 router.get("/smtp-health", authenticateToken, getSmtpHealth);
 
 export default router;

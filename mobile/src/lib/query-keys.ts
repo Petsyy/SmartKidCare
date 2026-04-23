@@ -1,48 +1,71 @@
-export const mobileQueryKeys = {
-  teacherAttendanceSetup: (token: string | null, selectedDateKey: string) =>
-    ["teacherAttendanceSetup", token, selectedDateKey] as const,
+export const attendanceQueryKeys = {
+  teacherAttendanceSetup: (selectedDateKey: string) =>
+    ["teacherAttendanceSetup", selectedDateKey] as const,
+  parentAttendanceChildren: () =>
+    ["parentAttendanceChildren"] as const,
+  parentAttendanceHistory: (
+    selectedChildId: string | null,
+    monthKey: string,
+  ) => ["parentAttendanceHistory", selectedChildId, monthKey] as const,
+};
+
+export const feedingQueryKeys = {
   teacherFeedingSetup: (
-    token: string | null,
     attendanceDateKey: string,
     presentChildrenIdsKey: string,
   ) =>
-    ["teacherFeedingSetup", token, attendanceDateKey, presentChildrenIdsKey] as const,
-  parentAttendanceChildren: (token: string | null) =>
-    ["parentAttendanceChildren", token] as const,
-  parentAttendanceHistory: (
-    token: string | null,
-    selectedChildId: string | null,
-    monthKey: string,
-  ) => ["parentAttendanceHistory", token, selectedChildId, monthKey] as const,
-  parentFeedingChildren: (token: string | null) =>
-    ["parentFeedingChildren", token] as const,
+    ["teacherFeedingSetup", attendanceDateKey, presentChildrenIdsKey] as const,
+  parentFeedingChildren: () =>
+    ["parentFeedingChildren"] as const,
   parentFeedingHistory: (
-    token: string | null,
     selectedChildId: string | null,
     monthKey: string,
-  ) => ["parentFeedingHistory", token, selectedChildId, monthKey] as const,
-  profile: (token: string | null, role: "parent" | "teacher") =>
-    ["profile", token, role] as const,
-  parentChildrenDashboard: (token: string | null) =>
-    ["parentChildrenDashboard", token] as const,
-  parentDashboard: (token: string | null) =>
-    ["parentDashboard", token] as const,
-  teacherDashboard: (token: string | null, todayDateKey: string) =>
-    ["teacherDashboard", token, todayDateKey] as const,
+  ) => ["parentFeedingHistory", selectedChildId, monthKey] as const,
+};
+
+export const profileQueryKeys = {
+  profile: (role: "parent" | "teacher") =>
+    ["profile", role] as const,
+};
+
+export const dashboardQueryKeys = {
+  parentChildrenDashboard: () =>
+    ["parentChildrenDashboard"] as const,
+  parentDashboard: () =>
+    ["parentDashboard"] as const,
+  teacherDashboard: (todayDateKey: string) =>
+    ["teacherDashboard", todayDateKey] as const,
+};
+
+export const notificationsQueryKeys = {
   notificationsFeed: (
     audience: string,
-    token: string | null,
     userId: string | undefined,
     todayDateKey: string,
-  ) => ["notificationsFeed", audience, token, userId, todayDateKey] as const,
-  teacherChildrenOverview: (token: string | null) =>
-    ["teacherChildrenOverview", token] as const,
-  teacherChildDetails: (token: string | null, childId: string | null) =>
-    ["teacherChildDetails", token, childId] as const,
+  ) => ["notificationsFeed", audience, userId, todayDateKey] as const,
+};
+
+export const childrenQueryKeys = {
+  teacherChildrenOverview: () =>
+    ["teacherChildrenOverview"] as const,
+  teacherChildDetails: (childId: string | null) =>
+    ["teacherChildDetails", childId] as const,
   parentChildDetails: (
-    token: string | null,
     childId: string | null,
     viewerEmail: string | undefined,
-  ) => ["parentChildDetails", token, childId, viewerEmail] as const,
-  submittedRequests: (token: string | null) => ["submittedRequests", token] as const,
+  ) => ["parentChildDetails", childId, viewerEmail] as const,
+};
+
+export const requestsQueryKeys = {
+  submittedRequests: () => ["submittedRequests"] as const,
+};
+
+export const mobileQueryKeys = {
+  ...attendanceQueryKeys,
+  ...feedingQueryKeys,
+  ...profileQueryKeys,
+  ...dashboardQueryKeys,
+  ...notificationsQueryKeys,
+  ...childrenQueryKeys,
+  ...requestsQueryKeys,
 };

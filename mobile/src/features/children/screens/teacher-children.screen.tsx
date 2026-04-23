@@ -13,7 +13,6 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { Child } from "@/src/api/parent.api";
 import { getChildren } from "@/src/api/teacher.api";
 import { getTodayAttendance, getTodayFeeding } from "@/src/api/records.api";
 import { useAuth } from "@/src/hooks/use-auth";
@@ -32,7 +31,7 @@ interface ChildStatus {
 export default function ChildScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { token } = useAuth();
+  const { isAuthenticated } = useAuth();
 
   const { childrenSearchQuery: searchQuery, setChildrenSearchQuery: setSearchQuery } =
     useTeacherUiStore();
@@ -42,14 +41,13 @@ export default function ChildScreen() {
     error,
     refetch,
   } = useQuery({
-    queryKey: mobileQueryKeys.teacherChildrenOverview(token),
-    enabled: Boolean(token),
+    queryKey: mobileQueryKeys.teacherChildrenOverview(),
+    enabled: isAuthenticated,
     queryFn: async () => {
-      if (!token) throw new Error("No authentication token");
       const [children, attendanceRecord, feedingRecord] = await Promise.all([
-        getChildren(token),
-        getTodayAttendance(token).catch(() => null),
-        getTodayFeeding(token).catch(() => null),
+        getChildren(),
+        getTodayAttendance().catch(() => null),
+        getTodayFeeding().catch(() => null),
       ]);
       return { children, attendanceRecord, feedingRecord };
     },

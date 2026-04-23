@@ -20,7 +20,7 @@ export interface FeedingDay {
 export const useParentFeeding = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { token } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [children, setChildren] = useState<Child[]>([]);
   const [selectedChild, setSelectedChild] = useState<Child | null>(null);
   const [showChildDropdown, setShowChildDropdown] = useState(false);
@@ -32,12 +32,9 @@ export const useParentFeeding = () => {
   ).padStart(2, "0")}`;
 
   const { data: childrenData = [], isLoading: isLoadingChildren } = useQuery({
-    queryKey: mobileQueryKeys.parentFeedingChildren(token),
-    enabled: Boolean(token),
-    queryFn: async () => {
-      if (!token) throw new Error("No authentication token");
-      return getMyChildren(token);
-    },
+    queryKey: mobileQueryKeys.parentFeedingChildren(),
+    enabled: isAuthenticated,
+    queryFn: () => getMyChildren(),
   });
 
   useEffect(() => {
@@ -53,24 +50,15 @@ export const useParentFeeding = () => {
   }, [childrenData]);
 
   const { data: feedingData = [], isLoading: isLoadingFeeding } = useQuery({
-    queryKey: mobileQueryKeys.parentFeedingHistory(
-      token,
-      selectedChild?._id ?? null,
-      monthKey,
-    ),
-    enabled: Boolean(token && selectedChild),
+    queryKey: mobileQueryKeys.parentFeedingHistory(selectedChild?._id ?? null, monthKey),
+    enabled: isAuthenticated && Boolean(selectedChild),
     queryFn: async () => {
-      if (!token || !selectedChild) return [];
+      if (!selectedChild) return [];
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth();
       const startDate = new Date(year, month, 1);
       const endDate = new Date(year, month + 1, 0, 23, 59, 59, 999);
-      const history = await getFeedingHistory(
-        token,
-        startDate.toISOString(),
-        endDate.toISOString(),
-      );
-
+      const history = await getFeedingHistory(startDate.toISOString(), endDate.toISOString());
       const byDay = new Map<number, FeedingDay>();
       history.forEach((record: any) => {
         const recordDate = new Date(record.date);
@@ -78,24 +66,14 @@ export const useParentFeeding = () => {
           (r: any) => (r.child?._id || r.child) === selectedChild._id,
         );
         if (entry) {
-          const status: FeedingStatus =
-            entry.status === "completed" ? "Completed" : "Missed";
+          const status: FeedingStatus = entry.status === "completed" ? "Completed" : "Missed";
           const teacher = record.teacher;
-          const teacherName = teacher
-            ? `${teacher.firstName} ${teacher.lastName}`
-            : "Not available";
+          const teacherName = teacher ? `${teacher.firstName} ${teacher.lastName}` : "Not available";
           const recordedAt = record.updatedAt || record.createdAt || record.date || null;
           const foodServed = record.foodServed || "Not specified";
-          byDay.set(recordDate.getDate(), {
-            day: recordDate.getDate(),
-            status,
-            teacherName,
-            recordedAt,
-            foodServed,
-          });
+          byDay.set(recordDate.getDate(), { day: recordDate.getDate(), status, teacherName, recordedAt, foodServed });
         }
       });
-
       return Array.from(byDay.values());
     },
   });
@@ -110,11 +88,7 @@ export const useParentFeeding = () => {
   };
 
   const getMonthName = (date: Date) =>
-    date.toLocaleDateString("en-PH", {
-      month: "long",
-      year: "numeric",
-      timeZone: "Asia/Manila",
-    });
+    date.toLocaleDateString("en-PH", { month: "long", year: "numeric", timeZone: "Asia/Manila" });
 
   const getStatusForDay = (day: number): FeedingStatus => {
     const dayData = feedingData.find((d) => d.day === day);
@@ -125,12 +99,9 @@ export const useParentFeeding = () => {
 
   const getStatusColor = (status: FeedingStatus) => {
     switch (status) {
-      case "Completed":
-        return "bg-green-500";
-      case "Missed":
-        return "bg-red-500";
-      default:
-        return "bg-transparent";
+      case "Completed": return "bg-green-500";
+      case "Missed": return "bg-red-500";
+      default: return "bg-transparent";
     }
   };
 
@@ -160,27 +131,10 @@ export const useParentFeeding = () => {
   };
 
   return {
-    router,
-    insets,
-    children,
-    selectedChild,
-    setSelectedChild,
-    loading,
-    showChildDropdown,
-    setShowChildDropdown,
-    currentDate,
-    feedingData,
-    selectedDay,
-    setSelectedDay,
-    showDayModal,
-    setShowDayModal,
-    getDaysInMonth,
-    getMonthName,
-    getStatusForDay,
-    getDetailsForDay,
-    getStatusColor,
-    calculateMonthlySummary,
-    calculateFeedingRate,
-    navigateMonth,
+    router, insets, children, selectedChild, setSelectedChild, loading,
+    showChildDropdown, setShowChildDropdown, currentDate, feedingData,
+    selectedDay, setSelectedDay, showDayModal, setShowDayModal,
+    getDaysInMonth, getMonthName, getStatusForDay, getDetailsForDay,
+    getStatusColor, calculateMonthlySummary, calculateFeedingRate, navigateMonth,
   };
 };

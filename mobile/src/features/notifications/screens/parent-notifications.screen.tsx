@@ -43,14 +43,13 @@ const PARENT_TYPE_UI = {
 } as const;
 
 export default function ParentNotificationsScreen() {
-  const { token, user } = useAuth();
+  const { user } = useAuth();
 
   const feed = useNotificationsFeed<ParentNotificationFeedItem>({
     audience: "parent",
-    token,
     userId: user?.id,
-    fetchFeed: async (authToken, date) =>
-      getParentNotificationsFeed(authToken, { date }),
+    fetchFeed: async (date) =>
+      getParentNotificationsFeed({ date }),
   });
 
   return (
@@ -68,7 +67,7 @@ export default function ParentNotificationsScreen() {
       activeFilter={feed.activeFilter}
       setActiveFilter={feed.setActiveFilter}
       showEmptyState={feed.showEmptyState}
-      onRefresh={() => void feed.loadNotifications(true)}
+      onRefresh={() => void feed.loadNotifications()}
       markAsRead={feed.markAsRead}
       markAllAsRead={feed.markAllAsRead}
       archiveNotification={feed.archiveNotification}

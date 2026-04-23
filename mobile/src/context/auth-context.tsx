@@ -13,6 +13,8 @@ import {
   saveToken,
   saveUser,
 } from "@/src/utils/auth-storage";
+import { setAuthToken } from "@/src/api/client";
+import { queryClient } from "@/src/lib/query-client";
 
 type Role = "parent" | "teacher" | null;
 
@@ -69,6 +71,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const expiryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Keep the module-level token in the API client in sync.
+  useEffect(() => {
+    setAuthToken(token);
+  }, [token]);
 
   useEffect(() => {
     const restoreSession = async () => {
@@ -141,26 +148,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const msUntilExpiry = expiresAtMs - Date.now();
 
-    if (msUntilExpiry <= 0) {
+    const expireNow = () => {
       setUser(null);
       setToken(null);
+      queryClient.clear();
       void Promise.all([
         clearSession(),
         AsyncStorage.removeItem("token"),
         AsyncStorage.removeItem("user"),
       ]);
+    };
+
+    if (msUntilExpiry <= 0) {
+      expireNow();
       return;
     }
 
-    expiryTimerRef.current = setTimeout(() => {
-      setUser(null);
-      setToken(null);
-      void Promise.all([
-        clearSession(),
-        AsyncStorage.removeItem("token"),
-        AsyncStorage.removeItem("user"),
-      ]);
-    }, msUntilExpiry);
+    expiryTimerRef.current = setTimeout(expireNow, msUntilExpiry);
   }, [token]);
 
   const login = async (userData: User, authToken: string) => {
@@ -173,6 +177,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = async () => {
     setUser(null);
     setToken(null);
+    queryClient.clear();
 
     await Promise.all([
       clearSession(),

@@ -1,10 +1,10 @@
-﻿import express from "express";
+import express from "express";
 import cors, { CorsOptions } from "cors";
 import rateLimit from "express-rate-limit";
 import cookieParser from "cookie-parser";
 import mongoSanitize from "express-mongo-sanitize";
 
-import { auditLogMiddleware } from "./shared/middleware/audit-log.middleware";
+
 import { globalErrorHandler } from "./shared/middleware/error-handler.middleware";
 import { AppErrorHandler, AppRequestHandler } from "./shared/types/app.types";
 
@@ -121,7 +121,6 @@ app.options(/.*/, cors(corsOptions));
 
 app.use(express.json());
 app.use(sanitizeRequestInput);
-app.use(auditLogMiddleware);
 
 app.get("/", (_req, res) => {
   res.json({ message: "SmartKidCare API running" });
@@ -142,7 +141,6 @@ app.use((_req, res) => {
   res.status(404).json({ message: "Not found" });
 });
 
-// Global error handler — must be last
 app.use(globalErrorHandler);
 
 export default app;

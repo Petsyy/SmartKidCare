@@ -19,13 +19,15 @@ export interface AttendanceDay {
 export const useParentAttendance = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { token } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [children, setChildren] = useState<Child[]>([]);
   const [selectedChild, setSelectedChild] = useState<Child | null>(null);
   const [showChildDropdown, setShowChildDropdown] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date(2026, 1));
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [showDayModal, setShowDayModal] = useState(false);
+
+
   const monthKey = `${currentDate.getFullYear()}-${String(
     currentDate.getMonth() + 1,
   ).padStart(2, "0")}`;
@@ -34,11 +36,10 @@ export const useParentAttendance = () => {
     isLoading: isLoadingChildren,
     refetch: refetchChildren,
   } = useQuery({
-    queryKey: mobileQueryKeys.parentAttendanceChildren(token),
-    enabled: Boolean(token),
+    queryKey: mobileQueryKeys.parentAttendanceChildren(),
+    enabled: isAuthenticated,
     queryFn: async () => {
-      if (!token) throw new Error("No authentication token");
-      return getMyChildren(token);
+      return getMyChildren();
     },
   });
 
@@ -63,22 +64,17 @@ export const useParentAttendance = () => {
   );
   const { data: attendanceData = [], isLoading: isLoadingAttendance } = useQuery({
     queryKey: mobileQueryKeys.parentAttendanceHistory(
-      token,
       selectedChild?._id ?? null,
       monthKey,
     ),
-    enabled: Boolean(token && selectedChild),
+    enabled: isAuthenticated && Boolean(selectedChild),
     queryFn: async () => {
-      if (!token || !selectedChild) return [];
+      if (!selectedChild) return [];
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth();
       const startDate = new Date(year, month, 1);
       const endDate = new Date(year, month + 1, 0, 23, 59, 59, 999);
-      const history = await getAttendanceHistory(
-        token,
-        startDate.toISOString(),
-        endDate.toISOString(),
-      );
+      const history = await getAttendanceHistory(startDate.toISOString(), endDate.toISOString());
       const byDay = new Map<number, AttendanceDay>();
       history.forEach((record: any) => {
         const recordDate = new Date(record.date);

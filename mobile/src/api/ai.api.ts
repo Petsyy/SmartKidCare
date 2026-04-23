@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "../config/config.api";
+import { apiClient } from "./client";
 import {
   AI_INPUT_LIMITS,
   sanitizeAIChildId,
@@ -6,7 +6,7 @@ import {
 } from "../utils/ai-input-sanitizer";
 
 export type { AIRole, AIChatPayload } from "./api.types";
-import type { AIRole, AIChatPayload } from "./api.types";
+import type { AIChatPayload } from "./api.types";
 
 function toShortDate(year: string, month: string, day: string): string {
   const monthNames = [
@@ -61,10 +61,8 @@ function normalizeAIReply(text: string): string {
 }
 
 export const sendAIChat = async (
-  token: string,
   payload: AIChatPayload,
 ): Promise<string> => {
-  if (!token) throw new Error("No authentication token");
   const sanitizedMessage = sanitizeAIMessageInput(
     payload.message,
     AI_INPUT_LIMITS.messageMaxLength,
@@ -78,27 +76,15 @@ export const sendAIChat = async (
     throw new Error("Invalid child reference.");
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/ai/chat`, {
+  const data = await apiClient<{ reply?: string }>("/api/ai/chat", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({
+    body: {
       ...payload,
       message: sanitizedMessage,
       childId: sanitizedChildId,
-    }),
+    },
   });
 
-  const data = await response.json().catch(() => ({}));
-
-  if (!response.ok) {
-    const message =
-      (data as { message?: string }).message || "AI chat request failed";
-    throw new Error(message);
-  }
-
-  const reply = (data as { reply?: string }).reply ?? "No response.";
+  const reply = data.reply ?? "No response.";
   return normalizeAIReply(reply);
 };

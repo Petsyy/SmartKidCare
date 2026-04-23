@@ -1,4 +1,4 @@
-import { getParentProfile } from "@/src/api/parent.api";
+import { getProfile } from "@/src/api/authentication.api";
 import ProfileScreen from "@/src/features/profile/screens/profile.screen";
 
 export default function ParentProfileScreen() {
@@ -6,7 +6,7 @@ export default function ParentProfileScreen() {
     <ProfileScreen
       role="parent"
       roleLabel="Parent"
-      fetchProfile={getParentProfile}
+      fetchProfile={getProfile}
       showAssignedCenter={false}
     />
   );

@@ -16,7 +16,6 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import { useAuth } from "@/src/hooks/use-auth";
 import {
   ChildInfoStepSection,
   DocumentsStepSection,
@@ -43,7 +42,7 @@ import { ChevronLeft } from "lucide-react-native";
 import { useNavigation } from "expo-router";
 
 export default function EnrollChildScreen() {
-  const { token } = useAuth();
+
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -52,8 +51,8 @@ export default function EnrollChildScreen() {
   const contentPadding = isWide ? 28 : 16;
 
   const form = useEnrollmentForm();
-  const centers = useEnrollmentCenters(token);
-  const submitted = useSubmittedRequests(token);
+  const centers = useEnrollmentCenters();
+  const submitted = useSubmittedRequests();
   const datePicker = useDatePicker(
     form.dateOfBirth,
     form.enrollmentDate,
@@ -67,7 +66,7 @@ export default function EnrollChildScreen() {
     submitEnrollment,
     viewParentPassword,
     resetParentPassword,
-  } = useEnrollmentSubmit(token, handleSubmitSuccess);
+  } = useEnrollmentSubmit(handleSubmitSuccess);
 
   const [activeTab, setActiveTab] = useState<"new" | "submitted">("new");
   const [hasStarted, setHasStarted] = useState(false);

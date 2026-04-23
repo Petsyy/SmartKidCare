@@ -39,14 +39,13 @@ const TEACHER_TYPE_UI = {
 } as const;
 
 export default function TeacherNotificationsScreen() {
-  const { token, user } = useAuth();
+  const { user } = useAuth();
 
   const feed = useNotificationsFeed<TeacherNotificationFeedItem>({
     audience: "teacher",
-    token,
     userId: user?.id,
-    fetchFeed: async (authToken, date) =>
-      getTeacherNotificationsFeed(authToken, { date }),
+    fetchFeed: async (date) =>
+      getTeacherNotificationsFeed({ date }),
   });
 
   return (
@@ -64,7 +63,7 @@ export default function TeacherNotificationsScreen() {
       activeFilter={feed.activeFilter}
       setActiveFilter={feed.setActiveFilter}
       showEmptyState={feed.showEmptyState}
-      onRefresh={() => void feed.loadNotifications(true)}
+      onRefresh={() => void feed.loadNotifications()}
       markAsRead={feed.markAsRead}
       markAllAsRead={feed.markAllAsRead}
       archiveNotification={feed.archiveNotification}

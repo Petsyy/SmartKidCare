@@ -22,33 +22,6 @@
     "paths": {
       "@/*": [
         "./*"
-      ],
-      "@app/*": [
-        "./app/*"
-      ],
-      "@assets/*": [
-        "./assets/*"
-      ],
-      "@components/*": [
-        "./components/*"
-      ],
-      "@src/*": [
-        "./src/*"
-      ],
-      "@hooks/*": [
-        "./src/hooks/*"
-      ],
-      "@utils/*": [
-        "./utils/*"
-      ],
-      "@services/*": [
-        "./services/*"
-      ],
-      "@constants/*": [
-        "./constants/*"
-      ],
-      "@types/*": [
-        "./types/*"
       ]
     }
   },

@@ -20,21 +20,21 @@ const slides = [
     title: "Track Daily Attendance",
     description:
       "View your child's attendance status in a simple calendar present, absent, late, or excused.",
-    image: require("@assets/images/splash.jpg"),
+    image: require("@/assets/images/splash.jpg"),
   },
   {
     id: "2",
     title: "Monitor Feeding Status",
     description:
       "Know if your child finished their meal, missed feeding, or ate partially updated by teachers.",
-    image: require("@assets/images/splash2.jpg"),
+    image: require("@/assets/images/splash2.jpg"),
   },
   {
     id: "3",
     title: "Stay Updated Anytime",
     description:
       "Receive real-time updates, reminders, and announcements from the Child Development Center.",
-    image: require("@assets/images/splash3.jpg"),
+    image: require("@/assets/images/splash3.jpg"),
   },
 ];
 

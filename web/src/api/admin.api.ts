@@ -13,6 +13,7 @@ export interface ParentLinkedChildItem {
 }
 
 export interface EnrollmentRequestItem {
+
   _id: string;
   status: EnrollmentRequestStatus;
   child: {
@@ -27,6 +28,7 @@ export interface EnrollmentRequestItem {
     enrollmentDate: string;
     schoolYear: string;
   };
+
   daycareCenter?: {
     _id: string;
     name: string;
@@ -34,6 +36,7 @@ export interface EnrollmentRequestItem {
     code: string;
     isActive?: boolean;
   } | null;
+
   parent: {
     firstName: string;
     middleName?: string;
@@ -41,6 +44,7 @@ export interface EnrollmentRequestItem {
     email: string;
     phone: string;
   };
+  
   documents?: {
     birthCertificate?: {
       publicId?: string;
@@ -55,6 +59,7 @@ export interface EnrollmentRequestItem {
       hash?: string;
     } | null;
   } | null;
+
   requestedBy?: {
     _id: string;
     firstName: string;
@@ -62,6 +67,7 @@ export interface EnrollmentRequestItem {
     lastName: string;
     email: string;
   } | null;
+
   review?: {
     reviewedAt?: string | null;
     reason?: string;
@@ -73,6 +79,7 @@ export interface EnrollmentRequestItem {
       email: string;
     } | null;
   } | null;
+  
   createdChild?: {
     _id: string;
     firstName: string;
@@ -202,8 +209,7 @@ export const getEnrollmentRequests = async (
   if (status) query.set("status", status);
 
   const res = await fetch(
-    `${API_BASE}/children/enrollment-requests${
-      query.toString() ? `?${query.toString()}` : ""
+    `${API_BASE}/children/enrollment-requests${query.toString() ? `?${query.toString()}` : ""
     }`,
     {
       credentials: "include",

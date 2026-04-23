@@ -4,15 +4,17 @@ import { useRouter } from "expo-router";
 import { useAuth } from "@/src/hooks/use-auth";
 import { getChildren } from "@/src/api/teacher.api";
 import { submitAttendance, getTodayAttendance } from "@/src/api/records.api";
-import type { Child } from "@/src/api/parent.api";
+import type { Child } from "@/src/api/api.types";
 import { formatManilaDateLabel, getManilaDateKey } from "@/src/utils/manila-date";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { useTeacherUiStore } from "@/src/features/teacher/stores/teacher-ui.store";
 
 export const useTeacherAttendance = () => {
   const router = useRouter();
-  const { token } = useAuth();
+  const { isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
   const [attendance, setAttendance] = useState<Record<string, boolean>>({});
   const [isReadOnly, setIsReadOnly] = useState(false);
   const { attendanceSearchQuery: searchQuery, setAttendanceSearchQuery: setSearchQuery } =
@@ -24,13 +26,12 @@ export const useTeacherAttendance = () => {
     [selectedDateKey],
   );
   const { data, isLoading } = useQuery({
-    queryKey: mobileQueryKeys.teacherAttendanceSetup(token, selectedDateKey),
-    enabled: Boolean(token),
+    queryKey: mobileQueryKeys.teacherAttendanceSetup(selectedDateKey),
+    enabled: isAuthenticated,
     queryFn: async () => {
-      if (!token) throw new Error("No authentication token");
       const [childrenData, todayRecord] = await Promise.all([
-        getChildren(token),
-        getTodayAttendance(token),
+        getChildren(),
+        getTodayAttendance(),
       ]);
       return { childrenData, todayRecord };
     },
@@ -40,8 +41,11 @@ export const useTeacherAttendance = () => {
       date: string;
       records: Array<{ child: string; status: "present" | "absent" }>;
     }) => {
-      if (!token) throw new Error("Not authenticated");
-      return submitAttendance(token, payload);
+      return submitAttendance(payload);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["teacherAttendanceSetup"] });
+      void queryClient.invalidateQueries({ queryKey: ["teacherDashboard"] });
     },
   });
   const children: Child[] = data?.childrenData || [];
@@ -84,7 +88,6 @@ export const useTeacherAttendance = () => {
         setAttendance(nextAttendance);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [children.length, isReadOnly]);
 
   const filteredChildren = useMemo(() => {
@@ -127,7 +130,7 @@ export const useTeacherAttendance = () => {
   };
 
   const handleSubmit = async () => {
-    if (!token) {
+    if (!isAuthenticated) {
       Alert.alert("Error", "Not authenticated");
       return;
     }

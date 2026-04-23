@@ -39,20 +39,20 @@ export default function TeacherChildDetailsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const { token } = useAuth();
+  const { isAuthenticated } = useAuth();
   const childId = typeof id === "string" ? id : null;
 
   const { data, isLoading: loading, error } = useQuery({
-    queryKey: mobileQueryKeys.teacherChildDetails(token, childId),
-    enabled: Boolean(token && childId),
+    queryKey: mobileQueryKeys.teacherChildDetails(childId),
+    enabled: isAuthenticated && Boolean(childId),
     queryFn: async () => {
-      if (!token || !childId) {
+      if (!childId) {
         throw new Error("Missing required data");
       }
       const [child, attendanceRecord, feedingRecord] = await Promise.all([
-        getChildById(token, childId),
-        getTodayAttendance(token).catch(() => null),
-        getTodayFeeding(token).catch(() => null),
+        getChildById(childId),
+        getTodayAttendance().catch(() => null),
+        getTodayFeeding().catch(() => null),
       ]);
       return { child, attendanceRecord, feedingRecord };
     },

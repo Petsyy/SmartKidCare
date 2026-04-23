@@ -9,13 +9,13 @@ import {
   getTodayAttendance,
   type FeedingRecord,
 } from "@/src/api/records.api";
-import type { Child } from "@/src/api/parent.api";
+import type { Child } from "@/src/api/api.types";
 import {
   formatManilaDateLabel,
   getManilaDateKey,
   isValidManilaDateKey,
 } from "@/src/utils/manila-date";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { useTeacherUiStore } from "@/src/features/teacher/stores/teacher-ui.store";
 
@@ -36,7 +36,8 @@ const foodMenuOptions = [
 export const useTeacherFeeding = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { token } = useAuth();
+  const { isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
 
   const [children, setChildren] = useState<Child[]>([]);
   const [feedingStatus, setFeedingStatus] = useState<Record<string, boolean>>({});
@@ -67,89 +68,50 @@ export const useTeacherFeeding = () => {
   const attendanceDateLabel = useMemo(() => {
     const explicitLabel = String(params.attendanceDateLabel || "").trim();
     if (explicitLabel) return explicitLabel;
-
     const legacyDateLabel = String(params.attendanceDate || "").trim();
     if (legacyDateLabel) {
       const parsedLegacy = new Date(legacyDateLabel);
-      if (!Number.isNaN(parsedLegacy.getTime())) {
-        return formatManilaDateLabel(parsedLegacy);
-      }
+      if (!Number.isNaN(parsedLegacy.getTime())) return formatManilaDateLabel(parsedLegacy);
     }
-
     return formatManilaDateLabel(attendanceDateKey);
   }, [attendanceDateKey, params.attendanceDate, params.attendanceDateLabel]);
 
   const interactionDisabled = isReadOnly || isSubmitting;
   const { data, isLoading } = useQuery({
-    queryKey: mobileQueryKeys.teacherFeedingSetup(
-      token,
-      attendanceDateKey,
-      presentChildrenIdsKey,
-    ),
-    enabled: Boolean(token),
+    queryKey: mobileQueryKeys.teacherFeedingSetup(attendanceDateKey, presentChildrenIdsKey),
+    enabled: isAuthenticated,
     queryFn: async () => {
-      if (!token) throw new Error("No authentication token");
-      const [childrenData, todayRecord] = await Promise.all([
-        getChildren(token),
-        getTodayFeeding(token),
-      ]);
-
+      const [childrenData, todayRecord] = await Promise.all([getChildren(), getTodayFeeding()]);
       if (todayRecord) {
-        const recordedChildIds = new Set(
-          todayRecord.records.map((r: any) => String(r.child._id || r.child)),
-        );
-        const childrenToShow = childrenData.filter((child) =>
-          recordedChildIds.has(child._id),
-        );
+        const recordedChildIds = new Set(todayRecord.records.map((r: any) => String(r.child._id || r.child)));
+        const childrenToShow = childrenData.filter((child) => recordedChildIds.has(child._id));
         const existingStatus: Record<string, boolean> = {};
         todayRecord.records.forEach((record: any) => {
-          existingStatus[String(record.child._id || record.child)] =
-            record.status !== "completed";
+          existingStatus[String(record.child._id || record.child)] = record.status !== "completed";
         });
-        return {
-          childrenToShow,
-          isReadOnly: true,
-          foodServed: String(todayRecord.foodServed || ""),
-          feedingStatus: existingStatus,
-        };
+        return { childrenToShow, isReadOnly: true, foodServed: String(todayRecord.foodServed || ""), feedingStatus: existingStatus };
       }
-
       let childrenToShow: Child[] = [];
       if (presentChildrenIds.length > 0) {
         const presentIds = new Set(presentChildrenIds.map(String));
         childrenToShow = childrenData.filter((child) => presentIds.has(child._id));
       } else {
-        const todayAttendance = await getTodayAttendance(token);
+        const todayAttendance = await getTodayAttendance();
         if (todayAttendance?.records) {
-          const presentIds = new Set(
-            todayAttendance.records
-              .filter((r: any) => r.status === "present")
-              .map((r: any) => String(r.child._id || r.child)),
-          );
+          const presentIds = new Set(todayAttendance.records.filter((r: any) => r.status === "present").map((r: any) => String(r.child._id || r.child)));
           childrenToShow = childrenData.filter((child) => presentIds.has(child._id));
         }
       }
-
       const initialStatus: Record<string, boolean> = {};
-      childrenToShow.forEach((child) => {
-        initialStatus[child._id] = true;
-      });
-      return {
-        childrenToShow,
-        isReadOnly: false,
-        foodServed: "",
-        feedingStatus: initialStatus,
-      };
+      childrenToShow.forEach((child) => { initialStatus[child._id] = true; });
+      return { childrenToShow, isReadOnly: false, foodServed: "", feedingStatus: initialStatus };
     },
   });
   const submitFeedingMutation = useMutation({
-    mutationFn: async (payload: {
-      date: string;
-      foodServed: string;
-      records: FeedingRecord[];
-    }) => {
-      if (!token) throw new Error("No authentication token");
-      return submitFeeding(token, payload);
+    mutationFn: async (payload: { date: string; foodServed: string; records: FeedingRecord[] }) => submitFeeding(payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["teacherFeedingSetup"] });
+      void queryClient.invalidateQueries({ queryKey: ["teacherDashboard"] });
     },
   });
 
@@ -164,7 +126,6 @@ export const useTeacherFeeding = () => {
   const filteredChildren = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     if (!query) return children;
-
     return children.filter((child) => {
       const fullName = `${child.lastName}, ${child.firstName} ${child.middleName || ""}`.toLowerCase();
       const studentId = String(child.studentId || "").toLowerCase();
@@ -179,51 +140,26 @@ export const useTeacherFeeding = () => {
   }, [feedingStatus, children.length]);
 
   const toggleChildFeeding = useCallback((childId: string) => {
-    setFeedingStatus((prev) => ({
-      ...prev,
-      [childId]: !prev[childId],
-    }));
+    setFeedingStatus((prev) => ({ ...prev, [childId]: !prev[childId] }));
   }, []);
 
   const markAllAsCompleted = useCallback(() => {
     const allFed: Record<string, boolean> = {};
-    children.forEach((child) => {
-      allFed[child._id] = false;
-    });
+    children.forEach((child) => { allFed[child._id] = false; });
     setFeedingStatus(allFed);
   }, [children]);
 
   const handleSubmit = async () => {
     if (isSubmitting) return;
-
-    if (isReadOnly) {
-      router.push("/(teacher)");
-      return;
-    }
-
-    if (!token) {
-      Alert.alert("Authentication Error", "You must be logged in to submit feeding records.");
-      return;
-    }
-
-    if (!foodServed) {
-      Alert.alert("Validation Error", "Please select food served");
-      return;
-    }
-
+    if (isReadOnly) { router.push("/(teacher)"); return; }
+    if (!isAuthenticated) { Alert.alert("Authentication Error", "You must be logged in to submit feeding records."); return; }
+    if (!foodServed) { Alert.alert("Validation Error", "Please select food served"); return; }
     setIsSubmitting(true);
     try {
       const records: FeedingRecord[] = Object.entries(feedingStatus).map(([childId, isMissed]) => ({
-        child: childId,
-        status: !isMissed ? ("completed" as const) : ("missed" as const),
+        child: childId, status: !isMissed ? ("completed" as const) : ("missed" as const),
       }));
-
-      await submitFeedingMutation.mutateAsync({
-        date: attendanceDateKey,
-        foodServed,
-        records,
-      });
-
+      await submitFeedingMutation.mutateAsync({ date: attendanceDateKey, foodServed, records });
       Alert.alert("Success", "Records saved successfully!", [{ text: "OK", onPress: () => router.push("/(teacher)") }]);
     } catch (error) {
       Alert.alert("Submission Error", "Failed to submit feeding records. Please try again.");
@@ -234,27 +170,10 @@ export const useTeacherFeeding = () => {
   };
 
   return {
-    children,
-    loading: isLoading,
-    feedingStatus,
-    foodServed,
-    setFoodServed,
-    searchQuery,
-    setSearchQuery,
-    showMenuModal,
-    setShowMenuModal,
-    isReadOnly,
-    isSubmitting,
-    presentChildrenIds,
-    attendanceDateKey,
-    attendanceDateLabel,
-    interactionDisabled,
-    filteredChildren,
-    stats,
-    toggleChildFeeding,
-    markAllAsCompleted,
-    handleSubmit,
-    router,
-    foodMenuOptions,
+    children, loading: isLoading, feedingStatus, foodServed, setFoodServed,
+    searchQuery, setSearchQuery, showMenuModal, setShowMenuModal,
+    isReadOnly, isSubmitting, presentChildrenIds, attendanceDateKey,
+    attendanceDateLabel, interactionDisabled, filteredChildren, stats,
+    toggleChildFeeding, markAllAsCompleted, handleSubmit, router, foodMenuOptions,
   };
 };

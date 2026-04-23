@@ -26,7 +26,7 @@ import {
 type Props = {
   role: ProfileRole;
   roleLabel: string;
-  fetchProfile: (token: string) => Promise<UserProfile>;
+  fetchProfile: () => Promise<UserProfile>;
   showAssignedCenter?: boolean;
 };
 

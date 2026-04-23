@@ -41,7 +41,7 @@ type Message = {
 export default function ParentChatScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { token } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -63,15 +63,15 @@ export default function ParentChatScreen() {
     let cancelled = false;
 
     const run = async () => {
-      if (!token) {
+      if (!isAuthenticated) {
         setContextLoading(false);
         return;
       }
       setContextLoading(true);
       try {
         const [attList, feedList] = await Promise.all([
-          getAttendanceHistory(token),
-          getFeedingHistory(token),
+          getAttendanceHistory(),
+          getFeedingHistory(),
         ]);
 
         if (cancelled) return;
@@ -110,11 +110,11 @@ export default function ParentChatScreen() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [isAuthenticated]);
 
   const sendMessage = useCallback(async () => {
     const text = input.trim();
-    if (!text || !token || loading || !childId) return;
+    if (!text || !isAuthenticated || loading || !childId) return;
 
     setInput("");
     const userMsg: Message = {
@@ -132,7 +132,7 @@ export default function ParentChatScreen() {
     ]);
 
     try {
-      const reply = await sendAIChat(token, {
+      const reply = await sendAIChat({
         role: "parent",
         message: text,
         childId,
@@ -156,7 +156,7 @@ export default function ParentChatScreen() {
     } finally {
       setLoading(false);
     }
-  }, [input, loading, token, childId]);
+  }, [input, loading, isAuthenticated, childId]);
 
   const onSuggestionPress = (text: string) => {
     setInput(text);

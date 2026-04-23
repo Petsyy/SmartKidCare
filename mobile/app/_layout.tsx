@@ -9,9 +9,10 @@ import {
   ReanimatedLogLevel,
 } from "react-native-reanimated";
 import { useEffect } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/src/lib/query-client";
+import { ErrorBoundary } from "@/src/components/error-boundary";
 
-const queryClient = new QueryClient();
 configureReanimatedLogger({
   level: ReanimatedLogLevel.warn,
   strict: false,
@@ -45,12 +46,14 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <SafeAreaProvider>
-        <AuthProvider>
-          <LayoutContent />
-        </AuthProvider>
-      </SafeAreaProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <SafeAreaProvider>
+          <AuthProvider>
+            <LayoutContent />
+          </AuthProvider>
+        </SafeAreaProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }

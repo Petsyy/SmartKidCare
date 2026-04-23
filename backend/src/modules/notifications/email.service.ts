@@ -30,5 +30,5 @@ export async function sendEmail({ to, subject, text, html }: SendEmailParams) {
     html,
   });
 
-  return info; // includes messageId, accepted, rejected, etc.
+  return info;
 }

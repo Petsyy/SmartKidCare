@@ -1,21 +1,16 @@
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import { useAuth } from "@/src/hooks/use-auth";
-import { getChildren, getTeacherProfile } from "@/src/api/teacher.api";
+import { getChildren } from "@/src/api/teacher.api";
+import { getProfile } from "@/src/api/authentication.api";
 import { getTodayAttendance, getTodayFeeding } from "@/src/api/records.api";
-import type { Child } from "@/src/api/parent.api";
+import type { Child } from "@/src/api/api.types";
 import {
   getTeacherNotificationsFeed,
   type TeacherNotificationFeedItem,
 } from "@/src/api/notifications.api";
 import { useQuery } from "@tanstack/react-query";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
-
-export const toLocalDateKey = (value: Date = new Date()): string => {
-  const year = value.getFullYear();
-  const month = String(value.getMonth() + 1).padStart(2, "0");
-  const day = String(value.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
+import { getManilaDateKey } from "@/src/utils/manila-date";
 
 export interface TeacherDashboardData {
   children: Child[];
@@ -33,28 +28,20 @@ export interface TeacherDashboardData {
 }
 
 export function useTeacherDashboard(): TeacherDashboardData {
-  const { token } = useAuth();
-  const todayDateKey = useMemo(() => toLocalDateKey(), []);
+  const { isAuthenticated } = useAuth();
+  const todayDateKey = useMemo(() => getManilaDateKey(), []);
   const { data, isLoading, isRefetching, refetch } = useQuery({
-    queryKey: mobileQueryKeys.teacherDashboard(token, todayDateKey),
-    enabled: Boolean(token),
+    queryKey: mobileQueryKeys.teacherDashboard(todayDateKey),
+    enabled: isAuthenticated,
     queryFn: async () => {
-      if (!token) throw new Error("No authentication token");
-      const [
-        children,
-        attendanceData,
-        feedingData,
-        profileData,
-        notificationsFeed,
-      ] = await Promise.all([
-        getChildren(token),
-        getTodayAttendance(token),
-        getTodayFeeding(token),
-        getTeacherProfile(token),
-        getTeacherNotificationsFeed(token, { date: todayDateKey }).catch(
-          () => null,
-        ),
-      ]);
+      const [children, attendanceData, feedingData, profileData, notificationsFeed] =
+        await Promise.all([
+          getChildren(),
+          getTodayAttendance(),
+          getTodayFeeding(),
+          getProfile(),
+          getTeacherNotificationsFeed({ date: todayDateKey }).catch(() => null),
+        ]);
       return {
         children,
         attendanceData,
@@ -64,52 +51,32 @@ export function useTeacherDashboard(): TeacherDashboardData {
       };
     },
   });
+
   const children: Child[] = data?.children ?? [];
   const attendanceData = data?.attendanceData ?? null;
   const feedingData = data?.feedingData ?? null;
-  const recentNotifications: TeacherNotificationFeedItem[] =
-    data?.recentNotifications ?? [];
+  const recentNotifications: TeacherNotificationFeedItem[] = data?.recentNotifications ?? [];
   const teacherName = data?.teacherName || "Teacher";
 
   const totalChildren = useMemo(() => children.length, [children.length]);
-
   const presentToday = useMemo(() => {
-    if (!attendanceData || !attendanceData.records) return 0;
-    return attendanceData.records.filter(
-      (record: any) => record.status === "present"
-    ).length;
+    if (!attendanceData?.records) return 0;
+    return attendanceData.records.filter((record: any) => record.status === "present").length;
   }, [attendanceData]);
-
   const absentToday = useMemo(() => {
-    if (!attendanceData || !attendanceData.records) return 0;
-    return attendanceData.records.filter(
-      (record: any) => record.status === "absent"
-    ).length;
+    if (!attendanceData?.records) return 0;
+    return attendanceData.records.filter((record: any) => record.status === "absent").length;
   }, [attendanceData]);
-
   const feedingDone = useMemo(() => {
-    if (!feedingData || !feedingData.records) return 0;
-    return feedingData.records.filter(
-      (record: any) => record.status === "completed"
-    ).length;
+    if (!feedingData?.records) return 0;
+    return feedingData.records.filter((record: any) => record.status === "completed").length;
   }, [feedingData]);
 
-  const onRefresh = () => {
-    void refetch();
-  };
+  const onRefresh = () => { void refetch(); };
 
   return {
-    children,
-    loading: isLoading,
-    refreshing: isRefetching,
-    attendanceData,
-    feedingData,
-    recentNotifications,
-    teacherName,
-    totalChildren,
-    presentToday,
-    absentToday,
-    feedingDone,
-    onRefresh,
+    children, loading: isLoading, refreshing: isRefetching, attendanceData,
+    feedingData, recentNotifications, teacherName, totalChildren,
+    presentToday, absentToday, feedingDone, onRefresh,
   };
 }

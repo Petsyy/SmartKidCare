@@ -8,18 +8,18 @@ type Props = {
 };
 
 export default function ParentGate({ children }: Props) {
-  const { token, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [childrenList, setChildrenList] = useState<unknown[] | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchChildren = async () => {
-    if (!token) {
+    if (!isAuthenticated) {
       setChildrenList([]);
       setLoading(false);
       return;
     }
     try {
-      const data = await getMyChildren(token);
+      const data = await getMyChildren();
       setChildrenList(data);
     } catch {
       setChildrenList([]);
@@ -30,7 +30,7 @@ export default function ParentGate({ children }: Props) {
 
   useEffect(() => {
     fetchChildren();
-  }, [token]);
+  }, [isAuthenticated]);
 
   if (loading) {
     return (
