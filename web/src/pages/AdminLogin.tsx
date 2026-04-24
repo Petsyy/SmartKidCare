@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
 import { UserIcon, Lock, AlertCircle } from "lucide-react";
 import { API_BASE } from "@/components/config/config.api";
 import { useMutation } from "@tanstack/react-query";
@@ -8,6 +9,12 @@ import { useAdminLoginStore } from "@/stores/admin-login.store";
 type ApiResponse = {
   status: number;
   data: any;
+};
+
+type AdminLoginFormValues = {
+  username: string;
+  password: string;
+  otp: string;
 };
 
 const parseApiResponse = async (response: Response): Promise<ApiResponse> => {
@@ -29,23 +36,26 @@ const parseApiResponse = async (response: Response): Promise<ApiResponse> => {
 export default function AdminLogin() {
   const navigate = useNavigate();
   const {
-    username,
-    password,
-    otp,
     mfaToken,
     mfaEmail,
     info,
     error,
-    setUsername,
-    setPassword,
-    setOtp,
     setMfaToken,
     setMfaEmail,
     setInfo,
     setError,
     resetMessages,
   } = useAdminLoginStore();
+  const { register, handleSubmit, watch, setValue } =
+    useForm<AdminLoginFormValues>({
+      defaultValues: {
+        username: "",
+        password: "",
+        otp: "",
+      },
+    });
   const otpInputRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const otp = watch("otp");
   const loginMutation = useMutation({
     mutationFn: async (variables: { username: string; password: string }) => {
       const response = await fetch(`${API_BASE}/auth/admin/login`, {
@@ -117,7 +127,9 @@ export default function AdminLogin() {
     Array.from({ length: 6 }, (_, index) => otp[index] ?? "");
 
   const updateOtpWithDigits = (nextDigits: string[]) => {
-    setOtp(nextDigits.join("").replace(/\D/g, "").slice(0, 6));
+    setValue("otp", nextDigits.join("").replace(/\D/g, "").slice(0, 6), {
+      shouldDirty: true,
+    });
   };
 
   const handleOtpDigitChange = (index: number, rawValue: string) => {
@@ -226,12 +238,13 @@ export default function AdminLogin() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (values: AdminLoginFormValues) => {
     resetMessages();
 
     try {
       if (!mfaToken) {
+        const username = values.username.trim();
+        const password = values.password;
         if (!username || !password) {
           throw new Error("Please fill in all fields");
         }
@@ -245,7 +258,7 @@ export default function AdminLogin() {
 
           setMfaToken(data.mfaToken);
           setMfaEmail(data.email || null);
-          setOtp("");
+          setValue("otp", "");
           setInfo(
             data?.message || "A verification code was sent to your email.",
           );
@@ -256,6 +269,7 @@ export default function AdminLogin() {
         return;
       }
 
+      const otp = values.otp.trim();
       if (!otp) {
         throw new Error("Please enter the verification code.");
       }
@@ -327,7 +341,7 @@ export default function AdminLogin() {
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                 {!mfaToken && (
                   <>
                     <div>
@@ -341,12 +355,11 @@ export default function AdminLogin() {
                         />
                         <input
                           type="text"
-                          value={username}
-                          onChange={(e) => setUsername(e.target.value)}
                           placeholder="Enter your username"
                           className={`${inputClassName} pl-11`}
                           disabled={isLoading}
                           autoComplete="username"
+                          {...register("username")}
                         />
                       </div>
                     </div>
@@ -362,12 +375,11 @@ export default function AdminLogin() {
                         />
                         <input
                           type="password"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
                           placeholder="Enter your password"
                           className={`${inputClassName} pl-11`}
                           disabled={isLoading}
                           autoComplete="current-password"
+                          {...register("password")}
                         />
                       </div>
                     </div>
@@ -411,6 +423,7 @@ export default function AdminLogin() {
                         />
                       ))}
                     </div>
+                    <input type="hidden" {...register("otp")} />
                     <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
                       Check your inbox and enter the one-time code to continue.
                     </p>

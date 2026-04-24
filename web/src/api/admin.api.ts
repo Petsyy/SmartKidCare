@@ -1,4 +1,5 @@
 import { API_BASE } from "../components/config/config.api";
+import { apiRequestOrThrow, parseApiError } from "./api-client";
 
 export type EnrollmentRequestStatus = "pending" | "approved" | "rejected";
 
@@ -92,29 +93,48 @@ export interface EnrollmentRequestItem {
 }
 
 export const resetUserPassword = async (userId: string) => {
-  const res = await fetch(`${API_BASE}/admin/users/${userId}/reset-password`, {
-    method: "POST",
-    credentials: "include",
-  });
-
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || data.message || "Reset failed");
-  return data;
+  return apiRequestOrThrow<{ message?: string }>(
+    `/admin/users/${userId}/reset-password`,
+    "Reset failed",
+    { method: "POST" },
+  );
 };
 
 export const toggleUserStatus = async (userId: string) => {
-  const res = await fetch(`${API_BASE}/admin/users/${userId}/toggle-status`, {
-    method: "PATCH",
-    credentials: "include",
-  });
-
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || data.message || "Update failed");
-  return data;
+  return apiRequestOrThrow<{ isActive?: boolean; message?: string }>(
+    `/admin/users/${userId}/toggle-status`,
+    "Update failed",
+    { method: "PATCH" },
+  );
 };
 
 export const getParentChildren = async (parentId: string) => {
   const endpoint = `${API_BASE}/admin/parents/${parentId}/children`;
+  type ParentChild = {
+    _id: string | number;
+    firstName?: string;
+    middleName?: string;
+    lastName?: string;
+    studentId?: string;
+  };
+  type ParentRequest = {
+    _id: string | number;
+    status?: EnrollmentRequestStatus;
+    child?: {
+      firstName?: string;
+      middleName?: string;
+      lastName?: string;
+    };
+    createdChild?: {
+      studentId?: string;
+    };
+  };
+  type ParentChildrenResponse = {
+    children?: ParentChild[];
+    requests?: ParentRequest[];
+    error?: string;
+    message?: string;
+  };
 
   const requestParentChildren = async (url: string) =>
     fetch(url, {
@@ -133,35 +153,34 @@ export const getParentChildren = async (parentId: string) => {
   }
 
   const raw = await res.text();
-  let data: any = {};
+  let data: ParentChildrenResponse = {};
   if (raw) {
     try {
-      data = JSON.parse(raw);
+      const parsed = JSON.parse(raw) as unknown;
+      if (parsed && typeof parsed === "object") {
+        data = parsed as ParentChildrenResponse;
+      }
     } catch {
       data = {};
     }
   }
   if (!res.ok) {
-    throw new Error(
-      (data as { error?: string; message?: string }).error ||
-      (data as { error?: string; message?: string }).message ||
-      "Fetch failed",
-    );
+    throw new Error(data.error || data.message || (await parseApiError(res, "Fetch failed")));
   }
-  const children = Array.isArray(data.children) ? data.children : [];
-  const requests = Array.isArray(data.requests) ? data.requests : [];
+  const children = Array.isArray(data.children) ? data.children : ([] as ParentChild[]);
+  const requests = Array.isArray(data.requests) ? data.requests : ([] as ParentRequest[]);
 
   return [
-    ...children.map((child: any) => ({
+    ...children.map((child) => ({
       _id: String(child._id),
-      firstName: child.firstName,
+      firstName: child.firstName || "",
       middleName: child.middleName,
-      lastName: child.lastName,
+      lastName: child.lastName || "",
       studentId: child.studentId,
       source: "child" as const,
       status: "linked" as const,
     })),
-    ...requests.map((request: any) => ({
+    ...requests.map((request) => ({
       _id: String(request._id),
       firstName: request.child?.firstName || "",
       middleName: request.child?.middleName,
@@ -177,29 +196,22 @@ export const updateUser = async (
   userId: string,
   updates: { firstName?: string; middleName?: string; lastName?: string; email?: string; phone?: string },
 ) => {
-  const res = await fetch(`${API_BASE}/admin/users/${userId}`, {
-    method: "PATCH",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
+  return apiRequestOrThrow<{ message?: string }>(
+    `/admin/users/${userId}`,
+    "Update failed",
+    {
+      method: "PATCH",
+      body: updates,
     },
-    body: JSON.stringify(updates),
-  });
-
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || data.message || "Update failed");
-  return data;
+  );
 };
 
 export const deleteUser = async (userId: string) => {
-  const res = await fetch(`${API_BASE}/admin/users/${userId}`, {
-    method: "DELETE",
-    credentials: "include",
-  });
-
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || data.message || "Delete failed");
-  return data;
+  return apiRequestOrThrow<{ message?: string }>(
+    `/admin/users/${userId}`,
+    "Delete failed",
+    { method: "DELETE" },
+  );
 };
 
 export const getEnrollmentRequests = async (
@@ -208,17 +220,10 @@ export const getEnrollmentRequests = async (
   const query = new URLSearchParams();
   if (status) query.set("status", status);
 
-  const res = await fetch(
-    `${API_BASE}/children/enrollment-requests${query.toString() ? `?${query.toString()}` : ""
-    }`,
-    {
-      credentials: "include",
-    },
+  const data = await apiRequestOrThrow<{ requests?: EnrollmentRequestItem[] }>(
+    `/children/enrollment-requests${query.toString() ? `?${query.toString()}` : ""}`,
+    "Failed to fetch requests",
   );
-
-  const data = await res.json();
-  if (!res.ok)
-    throw new Error(data.error || data.message || "Failed to fetch requests");
 
   return Array.isArray(data.requests) ? data.requests : [];
 };
@@ -228,45 +233,27 @@ export const reviewEnrollmentRequest = async (
   decision: "approved" | "rejected",
   reason?: string,
 ) => {
-  const res = await fetch(
-    `${API_BASE}/children/enrollment-requests/${requestId}/review`,
-    {
-      method: "PATCH",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ decision, reason }),
-    },
-  );
-
-  const data = await res.json();
-  if (!res.ok)
-    throw new Error(data.error || data.message || "Failed to review request");
-
-  return data as {
+  return apiRequestOrThrow<{
     message: string;
     request: EnrollmentRequestItem;
     parentCredentials?: {
       email: string;
       tempPassword: string | null;
     };
-  };
+  }>(
+    `/children/enrollment-requests/${requestId}/review`,
+    "Failed to review request",
+    {
+      method: "PATCH",
+      body: { decision, reason },
+    },
+  );
 };
 
 export const deleteEnrollmentRequest = async (requestId: string) => {
-  const res = await fetch(`${API_BASE}/children/enrollment-requests/${requestId}`, {
-    method: "DELETE",
-    credentials: "include",
-  });
-
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(
-      data.error || data.message || "Failed to delete enrollment request",
-    );
-  }
-
-  return data as { message: string };
+  return apiRequestOrThrow<{ message: string }>(
+    `/children/enrollment-requests/${requestId}`,
+    "Failed to delete enrollment request",
+    { method: "DELETE" },
+  );
 };
-

@@ -1,4 +1,4 @@
-import { ValidationError, ForbiddenError } from "../../shared/errors/AppError";
+import { ValidationError, ForbiddenError } from "../../shared/errors/app-error";
 import {
   childRepository,
   ChildRepository,

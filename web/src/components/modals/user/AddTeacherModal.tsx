@@ -1,13 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
 import { X } from "lucide-react";
 import { createTeacher } from "@/api/teacher.api";
 import { getDaycareCenters, type DaycareCenter } from "@/api/daycare-center.api";
 import { showTeacherCredentialsModal, showErrorModal } from "@/utils/sweetAlertModal";
 import {
   type AddTeacherField,
-  type AddTeacherFormErrors,
+  type AddTeacherFormValues,
   validateAddTeacherField,
-  validateAddTeacherForm,
   sanitizePhoneInput,
 } from "@/utils/formValidation";
 
@@ -16,26 +16,48 @@ type Props = {
   onCreated: () => void;
 };
 
-export default function AddTeacherModal({ onClose, onCreated }: Props) {
-  const [form, setForm] = useState({
-    firstName: "",
-    middleName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    daycareCenterId: "",
-  });
+const EMPTY_FORM: AddTeacherFormValues = {
+  firstName: "",
+  middleName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+  daycareCenterId: "",
+};
 
+export default function AddTeacherModal({ onClose, onCreated }: Props) {
   const [loading, setLoading] = useState(false);
   const [centers, setCenters] = useState<DaycareCenter[]>([]);
   const [loadingCenters, setLoadingCenters] = useState(true);
-  const [errors, setErrors] = useState<AddTeacherFormErrors>({});
+
+  const {
+    register,
+    handleSubmit,
+    trigger,
+    getValues,
+    formState: { errors },
+  } = useForm<AddTeacherFormValues>({
+    defaultValues: EMPTY_FORM,
+    mode: "onBlur",
+    reValidateMode: "onChange",
+  });
+
+  const validateField = useMemo(
+    () => (field: AddTeacherField) => (value: string) =>
+      validateAddTeacherField(
+        field,
+        {
+          ...getValues(),
+          [field]: value,
+        } as AddTeacherFormValues,
+      ) || true,
+    [getValues],
+  );
 
   useEffect(() => {
-    // Show validation immediately even before typing.
-    setErrors(validateAddTeacherForm(form));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    // Keep the previous behavior where validation hints are shown immediately.
+    void trigger();
+  }, [trigger]);
 
   useEffect(() => {
     const loadCenters = async () => {
@@ -55,47 +77,7 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
     void loadCenters();
   }, []);
 
-  const setFieldError = (field: AddTeacherField, nextForm = form) => {
-    const error = validateAddTeacherField(field, nextForm);
-    setErrors((prev: AddTeacherFormErrors) => {
-      const next = { ...prev };
-      if (error) {
-        next[field] = error;
-      } else {
-        delete next[field];
-      }
-      return next;
-    });
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name } = e.target;
-    const rawValue = e.target.value;
-    const value = name === "phone" ? sanitizePhoneInput(rawValue) : rawValue;
-    const field = name as AddTeacherField;
-    const nextForm = {
-      ...form,
-      [field]: value,
-    };
-    setForm(nextForm);
-
-    if (errors[field]) {
-      setFieldError(field, nextForm);
-    }
-  };
-
-  const handleFieldBlur = (field: AddTeacherField) => {
-    setFieldError(field);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const formErrors = validateAddTeacherForm(form);
-    setErrors(formErrors);
-    if (Object.keys(formErrors).length > 0) {
-      return;
-    }
-
+  const onSubmit = async (form: AddTeacherFormValues) => {
     setLoading(true);
     try {
       const res = await createTeacher(form);
@@ -111,7 +93,6 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
         );
 
         onCreated();
-
       }, 150);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Failed to create teacher";
@@ -124,7 +105,6 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto dark:bg-slate-900">
-        {/* Header */}
         <div className="flex items-center justify-between p-6 border-b dark:border-slate-700">
           <div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-50">Add Teacher</h2>
@@ -140,15 +120,12 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
           </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6 dark:bg-slate-900">
-          {/* Teacher Information Section */}
+        <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6 dark:bg-slate-900">
           <div>
             <h3 className="text-sm font-semibold text-gray-900 mb-4 dark:text-slate-50">
               Teacher Information
             </h3>
             <div className="space-y-4">
-              {/* First Name, Middle Name Last Name */}
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">
@@ -156,17 +133,15 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
                   </label>
                   <input
                     type="text"
-                    name="firstName"
-                    value={form.firstName}
-                    onChange={handleInputChange}
-                    onBlur={() => handleFieldBlur("firstName")}
                     placeholder="Enter first name"
                     maxLength={50}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
-                    required
+                    {...register("firstName", {
+                      validate: validateField("firstName"),
+                    })}
                   />
-                  {errors.firstName && (
-                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.firstName}</p>
+                  {errors.firstName?.message && (
+                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.firstName.message}</p>
                   )}
                 </div>
                 <div>
@@ -175,17 +150,15 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
                   </label>
                   <input
                     type="text"
-                    name="middleName"
-                    value={form.middleName}
-                    onChange={handleInputChange}
-                    onBlur={() => handleFieldBlur("middleName")}
                     placeholder="Enter middle name"
                     maxLength={50}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
-                    required
+                    {...register("middleName", {
+                      validate: validateField("middleName"),
+                    })}
                   />
-                  {errors.middleName && (
-                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.middleName}</p>
+                  {errors.middleName?.message && (
+                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.middleName.message}</p>
                   )}
                 </div>
                 <div>
@@ -194,61 +167,57 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
                   </label>
                   <input
                     type="text"
-                    name="lastName"
-                    value={form.lastName}
-                    onChange={handleInputChange}
-                    onBlur={() => handleFieldBlur("lastName")}
                     placeholder="Enter last name"
                     maxLength={50}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
-                    required
+                    {...register("lastName", {
+                      validate: validateField("lastName"),
+                    })}
                   />
-                  {errors.lastName && (
-                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.lastName}</p>
+                  {errors.lastName?.message && (
+                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.lastName.message}</p>
                   )}
                 </div>
               </div>
 
-              {/* Email */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">
                   Email (Login Credential) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="email"
-                  name="email"
-                  value={form.email}
-                  onChange={handleInputChange}
-                  onBlur={() => handleFieldBlur("email")}
                   placeholder="teacher@email.com"
                   maxLength={254}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
-                  required
+                  {...register("email", {
+                    validate: validateField("email"),
+                  })}
                 />
-                {errors.email && (
-                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.email}</p>
+                {errors.email?.message && (
+                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.email.message}</p>
                 )}
               </div>
 
-              {/* Phone */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">
                   Phone Number <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="tel"
-                  name="phone"
-                  value={form.phone}
-                  onChange={handleInputChange}
-                  onBlur={() => handleFieldBlur("phone")}
                   placeholder="09123456789"
                   inputMode="numeric"
                   maxLength={12}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
-                  required
+                  {...register("phone", {
+                    validate: validateField("phone"),
+                    onChange: (event) => {
+                      const input = event.target as HTMLInputElement;
+                      input.value = sanitizePhoneInput(input.value);
+                    },
+                  })}
                 />
-                {errors.phone && (
-                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.phone}</p>
+                {errors.phone?.message && (
+                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.phone.message}</p>
                 )}
               </div>
 
@@ -257,22 +226,11 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
                   Assigned Center <span className="text-red-500">*</span>
                 </label>
                 <select
-                  name="daycareCenterId"
-                  value={form.daycareCenterId}
-                  onChange={(e) => {
-                    const nextForm = {
-                      ...form,
-                      daycareCenterId: e.target.value,
-                    };
-                    setForm(nextForm);
-                    if (errors.daycareCenterId) {
-                      setFieldError("daycareCenterId", nextForm);
-                    }
-                  }}
-                  onBlur={() => handleFieldBlur("daycareCenterId")}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 dark:bg-slate-700 dark:text-slate-50 dark:border-slate-600"
                   disabled={loadingCenters}
-                  required
+                  {...register("daycareCenterId", {
+                    validate: validateField("daycareCenterId"),
+                  })}
                 >
                   <option value="">
                     {loadingCenters ? "Loading centers..." : "Select a center"}
@@ -283,15 +241,13 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
                     </option>
                   ))}
                 </select>
-                {errors.daycareCenterId && (
-                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.daycareCenterId}</p>
+                {errors.daycareCenterId?.message && (
+                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.daycareCenterId.message}</p>
                 )}
               </div>
-
             </div>
           </div>
 
-          {/* Info Box */}
           <div className="bg-teal-50 border border-teal-200 rounded-lg p-4 flex gap-3 dark:bg-teal-900/20 dark:border-teal-700/30">
             <div className="text-teal-600 mt-0.5 dark:text-teal-400">
               <svg
@@ -311,7 +267,6 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
             </p>
           </div>
 
-          {/* Buttons */}
           <div className="flex gap-3 justify-end pt-4 border-t dark:border-slate-700">
             <button
               type="button"
@@ -330,7 +285,7 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
             </button>
           </div>
         </form>
-      </div >
-    </div >
+      </div>
+    </div>
   );
 }

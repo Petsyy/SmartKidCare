@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { asyncHandler } from "../../shared/utils/async-handler";
-import { ForbiddenError } from "../../shared/errors/AppError";
+import { ForbiddenError } from "../../shared/errors/app-error";
 import {
   submitAttendance as submitAttendanceSvc,
   submitFeeding as submitFeedingSvc,

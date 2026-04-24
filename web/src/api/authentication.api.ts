@@ -1,4 +1,4 @@
-import { API_BASE } from "../components/config/config.api";
+import { apiRequestOrThrow } from "./api-client";
 
 export interface User {
   _id: string;
@@ -40,35 +40,15 @@ export interface GetUsersParams {
 export const getUsers = async (
   params?: GetUsersParams
 ): Promise<User[]> => {
-  try {
-    const queryParams = new URLSearchParams();
-
-    if (params?.role) {
-      queryParams.append("role", params.role);
-    }
-
-    const url = `${API_BASE}/auth/users${
-      queryParams.toString() ? `?${queryParams.toString()}` : ""
-    }`;
-
-    const response = await fetch(url, {
-      method: "GET",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Failed to fetch users");
-    }
-
-    const result = await response.json();
-    return result.users;
-  } catch (error: any) {
-    throw new Error(error.message || "Network error");
+  const queryParams = new URLSearchParams();
+  if (params?.role) {
+    queryParams.append("role", params.role);
   }
-};
 
-export default API_BASE;
+  const result = await apiRequestOrThrow<{ users?: User[] }>(
+    `/auth/users${queryParams.toString() ? `?${queryParams.toString()}` : ""}`,
+    "Failed to fetch users",
+  );
+
+  return Array.isArray(result.users) ? result.users : [];
+};

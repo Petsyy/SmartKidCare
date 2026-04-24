@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
 import { X } from "lucide-react";
 import { updateChild } from "@/api/child.api";
 import { getUsers, type User } from "@/api/authentication.api";
 import {
   type AddChildForParentField,
-  type AddChildForParentFormErrors,
   type AddChildForParentFormValues,
   validateAddChildForParentForm,
 } from "@/utils/formValidation";
@@ -74,10 +74,6 @@ const getInitialForm = (child: ChildForEdit): AddChildForParentFormValues => ({
 });
 
 export default function EditChildModal({ child, onClose, onUpdated }: Props) {
-  const [form, setForm] = useState<AddChildForParentFormValues>(() => getInitialForm(child));
-  const [errors, setErrors] = useState<AddChildForParentFormErrors>(() =>
-    validateAddChildForParentForm(getInitialForm(child)),
-  );
   const [teachers, setTeachers] = useState<User[]>([]);
   const [selectedTeacherId, setSelectedTeacherId] = useState(
     String(child.teacher?._id || ""),
@@ -85,13 +81,39 @@ export default function EditChildModal({ child, onClose, onUpdated }: Props) {
   const [loading, setLoading] = useState(false);
   const [revealChildName, setRevealChildName] = useState(false);
 
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    trigger,
+    reset,
+    getValues,
+    formState: { errors },
+  } = useForm<AddChildForParentFormValues>({
+    defaultValues: getInitialForm(child),
+    mode: "onBlur",
+    reValidateMode: "onChange",
+  });
+
+  const validateField = useMemo(
+    () => (field: AddChildForParentField) => (value: string) => {
+      const formErrors = validateAddChildForParentForm({
+        ...getValues(),
+        [field]: value,
+      } as AddChildForParentFormValues);
+      return formErrors[field] || true;
+    },
+    [getValues],
+  );
+
   useEffect(() => {
     const nextForm = getInitialForm(child);
-    setForm(nextForm);
-    setErrors(validateAddChildForParentForm(nextForm));
+    reset(nextForm);
     setSelectedTeacherId(String(child.teacher?._id || ""));
     setRevealChildName(false);
-  }, [child]);
+    void trigger();
+  }, [child, reset, trigger]);
 
   useEffect(() => {
     let isMounted = true;
@@ -119,67 +141,16 @@ export default function EditChildModal({ child, onClose, onUpdated }: Props) {
     };
   }, []);
 
-  const setFieldError = (
-    field: AddChildForParentField,
-    nextForm = form,
-  ) => {
-    const allErrors = validateAddChildForParentForm(nextForm);
-    setErrors((prev) => {
-      const next = { ...prev };
-      if (allErrors[field]) {
-        next[field] = allErrors[field];
-      } else {
-        delete next[field];
-      }
-      return next;
-    });
-  };
+  const firstName = watch("firstName");
+  const middleName = watch("middleName");
+  const lastName = watch("lastName");
+  const dateOfBirth = watch("dateOfBirth");
+  const age = watch("age");
+  const gender = watch("gender");
+  const enrollmentDate = watch("enrollmentDate");
+  const schoolYear = watch("schoolYear");
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    const field = name as AddChildForParentField;
-    const nextForm = { ...form, [field]: value } as AddChildForParentFormValues;
-
-    if (field === "dateOfBirth") nextForm.age = calculateAge(value);
-    if (field === "enrollmentDate") nextForm.schoolYear = calculateSchoolYear(value);
-
-    setForm(nextForm);
-
-    const validationFields = new Set<AddChildForParentField>([
-      "firstName",
-      "middleName",
-      "lastName",
-      "dateOfBirth",
-      "enrollmentDate",
-      "schoolYear",
-    ]);
-    if (validationFields.has(field)) {
-      setFieldError(field, nextForm);
-    }
-    if (field === "dateOfBirth" || field === "enrollmentDate") {
-      setFieldError("dateOfBirth", nextForm);
-      setFieldError("enrollmentDate", nextForm);
-    }
-  };
-
-  const handleFieldBlur = (field: AddChildForParentField) => {
-    setFieldError(field);
-  };
-
-  const handleGenderChange = (gender: "male" | "female") => {
-    const nextForm: AddChildForParentFormValues = { ...form, gender };
-    setForm(nextForm);
-    setFieldError("gender", nextForm);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const formErrors = validateAddChildForParentForm(form);
-    setErrors(formErrors);
-    if (Object.keys(formErrors).length > 0) {
-      return;
-    }
-
+  const onSubmit = async (form: AddChildForParentFormValues) => {
     setLoading(true);
     try {
       const updated = await updateChild(child._id, {
@@ -200,6 +171,32 @@ export default function EditChildModal({ child, onClose, onUpdated }: Props) {
     }
   };
 
+  const firstNameField = register("firstName", {
+    validate: validateField("firstName"),
+  });
+  const middleNameField = register("middleName", {
+    validate: validateField("middleName"),
+  });
+  const lastNameField = register("lastName", {
+    validate: validateField("lastName"),
+  });
+  const dateOfBirthField = register("dateOfBirth", {
+    validate: validateField("dateOfBirth"),
+  });
+  const genderMaleField = register("gender", {
+    validate: validateField("gender"),
+  });
+  const genderFemaleField = register("gender", {
+    validate: validateField("gender"),
+  });
+  const enrollmentDateField = register("enrollmentDate", {
+    validate: validateField("enrollmentDate"),
+  });
+  const schoolYearField = register("schoolYear", {
+    validate: validateField("schoolYear"),
+  });
+  const ageField = register("age");
+
   const today = new Date();
   const minAgeDate = new Date(
     today.getFullYear() - 6,
@@ -217,19 +214,19 @@ export default function EditChildModal({ child, onClose, onUpdated }: Props) {
     .slice(0, 10);
   const maskedChildName =
     formatConfidentialName({
-      firstName: form.firstName,
-      middleName: form.middleName,
-      lastName: form.lastName,
+      firstName,
+      middleName,
+      lastName,
     }) || "N/A";
   const firstNameInputValue = revealChildName
-    ? form.firstName
-    : maskNamePart(form.firstName);
+    ? firstName
+    : maskNamePart(firstName);
   const middleNameInputValue = revealChildName
-    ? form.middleName
-    : maskNamePart(form.middleName);
+    ? middleName
+    : maskNamePart(middleName);
   const lastNameInputValue = revealChildName
-    ? form.lastName
-    : maskNamePart(form.lastName);
+    ? lastName
+    : maskNamePart(lastName);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-4">
@@ -241,12 +238,12 @@ export default function EditChildModal({ child, onClose, onUpdated }: Props) {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4 dark:bg-slate-900">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex-1 overflow-y-auto p-6 space-y-4 dark:bg-slate-900">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-300">Student ID</label>
             <input
               type="text"
-              value={child.studentId || "—"}
+              value={child.studentId || "-"}
               disabled
               className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-500"
             />
@@ -277,33 +274,56 @@ export default function EditChildModal({ child, onClose, onUpdated }: Props) {
               <label className="block text-sm font-medium text-gray-700 mb-1.5 dark:text-slate-300">First Name *</label>
               <input
                 type="text"
-                name="firstName"
-                value={firstNameInputValue}
-                onChange={revealChildName ? handleChange : undefined}
                 maxLength={15}
-                onBlur={() => revealChildName && handleFieldBlur("firstName")}
                 readOnly={!revealChildName}
                 className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent read-only:cursor-not-allowed read-only:bg-gray-100 read-only:text-gray-600 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50 dark:read-only:bg-slate-800 dark:read-only:text-slate-400"
-                required
+                {...firstNameField}
+                value={firstNameInputValue}
+                onChange={
+                  revealChildName
+                    ? (event) => {
+                        firstNameField.onChange(event);
+                        void trigger("firstName");
+                      }
+                    : undefined
+                }
+                onBlur={(event) => {
+                  firstNameField.onBlur(event);
+                  if (revealChildName) {
+                    void trigger("firstName");
+                  }
+                }}
               />
-              {errors.firstName && (
-                <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.firstName}</p>
+              {errors.firstName?.message && (
+                <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.firstName.message}</p>
               )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5 dark:text-slate-300">Middle Name <span className="text-red-500">*</span></label>
               <input
                 type="text"
-                name="middleName"
-                value={middleNameInputValue}
                 maxLength={15}
-                onChange={revealChildName ? handleChange : undefined}
-                onBlur={() => revealChildName && handleFieldBlur("middleName")}
                 readOnly={!revealChildName}
                 className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent read-only:cursor-not-allowed read-only:bg-gray-100 read-only:text-gray-600 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50 dark:read-only:bg-slate-800 dark:read-only:text-slate-400"
+                {...middleNameField}
+                value={middleNameInputValue}
+                onChange={
+                  revealChildName
+                    ? (event) => {
+                        middleNameField.onChange(event);
+                        void trigger("middleName");
+                      }
+                    : undefined
+                }
+                onBlur={(event) => {
+                  middleNameField.onBlur(event);
+                  if (revealChildName) {
+                    void trigger("middleName");
+                  }
+                }}
               />
-              {errors.middleName && (
-                <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.middleName}</p>
+              {errors.middleName?.message && (
+                <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.middleName.message}</p>
               )}
             </div>
           </div>
@@ -312,17 +332,28 @@ export default function EditChildModal({ child, onClose, onUpdated }: Props) {
             <label className="block text-sm font-medium text-gray-700 mb-1.5 dark:text-slate-300">Last Name *</label>
             <input
               type="text"
-              name="lastName"
-              value={lastNameInputValue}
               maxLength={15}
-              onChange={revealChildName ? handleChange : undefined}
-              onBlur={() => revealChildName && handleFieldBlur("lastName")}
               readOnly={!revealChildName}
               className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent read-only:cursor-not-allowed read-only:bg-gray-100 read-only:text-gray-600 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50 dark:read-only:bg-slate-800 dark:read-only:text-slate-400"
-              required
+              {...lastNameField}
+              value={lastNameInputValue}
+              onChange={
+                revealChildName
+                  ? (event) => {
+                      lastNameField.onChange(event);
+                      void trigger("lastName");
+                    }
+                  : undefined
+              }
+              onBlur={(event) => {
+                lastNameField.onBlur(event);
+                if (revealChildName) {
+                  void trigger("lastName");
+                }
+              }}
             />
-            {errors.lastName && (
-              <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.lastName}</p>
+            {errors.lastName?.message && (
+              <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.lastName.message}</p>
             )}
           </div>
 
@@ -331,27 +362,35 @@ export default function EditChildModal({ child, onClose, onUpdated }: Props) {
               <label className="block text-sm font-medium text-gray-700 mb-1.5 dark:text-slate-300">Date of Birth *</label>
               <input
                 type="date"
-                name="dateOfBirth"
-                value={form.dateOfBirth}
-                onChange={handleChange}
-                onBlur={() => handleFieldBlur("dateOfBirth")}
                 min={minAgeDate}
                 max={maxAgeDate}
                 className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
-                required
+                {...dateOfBirthField}
+                value={dateOfBirth}
+                onChange={(event) => {
+                  dateOfBirthField.onChange(event);
+                  const nextDate = event.target.value;
+                  setValue("age", calculateAge(nextDate), { shouldDirty: true });
+                  void trigger("dateOfBirth");
+                  void trigger("enrollmentDate");
+                }}
+                onBlur={(event) => {
+                  dateOfBirthField.onBlur(event);
+                  void trigger("dateOfBirth");
+                }}
               />
-              {errors.dateOfBirth && (
-                <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.dateOfBirth}</p>
+              {errors.dateOfBirth?.message && (
+                <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.dateOfBirth.message}</p>
               )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5 dark:text-slate-300">Age</label>
               <input
                 type="text"
-                name="age"
-                value={form.age}
                 readOnly
                 className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-500"
+                {...ageField}
+                value={age}
               />
             </div>
           </div>
@@ -362,28 +401,34 @@ export default function EditChildModal({ child, onClose, onUpdated }: Props) {
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"
-                  name="gender"
                   value="male"
-                  checked={form.gender === "male"}
-                  onChange={() => handleGenderChange("male")}
                   className="w-4 h-4"
+                  {...genderMaleField}
+                  checked={gender === "male"}
+                  onChange={(event) => {
+                    genderMaleField.onChange(event);
+                    void trigger("gender");
+                  }}
                 />
                 <span className="text-sm text-gray-700 dark:text-slate-300">Male</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"
-                  name="gender"
                   value="female"
-                  checked={form.gender === "female"}
-                  onChange={() => handleGenderChange("female")}
                   className="w-4 h-4"
+                  {...genderFemaleField}
+                  checked={gender === "female"}
+                  onChange={(event) => {
+                    genderFemaleField.onChange(event);
+                    void trigger("gender");
+                  }}
                 />
                 <span className="text-sm text-gray-700 dark:text-slate-300">Female</span>
               </label>
             </div>
-            {errors.gender && (
-              <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.gender}</p>
+            {errors.gender?.message && (
+              <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.gender.message}</p>
             )}
           </div>
 
@@ -392,29 +437,42 @@ export default function EditChildModal({ child, onClose, onUpdated }: Props) {
               <label className="block text-sm font-medium text-gray-700 mb-1.5 dark:text-slate-300">Enrollment Date *</label>
               <input
                 type="date"
-                name="enrollmentDate"
-                value={form.enrollmentDate}
-                onChange={handleChange}
-                onBlur={() => handleFieldBlur("enrollmentDate")}
                 className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
-                required
+                {...enrollmentDateField}
+                value={enrollmentDate}
+                onChange={(event) => {
+                  enrollmentDateField.onChange(event);
+                  const nextDate = event.target.value;
+                  setValue("schoolYear", calculateSchoolYear(nextDate), {
+                    shouldDirty: true,
+                  });
+                  void trigger("dateOfBirth");
+                  void trigger("enrollmentDate");
+                }}
+                onBlur={(event) => {
+                  enrollmentDateField.onBlur(event);
+                  void trigger("enrollmentDate");
+                }}
               />
-              {errors.enrollmentDate && (
-                <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.enrollmentDate}</p>
+              {errors.enrollmentDate?.message && (
+                <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.enrollmentDate.message}</p>
               )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5 dark:text-slate-300">School Year</label>
               <input
                 type="text"
-                name="schoolYear"
-                value={form.schoolYear}
-                onBlur={() => handleFieldBlur("schoolYear")}
                 readOnly
                 className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-slate-500"
+                {...schoolYearField}
+                value={schoolYear}
+                onBlur={(event) => {
+                  schoolYearField.onBlur(event);
+                  void trigger("schoolYear");
+                }}
               />
-              {errors.schoolYear && (
-                <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.schoolYear}</p>
+              {errors.schoolYear?.message && (
+                <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.schoolYear.message}</p>
               )}
             </div>
           </div>

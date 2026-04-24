@@ -1,7 +1,4 @@
-/**
- * Base application error class.
- * Throw these from services so the global error handler can map them to HTTP responses.
- */
+
 export class AppError extends Error {
   constructor(
     public readonly statusCode: number,

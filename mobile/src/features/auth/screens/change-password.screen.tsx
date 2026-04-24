@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
 import {
   View,
   Text,
@@ -17,7 +18,7 @@ import { ChevronLeft, Eye, EyeOff, Lock } from "lucide-react-native";
 import { useAuth } from "@/src/hooks/use-auth";
 import type { User } from "@/src/context/auth-context";
 import { completeTeacherPasswordSetup } from "@/src/api/authentication.api";
-import { validatePasswordRules, getPasswordStrengthFeedback } from "@/src/validations/password-validation";
+import { getPasswordStrengthFeedback } from "@/src/validations/password-validation";
 import { PasswordStrengthFeedback } from "@/src/features/auth/components";
 
 export default function ChangePasswordScreen() {
@@ -32,8 +33,17 @@ export default function ChangePasswordScreen() {
     return String(value || "").trim();
   }, [params.setupToken]);
 
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const { watch, setValue } = useForm<{
+    newPassword: string;
+    confirmPassword: string;
+  }>({
+    defaultValues: {
+      newPassword: "",
+      confirmPassword: "",
+    },
+  });
+  const newPassword = watch("newPassword");
+  const confirmPassword = watch("confirmPassword");
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const passwordSetupMutation = useMutation({
@@ -122,7 +132,7 @@ export default function ChangePasswordScreen() {
                 <TextInput
                   secureTextEntry={!showNewPassword}
                   value={newPassword}
-                  onChangeText={setNewPassword}
+                  onChangeText={(value) => setValue("newPassword", value)}
                   placeholder="Enter new password"
                   placeholderTextColor="#9CA3AF"
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 pr-12"
@@ -148,7 +158,7 @@ export default function ChangePasswordScreen() {
               <TextInput
                 secureTextEntry={!showConfirmPassword}
                 value={confirmPassword}
-                onChangeText={setConfirmPassword}
+                onChangeText={(value) => setValue("confirmPassword", value)}
                 placeholder="Re-enter new password"
                 placeholderTextColor="#9CA3AF"
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 pr-12"

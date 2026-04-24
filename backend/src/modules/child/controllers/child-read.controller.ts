@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import type { Request, Response } from "express";
 import Child from "../../../models/Child";
-import { ForbiddenError, NotFoundError, UnauthorizedError, ValidationError } from "../../../shared/errors/AppError";
+import { ForbiddenError, NotFoundError, UnauthorizedError, ValidationError } from "../../../shared/errors/app-error";
 import { asyncHandler } from "../../../shared/utils/async-handler";
 import { ensureCanAccessChild, teacherWithCenterPopulate, withDerivedDaycareCenter } from "../shared";
 

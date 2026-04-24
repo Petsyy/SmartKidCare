@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useForm } from "react-hook-form";
 import {
   View,
   Text,
@@ -30,7 +31,12 @@ export default function VerifyOtpScreen() {
     return String(value || "").trim();
   }, [params.email]);
 
-  const [otp, setOtp] = useState("");
+  const { watch, setValue } = useForm<{ otp: string }>({
+    defaultValues: {
+      otp: "",
+    },
+  });
+  const otp = watch("otp");
   const verifyMutation = useMutation({
     mutationFn: ({ email, otp }: { email: string; otp: string }) =>
       verifyTeacherPasswordOtp(email, otp),
@@ -113,7 +119,7 @@ export default function VerifyOtpScreen() {
             <TextInput
               value={otp}
               onChangeText={(value) =>
-                setOtp(value.replace(/[^0-9]/g, "").slice(0, 6))
+                setValue("otp", value.replace(/[^0-9]/g, "").slice(0, 6))
               }
               keyboardType="number-pad"
               maxLength={6}

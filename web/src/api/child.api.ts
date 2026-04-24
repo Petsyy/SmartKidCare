@@ -1,29 +1,23 @@
 import { API_BASE } from "../components/config/config.api";
+import { apiRequestOrThrow } from "./api-client";
 import type { ChildBlockchainProof } from "@/types/child";
 
 export const getChildren = async () => {
-  const res = await fetch(`${API_BASE}/children`, {
-    credentials: "include",
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || "Failed to fetch children");
-  return data;
+  return apiRequestOrThrow<unknown>("/children", "Failed to fetch children");
 };
 
 export const getChildDocumentUrl = async (
   childId: string,
   documentType: "birth-certificate" | "parent-id",
 ) => {
-  const tokenRes = await fetch(
-    `${API_BASE}/children/${childId}/documents/${documentType}/url`,
-    {
-      credentials: "include",
-    },
+  const tokenData = await apiRequestOrThrow<{
+    token?: string;
+    expiresInSeconds: number;
+    documentType: "birthCertificate" | "parentId";
+  }>(
+    `/children/${childId}/documents/${documentType}/url`,
+    "Failed to fetch document token",
   );
-
-  const tokenData = await tokenRes.json();
-  if (!tokenRes.ok)
-    throw new Error(tokenData.message || "Failed to fetch document token");
 
   const { token, expiresInSeconds } = tokenData;
   if (!token) throw new Error("No access token was returned");
@@ -42,16 +36,10 @@ export const getChildDocumentUrl = async (
 export const getChildBlockchainProof = async (
   childId: string,
 ): Promise<ChildBlockchainProof> => {
-  const res = await fetch(`${API_BASE}/children/${childId}/blockchain-proof`, {
-    credentials: "include",
-  });
-
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.message || "Failed to fetch blockchain proof");
-  }
-
-  return data as ChildBlockchainProof;
+  return apiRequestOrThrow<ChildBlockchainProof>(
+    `/children/${childId}/blockchain-proof`,
+    "Failed to fetch blockchain proof",
+  );
 };
 
 export const updateChild = async (
@@ -72,25 +60,14 @@ export const updateChild = async (
     unlinkTeacher?: boolean;
   },
 ) => {
-  const res = await fetch(`${API_BASE}/children/${childId}`, {
+  return apiRequestOrThrow<unknown>(`/children/${childId}`, "Failed to update child", {
     method: "PATCH",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(updates),
+    body: updates,
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || "Failed to update child");
-  return data;
 };
 
 export const deleteChild = async (childId: string) => {
-  const res = await fetch(`${API_BASE}/children/${childId}`, {
+  return apiRequestOrThrow<unknown>(`/children/${childId}`, "Failed to delete child", {
     method: "DELETE",
-    credentials: "include",
   });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.message || "Failed to delete child");
-  return data;
 };

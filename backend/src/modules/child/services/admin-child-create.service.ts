@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import Child from "../../../models/Child";
 import User from "../../../models/Users";
-import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../../../shared/errors/AppError";
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../../../shared/errors/app-error";
 import { logger } from "../../../shared/lib/logger";
 import {
   deleteFromCloudinary,

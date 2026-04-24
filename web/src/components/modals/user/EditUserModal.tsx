@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 import { X, User as UserIcon, Save } from "lucide-react";
 import Swal from "sweetalert2";
 import { type User } from "@/api/authentication.api";
@@ -42,78 +43,43 @@ const validateField = (name: keyof EditUserForm, value: string): string | undefi
   return undefined;
 };
 
-const validateForm = (nextForm: EditUserForm): Partial<Record<keyof EditUserForm, string>> => {
-  const nextErrors: Partial<Record<keyof EditUserForm, string>> = {};
-  (Object.keys(nextForm) as Array<keyof EditUserForm>).forEach((field) => {
-    const error = validateField(field, nextForm[field]);
-    if (error) {
-      nextErrors[field] = error;
-    }
-  });
-  return nextErrors;
-};
+const getFormFromUser = (user: User): EditUserForm => ({
+  firstName: user.firstName,
+  middleName: user.middleName || "",
+  lastName: user.lastName,
+  email: user.email,
+  phone: user.phone || "",
+});
 
 export default function EditUserModal({ user, onClose, onUpdated }: Props) {
-  const [form, setForm] = useState<EditUserForm>({
-    firstName: user.firstName,
-    middleName: user.middleName || "",
-    lastName: user.lastName,
-    email: user.email,
-    phone: user.phone || "",
-  });
-  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof typeof form, string>>>({});
-
   const [loading, setLoading] = useState(false);
 
+  const {
+    register,
+    handleSubmit,
+    reset,
+    trigger,
+    formState: { errors },
+  } = useForm<EditUserForm>({
+    defaultValues: getFormFromUser(user),
+    mode: "onBlur",
+    reValidateMode: "onChange",
+  });
+
+  const validateInput = (field: keyof EditUserForm) => (value: string) =>
+    validateField(field, value) || true;
+
   useEffect(() => {
-    const nextForm: EditUserForm = {
-      firstName: user.firstName,
-      middleName: user.middleName || "",
-      lastName: user.lastName,
-      email: user.email,
-      phone: user.phone || "",
-    };
-    setForm(nextForm);
-    setFieldErrors(validateForm(nextForm));
-  }, [user]);
+    reset(getFormFromUser(user));
+    void trigger();
+  }, [user, reset, trigger]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    const field = name as keyof typeof form;
-    setForm((prev) => {
-      const next = {
-        ...prev,
-        [name]: value,
-      };
-      setFieldErrors((prevErrors) => ({
-        ...prevErrors,
-        [field]: validateField(field, value),
-      }));
-      return next;
-    });
-  };
-
-  const handleFieldBlur = (field: keyof typeof form) => {
-    setFieldErrors((prev) => ({
-      ...prev,
-      [field]: validateField(field, form[field]),
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const nextErrors = validateForm(form);
-    setFieldErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) {
-      return;
-    }
-
+  const onSubmit = async (form: EditUserForm) => {
     setLoading(true);
     try {
       await updateUser(user._id, form);
 
-      Swal.fire({
+      await Swal.fire({
         title: "Success",
         text: "User updated successfully",
         icon: "success",
@@ -122,8 +88,9 @@ export default function EditUserModal({ user, onClose, onUpdated }: Props) {
 
       onClose();
       await onUpdated();
-    } catch (error: any) {
-      showErrorModal(error.message || "Failed to update user");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to update user";
+      showErrorModal(message);
     } finally {
       setLoading(false);
     }
@@ -135,7 +102,6 @@ export default function EditUserModal({ user, onClose, onUpdated }: Props) {
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden dark:bg-slate-900">
-        {/* Header */}
         <div className="flex items-center justify-between p-6 bg-teal-50 border-b border-teal-200 dark:bg-teal-900/20 dark:border-teal-900/50">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-100 text-teal-600 dark:bg-teal-900/40 dark:text-teal-400">
@@ -157,9 +123,7 @@ export default function EditUserModal({ user, onClose, onUpdated }: Props) {
           </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6 dark:bg-slate-900">
-          {/* Read-only info */}
+        <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6 dark:bg-slate-900">
           <div className="flex flex-wrap gap-3">
             <span
               className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold ${
@@ -174,7 +138,6 @@ export default function EditUserModal({ user, onClose, onUpdated }: Props) {
             </span>
           </div>
 
-          {/* Editable fields */}
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -183,16 +146,14 @@ export default function EditUserModal({ user, onClose, onUpdated }: Props) {
                 </label>
                 <input
                   type="text"
-                  name="firstName"
-                  value={form.firstName}
-                  onChange={handleInputChange}
-                  onBlur={() => handleFieldBlur("firstName")}
                   placeholder="Enter first name"
                   className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
-                  required
+                  {...register("firstName", {
+                    validate: validateInput("firstName"),
+                  })}
                 />
-                {fieldErrors.firstName && (
-                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.firstName}</p>
+                {errors.firstName?.message && (
+                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.firstName.message}</p>
                 )}
               </div>
               <div>
@@ -201,16 +162,14 @@ export default function EditUserModal({ user, onClose, onUpdated }: Props) {
                 </label>
                 <input
                   type="text"
-                  name="middleName"
-                  value={form.middleName}
-                  onChange={handleInputChange}
-                  onBlur={() => handleFieldBlur("middleName")}
                   placeholder="Enter first name"
                   className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
-                  required
+                  {...register("middleName", {
+                    validate: validateInput("middleName"),
+                  })}
                 />
-                {fieldErrors.middleName && (
-                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.middleName}</p>
+                {errors.middleName?.message && (
+                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.middleName.message}</p>
                 )}
               </div>
               <div>
@@ -219,16 +178,14 @@ export default function EditUserModal({ user, onClose, onUpdated }: Props) {
                 </label>
                 <input
                   type="text"
-                  name="lastName"
-                  value={form.lastName}
-                  onChange={handleInputChange}
-                  onBlur={() => handleFieldBlur("lastName")}
                   placeholder="Enter last name"
                   className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
-                  required
+                  {...register("lastName", {
+                    validate: validateInput("lastName"),
+                  })}
                 />
-                {fieldErrors.lastName && (
-                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.lastName}</p>
+                {errors.lastName?.message && (
+                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.lastName.message}</p>
                 )}
               </div>
             </div>
@@ -239,16 +196,14 @@ export default function EditUserModal({ user, onClose, onUpdated }: Props) {
               </label>
               <input
                 type="email"
-                name="email"
-                value={form.email}
-                onChange={handleInputChange}
-                onBlur={() => handleFieldBlur("email")}
                 placeholder="user@email.com"
                 className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
-                required
+                {...register("email", {
+                  validate: validateInput("email"),
+                })}
               />
-              {fieldErrors.email && (
-                <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.email}</p>
+              {errors.email?.message && (
+                <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.email.message}</p>
               )}
             </div>
 
@@ -258,21 +213,18 @@ export default function EditUserModal({ user, onClose, onUpdated }: Props) {
               </label>
               <input
                 type="tel"
-                name="phone"
-                value={form.phone}
-                onChange={handleInputChange}
-                onBlur={() => handleFieldBlur("phone")}
                 placeholder="Enter phone number"
                 className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
-                required
+                {...register("phone", {
+                  validate: validateInput("phone"),
+                })}
               />
-              {fieldErrors.phone && (
-                <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.phone}</p>
+              {errors.phone?.message && (
+                <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.phone.message}</p>
               )}
             </div>
           </div>
 
-          {/* Buttons */}
           <div className="flex justify-end gap-3 pt-6 border-t border-gray-100 dark:border-slate-700">
             <div className="flex gap-3 sm:flex-row-reverse">
               <button

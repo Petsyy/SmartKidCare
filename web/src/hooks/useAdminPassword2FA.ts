@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState } from "react";
 
 type SendPasswordChangeOtp = (
   currentPassword: string,
@@ -52,13 +52,6 @@ const startsWithUppercaseRegex = /^[A-Z]/;
 const hasSpecialCharacterRegex = /[^A-Za-z0-9]/;
 const otpRegex = /^\d{6}$/;
 
-const INITIAL_PASSWORD_FORM: PasswordForm = {
-  currentPassword: "",
-  newPassword: "",
-  confirmPassword: "",
-  otp: "",
-};
-
 const INITIAL_PASSWORD_STATE: PasswordState = {
   saving: false,
   success: null,
@@ -77,14 +70,115 @@ type PasswordValidationIssue = {
   message: string;
 };
 
+const getPasswordPolicyChecks = (form: PasswordForm): PasswordPolicyChecks => ({
+  minimumLength: form.newPassword.length >= PASSWORD_MIN_LENGTH,
+  startsWithUppercase: startsWithUppercaseRegex.test(form.newPassword),
+  hasSpecialCharacter: hasSpecialCharacterRegex.test(form.newPassword),
+  differsFromCurrent:
+    form.currentPassword.length > 0 &&
+    form.newPassword.length > 0 &&
+    form.currentPassword !== form.newPassword,
+  matchesConfirmation:
+    form.newPassword.length > 0 &&
+    form.confirmPassword.length > 0 &&
+    form.newPassword === form.confirmPassword,
+});
+
+const validatePasswordForm = (
+  form: PasswordForm,
+  requireOtp: boolean,
+): PasswordValidationIssue | null => {
+  if (!form.currentPassword.trim()) {
+    return {
+      field: "currentPassword",
+      message: "Current password is required.",
+    };
+  }
+  if (!form.newPassword.trim()) {
+    return {
+      field: "newPassword",
+      message: "New password is required.",
+    };
+  }
+  if (form.newPassword.length < PASSWORD_MIN_LENGTH) {
+    return {
+      field: "newPassword",
+      message: `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`,
+    };
+  }
+  if (!startsWithUppercaseRegex.test(form.newPassword)) {
+    return {
+      field: "newPassword",
+      message: "Password must start with a capital letter.",
+    };
+  }
+  if (!hasSpecialCharacterRegex.test(form.newPassword)) {
+    return {
+      field: "newPassword",
+      message: "Password must include at least one special character.",
+    };
+  }
+  if (form.newPassword === form.currentPassword) {
+    return {
+      field: "newPassword",
+      message: "New password must be different from current password.",
+    };
+  }
+  if (!form.confirmPassword.trim()) {
+    return {
+      field: "confirmPassword",
+      message: "Please confirm your new password.",
+    };
+  }
+  if (form.newPassword !== form.confirmPassword) {
+    return {
+      field: "confirmPassword",
+      message: "New password and confirmation do not match.",
+    };
+  }
+  if (requireOtp) {
+    if (!form.otp.trim()) {
+      return {
+        field: "otp",
+        message: "OTP is required.",
+      };
+    }
+    if (!otpRegex.test(form.otp.trim())) {
+      return {
+        field: "otp",
+        message: "OTP must be a 6-digit code.",
+      };
+    }
+  }
+  return null;
+};
+
+const getBackendErrorField = (message: string): keyof PasswordForm | null => {
+  const lower = String(message || "").toLowerCase();
+  if (lower.includes("current password")) {
+    return "currentPassword";
+  }
+  if (
+    lower.includes("new password") ||
+    lower.includes("must start with a capital") ||
+    lower.includes("special character")
+  ) {
+    return "newPassword";
+  }
+  if (lower.includes("confirmation")) {
+    return "confirmPassword";
+  }
+  if (lower.includes("otp")) {
+    return "otp";
+  }
+  return null;
+};
+
 export function useAdminPassword2FA({
   sendPasswordChangeOtp,
   savePassword,
   onPasswordChanged,
 }: UseAdminPassword2FAOptions) {
-  const [passwordForm, setPasswordForm] = useState<PasswordForm>(
-    INITIAL_PASSWORD_FORM,
-  );
   const [passwordState, setPasswordState] = useState<PasswordState>(
     INITIAL_PASSWORD_STATE,
   );
@@ -94,140 +188,23 @@ export function useAdminPassword2FA({
   const [passwordFieldErrors, setPasswordFieldErrors] =
     useState<PasswordFieldErrors>({});
 
-  const validatePasswordForm = (
-    form: PasswordForm,
-    requireOtp: boolean,
-  ): PasswordValidationIssue | null => {
-    if (!form.currentPassword.trim()) {
-      return {
-        field: "currentPassword",
-        message: "Current password is required.",
-      };
-    }
-    if (!form.newPassword.trim()) {
-      return {
-        field: "newPassword",
-        message: "New password is required.",
-      };
-    }
-    if (form.newPassword.length < PASSWORD_MIN_LENGTH) {
-      return {
-        field: "newPassword",
-        message: `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`,
-      };
-    }
-    if (!startsWithUppercaseRegex.test(form.newPassword)) {
-      return {
-        field: "newPassword",
-        message: "Password must start with a capital letter.",
-      };
-    }
-    if (!hasSpecialCharacterRegex.test(form.newPassword)) {
-      return {
-        field: "newPassword",
-        message: "Password must include at least one special character.",
-      };
-    }
-    if (form.newPassword === form.currentPassword) {
-      return {
-        field: "newPassword",
-        message: "New password must be different from current password.",
-      };
-    }
-    if (!form.confirmPassword.trim()) {
-      return {
-        field: "confirmPassword",
-        message: "Please confirm your new password.",
-      };
-    }
-    if (form.newPassword !== form.confirmPassword) {
-      return {
-        field: "confirmPassword",
-        message: "New password and confirmation do not match.",
-      };
-    }
-    if (requireOtp) {
-      if (!form.otp.trim()) {
-        return {
-          field: "otp",
-          message: "OTP is required.",
-        };
-      }
-      if (!otpRegex.test(form.otp.trim())) {
-        return {
-          field: "otp",
-          message: "OTP must be a 6-digit code.",
-        };
-      }
-    }
-    return null;
-  };
-
-  const getBackendErrorField = (message: string): keyof PasswordForm | null => {
-    const lower = String(message || "").toLowerCase();
-    if (lower.includes("current password")) {
-      return "currentPassword";
-    }
-    if (
-      lower.includes("new password") ||
-      lower.includes("must start with a capital") ||
-      lower.includes("special character")
-    ) {
-      return "newPassword";
-    }
-    if (lower.includes("confirmation")) {
-      return "confirmPassword";
-    }
-    if (lower.includes("otp")) {
-      return "otp";
-    }
-    return null;
-  };
-
-  const passwordPolicyChecks: PasswordPolicyChecks = useMemo(
-    () => ({
-      minimumLength: passwordForm.newPassword.length >= PASSWORD_MIN_LENGTH,
-      startsWithUppercase: startsWithUppercaseRegex.test(
-        passwordForm.newPassword,
-      ),
-      hasSpecialCharacter: hasSpecialCharacterRegex.test(
-        passwordForm.newPassword,
-      ),
-      differsFromCurrent:
-        passwordForm.currentPassword.length > 0 &&
-        passwordForm.newPassword.length > 0 &&
-        passwordForm.currentPassword !== passwordForm.newPassword,
-      matchesConfirmation:
-        passwordForm.newPassword.length > 0 &&
-        passwordForm.confirmPassword.length > 0 &&
-        passwordForm.newPassword === passwordForm.confirmPassword,
-    }),
-    [passwordForm],
+  const securityStatus = useMemo(
+    () =>
+      passwordOtpState.sent
+        ? "OTP pending verification"
+        : passwordState.success
+          ? "Recently updated"
+          : "Password controls",
+    [passwordOtpState.sent, passwordState.success],
   );
 
-  const canRequestPasswordOtp =
-    validatePasswordForm(passwordForm, false) === null;
-  const canSubmitPasswordChange =
-    passwordOtpState.sent && validatePasswordForm(passwordForm, true) === null;
+  const canRequestPasswordOtp = (form: PasswordForm) =>
+    validatePasswordForm(form, false) === null;
 
-  const securityStatus = passwordOtpState.sent
-    ? "OTP pending verification"
-    : passwordState.success
-      ? "Recently updated"
-      : "Password controls";
+  const canSubmitPasswordChange = (form: PasswordForm) =>
+    passwordOtpState.sent && validatePasswordForm(form, true) === null;
 
-  const handlePasswordFieldChange = (
-    key: keyof PasswordForm,
-    value: string,
-  ) => {
-    setPasswordForm((previous) => {
-      const next = { ...previous, [key]: value };
-      if (key !== "otp") {
-        next.otp = "";
-      }
-      return next;
-    });
-
+  const handlePasswordInputChange = (key: keyof PasswordForm) => {
     setPasswordState(INITIAL_PASSWORD_STATE);
     setPasswordFieldErrors({});
 
@@ -250,8 +227,8 @@ export function useAdminPassword2FA({
     });
   };
 
-  const handleRequestPasswordOtp = async () => {
-    const validationIssue = validatePasswordForm(passwordForm, false);
+  const handleRequestPasswordOtp = async (form: PasswordForm) => {
+    const validationIssue = validatePasswordForm(form, false);
     if (validationIssue) {
       setPasswordFieldErrors({
         [validationIssue.field]: validationIssue.message,
@@ -276,8 +253,8 @@ export function useAdminPassword2FA({
 
     try {
       const response = await sendPasswordChangeOtp(
-        passwordForm.currentPassword,
-        passwordForm.newPassword,
+        form.currentPassword,
+        form.newPassword,
       );
       setPasswordOtpState({
         requesting: false,
@@ -285,8 +262,9 @@ export function useAdminPassword2FA({
         info: response.message,
         error: null,
       });
-    } catch (error: any) {
-      const message = error?.message || "Failed to send OTP.";
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "Failed to send OTP.";
       const field = getBackendErrorField(message);
       setPasswordFieldErrors(field ? { [field]: message } : {});
       setPasswordOtpState((previous) => ({
@@ -298,10 +276,8 @@ export function useAdminPassword2FA({
     }
   };
 
-  const handlePasswordSubmit = async (event: FormEvent) => {
-    event.preventDefault();
-
-    const baseValidationIssue = validatePasswordForm(passwordForm, false);
+  const handlePasswordSubmit = async (form: PasswordForm) => {
+    const baseValidationIssue = validatePasswordForm(form, false);
     if (baseValidationIssue) {
       setPasswordFieldErrors({
         [baseValidationIssue.field]: baseValidationIssue.message,
@@ -311,7 +287,7 @@ export function useAdminPassword2FA({
         success: null,
         error: null,
       });
-      return;
+      return false;
     }
 
     if (!passwordOtpState.sent) {
@@ -321,10 +297,10 @@ export function useAdminPassword2FA({
         success: null,
         error: "Request OTP first before changing your password.",
       });
-      return;
+      return false;
     }
 
-    const otpValidationIssue = validatePasswordForm(passwordForm, true);
+    const otpValidationIssue = validatePasswordForm(form, true);
     if (otpValidationIssue) {
       setPasswordFieldErrors({
         [otpValidationIssue.field]: otpValidationIssue.message,
@@ -334,7 +310,7 @@ export function useAdminPassword2FA({
         success: null,
         error: null,
       });
-      return;
+      return false;
     }
 
     setPasswordFieldErrors({});
@@ -345,13 +321,8 @@ export function useAdminPassword2FA({
     });
 
     try {
-      await savePassword(
-        passwordForm.currentPassword,
-        passwordForm.newPassword,
-        passwordForm.otp.trim(),
-      );
+      await savePassword(form.currentPassword, form.newPassword, form.otp.trim());
 
-      setPasswordForm(INITIAL_PASSWORD_FORM);
       setPasswordOtpState(INITIAL_PASSWORD_OTP_STATE);
       setPasswordFieldErrors({});
       setPasswordState({
@@ -363,8 +334,10 @@ export function useAdminPassword2FA({
       if (onPasswordChanged) {
         await onPasswordChanged();
       }
-    } catch (error: any) {
-      const message = error?.message || "Failed to change password.";
+      return true;
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "Failed to change password.";
       const field = getBackendErrorField(message);
       setPasswordFieldErrors(field ? { [field]: message } : {});
       setPasswordState({
@@ -372,19 +345,19 @@ export function useAdminPassword2FA({
         success: null,
         error: field ? null : message,
       });
+      return false;
     }
   };
 
   return {
-    passwordForm,
     passwordState,
     passwordOtpState,
     passwordFieldErrors,
-    passwordPolicyChecks,
+    securityStatus,
+    getPasswordPolicyChecks,
     canRequestPasswordOtp,
     canSubmitPasswordChange,
-    securityStatus,
-    handlePasswordFieldChange,
+    handlePasswordInputChange,
     handleRequestPasswordOtp,
     handlePasswordSubmit,
   };

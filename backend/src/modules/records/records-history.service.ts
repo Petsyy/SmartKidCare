@@ -5,7 +5,7 @@
  * Throws AppError subclasses — no HTTP awareness.
  */
 import type { Request } from "express";
-import { UnauthorizedError, ForbiddenError } from "../../shared/errors/AppError";
+import { UnauthorizedError, ForbiddenError } from "../../shared/errors/app-error";
 import {
   findAttendanceHistory,
   findFeedingHistory,

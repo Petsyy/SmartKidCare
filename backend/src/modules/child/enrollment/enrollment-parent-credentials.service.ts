@@ -4,7 +4,7 @@ import {
   ForbiddenError,
   NotFoundError,
   ValidationError,
-} from "../../../shared/errors/AppError";
+} from "../../../shared/errors/app-error";
 import { normalizeString } from "../shared";
 import {
   findParentByEmail,

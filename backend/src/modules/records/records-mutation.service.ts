@@ -2,7 +2,7 @@ import {
   ValidationError,
   ForbiddenError,
   NotFoundError,
-} from "../../shared/errors/AppError";
+} from "../../shared/errors/app-error";
 import {
   findAttendanceById,
   findFeedingById,

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useForm } from "react-hook-form";
 import {
   View,
   Text,
@@ -18,7 +18,12 @@ import { requestForgotPasswordOtp } from "@/src/api/authentication.api";
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const { watch, setValue } = useForm<{ email: string }>({
+    defaultValues: {
+      email: "",
+    },
+  });
+  const email = watch("email");
   const forgotPasswordMutation = useMutation({
     mutationFn: requestForgotPasswordOtp,
   });
@@ -70,7 +75,7 @@ export default function ForgotPasswordScreen() {
               <Mail size={20} color="#6b7280" style={{ marginRight: 10 }} />
               <TextInput
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(value) => setValue("email", value)}
                 placeholder="email@example.com"
                 placeholderTextColor="#9CA3AF"
                 keyboardType="email-address"

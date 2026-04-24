@@ -1,7 +1,7 @@
 import ChildEnrollmentRequest from "../../../models/ChildEnrollmentRequest";
 import ChildDevelopmentCenter from "../../../models/ChildDevelopmentCenter";
 import User from "../../../models/Users";
-import { ForbiddenError } from "../../../shared/errors/AppError";
+import { ForbiddenError } from "../../../shared/errors/app-error";
 import { normalizeString } from "../shared";
 
 type AuthUser = {

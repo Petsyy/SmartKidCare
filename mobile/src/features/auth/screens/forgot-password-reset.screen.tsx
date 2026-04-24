@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
 import {
   View,
   Text,
@@ -15,7 +16,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 import { ChevronLeft, Eye, EyeOff, Lock } from "lucide-react-native";
 import { resetForgotPassword } from "@/src/api/authentication.api";
-import { validatePasswordRules, getPasswordStrengthFeedback } from "@/src/validations/password-validation";
+import { getPasswordStrengthFeedback } from "@/src/validations/password-validation";
 import { PasswordStrengthFeedback } from "@/src/features/auth/components";
 
 export default function ForgotPasswordResetScreen() {
@@ -29,18 +30,23 @@ export default function ForgotPasswordResetScreen() {
     return String(value || "").trim();
   }, [params.resetToken]);
 
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const { watch, setValue } = useForm<{
+    newPassword: string;
+    confirmPassword: string;
+  }>({
+    defaultValues: {
+      newPassword: "",
+      confirmPassword: "",
+    },
+  });
+  const newPassword = watch("newPassword");
+  const confirmPassword = watch("confirmPassword");
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const resetMutation = useMutation({
     mutationFn: ({ resetToken, newPassword }: { resetToken: string; newPassword: string }) =>
       resetForgotPassword(resetToken, newPassword),
   });
-
-  const passwordValidation = useMemo(() => {
-    return validatePasswordRules(newPassword);
-  }, [newPassword]);
 
   const passwordFeedback = useMemo(
     () => getPasswordStrengthFeedback(newPassword),
@@ -121,7 +127,7 @@ export default function ForgotPasswordResetScreen() {
                 <TextInput
                   secureTextEntry={!showNewPassword}
                   value={newPassword}
-                  onChangeText={setNewPassword}
+                  onChangeText={(value) => setValue("newPassword", value)}
                   placeholder="Enter new password"
                   placeholderTextColor="#9CA3AF"
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl text-lg text-gray-900 pr-12"
@@ -147,7 +153,7 @@ export default function ForgotPasswordResetScreen() {
               <TextInput
                 secureTextEntry={!showConfirmPassword}
                 value={confirmPassword}
-                onChangeText={setConfirmPassword}
+                onChangeText={(value) => setValue("confirmPassword", value)}
                 placeholder="Re-enter new password"
                 placeholderTextColor="#9CA3AF"
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl text-lg text-gray-900 pr-12"

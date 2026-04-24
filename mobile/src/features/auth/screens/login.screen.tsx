@@ -1,4 +1,4 @@
-import type { ReactNode, ComponentType } from "react";
+import { useState, type ComponentType, type ReactNode } from "react";
 import {
   View,
   Text,
@@ -12,11 +12,20 @@ import {
   ScrollView,
   StatusBar,
 } from "react-native";
+import { useForm } from "react-hook-form";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Eye, EyeOff, Mail, Lock, ShieldCheck } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import { useLoginForm } from "@/src/features/auth/hooks";
+import { useMutation } from "@tanstack/react-query";
+import { useAuth } from "@/src/hooks/use-auth";
+import type { User } from "@/src/context/auth-context";
+import { login as apiLogin } from "@/src/api/authentication.api";
+
+type LoginFormValues = {
+  identifier: string;
+  password: string;
+};
 
 const FormField = ({
   label,
@@ -39,20 +48,80 @@ const FormField = ({
 
 export default function Login() {
   const router = useRouter();
-  const {
-    identifier,
-    setIdentifier,
-    password,
-    setPassword,
-    showPassword,
-    setShowPassword,
-    isLoading,
-    focusedField,
-    setFocusedField,
-    errorMessage,
-    setErrorMessage,
-    handleLogin,
-  } = useLoginForm();
+  const { login } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
+  const [focusedField, setFocusedField] = useState<"identifier" | "password" | null>(null);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const { setValue, watch } = useForm<LoginFormValues>({
+    defaultValues: {
+      identifier: "",
+      password: "",
+    },
+  });
+  const identifier = watch("identifier");
+  const password = watch("password");
+
+  const loginMutation = useMutation({
+    mutationFn: apiLogin,
+  });
+
+  const handleLogin = async () => {
+    const trimmedIdentifier = identifier.trim();
+    if (!trimmedIdentifier || !password) {
+      setErrorMessage("Please enter both login credential and password.");
+      return;
+    }
+
+    setErrorMessage("");
+
+    try {
+      const response = await loginMutation.mutateAsync({
+        identifier: trimmedIdentifier,
+        password,
+      });
+
+      if (response.requiresPasswordChange) {
+        if (response.passwordSetupToken && response.requiresOtp === false) {
+          router.push({
+            pathname: "/(auth)/change-password",
+            params: { setupToken: response.passwordSetupToken },
+          });
+          return;
+        }
+
+        router.push({
+          pathname: "/(auth)/verify-otp",
+          params: { email: response.email },
+        });
+        return;
+      }
+
+      const { token: authToken, user: apiUser } = response;
+
+      if (__DEV__) {
+        console.log("[Login JWT Token]", authToken);
+      }
+
+      const appUser: User = {
+        id: apiUser._id,
+        email: apiUser.email,
+        role:
+          apiUser.role === "parent" || apiUser.role === "teacher"
+            ? apiUser.role
+            : "teacher",
+        needsToConfirmLink: apiUser.needsToConfirmLink,
+      };
+
+      await login(appUser, authToken);
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Login failed. Please check your credentials.";
+      setErrorMessage(message);
+    }
+  };
 
   return (
     <LinearGradient
@@ -124,7 +193,7 @@ export default function Login() {
                       value={identifier}
                       onChangeText={(text) => {
                         if (errorMessage) setErrorMessage("");
-                        setIdentifier(text);
+                        setValue("identifier", text);
                       }}
                       keyboardType="default"
                       autoCapitalize="none"
@@ -149,7 +218,7 @@ export default function Login() {
                         value={password}
                         onChangeText={(text) => {
                           if (errorMessage) setErrorMessage("");
-                          setPassword(text);
+                          setValue("password", text);
                         }}
                         returnKeyType="go"
                         onSubmitEditing={handleLogin}
@@ -189,10 +258,10 @@ export default function Login() {
 
                   <Pressable
                     onPress={handleLogin}
-                    disabled={isLoading}
+                    disabled={loginMutation.isPending}
                     className="rounded-xl overflow-hidden"
                     style={({ pressed }) => [
-                      { opacity: isLoading ? 0.75 : pressed ? 0.88 : 1 },
+                      { opacity: loginMutation.isPending ? 0.75 : pressed ? 0.88 : 1 },
                     ]}
                   >
                     <LinearGradient
@@ -201,7 +270,7 @@ export default function Login() {
                       end={{ x: 1, y: 0 }}
                       className="w-full py-4 items-center justify-center rounded-xl shadow-lg shadow-emerald-200"
                     >
-                      {isLoading ? (
+                      {loginMutation.isPending ? (
                         <View className="flex-row items-center justify-center gap-3">
                           <ActivityIndicator size="small" color="#fff" />
                           <Text className="text-white text-center text-xl font-bold">

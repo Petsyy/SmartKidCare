@@ -7,7 +7,7 @@ import {
   ForbiddenError,
   NotFoundError,
   ValidationError,
-} from "../../../shared/errors/AppError";
+} from "../../../shared/errors/app-error";
 import { logger } from "../../../shared/lib/logger";
 import { createChildRecord, createParentAccount, findParentByEmail } from "../services";
 import { escapeRegex, normalizeString } from "../shared";

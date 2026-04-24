@@ -1,4 +1,4 @@
-import { API_BASE } from "../components/config/config.api";
+import { apiRequestOrThrow } from "./api-client";
 
 export type AdminSettingsUser = {
   _id: string;
@@ -29,67 +29,41 @@ type UpdateAdminPreferencesPayload = {
   adminNotifySystemUpdates?: boolean;
 };
 
-const parseError = async (response: Response) => {
-  const data = await response.json().catch(() => ({}));
-  return data?.message || data?.error || `Request failed (${response.status})`;
-};
-
 export const getCurrentUser = async (): Promise<AdminSettingsUser> => {
-  const response = await fetch(`${API_BASE}/auth/me`, {
-    method: "GET",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(await parseError(response));
-  }
-
-  const data = (await response.json()) as { user: AdminSettingsUser };
+  const data = await apiRequestOrThrow<{ user: AdminSettingsUser }>(
+    "/auth/me",
+    "Failed to fetch current user",
+  );
   return data.user;
 };
 
 export const updateCurrentUser = async (
   payload: UpdateCurrentUserPayload,
 ): Promise<AdminSettingsUser> => {
-  const response = await fetch(`${API_BASE}/auth/me`, {
-    method: "PATCH",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
+  const data = await apiRequestOrThrow<{ user: AdminSettingsUser }>(
+    "/auth/me",
+    "Failed to update current user",
+    {
+      method: "PATCH",
+      body: payload,
     },
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) {
-    throw new Error(await parseError(response));
-  }
-
-  const data = (await response.json()) as { user: AdminSettingsUser };
+  );
   return data.user;
 };
 
 export const updateAdminPreferences = async (
   payload: UpdateAdminPreferencesPayload,
 ): Promise<Required<UpdateAdminPreferencesPayload>> => {
-  const response = await fetch(`${API_BASE}/auth/me/preferences`, {
-    method: "PATCH",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) {
-    throw new Error(await parseError(response));
-  }
-
-  const data = (await response.json()) as {
+  const data = await apiRequestOrThrow<{
     preferences: Required<UpdateAdminPreferencesPayload>;
-  };
+  }>(
+    "/auth/me/preferences",
+    "Failed to update admin preferences",
+    {
+      method: "PATCH",
+      body: payload,
+    },
+  );
 
   return data.preferences;
 };
@@ -99,41 +73,31 @@ export const changeCurrentPassword = async (
   newPassword: string,
   otp: string,
 ) => {
-  const response = await fetch(`${API_BASE}/auth/change-password`, {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
+  await apiRequestOrThrow<unknown>(
+    "/auth/change-password",
+    "Failed to change password",
+    {
+      method: "POST",
+      body: { currentPassword, newPassword, otp },
     },
-    body: JSON.stringify({ currentPassword, newPassword, otp }),
-  });
-
-  if (!response.ok) {
-    throw new Error(await parseError(response));
-  }
+  );
 };
 
 export const requestChangePasswordOtp = async (
   currentPassword: string,
   newPassword: string,
 ) => {
-  const response = await fetch(`${API_BASE}/auth/change-password/otp/request`, {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ currentPassword, newPassword }),
-  });
-
-  if (!response.ok) {
-    throw new Error(await parseError(response));
-  }
-
-  const data = (await response.json()) as {
+  const data = await apiRequestOrThrow<{
     message?: string;
     requiresTwoFactor?: boolean;
-  };
+  }>(
+    "/auth/change-password/otp/request",
+    "Failed to request password change OTP",
+    {
+      method: "POST",
+      body: { currentPassword, newPassword },
+    },
+  );
 
   return {
     message: data.message || "OTP sent to your email.",

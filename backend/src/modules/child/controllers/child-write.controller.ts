@@ -5,7 +5,7 @@ import {
   ForbiddenError,
   NotFoundError,
   ValidationError,
-} from "../../../shared/errors/AppError";
+} from "../../../shared/errors/app-error";
 import { asyncHandler } from "../../../shared/utils/async-handler";
 import { createChildForAdmin } from "../services";
 import { resolveTeacherAssignment, teacherWithCenterPopulate, withDerivedDaycareCenter } from "../shared";

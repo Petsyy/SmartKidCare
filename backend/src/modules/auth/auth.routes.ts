@@ -43,7 +43,7 @@ import {
   otpResendCooldownLimiter,
   otpSendLimiter,
   otpVerifyLimiter,
-} from "../../shared/lib/rateLimit";
+} from "../../shared/lib/rate-limit";
 
 const router = Router();
 

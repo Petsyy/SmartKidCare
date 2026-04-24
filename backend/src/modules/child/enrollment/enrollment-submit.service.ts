@@ -8,7 +8,7 @@ import {
   ForbiddenError,
   NotFoundError,
   ValidationError,
-} from "../../../shared/errors/AppError";
+} from "../../../shared/errors/app-error";
 import { logger } from "../../../shared/lib/logger";
 import {
   deleteFromCloudinary,
