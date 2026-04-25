@@ -1,6 +1,5 @@
 import {
   LayoutDashboard,
-  Users,
   Calendar,
   Utensils,
   BarChart3,
@@ -8,6 +7,8 @@ import {
   Shield,
   ClipboardList,
   Building2,
+  Baby,
+  UserCog,
 } from "lucide-react";
 
 type NavItem = {
@@ -16,21 +17,46 @@ type NavItem = {
   path: string;
 };
 
-const navItems: NavItem[] = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "dashboard" },
-  { icon: Building2, label: "Centers", path: "centers" },
-  { icon: Users, label: "Children Records", path: "children" },
+type NavGroup = {
+  groupName: string;
+  items: NavItem[];
+};
+
+const navGroups: NavGroup[] = [
   {
-    icon: ClipboardList,
-    label: "Enrollment Requests",
-    path: "enrollment-requests",
+    groupName: "MAIN",
+    items: [{ icon: LayoutDashboard, label: "Dashboard", path: "dashboard" }],
   },
-  { icon: Users, label: "User Management", path: "users" },
-  { icon: Calendar, label: "Attendance Tracking", path: "attendance" },
-  { icon: Utensils, label: "Feeding Program", path: "feeding" },
-  { icon: BarChart3, label: "Reports & Analytics", path: "reports" },
-  { icon: Settings, label: "Settings", path: "settings" },
+  {
+    groupName: "OPERATIONS",
+    items: [
+      { icon: Building2, label: "Centers", path: "centers" },
+      { icon: Baby, label: "Children Records", path: "children" },
+      {
+        icon: ClipboardList,
+        label: "Enrollment Requests",
+        path: "enrollment-requests",
+      },
+    ],
+  },
+  {
+    groupName: "MONITORING",
+    items: [
+      { icon: Calendar, label: "Attendance Tracking", path: "attendance" },
+      { icon: Utensils, label: "Feeding Program", path: "feeding" },
+    ],
+  },
+  {
+    groupName: "MANAGEMENT",
+    items: [{ icon: UserCog, label: "User Management", path: "users" }],
+  },
+  {
+    groupName: "INSIGHTS",
+    items: [{ icon: BarChart3, label: "Reports & Analytics", path: "reports" }],
+  },
 ];
+
+const systemItem: NavItem = { icon: Settings, label: "Settings", path: "settings" };
 
 type SidebarProps = {
   activeItem?: string;
@@ -59,27 +85,69 @@ export default function Sidebar({
       </div>
 
       {/* Navigation Menu */}
-      <nav className="flex-1 space-y-1 px-3 py-6">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeItem === item.path;
+      <nav className="flex-1 space-y-6 px-3 py-6 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        {navGroups.map((group) => (
+          <div key={group.groupName} className="space-y-1">
+            <h3 className="px-4 text-[10px] font-bold tracking-wider text-teal-300/70 dark:text-slate-400/70 mb-2">
+              {group.groupName}
+            </h3>
+            {group.items.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeItem === item.path;
 
-          return (
-            <button
-              key={item.path}
-              onClick={() => onNavigate?.(item.path)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all cursor-pointer ${
-                isActive
-                  ? "bg-white/20 text-white font-medium shadow-sm dark:bg-slate-700/70"
-                  : "text-teal-100 hover:bg-white/10 hover:text-white dark:text-slate-300 dark:hover:bg-slate-700/60"
-              }`}
-            >
-              <Icon size={20} />
-              <span className="text-sm">{item.label}</span>
-            </button>
-          );
-        })}
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => onNavigate?.(item.path)}
+                  className={`relative w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all cursor-pointer group ${
+                    isActive
+                      ? "bg-white/10 text-white font-medium dark:bg-slate-800"
+                      : "text-teal-100/80 hover:bg-white/5 hover:text-white dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-slate-200"
+                  }`}
+                >
+                  {isActive && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 h-2/3 w-1 rounded-r-full bg-cyan-300 dark:bg-cyan-500" />
+                  )}
+                  <Icon
+                    size={20}
+                    className={`transition-colors ${
+                      isActive
+                        ? "text-cyan-300 dark:text-cyan-400"
+                        : "group-hover:text-cyan-200 dark:group-hover:text-cyan-400"
+                    }`}
+                  />
+                  <span className="text-sm">{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        ))}
       </nav>
+
+      {/* System & Bottom Section */}
+      <div className="p-4 border-t border-teal-500/30 dark:border-slate-700/50">
+        <button
+          onClick={() => onNavigate?.(systemItem.path)}
+          className={`relative w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all cursor-pointer group ${
+            activeItem === systemItem.path
+              ? "bg-white/10 text-white font-medium dark:bg-slate-800"
+              : "text-teal-100/80 hover:bg-white/5 hover:text-white dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-slate-200"
+          }`}
+        >
+          {activeItem === systemItem.path && (
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 h-2/3 w-1 rounded-r-full bg-cyan-300 dark:bg-cyan-500" />
+          )}
+          <systemItem.icon
+            size={20}
+            className={`transition-colors ${
+              activeItem === systemItem.path
+                ? "text-cyan-300 dark:text-cyan-400"
+                : "group-hover:text-cyan-200 dark:group-hover:text-cyan-400"
+            }`}
+          />
+          <span className="text-sm">{systemItem.label}</span>
+        </button>
+      </div>
     </aside>
   );
 }

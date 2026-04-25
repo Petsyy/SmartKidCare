@@ -14,45 +14,8 @@ import {
 } from "recharts";
 import { Home, Users, UserCircle, Heart, Smile, Clock } from "lucide-react";
 import Layout from "@/components/layout/Layout";
+import { AdminStatCard } from "@/components/admin/AdminStatCard";
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
-
-const StatCard = ({
-  title,
-  value,
-  subtitle,
-  icon: Icon,
-  color,
-}: {
-  title: string;
-  value: string;
-  subtitle: string;
-  icon: any;
-  color: "blue" | "teal" | "purple" | "rose";
-}) => {
-  const colorMap = {
-    blue: "bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300",
-    teal: "bg-teal-50 text-teal-600 dark:bg-teal-500/15 dark:text-teal-300",
-    purple: "bg-purple-50 text-purple-600 dark:bg-purple-500/15 dark:text-purple-300",
-    rose: "bg-rose-50 text-rose-600 dark:bg-rose-500/15 dark:text-rose-300",
-  };
-
-  return (
-    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1">
-          <p className="text-sm font-medium text-gray-600 dark:text-slate-400">{title}</p>
-          <div className="mt-2 flex items-baseline gap-2">
-            <p className="text-3xl font-semibold text-gray-900 dark:text-slate-100">{value}</p>
-          </div>
-          <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">{subtitle}</p>
-        </div>
-        <div className={`rounded-lg p-3 ${colorMap[color]}`}>
-          <Icon className="h-6 w-6" />
-        </div>
-      </div>
-    </div>
-  );
-};
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -82,35 +45,35 @@ export default function AdminDashboard() {
         ) : (
           <>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-              <StatCard
+              <AdminStatCard
                 title="Total Child Development Centers"
                 value={String(stats.totalChildDevelopmentCenters)}
                 subtitle="Active centers"
                 icon={Home}
                 color="blue"
               />
-              <StatCard
+              <AdminStatCard
                 title="Child Development Workers"
                 value={String(stats.childDevelopmentWorkers)}
                 subtitle="Active teacher accounts"
                 icon={Users}
                 color="teal"
               />
-              <StatCard
+              <AdminStatCard
                 title="Total Enrolled Children"
                 value={String(stats.totalEnrolledDaycares)}
                 subtitle="Total enrolled children"
                 icon={UserCircle}
                 color="purple"
               />
-              <StatCard
+              <AdminStatCard
                 title="4P's Beneficiaries"
                 value={String(stats.fourPsBeneficiaries)}
                 subtitle="Children under 4Ps program"
                 icon={Heart}
                 color="rose"
               />
-              <StatCard
+              <AdminStatCard
                 title="Regular Attendees"
                 value={String(stats.regularAttendees)}
                 subtitle="Non-beneficiary enrollees"
@@ -163,7 +126,10 @@ export default function AdminDashboard() {
                         borderRadius: "0.5rem",
                         fontSize: "12px",
                       }}
-                      formatter={(value: any) => [`${value}%`, "Rate"]}
+                      formatter={(value: number | string | undefined) => [
+                        `${value ?? 0}%`,
+                        "Rate",
+                      ]}
                     />
                     <Legend wrapperStyle={{ fontSize: "12px" }} />
                     <Line

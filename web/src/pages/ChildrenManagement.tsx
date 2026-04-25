@@ -12,8 +12,8 @@ import {
   Users,
   ClipboardList,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import Layout from "@/components/layout/Layout";
+import { AdminStatCard } from "@/components/admin/AdminStatCard";
 import EditChildModal, {
   type ChildForEdit,
 } from "@/components/modals/child/EditChildModal";
@@ -288,28 +288,28 @@ export default function ChildrenManagement() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <StatCard
+          <AdminStatCard
             title="Total enrollment"
             value={String(stats.totalChildren)}
             subtitle={`${stats.active} active students`}
             icon={Users}
             color="blue"
           />
-          <StatCard
+          <AdminStatCard
             title="Active"
             value={String(stats.active)}
             subtitle="Currently marked as Active"
             icon={UserCheck}
             color="teal"
           />
-          <StatCard
+          <AdminStatCard
             title="Inactive"
             value={String(stats.inactive)}
             subtitle="Currently marked as Inactive"
             icon={UserX}
             color="rose"
           />
-          <StatCard
+          <AdminStatCard
             title="Unassigned"
             value={String(stats.unassigned)}
             subtitle="Without an assigned teacher"
@@ -639,50 +639,5 @@ export default function ChildrenManagement() {
         </div>
       )}
     </Layout>
-  );
-}
-
-function StatCard({
-  title,
-  value,
-  subtitle,
-  icon: Icon,
-  color,
-}: {
-  title: string;
-  value: string;
-  subtitle: string;
-  icon: LucideIcon;
-  color: "blue" | "teal" | "purple" | "rose";
-}) {
-  const colorMap = {
-    blue: "bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300",
-    teal: "bg-teal-50 text-teal-600 dark:bg-teal-500/15 dark:text-teal-300",
-    purple:
-      "bg-purple-50 text-purple-600 dark:bg-purple-500/15 dark:text-purple-300",
-    rose: "bg-rose-50 text-rose-600 dark:bg-rose-500/15 dark:text-rose-300",
-  };
-
-  return (
-    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <p className="text-sm font-medium text-gray-600 dark:text-slate-400">
-            {title}
-          </p>
-          <div className="mt-2 flex items-baseline gap-2">
-            <p className="text-3xl font-semibold text-gray-900 dark:text-slate-100">
-              {value}
-            </p>
-          </div>
-          <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
-            {subtitle}
-          </p>
-        </div>
-        <div className={`rounded-lg p-3 ${colorMap[color]}`}>
-          <Icon className="h-6 w-6" />
-        </div>
-      </div>
-    </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search, Building2, CheckCircle, XCircle, MapPin, Filter, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Building2, CheckCircle, XCircle, Filter } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import {
@@ -15,7 +15,7 @@ export default function DaycareCenters() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   useEffect(() => {
     const loadCenters = async () => {
@@ -168,18 +168,18 @@ export default function DaycareCenters() {
 
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
-              <thead>
-                <tr className="border-b border-gray-100 bg-gray-50/50 dark:border-slate-800 dark:bg-slate-900/50">
-                  <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">
+              <thead className="border-b bg-gray-50 dark:border-slate-700 dark:bg-slate-900">
+                <tr>
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
                     Center Details
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
                     Barangay
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
                     Identification
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">
+                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
                     Status
                   </th>
                 </tr>
@@ -187,64 +187,48 @@ export default function DaycareCenters() {
               <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={4} className="px-6 py-20 text-center">
-                      <div className="flex flex-col items-center gap-2 text-gray-500 dark:text-slate-400">
-                        <div className="h-8 w-8 animate-spin rounded-full border-4 border-teal-500 border-t-transparent" />
-                        <p className="font-medium">Loading centers...</p>
-                      </div>
+                    <td colSpan={4} className="px-6 py-10 text-center text-sm text-gray-500 dark:text-slate-400">
+                      Loading centers...
                     </td>
                   </tr>
                 ) : paginatedCenters.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-6 py-20 text-center text-gray-500 dark:text-slate-400">
-                      <div className="flex flex-col items-center gap-2">
-                        <Building2 size={32} className="text-gray-300 dark:text-slate-700" />
-                        <p className="font-medium text-lg">No centers found</p>
-                        <p className="text-sm">Try adjusting your filters or search query.</p>
-                      </div>
+                    <td colSpan={4} className="px-6 py-10 text-center text-sm text-gray-500 dark:text-slate-400">
+                      No centers match your search.
                     </td>
                   </tr>
                 ) : (
                   paginatedCenters.map((center) => (
                     <tr 
                       key={center._id} 
-                      className="group transition-colors hover:bg-gray-50 dark:hover:bg-slate-800/40"
+                      className="transition-colors hover:bg-gray-50 dark:hover:bg-slate-800/60"
                     >
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-4">
-                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-600 transition-colors group-hover:bg-teal-100 dark:bg-teal-900/20 dark:text-teal-300 dark:group-hover:bg-teal-900/30">
-                            <Building2 size={20} />
-                          </div>
-                          <div>
-                            <p className="font-bold text-gray-900 dark:text-slate-100">
-                              {center.name}
-                            </p>
-                            <p className="mt-0.5 flex items-center gap-1 text-xs text-gray-500 dark:text-slate-400">
-                              <MapPin size={12} />
-                              {center.address || "Dagupan City, Pangasinan"}
-                            </p>
-                          </div>
+                        <div className="flex flex-col">
+                          <span className="font-medium text-gray-900 dark:text-slate-100">
+                            {center.name}
+                          </span>
+                          <span className="text-xs text-gray-500 dark:text-slate-400">
+                            {center.address || "Dagupan City, Pangasinan"}
+                          </span>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm font-medium text-gray-700 dark:text-slate-300">
-                          {center.barangay}
-                        </span>
+                      <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-300">
+                        {center.barangay}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-300">
                         <code className="rounded border border-gray-200 bg-gray-50 px-2 py-1 text-xs font-bold text-gray-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
                           {center.code}
                         </code>
                       </td>
-                      <td className="px-6 py-4 text-sm">
+                      <td className="px-6 py-4">
                         <span
-                          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold capitalize transition-all ${
+                          className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
                             center.isActive !== false
-                              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
-                              : "bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400"
+                              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-200"
+                              : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-200"
                           }`}
                         >
-                          <span className={`h-1.5 w-1.5 rounded-full ${center.isActive !== false ? 'bg-emerald-500' : 'bg-rose-500'}`} />
                           {center.isActive !== false ? "Active" : "Inactive"}
                         </span>
                       </td>
@@ -255,50 +239,50 @@ export default function DaycareCenters() {
             </table>
           </div>
 
-          {totalPages > 1 && (
-            <div className="flex flex-col gap-4 border-t border-gray-100 p-6 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
-              <p className="text-sm font-medium text-gray-500 dark:text-slate-400">
-                Showing <span className="text-gray-900 dark:text-slate-100">{((currentPage - 1) * itemsPerPage) + 1}</span> to{" "}
-                <span className="text-gray-900 dark:text-slate-100">{Math.min(currentPage * itemsPerPage, filteredCenters.length)}</span> of{" "}
-                <span className="text-gray-900 dark:text-slate-100">{filteredCenters.length}</span> centers
-              </p>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition-all hover:bg-gray-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
-                >
-                  <ChevronLeft size={18} />
-                </button>
-                <div className="flex items-center gap-1">
-                  {[...Array(totalPages)].map((_, i) => {
-                    const pageNum = i + 1;
-                    const isActive = pageNum === currentPage;
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => setCurrentPage(pageNum)}
-                        className={`inline-flex h-9 w-9 items-center justify-center rounded-lg text-sm font-bold transition-all ${
-                          isActive
-                            ? "bg-teal-600 text-white shadow-lg shadow-teal-500/20 dark:bg-teal-500"
-                            : "text-gray-600 hover:bg-gray-50 dark:text-slate-400 dark:hover:bg-slate-800"
-                        }`}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
-                </div>
-                <button
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition-all hover:bg-gray-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
-                >
-                  <ChevronRight size={18} />
-                </button>
-              </div>
+          <div className="flex items-center justify-between border-t border-gray-200 px-6 py-4 dark:border-slate-700">
+            <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-slate-400">
+              <span>
+                {filteredCenters.length === 0 ? 0 : ((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, filteredCenters.length)} of {filteredCenters.length}
+              </span>
+              <select
+                value={itemsPerPage}
+                onChange={(event) => {
+                  setCurrentPage(1);
+                  setItemsPerPage(Number(event.target.value));
+                }}
+                className="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+              >
+                <option value={10}>10 / page</option>
+                <option value={25}>25 / page</option>
+                <option value={50}>50 / page</option>
+              </select>
             </div>
-          )}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={isLoading || currentPage <= 1 || totalPages === 0}
+                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+              >
+                Previous
+              </button>
+              <span className="text-sm text-gray-600 dark:text-slate-400">
+                Page {totalPages === 0 ? 0 : currentPage} / {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  setCurrentPage((prev) =>
+                    totalPages > 0 ? Math.min(totalPages, prev + 1) : prev,
+                  )
+                }
+                disabled={isLoading || totalPages === 0 || currentPage >= totalPages}
+                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+              >
+                Next
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </Layout>
