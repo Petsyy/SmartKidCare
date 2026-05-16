@@ -1,7 +1,6 @@
 import { useState } from "react";
 import {
   Pressable,
-  StyleSheet,
   Text,
   TextInput,
   type StyleProp,
@@ -10,7 +9,6 @@ import {
   type ViewStyle,
 } from "react-native";
 import { CalendarDays, Camera, ChevronDown, Upload } from "lucide-react-native";
-import { enrollFieldStyles } from "@/src/features/enrollment/styles";
 import { displayDate, parseYmd } from "@/src/features/enrollment/utils";
 
 type InputProps = {
@@ -43,31 +41,31 @@ export function Input({
   const [focused, setFocused] = useState(false);
   const readOnly = editable === false || computed;
 
-  const inputVariantStyle = readOnly
-    ? enrollFieldStyles.textInputReadOnly
+  const inputVariantClasses = readOnly
+    ? "border-[#99F6E4] bg-[#F0FDFA] text-[#134E4A]"
     : focused
-      ? enrollFieldStyles.textInputFocused
-      : enrollFieldStyles.textInputEditable;
+      ? "border-[#0D9488] bg-[#F0FDFA] text-[#111827]"
+      : "border-[#E5E7EB] bg-[#FFFFFF] text-[#111827]";
 
   // Strip trailing " *" to colour it separately
   const isRequired = label.endsWith(" *");
   const bareLabel = isRequired ? label.slice(0, -2) : label;
 
   return (
-    <View style={[enrollFieldStyles.inputContainer, containerStyle]}>
-      <View style={fieldLayoutStyles.labelRow}>
-        <View style={{ flex: 1 }}>
-          <Text style={fieldLayoutStyles.labelText}>
+    <View className="mb-4" style={containerStyle}>
+      <View className="flex-row flex-wrap items-start justify-between gap-1.5 mb-2">
+        <View className="flex-1">
+          <Text className="text-[13px] font-bold tracking-[0.6px] uppercase text-[#374151]">
             {bareLabel}
-            {isRequired ? <Text style={fieldLayoutStyles.labelRequired}> *</Text> : null}
+            {isRequired ? <Text className="text-[#EF4444] font-bold"> *</Text> : null}
           </Text>
           {labelHint ? (
-            <Text style={fieldLayoutStyles.labelHint}>{labelHint}</Text>
+            <Text className="mt-0.5 text-[11px] leading-[15px] text-[#9CA3AF]">{labelHint}</Text>
           ) : null}
         </View>
         {computed ? (
-          <View style={fieldLayoutStyles.autoBadge}>
-            <Text style={fieldLayoutStyles.autoBadgeText}>AUTO</Text>
+          <View className="rounded-full bg-[#CCFBF1] px-2 py-0.5 border border-[#99F6E4]">
+            <Text className="text-[9px] font-extrabold tracking-[0.8px] text-[#0F766E]">AUTO</Text>
           </View>
         ) : null}
       </View>
@@ -81,7 +79,7 @@ export function Input({
         editable={editable}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        style={[enrollFieldStyles.textInput, inputVariantStyle]}
+        className={`min-h-[48px] rounded-xl border-0 px-[14px] py-3 text-[15px] ${inputVariantClasses}`}
       />
     </View>
   );
@@ -101,30 +99,25 @@ export function DateField({
   const bareLabel = isRequired ? label.slice(0, -2) : label;
 
   return (
-    <View style={fieldLayoutStyles.sectionContainer}>
-      <Text style={fieldLayoutStyles.labelText}>
+    <View className="mb-[18px]">
+      <Text className="text-[13px] font-bold tracking-[0.6px] uppercase text-[#374151] mb-2">
         {bareLabel}
-        {isRequired ? <Text style={fieldLayoutStyles.labelRequired}> *</Text> : null}
+        {isRequired ? <Text className="text-[#EF4444] font-bold"> *</Text> : null}
       </Text>
       <Pressable
         onPress={onPress}
-        style={({ pressed }) => [
-          fieldLayoutStyles.dateFieldInput,
-          pressed ? fieldLayoutStyles.dateFieldInputPressed : null,
-        ]}
+        className="min-h-[50px] rounded-xl border-[1.5px] px-[14px] py-[13px] border-[#E5E7EB] bg-[#FFFFFF] active:border-[#0D9488] active:bg-[#F0FDFA]"
       >
-        <View style={fieldLayoutStyles.dateFieldRow}>
+        <View className="flex-row items-center">
           <Text
             numberOfLines={1}
-            style={
-              hasValue
-                ? fieldLayoutStyles.dateFieldValue
-                : fieldLayoutStyles.dateFieldPlaceholder
-            }
+            className={`flex-1 text-[15px] ${
+              hasValue ? "text-[#111827] font-medium" : "text-[#9CA3AF] font-normal"
+            }`}
           >
             {hasValue ? displayDate(value) : "dd/mm/yyyy"}
           </Text>
-          <View style={fieldLayoutStyles.dateFieldIconWrap}>
+          <View className="ml-2.5 justify-center items-center">
             <CalendarDays size={20} color={hasValue ? "#0F766E" : "#9CA3AF"} />
           </View>
         </View>
@@ -167,39 +160,39 @@ export function SelectField({
   };
 
   return (
-    <View style={fieldLayoutStyles.sectionContainer}>
-      <Text style={fieldLayoutStyles.labelText}>{label}</Text>
+    <View className="mb-[18px]">
+      <Text className="text-[13px] font-bold tracking-[0.6px] uppercase text-[#374151] mb-2">
+        {label}
+      </Text>
       <Pressable
         onPress={toggleExpanded}
-        style={({ pressed }) => [
-          fieldLayoutStyles.dateFieldInput,
-          pressed && !disabled ? fieldLayoutStyles.dateFieldInputPressed : null,
-          disabled ? fieldLayoutStyles.selectFieldDisabled : null,
-        ]}
+        className={`min-h-[50px] rounded-xl border-[1.5px] px-[14px] py-[13px] ${
+          disabled
+            ? "border-[#D1D5DB] bg-[#F9FAFB]"
+            : "border-[#E5E7EB] bg-[#FFFFFF] active:border-[#0D9488] active:bg-[#F0FDFA]"
+        }`}
       >
-        <View style={fieldLayoutStyles.dateFieldRow}>
+        <View className="flex-row items-center">
           <Text
             numberOfLines={1}
-            style={
-              selectedOption
-                ? fieldLayoutStyles.dateFieldValue
-                : fieldLayoutStyles.dateFieldPlaceholder
-            }
+            className={`flex-1 text-[15px] ${
+              selectedOption ? "text-[#111827] font-medium" : "text-[#9CA3AF] font-normal"
+            }`}
           >
             {labelToShow}
           </Text>
-          <View style={fieldLayoutStyles.dateFieldIconWrap}>
+          <View className="ml-2.5 justify-center items-center">
             <ChevronDown
               size={20}
               color={disabled ? "#9CA3AF" : "#0F766E"}
-              style={expanded ? fieldLayoutStyles.selectIconExpanded : undefined}
+              style={expanded ? { transform: [{ rotate: "180deg" }] } : undefined}
             />
           </View>
         </View>
       </Pressable>
 
       {expanded && !disabled ? (
-        <View style={fieldLayoutStyles.selectFieldOptions}>
+        <View className="-mt-0.5 border-[1.5px] border-[#0D9488] border-t-0 rounded-b-xl overflow-hidden bg-[#FFFFFF]">
           {options.map((option) => {
             const isSelected = option.value === value;
             return (
@@ -209,18 +202,15 @@ export function SelectField({
                   onValueChange(option.value);
                   setExpanded(false);
                 }}
-                style={({ pressed }) => [
-                  fieldLayoutStyles.selectOptionRow,
-                  isSelected ? fieldLayoutStyles.selectOptionRowSelected : null,
-                  pressed ? fieldLayoutStyles.selectOptionRowPressed : null,
-                ]}
+                className={`px-[14px] py-3 border-t border-[#F3F4F6] active:bg-[#F0FDFA] ${
+                  isSelected ? "bg-[#ECFEFF]" : "bg-[#FFFFFF]"
+                }`}
               >
                 <Text
                   numberOfLines={1}
-                  style={[
-                    fieldLayoutStyles.selectOptionText,
-                    isSelected ? fieldLayoutStyles.selectOptionTextSelected : null,
-                  ]}
+                  className={`text-[15px] ${
+                    isSelected ? "text-[#0F766E] font-bold" : "text-[#111827] font-medium"
+                  }`}
                 >
                   {option.label}
                 </Text>
@@ -258,32 +248,22 @@ export function DocumentUploadField({
   const bareLabel = isRequired ? label.slice(0, -2) : label;
 
   return (
-    <View style={[fieldLayoutStyles.sectionContainer, containerStyle]}>
-      <Text style={[fieldLayoutStyles.documentLabel, labelStyle]}>
+    <View className="mb-[18px]" style={containerStyle}>
+      <Text className="text-[13px] font-bold tracking-[0.6px] uppercase text-[#374151] mb-2" style={labelStyle}>
         {bareLabel}
-        {isRequired ? <Text style={fieldLayoutStyles.labelRequired}> *</Text> : null}
+        {isRequired ? <Text className="text-[#EF4444] font-bold"> *</Text> : null}
       </Text>
 
-      <View
-        style={[
-          fieldLayoutStyles.uploadActionsContainer,
-          hasPhotoOption
-            ? fieldLayoutStyles.uploadActionsRow
-            : fieldLayoutStyles.uploadActionsSingle,
-        ]}
-      >
+      <View className={`w-full ${hasPhotoOption ? "flex-row gap-3" : "flex-col"}`}>
         {hasPhotoOption ? (
           <Pressable
             onPress={onUploadImage}
-            style={[
-              fieldLayoutStyles.uploadActionButton,
-              fieldLayoutStyles.uploadActionButtonRow,
-            ]}
+            className="flex-1 items-center rounded-[14px] border-[1.5px] border-dashed border-[#10B981] bg-[#ECFDF5] px-[14px] py-[18px] min-h-[100px] justify-center"
           >
             <Camera size={26} color="#047857" />
             <Text
               numberOfLines={1}
-              style={fieldLayoutStyles.uploadBtnLabel}
+              className="mt-2 text-[14px] font-bold text-[#047857]"
             >
               Select Photo
             </Text>
@@ -292,59 +272,52 @@ export function DocumentUploadField({
 
         {fileName ? (
           <View
-            style={[
-              fieldLayoutStyles.uploadActionButton,
-              hasPhotoOption
-                ? fieldLayoutStyles.uploadActionButtonRow
-                : fieldLayoutStyles.uploadActionButtonSingle,
-              fieldLayoutStyles.uploadActionWithFile,
-            ]}
+            className={`items-center rounded-[14px] border-[1.5px] border-dashed border-[#10B981] bg-[#ECFDF5] px-[14px] py-[18px] min-h-[100px] justify-between ${
+              hasPhotoOption ? "flex-1" : "w-full"
+            }`}
           >
             <Pressable
               onPress={onUploadFile}
-              style={fieldLayoutStyles.uploadActionPressableArea}
+              className="items-center justify-center w-full"
             >
               <Upload size={26} color="#047857" />
               <Text
                 numberOfLines={1}
-                style={fieldLayoutStyles.uploadBtnLabel}
+                className="mt-2 text-[14px] font-bold text-[#047857]"
               >
                 Upload File
               </Text>
               <Text
                 numberOfLines={1}
-                style={fieldLayoutStyles.uploadBtnSub}
+                className="mt-0.5 text-[11px] font-medium text-[#059669]"
               >
                 Tap to replace file
               </Text>
             </Pressable>
 
-            <View style={fieldLayoutStyles.uploadFileMetaRow}>
+            <View className="w-full mt-2.5 pt-2.5 border-t border-[#A7F3D0] flex-row items-center">
               <Text
                 numberOfLines={1}
-                style={fieldLayoutStyles.uploadFileName}
+                className="flex-1 mr-2 text-[12px] font-semibold text-[#065F46]"
               >
                 {fileName}
               </Text>
-              <Pressable onPress={onClear} style={fieldLayoutStyles.removeButtonInline}>
-                <Text style={fieldLayoutStyles.removeButtonText}>Remove</Text>
+              <Pressable onPress={onClear} className="rounded-lg bg-[#FFFFFF] px-2.5 py-1.5">
+                <Text className="text-[11px] font-bold text-[#DC2626]">Remove</Text>
               </Pressable>
             </View>
           </View>
         ) : (
           <Pressable
             onPress={onUploadFile}
-            style={[
-              fieldLayoutStyles.uploadActionButton,
-              hasPhotoOption
-                ? fieldLayoutStyles.uploadActionButtonRow
-                : fieldLayoutStyles.uploadActionButtonSingle,
-            ]}
+            className={`items-center rounded-[14px] border-[1.5px] border-dashed border-[#10B981] bg-[#ECFDF5] px-[14px] py-[18px] min-h-[100px] justify-center ${
+              hasPhotoOption ? "flex-1" : "w-full"
+            }`}
           >
             <Upload size={26} color="#047857" />
             <Text
               numberOfLines={1}
-              style={fieldLayoutStyles.uploadBtnLabel}
+              className="mt-2 text-[14px] font-bold text-[#047857]"
             >
               Upload File
             </Text>
@@ -355,217 +328,3 @@ export function DocumentUploadField({
   );
 }
 
-const fieldLayoutStyles = StyleSheet.create({
-
-  labelRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 6,
-    marginBottom: 8,
-  },
-  labelText: {
-    fontSize: 13,
-    fontWeight: "700",
-    letterSpacing: 0.6,
-    textTransform: "uppercase",
-    color: "#374151",
-  },
-  labelRequired: {
-    color: "#EF4444",
-    fontWeight: "700",
-  },
-  labelHint: {
-    marginTop: 2,
-    fontSize: 11,
-    lineHeight: 15,
-    color: "#9CA3AF",
-  },
-  autoBadge: {
-    borderRadius: 99,
-    backgroundColor: "#CCFBF1",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderWidth: 1,
-    borderColor: "#99F6E4",
-  },
-  autoBadgeText: {
-    fontSize: 9,
-    fontWeight: "800",
-    letterSpacing: 0.8,
-    color: "#0F766E",
-  },
-
-  inputWrapper: {
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: "#E5E7EB",
-    backgroundColor: "#FFFFFF",
-    overflow: "hidden",
-  },
-  inputWrapperFocused: {
-    borderColor: "#0D9488",
-    backgroundColor: "#F0FDFA",
-  },
-
-  sectionContainer: {
-    marginBottom: 18,
-  },
-  dateFieldInput: {
-    minHeight: 50,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: "#E5E7EB",
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-  },
-  dateFieldInputPressed: {
-    borderColor: "#0D9488",
-    backgroundColor: "#F0FDFA",
-  },
-  dateFieldRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  dateFieldValue: {
-    flex: 1,
-    fontSize: 15,
-    color: "#111827",
-    fontWeight: "500",
-  },
-  dateFieldPlaceholder: {
-    flex: 1,
-    fontSize: 15,
-    color: "#9CA3AF",
-    fontWeight: "400",
-  },
-  dateFieldIconWrap: {
-    marginLeft: 10,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  selectFieldDisabled: {
-    borderColor: "#D1D5DB",
-    backgroundColor: "#F9FAFB",
-  },
-  selectIconExpanded: {
-    transform: [{ rotate: "180deg" }],
-  },
-  selectFieldOptions: {
-    marginTop: -2,
-    borderWidth: 1.5,
-    borderColor: "#0D9488",
-    borderTopWidth: 0,
-    borderBottomLeftRadius: 12,
-    borderBottomRightRadius: 12,
-    overflow: "hidden",
-    backgroundColor: "#FFFFFF",
-  },
-  selectOptionRow: {
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#F3F4F6",
-  },
-  selectOptionRowSelected: {
-    backgroundColor: "#ECFEFF",
-  },
-  selectOptionRowPressed: {
-    backgroundColor: "#F0FDFA",
-  },
-  selectOptionText: {
-    color: "#111827",
-    fontSize: 15,
-    fontWeight: "500",
-  },
-  selectOptionTextSelected: {
-    color: "#0F766E",
-    fontWeight: "700",
-  },
-
-  documentLabel: {
-    fontSize: 13,
-    fontWeight: "700",
-    letterSpacing: 0.6,
-    textTransform: "uppercase",
-    color: "#374151",
-    marginBottom: 8,
-  },
-  uploadActionsContainer: {
-    width: "100%",
-  },
-  uploadActionsRow: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  uploadActionsSingle: {
-    flexDirection: "column",
-  },
-  uploadActionButton: {
-    alignItems: "center",
-    alignSelf: "stretch",
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderStyle: "dashed",
-    borderColor: "#10B981",
-    backgroundColor: "#ECFDF5",
-    paddingHorizontal: 14,
-    paddingVertical: 18,
-    minHeight: 100,
-    justifyContent: "center",
-  },
-  uploadActionButtonRow: {
-    flex: 1,
-  },
-  uploadActionButtonSingle: {
-    width: "100%",
-  },
-  uploadActionWithFile: {
-    justifyContent: "space-between",
-  },
-  uploadActionPressableArea: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  uploadBtnLabel: {
-    marginTop: 8,
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#047857",
-  },
-  uploadBtnSub: {
-    marginTop: 2,
-    fontSize: 11,
-    fontWeight: "500",
-    color: "#059669",
-  },
-  uploadFileMetaRow: {
-    width: "100%",
-    marginTop: 10,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: "#A7F3D0",
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  uploadFileName: {
-    flex: 1,
-    marginRight: 8,
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#065F46",
-  },
-  removeButtonInline: {
-    borderRadius: 8,
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  removeButtonText: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#DC2626",
-  },
-});
