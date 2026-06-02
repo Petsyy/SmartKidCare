@@ -1,9 +1,8 @@
 import type { HydratedDocument } from "mongoose";
-import mongoose from "mongoose";
-import Child from "../../../models/Child";
 import { storeChildDocumentHashes } from "../../../blockchain/blockchain.service";
 import type { UploadResult } from "../../../shared/utils/upload-cloudinary";
 import { extractUploadedDocument } from "../shared";
+import { childRepository } from "../child.repository";
 
 export type ChildDocumentUploads = {
   birthUpload?: UploadResult | null;
@@ -24,9 +23,9 @@ export type CreateChildRecordPayload = {
   schoolYear: string;
   status: string;
   studentId: string;
-  parent?: mongoose.Types.ObjectId | string | null;
-  teacher?: mongoose.Types.ObjectId | string | null;
-  daycareCenter?: mongoose.Types.ObjectId | string | null;
+  parent?: import("mongoose").Types.ObjectId | string | null;
+  teacher?: import("mongoose").Types.ObjectId | string | null;
+  daycareCenter?: import("mongoose").Types.ObjectId | string | null;
 };
 
 export type ChildAnchorResult = Awaited<
@@ -63,7 +62,7 @@ export const createChildRecord = async (
   uploads: ChildDocumentUploads = {},
 ): Promise<ChildRecordCreationResult> => {
   const documents = buildDocumentsPayload(uploads);
-  const child = await Child.create({
+  const child = await childRepository.create({
     ...payload,
     middleName: payload.middleName || undefined,
     parent: payload.parent || undefined,

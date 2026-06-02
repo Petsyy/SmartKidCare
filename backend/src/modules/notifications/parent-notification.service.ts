@@ -1,7 +1,9 @@
-import Attendance from "../../models/Attendance";
-import Child from "../../models/Child";
-import Feeding from "../../models/Feeding";
-import User from "../../models/Users";
+import {
+  notificationsUserRepository,
+  notificationsChildRepository,
+  notificationsAttendanceRepository,
+  notificationsFeedingRepository,
+} from "./notifications.repository";
 import { extractUserPushTokens } from "./push-notification.service";
 
 export type ParentNotificationType =
@@ -106,13 +108,7 @@ export async function getParentNotificationsFeed(params: {
   const targetDate = toDayStart(params.date || new Date());
   const dateKey = toDateKey(targetDate);
 
-  const parent = await User.findOne({
-    _id: params.parentId,
-    role: "parent",
-    isActive: true,
-  })
-    .select("firstName middleName lastName pushToken pushTokens")
-    .lean();
+  const parent = await notificationsUserRepository.findParentById(params.parentId);
 
   if (!parent) {
     return {
@@ -130,12 +126,7 @@ export async function getParentNotificationsFeed(params: {
     "Parent";
   const hasPushToken = extractUserPushTokens(parent).length > 0;
 
-  const children = await Child.find({
-    parent: parentId,
-    status: "Active",
-  })
-    .select("_id firstName middleName lastName")
-    .lean();
+  const children = await notificationsChildRepository.findActiveByParent(parentId);
 
   const childIds = new Set(children.map((child: any) => String(child._id)));
   const childNameById = new Map<string, string>();
@@ -157,18 +148,8 @@ export async function getParentNotificationsFeed(params: {
   }
 
   const [attendanceEntries, feedingEntries] = await Promise.all([
-    Attendance.find({
-      date: targetDate,
-      "records.child": { $in: Array.from(childIds) },
-    })
-      .select("records createdAt")
-      .lean(),
-    Feeding.find({
-      date: targetDate,
-      "records.child": { $in: Array.from(childIds) },
-    })
-      .select("records foodServed createdAt")
-      .lean(),
+    notificationsAttendanceRepository.findByChildIdsAndDate(Array.from(childIds), targetDate),
+    notificationsFeedingRepository.findByChildIdsAndDate(Array.from(childIds), targetDate),
   ]);
 
   const attendanceStatuses: Array<"present" | "absent"> = [];

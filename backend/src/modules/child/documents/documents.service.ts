@@ -1,9 +1,11 @@
 import mongoose from "mongoose";
 import { randomUUID } from "crypto";
-import Child from "../../../models/Child";
-import DocumentAccessToken from "../../../models/DocumentAccessToken";
 import { generateSecureUrl } from "../../../shared/utils/generate-secure-url";
 import { ensureCanAccessChild, resolveDocumentField } from "../shared";
+import {
+  documentsChildRepository,
+  documentAccessTokenRepository,
+} from "./documents.repository";
 
 export type ChildServiceResponse = {
   status: number;
@@ -30,7 +32,7 @@ const getTokenErrorResponse = (message: string, status = 410): ChildServiceRespo
 const consumeDocumentAccessToken = async (
   token: string,
 ): Promise<ChildServiceResponse | ResolvedDocumentAccess> => {
-  const accessToken = await DocumentAccessToken.findOne({ token });
+  const accessToken = await documentAccessTokenRepository.findByToken(token);
   if (!accessToken) {
     return {
       status: 404,
@@ -56,7 +58,7 @@ const consumeDocumentAccessToken = async (
     accessToken.format,
   );
 
-  await DocumentAccessToken.deleteOne({ _id: accessToken._id });
+  await documentAccessTokenRepository.deleteById(String(accessToken._id));
 
   const isImage =
     accessToken.resourceType === "image" ||
@@ -100,11 +102,7 @@ export const createChildDocumentAccessToken = async (
     };
   }
 
-  const child = await Child.findById(childId)
-    .populate("parent", "_id")
-    .populate("teacher", "_id")
-    .select("documents parent teacher")
-    .lean();
+  const child = await documentsChildRepository.findWithDocuments(childId);
 
   if (!child) {
     return {
@@ -132,19 +130,12 @@ export const createChildDocumentAccessToken = async (
     };
   }
 
-  await DocumentAccessToken.deleteMany({
-    $or: [
-      { expiresAt: { $lt: new Date() } },
-      { used: true, usedAt: { $lt: new Date(Date.now() - 5 * 60 * 1000) } },
-    ],
-  }).catch(() => {
-    console.warn("Token cleanup failed silently");
-  });
+  await documentAccessTokenRepository.pruneStale();
 
   const token = randomUUID();
   const expiresAt = new Date(Date.now() + 60 * 1000);
 
-  await DocumentAccessToken.create({
+  await documentAccessTokenRepository.createToken({
     token,
     childId: new mongoose.Types.ObjectId(childId),
     documentType: documentField,
@@ -216,4 +207,3 @@ export const getChildDocumentStreamByToken = async (
     },
   };
 };
-

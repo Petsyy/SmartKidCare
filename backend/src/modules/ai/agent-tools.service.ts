@@ -1,106 +1,25 @@
 import { Types } from "mongoose";
-import Attendance from "../../models/Attendance";
-import Feeding from "../../models/Feeding";
-import Child from "../../models/Child";
+import {
+  fetchAttendanceRows,
+  fetchFeedingRows,
+  fetchChildDisplayName,
+} from "./ai.repository";
 
-export type ToolTimeframe = "today" | "week" | "last_week" | "month" | "recent";
-
-export type DateRange = {
-  start: Date;
-  end: Date;
-};
-
-export type SummarizeAttendanceResult = {
-  tool: "summarize_attendance";
-  timeframe: ToolTimeframe;
-  childName?: string;
-  present: number;
-  absent: number;
-  totalDays: number;
-  attendanceRate: number;
-  absentDates: string[];
-};
-
-export type SummarizeFeedingResult = {
-  tool: "summarize_feeding";
-  timeframe: ToolTimeframe;
-  childName?: string;
-  completed: number;
-  missed: number;
-  totalMeals: number;
-  feedingRate: number;
-  foods: string[];
-};
-
-export type SummarizeAttendanceClassResult = {
-  tool: "summarize_attendance_class";
-  timeframe: ToolTimeframe;
-  present: number;
-  absent: number;
-  totalRecords: number;
-  totalChildren: number;
-  attendanceRate: number;
-  absentDates: string[];
-};
-
-export type SummarizeFeedingClassResult = {
-  tool: "summarize_feeding_class";
-  timeframe: ToolTimeframe;
-  completed: number;
-  missed: number;
-  totalRecords: number;
-  totalChildren: number;
-  feedingRate: number;
-  foods: string[];
-};
-
-export type GenerateChildReportResult = {
-  tool: "generate_child_report";
-  timeframe: ToolTimeframe;
-  childName?: string;
-  attendance: SummarizeAttendanceResult;
-  feeding: SummarizeFeedingResult;
-};
-
-export type ChildTrendPoint = {
-  periodStart: string;
-  attendanceRate: number;
-  feedingRate: number;
-  attendanceTotal: number;
-  feedingTotal: number;
-};
-
-export type SummarizeChildTrendResult = {
-  tool: "summarize_child_trend";
-  timeframe: "recent";
-  childName?: string;
-  attendanceRate: number;
-  feedingRate: number;
-  attendanceTotal: number;
-  feedingTotal: number;
-  points: ChildTrendPoint[];
-};
-
-type AttendanceRecordRow = {
-  child: unknown;
-  status: "present" | "absent";
-};
-
-type AttendanceRow = {
-  date: Date;
-  records: AttendanceRecordRow[];
-};
-
-type FeedingRecordRow = {
-  child: unknown;
-  status: "completed" | "missed";
-};
-
-type FeedingRow = {
-  date: Date;
-  foodServed: string;
-  records: FeedingRecordRow[];
-};
+import {
+  ToolTimeframe,
+  DateRange,
+  SummarizeAttendanceResult,
+  SummarizeFeedingResult,
+  SummarizeAttendanceClassResult,
+  SummarizeFeedingClassResult,
+  GenerateChildReportResult,
+  ChildTrendPoint,
+  SummarizeChildTrendResult,
+  AttendanceRecordRow,
+  AttendanceRow,
+  FeedingRecordRow,
+  FeedingRow,
+} from "./types/agent-tools.types";
 
 const MINUTE_MS = 60_000;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -172,22 +91,6 @@ function childMatches(recordChild: unknown, childId: string): boolean {
   return recordChildId(recordChild) === childId;
 }
 
-async function fetchChildDisplayName(childId: string): Promise<string | undefined> {
-  const child = await Child.findById(childId, {
-    firstName: 1,
-    lastName: 1,
-  }).lean<{
-    firstName?: string;
-    lastName?: string;
-  } | null>();
-
-  if (!child) return undefined;
-
-  const firstName = String(child.firstName ?? "").trim();
-  const lastName = String(child.lastName ?? "").trim();
-  const fullName = `${firstName} ${lastName}`.trim();
-  return fullName || undefined;
-}
 
 function safeRate(numerator: number, denominator: number): number {
   if (denominator <= 0) return 0;
@@ -243,34 +146,18 @@ function getCurrentMonthRange(todayStart: Date, offsetMinutes: number): DateRang
   return { start, end };
 }
 
-async function fetchAttendanceRows(
+async function fetchAttendanceInRange(
   range: DateRange,
   filter: Record<string, unknown>,
 ): Promise<AttendanceRow[]> {
-  return Attendance.find(
-    {
-      date: { $gte: range.start, $lte: range.end },
-      ...filter,
-    },
-    { date: 1, records: 1 },
-  )
-    .sort({ date: 1 })
-    .lean<AttendanceRow[]>();
+  return fetchAttendanceRows(range, filter) as Promise<AttendanceRow[]>;
 }
 
-async function fetchFeedingRows(
+async function fetchFeedingInRange(
   range: DateRange,
   filter: Record<string, unknown>,
 ): Promise<FeedingRow[]> {
-  return Feeding.find(
-    {
-      date: { $gte: range.start, $lte: range.end },
-      ...filter,
-    },
-    { date: 1, foodServed: 1, records: 1 },
-  )
-    .sort({ date: 1 })
-    .lean<FeedingRow[]>();
+  return fetchFeedingRows(range, filter) as Promise<FeedingRow[]>;
 }
 
 function summarizeChildAttendanceRows(
@@ -413,7 +300,7 @@ export async function summarizeAttendanceTool(
   const offsetMinutes = reportTimezoneOffsetMinutes();
   const childName = await fetchChildDisplayName(childId);
 
-  const rows = await fetchAttendanceRows(range, { "records.child": childObjectId });
+  const rows = await fetchAttendanceInRange(range, { "records.child": childObjectId });
   const { present, absent, absentDates } = summarizeChildAttendanceRows(
     rows,
     childId,
@@ -442,7 +329,7 @@ export async function summarizeFeedingTool(
   const range = await getDateRange(timeframe);
   const childName = await fetchChildDisplayName(childId);
 
-  const rows = await fetchFeedingRows(range, { "records.child": childObjectId });
+  const rows = await fetchFeedingInRange(range, { "records.child": childObjectId });
   const { completed, missed, foods } = summarizeChildFeedingRows(rows, childId);
 
   const totalMeals = completed + missed;
@@ -507,8 +394,8 @@ export async function summarizeChildTrendTool(
   const [attendance, feeding, attendanceRows, feedingRows] = await Promise.all([
     summarizeAttendanceTool(childId, "recent"),
     summarizeFeedingTool(childId, "recent"),
-    fetchAttendanceRows(range, { "records.child": childObjectId }),
-    fetchFeedingRows(range, { "records.child": childObjectId }),
+    fetchAttendanceInRange(range, { "records.child": childObjectId }),
+    fetchFeedingInRange(range, { "records.child": childObjectId }),
   ]);
 
   const buckets = new Map<

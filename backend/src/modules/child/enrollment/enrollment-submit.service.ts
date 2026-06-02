@@ -1,8 +1,4 @@
 import type { Express } from "express";
-import Child from "../../../models/Child";
-import User from "../../../models/Users";
-import ChildEnrollmentRequest from "../../../models/ChildEnrollmentRequest";
-import ChildDevelopmentCenter from "../../../models/ChildDevelopmentCenter";
 import {
   ConflictError,
   ForbiddenError,
@@ -19,7 +15,6 @@ import { hashFileBuffer } from "../../../blockchain/ethers";
 import {
   buildFullName,
   computeAgeFromDate,
-  escapeRegex,
   extractUploadedDocument,
   isChildGender,
   isChildProgramType,
@@ -30,6 +25,13 @@ import {
   splitChildName,
 } from "../shared";
 import { createParentAccount, findUserByEmail } from "../services";
+import {
+  enrollmentChildRepository,
+  enrollmentRequestRepository,
+  enrollmentCenterRepository,
+  enrollmentUserRepository,
+} from "./enrollment.repository";
+import { authUserRepository } from "../../auth/auth.repository";
 
 type AuthUser = {
   id?: string;
@@ -133,16 +135,12 @@ export const submitChildEnrollmentRequest = async (
     throw new ValidationError("Invalid assigned center.");
   }
 
-  const selectedCenter = await ChildDevelopmentCenter.findById(daycareCenterIdInput)
-    .select("_id isActive")
-    .lean();
+  const selectedCenter = await enrollmentCenterRepository.findActiveById(daycareCenterIdInput);
   if (!selectedCenter || selectedCenter.isActive === false) {
     throw new NotFoundError("Selected center");
   }
 
-  const requestingTeacher = await User.findById(command.user.id)
-    .select("daycareCenter")
-    .lean();
+  const requestingTeacher = await enrollmentUserRepository.findTeacherById(command.user.id);
   const teacherCenterId = String(requestingTeacher?.daycareCenter || "");
 
   if (!teacherCenterId) {
@@ -157,37 +155,20 @@ export const submitChildEnrollmentRequest = async (
     );
   }
 
-  const existingChild = await Child.findOne({
-    firstName: {
-      $regex: `^${escapeRegex(firstName)}$`,
-      $options: "i",
-    },
-    lastName: {
-      $regex: `^${escapeRegex(lastName)}$`,
-      $options: "i",
-    },
+  const existingChild = await enrollmentChildRepository.findDuplicate(
+    firstName,
+    lastName,
     dateOfBirth,
-  })
-    .select("_id")
-    .lean();
+  );
   if (existingChild) {
     throw new ConflictError("Child already exists in the enrolled records.");
   }
 
-  const existingPendingRequest = await ChildEnrollmentRequest.findOne({
-    status: "pending",
-    "child.firstName": {
-      $regex: `^${escapeRegex(firstName)}$`,
-      $options: "i",
-    },
-    "child.lastName": {
-      $regex: `^${escapeRegex(lastName)}$`,
-      $options: "i",
-    },
-    "child.dateOfBirth": dateOfBirth,
-  })
-    .select("_id")
-    .lean();
+  const existingPendingRequest = await enrollmentRequestRepository.findPendingDuplicate(
+    firstName,
+    lastName,
+    dateOfBirth,
+  );
   if (existingPendingRequest) {
     throw new ConflictError("A pending enrollment request already exists.");
   }
@@ -245,7 +226,7 @@ export const submitChildEnrollmentRequest = async (
       };
     }
 
-    const enrollmentRequest = await ChildEnrollmentRequest.create({
+    const enrollmentRequest = await enrollmentRequestRepository.create({
       requestedBy: command.user.id,
       status: "pending",
       daycareCenter: selectedCenter._id,
@@ -285,7 +266,7 @@ export const submitChildEnrollmentRequest = async (
     };
   } catch (error) {
     if (!requestCreated && createdParentId) {
-      await User.findByIdAndDelete(createdParentId).catch((cleanupError: unknown) => {
+      await authUserRepository.deleteById(createdParentId).catch((cleanupError: unknown) => {
         logger.error("Failed to clean up parent after enrollment error.", {
           parentId: createdParentId,
           error:

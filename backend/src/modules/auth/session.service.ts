@@ -1,6 +1,4 @@
 import bcrypt from "bcryptjs";
-import User from "../../models/Users";
-import Child from "../../models/Child";
 import {
   signAuthToken,
   maybeRequireParentPasswordChange,
@@ -13,9 +11,10 @@ import {
   setAdminAuthCookie,
 } from "./admin-login-mfa.service";
 import { Response } from "express";
-
-const escapeRegex = (value: string) =>
-  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+import {
+  authUserRepository,
+  authChildRepository,
+} from "./auth.repository";
 
 interface LoginCredentials {
   identifier: string;
@@ -60,37 +59,7 @@ export const findUserByIdentifier = async (
   identifier: string,
   isAdminRoute: boolean
 ): Promise<any> => {
-  const normalizedIdentifier = String(identifier).trim();
-
-  if (isAdminRoute) {
-    return await User.findOne({
-      role: "admin",
-      $or: [
-        {
-          email: {
-            $regex: `^${escapeRegex(normalizedIdentifier)}$`,
-            $options: "i",
-          },
-        },
-        { username: normalizedIdentifier },
-      ],
-    });
-  }
-
-  return await User.findOne({
-    role: { $in: ["teacher", "parent"] },
-    $or: [
-      {
-        email: {
-          $regex: `^${escapeRegex(normalizedIdentifier)}$`,
-          $options: "i",
-        },
-      },
-      {
-        phone: normalizedIdentifier,
-      },
-    ],
-  });
+  return authUserRepository.findByIdentifier(identifier, isAdminRoute);
 };
 
 /**
@@ -197,9 +166,7 @@ export const login = async (credentials: LoginCredentials, res: Response) => {
  * Get user by ID with populated daycare center
  */
 export const getUserById = async (userId: string): Promise<any> => {
-  const user = await User.findById(userId)
-    .select("-password")
-    .populate("daycareCenter", "name barangay code isActive");
+  const user = await authUserRepository.findByIdWithPopulate(userId);
 
   if (!user) {
     throw new Error("User not found");
@@ -215,7 +182,7 @@ export const updateUserProfile = async (
   userId: string,
   payload: UpdateUserPayload
 ): Promise<any> => {
-  const user = await User.findById(userId);
+  const user = await authUserRepository.findById(userId);
 
   if (!user) {
     throw new Error("User not found");
@@ -228,10 +195,10 @@ export const updateUserProfile = async (
     }
 
     const normalizedUsername = String(payload.username).trim();
-    const existingByUsername = await User.findOne({
-      username: normalizedUsername,
-      _id: { $ne: user._id },
-    });
+    const existingByUsername = await authUserRepository.findByUsernameExcluding(
+      normalizedUsername,
+      userId,
+    );
 
     if (existingByUsername) {
       throw new Error("Username already in use.");
@@ -243,13 +210,10 @@ export const updateUserProfile = async (
   // Update email
   if (payload.email !== undefined) {
     const normalizedEmail = String(payload.email).trim().toLowerCase();
-    const existingByEmail = await User.findOne({
-      email: {
-        $regex: `^${escapeRegex(normalizedEmail)}$`,
-        $options: "i",
-      },
-      _id: { $ne: user._id },
-    });
+    const existingByEmail = await authUserRepository.findByEmailExcluding(
+      normalizedEmail,
+      userId,
+    );
 
     if (existingByEmail) {
       throw new Error("Email already in use.");
@@ -290,7 +254,7 @@ export const updateAdminPreferences = async (
   userId: string,
   payload: AdminPreferencesPayload
 ): Promise<any> => {
-  const user = await User.findById(userId);
+  const user = await authUserRepository.findById(userId);
 
   if (!user || user.role !== "admin") {
     throw new Error("Admin account not found.");
@@ -321,32 +285,16 @@ export const updateAdminPreferences = async (
  * Get all users with optional role filter
  */
 export const getAllUsers = async (role?: string): Promise<UserWithChildren[]> => {
-  const filter: any = {};
-
-  if (role) {
-    filter.role = role;
-  }
-
-  // If filtering by parent, get only parents with enrolled children
   if (role === "parent") {
-    const enrolledParentIds = await Child.distinct("parent", {
-      parent: { $ne: null },
-    });
-    filter._id = { $in: enrolledParentIds };
+    const enrolledParentIds = await authChildRepository.findEnrolledParentIds();
+    const users = await authUserRepository.findParentsByIds(enrolledParentIds);
+    if (users.length > 0) {
+      return await attachLinkedChildren(users);
+    }
+    return users;
   }
 
-  const users = await User.find(filter)
-    .select("-password")
-    .populate("daycareCenter", "name barangay code isActive")
-    .sort({ createdAt: -1 })
-    .lean();
-
-  // If fetching parents, attach their linked children
-  if (role === "parent" && users.length > 0) {
-    return await attachLinkedChildren(users);
-  }
-
-  return users;
+  return authUserRepository.findAllByRole(role);
 };
 
 /**
@@ -359,12 +307,7 @@ export const attachLinkedChildren = async (
     .map((user: any) => user._id)
     .filter(Boolean);
 
-  const linkedChildren = await Child.find({
-    parent: { $in: parentIds },
-  })
-    .select("_id firstName middleName lastName studentId parent")
-    .sort({ createdAt: -1 })
-    .lean();
+  const linkedChildren = await authChildRepository.findByParentIds(parentIds);
 
   const childrenByParentId = new Map<string, LinkedChild[]>();
 

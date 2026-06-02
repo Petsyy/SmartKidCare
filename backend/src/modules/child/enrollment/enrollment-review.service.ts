@@ -1,7 +1,4 @@
 import mongoose from "mongoose";
-import Child from "../../../models/Child";
-import User from "../../../models/Users";
-import ChildEnrollmentRequest from "../../../models/ChildEnrollmentRequest";
 import {
   ConflictError,
   ForbiddenError,
@@ -10,7 +7,12 @@ import {
 } from "../../../shared/errors/app-error";
 import { logger } from "../../../shared/lib/logger";
 import { createChildRecord, createParentAccount, findParentByEmail } from "../services";
-import { escapeRegex, normalizeString } from "../shared";
+import { normalizeString } from "../shared";
+import {
+  enrollmentChildRepository,
+  enrollmentRequestRepository,
+} from "./enrollment.repository";
+import { authUserRepository } from "../../auth/auth.repository";
 
 type AuthUser = {
   id?: string;
@@ -22,7 +24,7 @@ const getRequestById = async (requestId: string) => {
     throw new ValidationError("Invalid request ID");
   }
 
-  const enrollmentRequest = await ChildEnrollmentRequest.findById(requestId);
+  const enrollmentRequest = await enrollmentRequestRepository.findByIdFull(requestId);
   if (!enrollmentRequest) {
     throw new NotFoundError("Enrollment request");
   }
@@ -88,19 +90,11 @@ export const reviewEnrollmentRequest = async (
     phone?: string;
   };
 
-  const existingChild = await Child.findOne({
-    firstName: {
-      $regex: `^${escapeRegex(String(childData.firstName || ""))}$`,
-      $options: "i",
-    },
-    lastName: {
-      $regex: `^${escapeRegex(String(childData.lastName || ""))}$`,
-      $options: "i",
-    },
-    dateOfBirth: childData.dateOfBirth,
-  })
-    .select("_id")
-    .lean();
+  const existingChild = await enrollmentChildRepository.findDuplicate(
+    String(childData.firstName || ""),
+    String(childData.lastName || ""),
+    childData.dateOfBirth as Date,
+  );
   if (existingChild) {
     throw new ConflictError("Cannot approve because the child already exists.");
   }
@@ -205,7 +199,7 @@ export const reviewEnrollmentRequest = async (
     };
   } catch (error) {
     if (createdParentId) {
-      await User.findByIdAndDelete(createdParentId).catch((cleanupError: unknown) => {
+      await authUserRepository.deleteById(createdParentId).catch((cleanupError: unknown) => {
         logger.error("Failed to clean up parent after enrollment approval error.", {
           parentId: createdParentId,
           error:
@@ -233,9 +227,7 @@ export const deleteEnrollmentRequest = async (
     throw new ValidationError("Invalid request ID");
   }
 
-  const enrollmentRequest = await ChildEnrollmentRequest.findById(requestId)
-    .select("status createdChild")
-    .lean();
+  const enrollmentRequest = await enrollmentRequestRepository.findByIdLean(requestId);
   if (!enrollmentRequest) {
     throw new NotFoundError("Enrollment request");
   }
@@ -246,7 +238,7 @@ export const deleteEnrollmentRequest = async (
     );
   }
 
-  await ChildEnrollmentRequest.findByIdAndDelete(requestId);
+  await enrollmentRequestRepository.deleteById(requestId);
 
   return { message: "Enrollment request deleted successfully." };
 };

@@ -1,6 +1,4 @@
 import mongoose from "mongoose";
-import Child from "../../../models/Child";
-import User from "../../../models/Users";
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../../../shared/errors/app-error";
 import { logger } from "../../../shared/lib/logger";
 import {
@@ -25,6 +23,8 @@ import {
   findUserByEmail,
 } from "./parent-account.service";
 import { resolveTeacherAssignment } from "../shared";
+import { childRepository } from "../child.repository";
+import { authUserRepository } from "../../auth/auth.repository";
 
 type AuthUser = {
   id?: string;
@@ -169,13 +169,11 @@ export const createChildForAdmin = async (
     throw error;
   }
 
-  const existingChild = await Child.findOne({
-    firstName: normalizedFirstName,
-    lastName: normalizedLastName,
-    dateOfBirth: normalizedDateOfBirth,
-  })
-    .select("_id")
-    .lean();
+  const existingChild = await childRepository.findDuplicate(
+    normalizedFirstName,
+    normalizedLastName,
+    normalizedDateOfBirth,
+  );
 
   if (existingChild) {
     throw new ConflictError("Child already exists");
@@ -312,7 +310,7 @@ export const createChildForAdmin = async (
     };
   } catch (error) {
     if (!childCreated && createdParentId) {
-      await User.findByIdAndDelete(createdParentId)
+      await authUserRepository.deleteById(createdParentId)
         .catch((cleanupError: unknown) => {
           logger.error("Failed to clean up parent after child creation error.", {
             parentId: createdParentId,

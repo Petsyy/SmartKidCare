@@ -1,19 +1,18 @@
 import { Request, Response } from "express";
-import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
-import User from "../../models/Users";
-import Child from "../../models/Child";
-import ChildEnrollmentRequest from "../../models/ChildEnrollmentRequest";
-import ChildDevelopmentCenter from "../../models/ChildDevelopmentCenter";
+import {
+  adminUserRepository,
+  adminChildRepository,
+  adminEnrollmentRepository,
+  adminCenterRepository,
+} from "./admin.repository";
 import {
   isValidEmailAddress,
   mapCredentialDeliveryError,
   sendTeacherCredentialsEmail,
 } from "../notifications/teacher-credentials.service";
 import { generateTempPassword } from "../../shared/utils/generate-temp-password";
-
-const escapeRegex = (value: string) =>
-  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+import mongoose from "mongoose";
 
 export const createTeacher = async (req: Request, res: Response) => {
   try {
@@ -44,19 +43,12 @@ export const createTeacher = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Please provide a valid email." });
     }
 
-    const existing = await User.findOne({
-      email: {
-        $regex: `^${escapeRegex(normalizedEmail)}$`,
-        $options: "i",
-      },
-    });
+    const existing = await adminUserRepository.findByEmail(normalizedEmail);
     if (existing) {
       return res.status(409).json({ message: "Email already in use" });
     }
 
-    const daycareCenter = await ChildDevelopmentCenter.findById(daycareCenterId)
-      .select("_id name barangay isActive")
-      .lean();
+    const daycareCenter = await adminCenterRepository.findActiveById(daycareCenterId);
     if (!daycareCenter || daycareCenter.isActive === false) {
       return res.status(404).json({ message: "Selected center not found." });
     }
@@ -64,7 +56,7 @@ export const createTeacher = async (req: Request, res: Response) => {
     const tempPassword = generateTempPassword();
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
-    const teacher = await User.create({
+    const teacher = await adminUserRepository.create({
       firstName,
       middleName,
       lastName,
@@ -142,13 +134,10 @@ export const updateUserProfile = async (req: Request, res: Response) => {
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    const existing = await User.findOne({
-      email: {
-        $regex: `^${escapeRegex(normalizedEmail)}$`,
-        $options: "i",
-      },
-      _id: { $ne: new mongoose.Types.ObjectId(userId) },
-    });
+    const existing = await adminUserRepository.findByEmailExcluding(
+      normalizedEmail,
+      userId,
+    );
 
     if (existing) {
       return res.status(409).json({ message: "Email already in use." });
@@ -164,43 +153,32 @@ export const updateUserProfile = async (req: Request, res: Response) => {
         return res.status(400).json({ message: "Invalid center selected." });
       }
 
-      const daycareCenter = await ChildDevelopmentCenter.findById(
-        daycareCenterId,
-      )
-        .select("_id")
-        .lean();
+      const daycareCenter = await adminCenterRepository.findById(daycareCenterId);
       if (!daycareCenter) {
         return res.status(404).json({ message: "Selected center not found." });
       }
       nextDaycareCenterId = daycareCenter._id as mongoose.Types.ObjectId;
     }
 
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      {
-        firstName,
-        middleName,
-        lastName,
-        email: normalizedEmail,
-        phone,
-        ...(nextDaycareCenterId !== undefined
-          ? { daycareCenter: nextDaycareCenterId }
-          : {}),
-      },
-      { new: true },
-    )
-      .select("-password")
-      .populate("daycareCenter", "name barangay code isActive");
+    const user = await adminUserRepository.updateUserWithPopulate(String(userId), {
+      firstName,
+      middleName,
+      lastName,
+      email: normalizedEmail,
+      phone,
+      ...(nextDaycareCenterId !== undefined
+        ? { daycareCenter: nextDaycareCenterId }
+        : {}),
+    });
 
     if (!user) {
       return res.status(404).json({ message: "User not found." });
     }
 
     if (nextDaycareCenterId !== undefined && (user as any).role === "teacher") {
-      await Child.updateMany(
-        { teacher: user._id },
-        { $set: { daycareCenter: nextDaycareCenterId } },
-      );
+      await adminChildRepository.updateByTeacher(String(user._id), {
+        daycareCenter: nextDaycareCenterId,
+      });
     }
 
     res.json(user);
@@ -214,7 +192,7 @@ export const resetPassword = async (req: Request, res: Response) => {
     if (req.user?.role !== "admin") {
       return res.status(403).json({ message: "Admins Only." });
     }
-    const user = await User.findById(req.params.id);
+    const user = await adminUserRepository.findById(String(req.params.id));
     if (!user) return res.status(404).json({ message: "User not found." });
 
     const tempPassword = generateTempPassword();
@@ -245,7 +223,7 @@ export const toggleUserStatus = async (req: Request, res: Response) => {
       return res.status(403).json({ message: "Admins Only." });
     }
 
-    const user = await User.findById(req.params.id);
+    const user = await adminUserRepository.findById(String(req.params.id));
     if (!user) return res.status(404).json({ message: "User not found." });
 
     user.isActive = !user.isActive;
@@ -263,29 +241,23 @@ export const deleteUser = async (req: Request, res: Response) => {
       return res.status(403).json({ message: "Admins Only." });
     }
 
-    const user = await User.findById(req.params.id).select("role email");
+    const user = await adminUserRepository.findByIdSelect(
+      String(req.params.id),
+      "role email",
+    );
     if (!user) return res.status(404).json({ message: "User not found." });
 
     if (user.role === "parent") {
       await Promise.all([
-        Child.updateMany(
-          { parent: user._id },
-          {
-            $set: { parent: null },
-          },
-        ),
-        ChildEnrollmentRequest.deleteMany({
-          "parent.email": user.email,
-        }),
+        adminChildRepository.unlinkParent(String(user._id)),
+        adminEnrollmentRepository.deleteByParentEmail(user.email),
       ]);
     }
 
     if (user.role === "teacher") {
       const [linkedChildrenCount, linkedRequestsCount] = await Promise.all([
-        Child.countDocuments({ teacher: user._id }),
-        ChildEnrollmentRequest.countDocuments({
-          requestedBy: user._id,
-        }),
+        adminChildRepository.countByTeacher(String(user._id)),
+        adminEnrollmentRepository.countByTeacher(String(user._id)),
       ]);
 
       if (linkedChildrenCount > 0 || linkedRequestsCount > 0) {
@@ -296,7 +268,7 @@ export const deleteUser = async (req: Request, res: Response) => {
       }
     }
 
-    await User.findByIdAndDelete(req.params.id);
+    await adminUserRepository.deleteById(String(req.params.id));
 
     res.json({ message: "User deleted" });
   } catch (error: any) {
@@ -317,25 +289,18 @@ export const getParentChildren = async (req: Request, res: Response) => {
       "Surrogate-Control": "no-store",
     });
 
-    const parent = await User.findById(req.params.parentId)
-      .select("email")
-      .lean();
+    const parent = await adminUserRepository.findByIdSelect(
+      String(req.params.parentId),
+      "email",
+    );
 
     if (!parent) {
       return res.status(404).json({ message: "Parent not found." });
     }
 
     const [children, requests] = await Promise.all([
-      Child.find({ parent: req.params.parentId })
-        .sort({ createdAt: -1 })
-        .lean(),
-      ChildEnrollmentRequest.find({
-        "parent.email": parent.email,
-        createdChild: null,
-      })
-        .select("status child createdAt")
-        .sort({ createdAt: -1 })
-        .lean(),
+      adminChildRepository.findByParent(String(req.params.parentId)),
+      adminEnrollmentRepository.findByParentEmail(parent.email),
     ]);
 
     res.json({ children, requests });

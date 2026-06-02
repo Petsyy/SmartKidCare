@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import ChildDevelopmentCenter from "../../models/ChildDevelopmentCenter";
+import { adminCenterRepository } from "./admin.repository";
 
 const normalizeOptionalString = (value: unknown): string | undefined => {
   const normalized = String(value ?? "").trim();
@@ -18,9 +18,7 @@ export const getDaycareCenters = async (req: Request, res: Response) => {
       query.barangay = barangay;
     }
 
-    const centers = await ChildDevelopmentCenter.find(query)
-      .sort({ barangay: 1, name: 1 })
-      .lean();
+    const centers = await adminCenterRepository.find(query);
 
     return res.json({ centers });
   } catch (error: any) {
@@ -43,12 +41,12 @@ export const createDaycareCenter = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Name, barangay, and code are required." });
     }
 
-    const existing = await ChildDevelopmentCenter.findOne({ code }).select("_id").lean();
+    const existing = await adminCenterRepository.findOne({ code });
     if (existing) {
       return res.status(409).json({ message: "Center code already exists." });
     }
 
-    const center = await ChildDevelopmentCenter.create({
+    const center = await adminCenterRepository.create({
       name,
       barangay,
       code,
@@ -74,11 +72,7 @@ export const updateDaycareCenter = async (req: Request, res: Response) => {
     if (req.body?.address !== undefined) updates.address = String(req.body.address).trim();
     if (req.body?.isActive !== undefined) updates.isActive = Boolean(req.body.isActive);
 
-    const center = await ChildDevelopmentCenter.findByIdAndUpdate(
-      req.params.id,
-      updates,
-      { new: true },
-    );
+    const center = await adminCenterRepository.updateById(String(req.params.id), updates);
 
     if (!center) {
       return res.status(404).json({ message: "Center not found." });

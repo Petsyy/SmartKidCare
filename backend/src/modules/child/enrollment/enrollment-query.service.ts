@@ -1,8 +1,10 @@
-import ChildEnrollmentRequest from "../../../models/ChildEnrollmentRequest";
-import ChildDevelopmentCenter from "../../../models/ChildDevelopmentCenter";
-import User from "../../../models/Users";
 import { ForbiddenError } from "../../../shared/errors/app-error";
 import { normalizeString } from "../shared";
+import {
+  enrollmentRequestRepository,
+  enrollmentCenterRepository,
+  enrollmentUserRepository,
+} from "./enrollment.repository";
 
 type AuthUser = {
   id?: string;
@@ -14,18 +16,14 @@ export const getEnrollmentCenters = async (user?: AuthUser) => {
     throw new ForbiddenError("Teachers only");
   }
 
-  const teacher = await User.findById(user.id).select("daycareCenter").lean();
+  const teacher = await enrollmentUserRepository.findTeacherById(user.id);
   if (!teacher?.daycareCenter) {
     return { centers: [] };
   }
 
-  const centers = await ChildDevelopmentCenter.find({
-    _id: teacher.daycareCenter,
-    isActive: true,
-  })
-    .select("_id name barangay code isActive")
-    .sort({ barangay: 1, name: 1 })
-    .lean();
+  const centers = await enrollmentCenterRepository.findByTeacherCenter(
+    String(teacher.daycareCenter),
+  );
 
   return { centers };
 };
@@ -41,16 +39,7 @@ export const getEnrollmentRequests = async (user?: AuthUser, query?: Record<stri
     filter.status = status;
   }
 
-  const requests = await ChildEnrollmentRequest.find(filter)
-    .populate("requestedBy", "firstName middleName lastName email")
-    .populate("daycareCenter", "name barangay code isActive")
-    .populate("review.reviewedBy", "firstName middleName lastName email")
-    .populate(
-      "createdChild",
-      "firstName middleName lastName studentId documentIntegrity",
-    )
-    .sort({ createdAt: -1 })
-    .lean();
+  const requests = await enrollmentRequestRepository.findAllWithPopulate(filter);
 
   return { requests };
 };
@@ -60,17 +49,7 @@ export const getMyEnrollmentRequests = async (user?: AuthUser) => {
     throw new ForbiddenError("Teachers only");
   }
 
-  const requests = await ChildEnrollmentRequest.find({
-    requestedBy: user.id,
-  })
-    .populate("daycareCenter", "name barangay code isActive")
-    .populate("review.reviewedBy", "firstName middleName lastName email")
-    .populate(
-      "createdChild",
-      "firstName middleName lastName studentId documentIntegrity",
-    )
-    .sort({ createdAt: -1 })
-    .lean();
+  const requests = await enrollmentRequestRepository.findByTeacher(user.id);
 
   const parentEmails = [
     ...new Set(
@@ -81,12 +60,7 @@ export const getMyEnrollmentRequests = async (user?: AuthUser) => {
   ];
 
   const parentUsers = parentEmails.length
-    ? await User.find({
-        role: "parent",
-        email: { $in: parentEmails },
-      })
-        .select("email mustChangePassword")
-        .lean()
+    ? await enrollmentUserRepository.findParentsByEmails(parentEmails)
     : [];
 
   const mustChangeByEmail = new Map<string, boolean>();

@@ -1,7 +1,9 @@
-import Attendance from "../../models/Attendance";
-import Child from "../../models/Child";
-import Feeding from "../../models/Feeding";
-import User from "../../models/Users";
+import {
+  notificationsUserRepository,
+  notificationsChildRepository,
+  notificationsAttendanceRepository,
+  notificationsFeedingRepository,
+} from "./notifications.repository";
 import {
   extractUserPushTokens,
   sendExpoPushNotifications,
@@ -252,18 +254,9 @@ export async function dispatchTeacherNotificationsV1(
           "feeding_incomplete",
         ]);
 
-  const teacherQuery: Record<string, unknown> = {
-    role: "teacher",
-    isActive: true,
-  };
-
-  if (params.teacherIds?.length) {
-    teacherQuery._id = { $in: params.teacherIds };
-  }
-
-  const teachers = await User.find(teacherQuery)
-    .select("firstName middleName lastName pushToken pushTokens")
-    .lean();
+  const teachers = await notificationsUserRepository.findTeachers(
+    params.teacherIds?.length ? { _id: { $in: params.teacherIds } } : {},
+  );
 
   if (!teachers.length) {
     return {
@@ -281,12 +274,7 @@ export async function dispatchTeacherNotificationsV1(
 
   const teacherIds = teachers.map((teacher: any) => String(teacher._id));
 
-  const activeChildren = await Child.find({
-    status: "Active",
-    teacher: { $in: teacherIds },
-  })
-    .select("_id teacher")
-    .lean();
+  const activeChildren = await notificationsChildRepository.findActiveByTeacherIds(teacherIds);
   const activeChildIdsByTeacher = new Map<string, Set<string>>();
   for (const child of activeChildren as any[]) {
     const teacherId = String(child.teacher || "");
@@ -297,18 +285,8 @@ export async function dispatchTeacherNotificationsV1(
   }
 
   const [attendanceEntries, feedingEntries] = await Promise.all([
-    Attendance.find({
-      teacher: { $in: teacherIds },
-      date: targetDate,
-    })
-      .select("teacher records")
-      .lean(),
-    Feeding.find({
-      teacher: { $in: teacherIds },
-      date: targetDate,
-    })
-      .select("teacher records")
-      .lean(),
+    notificationsAttendanceRepository.findByTeachersAndDate(teacherIds, targetDate),
+    notificationsFeedingRepository.findByTeachersAndDate(teacherIds, targetDate),
   ]);
 
   const attendanceByTeacher = new Map<string, any>();
@@ -435,13 +413,7 @@ export async function getTeacherNotificationsFeed(params: {
           "feeding_incomplete",
         ]);
 
-  const teacher = await User.findOne({
-    _id: params.teacherId,
-    role: "teacher",
-    isActive: true,
-  })
-    .select("firstName middleName lastName pushToken pushTokens")
-    .lean();
+  const teacher = await notificationsUserRepository.findTeacherById(params.teacherId);
 
   if (!teacher) {
     return {
@@ -459,12 +431,7 @@ export async function getTeacherNotificationsFeed(params: {
     "Teacher";
   const hasPushToken = extractUserPushTokens(teacher).length > 0;
 
-  const activeChildren = await Child.find({
-    status: "Active",
-    teacher: teacherId,
-  })
-    .select("_id")
-    .lean();
+  const activeChildren = await notificationsChildRepository.findActiveByTeacher(teacherId);
   const activeChildIds = new Set(
     activeChildren.map((child: any) => String(child._id)),
   );
@@ -481,18 +448,8 @@ export async function getTeacherNotificationsFeed(params: {
   }
 
   const [attendance, feeding] = await Promise.all([
-    Attendance.findOne({
-      teacher: teacherId,
-      date: targetDate,
-    })
-      .select("records")
-      .lean(),
-    Feeding.findOne({
-      teacher: teacherId,
-      date: targetDate,
-    })
-      .select("records")
-      .lean(),
+    notificationsAttendanceRepository.findOneByTeacherAndDate(teacherId, targetDate),
+    notificationsFeedingRepository.findOneByTeacherAndDate(teacherId, targetDate),
   ]);
 
   const drafts = buildTeacherNotificationDrafts({

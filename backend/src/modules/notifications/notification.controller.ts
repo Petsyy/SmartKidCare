@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { Expo } from "expo-server-sdk";
-import User from "../../models/Users";
 import {
   extractUserPushTokens,
   sendExpoPushNotifications,
@@ -11,6 +10,7 @@ import {
   getTeacherNotificationsFeed,
 } from "./teacher-notification.service";
 import { getParentNotificationsFeed } from "./parent-notification.service";
+import { notificationsUserRepository } from "./notifications.repository";
 
 type Platform = "ios" | "android" | "web" | "unknown";
 
@@ -72,14 +72,14 @@ export const registerPushToken = async (req: Request, res: Response) => {
     const deviceName = normalizeString(req.body?.deviceName);
     const appOwnership = normalizeString(req.body?.appOwnership);
 
-    const user = await User.findById(req.user.id);
+    const user = await notificationsUserRepository.findById(req.user.id);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
     const remainingTokens = Array.isArray(user.pushTokens)
       ? user.pushTokens
-          .map((entry) => ({
+          .map((entry: any) => ({
             token: String(entry.token || "").trim(),
             platform:
               typeof entry.platform === "string" &&
@@ -94,7 +94,7 @@ export const registerPushToken = async (req: Request, res: Response) => {
                 : null,
             updatedAt: entry.updatedAt || new Date(),
           }))
-          .filter((entry) => entry.token.length && entry.token !== pushToken)
+          .filter((entry: any) => entry.token.length && entry.token !== pushToken)
       : [];
 
     user.pushTokens = [
@@ -132,13 +132,13 @@ export const unregisterPushToken = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Push token required" });
     }
 
-    const user = await User.findById(req.user.id);
+    const user = await notificationsUserRepository.findById(req.user.id);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
     user.pushTokens = Array.isArray(user.pushTokens)
-      ? user.pushTokens.filter((entry) => entry.token !== pushToken)
+      ? user.pushTokens.filter((entry: any) => entry.token !== pushToken)
       : [];
 
     if (user.pushToken === pushToken) {
@@ -163,7 +163,7 @@ export const sendTestPushNotification = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "Unauthorized: user not found" });
     }
 
-    const user = await User.findById(req.user.id).lean();
+    const user = await notificationsUserRepository.findByIdLean(req.user.id);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }

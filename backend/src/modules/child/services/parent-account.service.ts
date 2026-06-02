@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
-import User, { IUser } from "../../../models/Users";
+import { IUser } from "../../../models/Users";
 import { generateTempPassword } from "../../../shared/utils/generate-temp-password";
-import { escapeRegex } from "../shared";
+import { childUserRepository } from "../child.repository";
 
 export type ParentAccountInput = {
   firstName: string;
@@ -19,24 +19,11 @@ export type ParentCredentials = {
 
 export const findParentByEmail = async (
   email: string,
-): Promise<IUser | null> =>
-  User.findOne({
-    email: {
-      $regex: `^${escapeRegex(email)}$`,
-      $options: "i",
-    },
-    role: "parent",
-  });
+): Promise<IUser | null> => childUserRepository.findParentByEmail(email);
 
 export const findUserByEmail = async (
   email: string,
-): Promise<IUser | null> =>
-  User.findOne({
-    email: {
-      $regex: `^${escapeRegex(email)}$`,
-      $options: "i",
-    },
-  });
+): Promise<IUser | null> => childUserRepository.findByEmail(email);
 
 export const createParentAccount = async (
   input: ParentAccountInput,
@@ -44,7 +31,7 @@ export const createParentAccount = async (
   const tempPassword = generateTempPassword();
   const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
-  const parent = await User.create({
+  const parent = await childUserRepository.create({
     firstName: input.firstName,
     middleName: input.middleName || "",
     lastName: input.lastName,
