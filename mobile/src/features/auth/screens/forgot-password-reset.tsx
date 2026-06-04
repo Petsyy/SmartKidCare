@@ -60,7 +60,7 @@ export default function ForgotPasswordResetScreen() {
   const handleResetPassword = async () => {
     if (!resetToken) {
       Alert.alert(
-        "Invalid Request",
+        "Invalid Request",  
         "Missing reset token. Please restart forgot password.",
       );
       return;

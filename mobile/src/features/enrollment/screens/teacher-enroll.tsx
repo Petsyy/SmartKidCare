@@ -484,15 +484,7 @@ export default function EnrollChildScreen() {
                     autoCorrect={false}
                     placeholder="YYYY-MM-DD"
                     placeholderTextColor="#9CA3AF"
-                    style={{
-                      borderWidth: 1.5,
-                      borderColor: "#D1D5DB",
-                      borderRadius: 12,
-                      paddingHorizontal: 14,
-                      paddingVertical: 12,
-                      fontSize: 16,
-                      color: "#111827",
-                    }}
+                    className="border border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900"
                   />
                   {datePicker.pickerField === "dateOfBirth" ? (
                     <Text className="mt-2 text-xs text-gray-500">

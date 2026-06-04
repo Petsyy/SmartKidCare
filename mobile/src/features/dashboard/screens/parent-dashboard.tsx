@@ -104,19 +104,19 @@ export default function ParentDashboardScreen() {
   const childGender = selectedChild?.gender ? selectedChild.gender : "-";
   const enrolledText = selectedChild?.enrollmentDate
     ? (() => {
-        const parts = new Intl.DateTimeFormat("en-US", {
-          month: "long",
-          day: "numeric",
-          year: "numeric",
-          timeZone: "Asia/Manila",
-        }).formatToParts(new Date(selectedChild.enrollmentDate));
+      const parts = new Intl.DateTimeFormat("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+        timeZone: "Asia/Manila",
+      }).formatToParts(new Date(selectedChild.enrollmentDate));
 
-        const month = parts.find((part) => part.type === "month")?.value ?? "";
-        const day = parts.find((part) => part.type === "day")?.value ?? "";
-        const year = parts.find((part) => part.type === "year")?.value ?? "";
+      const month = parts.find((part) => part.type === "month")?.value ?? "";
+      const day = parts.find((part) => part.type === "day")?.value ?? "";
+      const year = parts.find((part) => part.type === "year")?.value ?? "";
 
-        return `${month}, ${day} ${year}`.trim();
-      })()
+      return `${month}, ${day} ${year}`.trim();
+    })()
     : "-";
 
   const totalChildren = useMemo(() => children.length, [children.length]);
@@ -387,10 +387,10 @@ export default function ParentDashboardScreen() {
               <Text className="text-teal-600 font-semibold">
                 {stats.mealsCompleted + stats.mealsMissed > 0
                   ? Math.round(
-                      (stats.mealsCompleted /
-                        (stats.mealsCompleted + stats.mealsMissed)) *
-                        100
-                    )
+                    (stats.mealsCompleted /
+                      (stats.mealsCompleted + stats.mealsMissed)) *
+                    100
+                  )
                   : 0}
                 %
               </Text>
@@ -400,10 +400,10 @@ export default function ParentDashboardScreen() {
                 percent={
                   stats.mealsCompleted + stats.mealsMissed > 0
                     ? Math.round(
-                        (stats.mealsCompleted /
-                          (stats.mealsCompleted + stats.mealsMissed)) *
-                          100
-                      )
+                      (stats.mealsCompleted /
+                        (stats.mealsCompleted + stats.mealsMissed)) *
+                      100
+                    )
                     : 0
                 }
               />

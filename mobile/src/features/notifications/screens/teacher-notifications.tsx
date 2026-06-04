@@ -1,60 +1,56 @@
-import {
-  AlertCircle,
-  ClipboardCheck,
-  UtensilsCrossed,
-} from "lucide-react-native";
+import { AlertCircle, Clock3, UtensilsCrossed } from "lucide-react-native";
 import { useAuth } from "@/src/hooks/use-auth";
 import {
-  getParentNotificationsFeed,
-  type ParentNotificationFeedItem,
+  getTeacherNotificationsFeed,
+  type TeacherNotificationFeedItem,
 } from "@/src/api/notifications.api";
 import { useNotificationsFeed } from "@/src/features/notifications/hooks";
-import { NotificationFeedScreen } from "@/src/features/notifications/screens/notification-feed.screen";
+import { NotificationFeedScreen } from "@/src/features/notifications/screens/notification-feed";
 
-const PARENT_TYPE_UI = {
-  attendance_submitted: {
-    fallbackTitle: "Attendance Submitted",
-    icon: ClipboardCheck,
+const TEACHER_TYPE_UI = {
+  attendance_reminder: {
+    fallbackTitle: "Morning Attendance",
+    icon: Clock3,
     iconColor: "#0F766E",
     iconBg: "#CCFBF1",
     accent: "#0F766E",
   },
-  absence_alert: {
-    fallbackTitle: "Absence Alert",
+  attendance_incomplete: {
+    fallbackTitle: "Attendance Incomplete",
     icon: AlertCircle,
     iconColor: "#B45309",
     iconBg: "#FEF3C7",
-    accent: "#B45309",
+    accent: "#0F766E",
   },
-  feeding_submitted: {
-    fallbackTitle: "Feeding Submitted",
+  feeding_reminder: {
+    fallbackTitle: "Lunch Feeding",
+    icon: Clock3,
+    iconColor: "#0F766E",
+    iconBg: "#CCFBF1",
+    accent: "#0F766E",
+  },
+  feeding_incomplete: {
+    fallbackTitle: "Feeding Incomplete",
     icon: UtensilsCrossed,
-    iconColor: "#0F766E",
-    iconBg: "#CCFBF1",
-    accent: "#0F766E",
-  },
-  missed_meal_alert: {
-    fallbackTitle: "Missed Meal Alert",
-    icon: AlertCircle,
     iconColor: "#B45309",
     iconBg: "#FEF3C7",
-    accent: "#B45309",
+    accent: "#0F766E",
   },
 } as const;
 
-export default function ParentNotificationsScreen() {
+export default function TeacherNotificationsScreen() {
   const { user } = useAuth();
 
-  const feed = useNotificationsFeed<ParentNotificationFeedItem>({
-    audience: "parent",
+  const feed = useNotificationsFeed<TeacherNotificationFeedItem>({
+    audience: "teacher",
     userId: user?.id,
     fetchFeed: async (date) =>
-      getParentNotificationsFeed({ date }),
+      getTeacherNotificationsFeed({ date }),
   });
 
   return (
-    <NotificationFeedScreen<ParentNotificationFeedItem>
-      subtitle="Parent alerts and updates"
+    <NotificationFeedScreen<TeacherNotificationFeedItem>
+      subtitle="Teacher alerts and reminders"
       date={feed.date}
       isLoading={feed.isLoading}
       isRefreshing={feed.isRefreshing}
@@ -74,7 +70,10 @@ export default function ParentNotificationsScreen() {
       restoreNotification={feed.restoreNotification}
       deleteArchivedNotification={feed.deleteArchivedNotification}
       deleteAllArchivedNotifications={feed.deleteAllArchivedNotifications}
-      cardUi={PARENT_TYPE_UI}
+      cardUi={TEACHER_TYPE_UI}
+      resolveTitle={(item, fallbackTitle) =>
+        item.title === "Reminder" ? fallbackTitle : item.title || fallbackTitle
+      }
     />
   );
 }

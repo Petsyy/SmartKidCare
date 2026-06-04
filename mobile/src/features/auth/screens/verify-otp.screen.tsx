@@ -15,10 +15,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 import { ChevronLeft, MailCheck } from "lucide-react-native";
-import {
-  resendTeacherPasswordOtp,
-  verifyTeacherPasswordOtp,
-} from "@/src/api/authentication.api";
+import { resendTeacherPasswordOtp, verifyTeacherPasswordOtp, } from "@/src/api/authentication.api";
 
 export default function VerifyOtpScreen() {
   const router = useRouter();

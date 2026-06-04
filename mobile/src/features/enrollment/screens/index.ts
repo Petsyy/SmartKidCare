@@ -1,1 +1,1 @@
-export { default as TeacherEnrollScreen } from "./teacher-enroll.screen";
+export { default as TeacherEnrollScreen } from "./teacher-enroll";

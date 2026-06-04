@@ -52,18 +52,11 @@ export default function RecordFeeding() {
       <Pressable
         onPress={() => !interactionDisabled && toggleChildFeeding(child._id)}
         disabled={interactionDisabled}
-        className={`mx-6 mb-3 overflow-hidden rounded-2xl border ${
+        className={`mx-6 mb-3 overflow-hidden rounded-2xl border shadow-sm ${
           !feedingStatus[child._id]
             ? "border-teal-200 bg-teal-50"
             : "border-gray-200 bg-white"
         } ${interactionDisabled ? "opacity-90" : ""}`}
-        style={{
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.08,
-          shadowRadius: 4,
-          elevation: 2,
-        }}
       >
         <View className="flex-row items-center p-4">
           <View
@@ -162,16 +155,9 @@ export default function RecordFeeding() {
         <Pressable
           onPress={() => !interactionDisabled && setShowMenuModal(true)}
           disabled={interactionDisabled}
-          className={`flex-row items-center justify-between rounded-2xl border border-gray-200 bg-white px-4 py-3.5 ${
+          className={`flex-row items-center justify-between rounded-2xl border border-gray-200 bg-white px-4 py-3.5 shadow-sm ${
             interactionDisabled ? "opacity-75" : ""
           }`}
-          style={{
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.05,
-            shadowRadius: 3,
-            elevation: 1,
-          }}
         >
           <Text
             className={`text-lg font-medium ${foodServed ? "text-gray-800" : "text-gray-400"}`}
@@ -184,16 +170,7 @@ export default function RecordFeeding() {
 
       <View className="px-6 pb-5">
         <View className="flex-row gap-2">
-          <View
-            className="flex-1 rounded-2xl border border-gray-200 bg-white p-3"
-            style={{
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.06,
-              shadowRadius: 4,
-              elevation: 2,
-            }}
-          >
+          <View className="flex-1 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
             <View className="flex-row items-center">
               <View className="h-8 w-8 items-center justify-center rounded-lg bg-gray-100">
                 <Check size={16} color="#4B5563" />
@@ -207,16 +184,7 @@ export default function RecordFeeding() {
             </Text>
           </View>
 
-          <View
-            className="flex-1 rounded-2xl border border-teal-200 bg-teal-50 p-3"
-            style={{
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.06,
-              shadowRadius: 4,
-              elevation: 2,
-            }}
-          >
+          <View className="flex-1 rounded-2xl border border-teal-200 bg-teal-50 p-3 shadow-sm">
             <View className="flex-row items-center">
               <View className="h-8 w-8 items-center justify-center rounded-lg bg-teal-100">
                 <CheckCircle size={16} color="#0F766E" />
@@ -230,16 +198,7 @@ export default function RecordFeeding() {
             </Text>
           </View>
 
-          <View
-            className="flex-1 rounded-2xl border border-red-200 bg-red-50 p-3"
-            style={{
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.06,
-              shadowRadius: 4,
-              elevation: 2,
-            }}
-          >
+          <View className="flex-1 rounded-2xl border border-red-200 bg-red-50 p-3 shadow-sm">
             <View className="flex-row items-center">
               <View className="h-8 w-8 items-center justify-center rounded-lg bg-red-100">
                 <X size={16} color="#B91C1C" />
@@ -256,16 +215,7 @@ export default function RecordFeeding() {
       </View>
 
       <View className="px-6 pb-5">
-        <View
-          className="flex-row items-center rounded-2xl border border-gray-200 bg-white px-4 py-3.5"
-          style={{
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.05,
-            shadowRadius: 3,
-            elevation: 1,
-          }}
-        >
+        <View className="flex-row items-center rounded-2xl border border-gray-200 bg-white px-4 py-3.5 shadow-sm">
           <Search size={20} color="#6B7280" />
           <TextInput
             className="flex-1 ml-3 text-lg text-gray-800"
@@ -282,18 +232,11 @@ export default function RecordFeeding() {
           <Pressable
             onPress={markAllAsCompleted}
             disabled={isSubmitting}
-            className={`flex-row items-center justify-center rounded-xl border px-4 py-3 ${
+            className={`flex-row items-center justify-center rounded-xl border px-4 py-3 shadow-sm ${
               isSubmitting
                 ? "border-emerald-300 bg-emerald-300"
                 : "border-emerald-600 bg-emerald-600 active:opacity-85"
             }`}
-            style={{
-              shadowColor: "#059669",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.2,
-              shadowRadius: 4,
-              elevation: 2,
-            }}
           >
             <CheckCircle size={16} color="white" />
             <Text className="ml-2 text-base font-semibold text-white">
@@ -456,16 +399,9 @@ export default function RecordFeeding() {
           onPress={handleSubmit}
           disabled={isSubmitting}
           android_ripple={{ color: "transparent" }}
-          className={`items-center justify-center rounded-2xl py-4 ${
+          className={`items-center justify-center rounded-2xl py-4 shadow-md ${
             isSubmitting ? "bg-emerald-400" : "bg-emerald-600 active:opacity-90"
           }`}
-          style={{
-            shadowColor: "#059669",
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.28,
-            shadowRadius: 8,
-            elevation: 5,
-          }}
         >
           <View className="flex-row items-center">
             {isSubmitting && <ActivityIndicator color="#FFFFFF" size="small" />}

@@ -98,16 +98,7 @@ export default function RecordAttendance() {
         {/* Stats Cards */}
         <View className="px-6 pb-5 pt-4">
           <View className="flex-row justify-between gap-3">
-            <View
-              className="flex-1 rounded-2xl border border-gray-200 bg-white p-3"
-              style={{
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.06,
-                shadowRadius: 4,
-                elevation: 2,
-              }}
-            >
+            <View className="flex-1 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
               <View className="flex-row items-center">
                 <View className="h-8 w-8 items-center justify-center rounded-lg bg-gray-100">
                   <Users size={16} color="#4B5563" />
@@ -121,16 +112,7 @@ export default function RecordAttendance() {
               </Text>
             </View>
 
-            <View
-              className="flex-1 rounded-2xl border border-teal-200 bg-teal-50 p-3"
-              style={{
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.06,
-                shadowRadius: 4,
-                elevation: 2,
-              }}
-            >
+            <View className="flex-1 rounded-2xl border border-teal-200 bg-teal-50 p-3 shadow-sm">
               <View className="flex-row items-center">
                 <View className="h-8 w-8 items-center justify-center rounded-lg bg-teal-100">
                   <CheckCircle2 size={16} color="#0F766E" />
@@ -144,16 +126,7 @@ export default function RecordAttendance() {
               </Text>
             </View>
 
-            <View
-              className="flex-1 rounded-2xl border border-red-200 bg-red-50 p-3"
-              style={{
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.06,
-                shadowRadius: 4,
-                elevation: 2,
-              }}
-            >
+            <View className="flex-1 rounded-2xl border border-red-200 bg-red-50 p-3 shadow-sm">
               <View className="flex-row items-center">
                 <View className="h-8 w-8 items-center justify-center rounded-lg bg-red-100">
                   <XCircle size={16} color="#B91C1C" />
@@ -175,14 +148,7 @@ export default function RecordAttendance() {
             <View className="flex-row gap-2">
               <Pressable
                 onPress={markAllPresent}
-                className="flex-1 flex-row items-center justify-center rounded-xl border border-emerald-600 bg-emerald-600 py-3 active:opacity-85"
-                style={{
-                  shadowColor: "#059669",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.2,
-                  shadowRadius: 4,
-                  elevation: 2,
-                }}
+                className="flex-1 flex-row items-center justify-center rounded-xl border border-emerald-600 bg-emerald-600 py-3 active:opacity-85 shadow-sm"
               >
                 <CheckCircle2 size={16} color="white" />
                 <Text className="ml-1.5 text-base font-semibold text-white">
@@ -192,14 +158,7 @@ export default function RecordAttendance() {
 
               <Pressable
                 onPress={markAllAbsent}
-                className="flex-1 flex-row items-center justify-center rounded-xl border border-slate-600 bg-slate-600 py-3 active:opacity-85"
-                style={{
-                  shadowColor: "#334155",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.2,
-                  shadowRadius: 4,
-                  elevation: 2,
-                }}
+                className="flex-1 flex-row items-center justify-center rounded-xl border border-slate-600 bg-slate-600 py-3 active:opacity-85 shadow-sm"
               >
                 <XCircle size={16} color="white" />
                 <Text className="ml-1.5 text-base font-semibold text-white">
@@ -212,16 +171,7 @@ export default function RecordAttendance() {
 
         {/* Search Bar */}
         <View className="px-6 pb-5">
-          <View
-            className="flex-row items-center rounded-2xl border border-gray-200 bg-white px-4 py-3.5"
-            style={{
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.05,
-              shadowRadius: 3,
-              elevation: 1,
-            }}
-          >
+          <View className="flex-row items-center rounded-2xl border border-gray-200 bg-white px-4 py-3.5 shadow-sm">
             <Search size={20} color="#6B7280" />
             <TextInput
               className="flex-1 ml-3 text-lg text-gray-800"
@@ -264,18 +214,11 @@ export default function RecordAttendance() {
                 key={item._id}
                 onPress={() => !isReadOnly && toggleAttendance(item._id)}
                 disabled={isReadOnly}
-                className={`mb-3 overflow-hidden rounded-2xl border ${
+                className={`mb-3 overflow-hidden rounded-2xl border shadow-sm ${
                   attendance[item._id]
                     ? "border-teal-200 bg-teal-50"
                     : "border-gray-200 bg-white"
                 } ${isReadOnly ? "opacity-90" : ""}`}
-                style={{
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.08,
-                  shadowRadius: 4,
-                  elevation: 2,
-                }}
               >
                 <View className="flex-row items-center p-4">
                   <View
@@ -343,17 +286,7 @@ export default function RecordAttendance() {
           <Pressable
             onPress={handleSubmit}
             android_ripple={{ color: "transparent" }}
-            className="items-center justify-center rounded-2xl bg-emerald-600 py-4 active:opacity-90"
-            style={({ pressed }) => [
-              {
-                shadowColor: "#059669",
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.28,
-                shadowRadius: 8,
-                elevation: 5,
-                opacity: pressed ? 0.9 : 1,
-              },
-            ]}
+            className="items-center justify-center rounded-2xl bg-emerald-600 py-4 active:opacity-90 shadow-md"
           >
             <Text className="text-xl font-bold text-white">
               {isReadOnly ? "View Feeding Record" : "Submit Attendance"}

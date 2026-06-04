@@ -1,3 +1,3 @@
-import TeacherProfileScreen from "@/src/features/profile/screens/teacher-profile.screen";
+import TeacherProfileScreen from "@/src/features/profile/screens/teacher-profile";
 
 export default TeacherProfileScreen;

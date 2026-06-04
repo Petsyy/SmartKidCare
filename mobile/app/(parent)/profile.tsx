@@ -1,3 +1,3 @@
-import ParentProfileScreen from "@/src/features/profile/screens/parent-profile.screen";
+import ParentProfileScreen from "@/src/features/profile/screens/parent-profile";
 
 export default ParentProfileScreen;

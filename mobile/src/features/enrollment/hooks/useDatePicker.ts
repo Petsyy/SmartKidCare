@@ -7,7 +7,6 @@ type DatePickerNativeModule = typeof import("@react-native-community/datetimepic
 
 const getNativeDatePickerModule = (): DatePickerNativeModule | null => {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     return require("@react-native-community/datetimepicker") as DatePickerNativeModule;
   } catch {
     return null;

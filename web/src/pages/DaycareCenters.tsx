@@ -150,8 +150,8 @@ export default function DaycareCenters() {
                   className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 outline-none transition-all hover:bg-gray-50 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:hover:bg-slate-900"
                 >
                   <option value="all">All Status</option>
-                  <option value="active">Active Only</option>
-                  <option value="inactive">Inactive Only</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
                 </select>
               </div>
             </div>

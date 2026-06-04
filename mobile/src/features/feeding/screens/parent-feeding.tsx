@@ -112,31 +112,13 @@ export default function ViewFeedingDetails() {
         </>
       )}
       renderSummary={() => (
-        <View
-          className="bg-white rounded-3xl p-5 mb-6 border border-gray-100"
-          style={{
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.06,
-            shadowRadius: 8,
-            elevation: 3,
-          }}
-        >
+        <View className="bg-white rounded-3xl p-5 mb-6 border border-gray-100 shadow-md">
           <Text className="text-lg font-semibold text-gray-800 mb-4">
             Monthly Summary
           </Text>
           <View className="flex-row flex-wrap">
             <View className="w-[48%] mr-[4%] mb-4">
-              <View
-                className="bg-green-50 rounded-2xl p-4 items-start border-l-4 border-green-500"
-                style={{
-                  shadowColor: "#059669",
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.08,
-                  shadowRadius: 4,
-                  elevation: 1,
-                }}
-              >
+              <View className="bg-green-50 rounded-2xl p-4 items-start border-l-4 border-green-500 shadow-sm">
                 <Text className="text-3xl font-bold text-green-700">
                   {summary.completed}
                 </Text>
@@ -149,16 +131,7 @@ export default function ViewFeedingDetails() {
               </View>
             </View>
             <View className="w-[48%]">
-              <View
-                className="bg-red-50 rounded-2xl p-4 items-start border-l-4 border-red-500"
-                style={{
-                  shadowColor: "#DC2626",
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.08,
-                  shadowRadius: 4,
-                  elevation: 1,
-                }}
-              >
+              <View className="bg-red-50 rounded-2xl p-4 items-start border-l-4 border-red-500 shadow-sm">
                 <Text className="text-3xl font-bold text-red-700">
                   {summary.missed}
                 </Text>
@@ -207,16 +180,7 @@ export default function ViewFeedingDetails() {
 
         return (
           <View className="flex-1 bg-black/60 items-center justify-center px-6">
-            <View
-              className="w-full rounded-3xl bg-white p-6"
-              style={{
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: 0.3,
-                shadowRadius: 16,
-                elevation: 10,
-              }}
-            >
+            <View className="w-full rounded-3xl bg-white p-6 shadow-xl">
               <View className="flex-row items-center justify-between mb-5">
                 <View className="flex-row items-center">
                   <View className="h-12 w-12 items-center justify-center rounded-2xl bg-teal-50 mr-3">
@@ -234,16 +198,7 @@ export default function ViewFeedingDetails() {
               </View>
 
               <View className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-5 border border-gray-100">
-                <View
-                  className="bg-white rounded-xl p-4 mb-3"
-                  style={{
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 1 },
-                    shadowOpacity: 0.05,
-                    shadowRadius: 2,
-                    elevation: 1,
-                  }}
-                >
+                <View className="bg-white rounded-xl p-4 mb-3 shadow-sm">
                   <Text className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider">
                     Status
                   </Text>
@@ -260,16 +215,7 @@ export default function ViewFeedingDetails() {
                   </View>
                 </View>
 
-                <View
-                  className="bg-white rounded-xl p-4 mb-3"
-                  style={{
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 1 },
-                    shadowOpacity: 0.05,
-                    shadowRadius: 2,
-                    elevation: 1,
-                  }}
-                >
+                <View className="bg-white rounded-xl p-4 mb-3 shadow-sm">
                   <Text className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider">
                     Food Served
                   </Text>
@@ -278,16 +224,7 @@ export default function ViewFeedingDetails() {
                   </Text>
                 </View>
 
-                <View
-                  className="bg-white rounded-xl p-4 mb-3"
-                  style={{
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 1 },
-                    shadowOpacity: 0.05,
-                    shadowRadius: 2,
-                    elevation: 1,
-                  }}
-                >
+                <View className="bg-white rounded-xl p-4 mb-3 shadow-sm">
                   <Text className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider">
                     Teacher
                   </Text>
@@ -296,16 +233,7 @@ export default function ViewFeedingDetails() {
                   </Text>
                 </View>
 
-                <View
-                  className="bg-white rounded-xl p-4"
-                  style={{
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 1 },
-                    shadowOpacity: 0.05,
-                    shadowRadius: 2,
-                    elevation: 1,
-                  }}
-                >
+                <View className="bg-white rounded-xl p-4 shadow-sm">
                   <Text className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider">
                     Recorded At
                   </Text>
@@ -317,14 +245,7 @@ export default function ViewFeedingDetails() {
 
               <Pressable
                 onPress={closeModal}
-                className="mt-5 bg-teal-600 rounded-xl py-4 active:opacity-80"
-                style={{
-                  shadowColor: "#14B8A6",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 4,
-                  elevation: 3,
-                }}
+                className="mt-5 bg-teal-600 rounded-xl py-4 active:opacity-80 shadow-md"
               >
                 <Text className="text-white font-bold text-center text-base">
                   Close

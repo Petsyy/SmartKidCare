@@ -31,19 +31,10 @@ export function SubmittedRequestsPanel({
   return (
     <>
       <View
-        className="mb-5 rounded-3xl overflow-hidden bg-white"
-        style={{
-          shadowColor: "#0D9488",
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.12,
-          shadowRadius: 14,
-          elevation: 6,
-        }}
+        className="mb-5 rounded-3xl overflow-hidden bg-white shadow-lg shadow-teal-600/20"
       >
         {/* Teal header banner */}
-        <View
-          className="bg-[#0F766E] px-[20px] pt-[20px] pb-[18px]"
-        >
+        <View className="bg-[#0F766E] px-[20px] pt-[20px] pb-[18px]">
           <View className="flex-row items-center gap-[14px]">
             <View
               className="h-[48px] w-[48px] rounded-[16px] bg-[rgba(255,255,255,0.2)] items-center justify-center"
@@ -153,9 +144,7 @@ export function SubmittedRequestsPanel({
         </View>
 
         {/* Search bar */}
-        <View
-          className="mt-[14px] mb-[16px] flex-row items-center bg-[#F8FAFC] rounded-[16px] border-[1.5px] border-[#E2E8F0] px-[16px] py-[13px]" style={{ marginHorizontal: 16 }}
-        >
+        <View className="mx-[16px] mt-[14px] mb-[16px] flex-row items-center rounded-[16px] border-[1.5px] border-[#E2E8F0] bg-[#F8FAFC] px-[16px] py-[13px]">
           <Search size={20} color="#0D9488" />
           <TextInput
             value={submittedSearchQuery}
@@ -169,16 +158,7 @@ export function SubmittedRequestsPanel({
 
       {/* ── Content ─────────────────────────────────── */}
       {loadingSubmitted ? (
-        <View
-          className="rounded-3xl bg-white p-10 items-center"
-          style={{
-            elevation: 2,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.05,
-            shadowRadius: 6,
-          }}
-        >
+        <View className="rounded-3xl bg-white p-10 items-center shadow-sm">
           <Text
             className="text-[16px] font-bold text-[#6B7280] mt-[16px]"
           >
@@ -186,16 +166,7 @@ export function SubmittedRequestsPanel({
           </Text>
         </View>
       ) : submittedRequests.length === 0 ? (
-        <View
-          className="rounded-3xl bg-white p-10 items-center"
-          style={{
-            elevation: 4,
-            shadowColor: "#0D9488",
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.1,
-            shadowRadius: 12,
-          }}
-        >
+        <View className="rounded-3xl bg-white p-10 items-center shadow-md shadow-teal-600/20">
           <View
             className="h-[84px] w-[84px] rounded-[24px] bg-[#F0FDFA] items-center justify-center mb-[16px]"
           >
@@ -206,24 +177,13 @@ export function SubmittedRequestsPanel({
           >
             No Requests Yet
           </Text>
-          <Text
-            className="text-[16px] font-bold text-[#6B7280] text-center mt-[8px] leading-[24px]" style={{ maxWidth: 240 }}
-          >
+          <Text className="mt-[8px] max-w-[240px] text-center text-[16px] font-bold text-[#6B7280] leading-[24px]">
             Switch to &quot;New Request&quot; to submit a child enrollment for
             review.
           </Text>
         </View>
       ) : filteredSubmittedRequests.length === 0 ? (
-        <View
-          className="rounded-3xl bg-white p-10 items-center"
-          style={{
-            elevation: 4,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.08,
-            shadowRadius: 12,
-          }}
-        >
+        <View className="rounded-3xl bg-white p-10 items-center shadow-md">
           <View
             className="h-[84px] w-[84px] rounded-[24px] bg-[#F1F5F9] items-center justify-center mb-[16px]"
           >
@@ -234,9 +194,7 @@ export function SubmittedRequestsPanel({
           >
             No Matches Found
           </Text>
-          <Text
-            className="text-[16px] font-bold text-[#6B7280] text-center mt-[8px] leading-[24px]" style={{ maxWidth: 240 }}
-          >
+          <Text className="mt-[8px] max-w-[240px] text-center text-[16px] font-bold text-[#6B7280] leading-[24px]">
             We couldn&apos;t find any requests matching your current filters.
           </Text>
           <Pressable
@@ -244,18 +202,7 @@ export function SubmittedRequestsPanel({
               setSubmittedSearchQuery("");
               setSubmittedStatusFilter("all");
             }}
-            style={{
-              marginTop: 20,
-              backgroundColor: "#0D9488",
-              borderRadius: 16,
-              paddingHorizontal: 32,
-              paddingVertical: 14,
-              elevation: 4,
-              shadowColor: "#0D9488",
-              shadowOffset: { width: 0, height: 3 },
-              shadowOpacity: 0.25,
-              shadowRadius: 8,
-            }}
+            className="mt-5 rounded-[16px] bg-[#0D9488] px-[32px] py-[14px] shadow-md shadow-teal-600/30"
           >
             <Text className="text-[16px] font-black text-[#FFFFFF]">
               Clear All Filters
@@ -294,22 +241,10 @@ export function SubmittedRequestsPanel({
             return (
               <View
                 key={request._id}
-                style={{
-                  overflow: "hidden",
-                  borderRadius: 24,
-                  backgroundColor: "#FFFFFF",
-                  borderWidth: 1,
-                  borderColor: "#E5E7EB",
-                  elevation: 6,
-                  shadowColor: statusAccentColor,
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.14,
-                  shadowRadius: 14,
-                }}
+                className="overflow-hidden rounded-3xl border border-[#E5E7EB] bg-white shadow-lg"
+                style={{ shadowColor: statusAccentColor }}
               >
-                <View
-                  className="h-[6px] bg-[statusAccentColor]"
-                />
+                <View className="h-[6px]" style={{ backgroundColor: statusAccentColor }} />
                 <View className="p-[18px]">
                   <View
                     className="flex-row items-flex-start justify-between"
@@ -319,7 +254,8 @@ export function SubmittedRequestsPanel({
                         className="flex-row items-center"
                       >
                         <View
-                          className="h-[46px] w-[46px] rounded-[14px] bg-[statusSoftBackground] items-center justify-center"
+                          className="h-[46px] w-[46px] rounded-[14px] items-center justify-center"
+                          style={{ backgroundColor: statusSoftBackground }}
                         >
                           <FileText size={20} color={statusAccentColor} />
                         </View>
@@ -339,10 +275,12 @@ export function SubmittedRequestsPanel({
                     </View>
 
                     <View
-                      className="rounded-[12px] px-[12px] py-[8px] bg-[status.badgeBackgroundColor]"
+                      className="rounded-[12px] px-[12px] py-[8px]"
+                      style={{ backgroundColor: status.badgeBackgroundColor }}
                     >
                       <Text
-                        className="text-[12px] font-black uppercase tracking-[0.8px] text-[status.textColor]"
+                        className="text-[12px] font-black uppercase tracking-[0.8px]"
+                        style={{ color: status.textColor }}
                       >
                         {status.label}
                       </Text>
@@ -471,9 +409,7 @@ export function SubmittedRequestsPanel({
                     <EnrollmentRequestBlockchainStatus request={request} />
                   </View>
 
-                  <View
-                    className="mt-[14px] pt-[14px] border-t-[1px] flex-row justify-end flex-wrap gap-[8px]" style={{ borderTopColor: "#E5E7EB" }}
-                  >
+                  <View className="mt-[14px] flex-row flex-wrap justify-end gap-[8px] border-t border-[#E5E7EB] pt-[14px]">
                     <Pressable
                       onPress={() => onViewParentPassword(request)}
                       className="flex-row items-center gap-[8px] rounded-[16px] border-[1.5px] border-[#BFDBFE] bg-[#EFF6FF] px-[16px] py-[10px]"

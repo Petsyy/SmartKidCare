@@ -1,31 +1,8 @@
 import React, { useMemo } from "react";
 import { useRouter } from "expo-router";
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  StatusBar,
-  RefreshControl,
-  ActivityIndicator,
-} from "react-native";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
-import {
-  Bell,
-  Calendar,
-  ChevronRight,
-  ClipboardCheck,
-  House,
-  UserCheck,
-  UserX,
-  Users,
-  Utensils,
-  UtensilsCrossed,
-  Zap,
-} from "lucide-react-native";
+import {View, Text, ScrollView, Pressable, StatusBar, RefreshControl, ActivityIndicator,} from "react-native";
+import {SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import {Bell,Calendar, ChevronRight, ClipboardCheck, House, UserCheck, UserX, Users, Utensils, UtensilsCrossed, Zap,}from "lucide-react-native";
 import { useTeacherDashboard } from "../hooks/useTeacherDashboard";
 import { StatCard, ActionCard, NoticeItem } from "../components";
 import type { TeacherNotificationFeedItem } from "@/src/api/notifications.api";
