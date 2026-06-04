@@ -8,7 +8,7 @@ import { BaseRepository } from "../../shared/repositories/base.repository";
 const escapeRegex = (value: string) =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-// ─── User ─────────────────────────────────────────────────────────────────────
+// ─── User 
 
 export class AdminUserRepository extends BaseRepository<IUser> {
   constructor() {
@@ -61,7 +61,7 @@ export class AdminUserRepository extends BaseRepository<IUser> {
   }
 }
 
-// ─── Child ────────────────────────────────────────────────────────────────────
+// ─── Child
 
 export class AdminChildRepository extends BaseRepository<any> {
   constructor() {
@@ -98,7 +98,7 @@ export class AdminChildRepository extends BaseRepository<any> {
   }
 }
 
-// ─── ChildEnrollmentRequest ───────────────────────────────────────────────────
+// ─── ChildEnrollmentRequest
 
 export class AdminEnrollmentRepository extends BaseRepository<any> {
   constructor() {
@@ -122,7 +122,7 @@ export class AdminEnrollmentRepository extends BaseRepository<any> {
   }
 }
 
-// ─── ChildDevelopmentCenter ───────────────────────────────────────────────────
+// ─── ChildDevelopmentCenter
 
 export class AdminCenterRepository extends BaseRepository<any> {
   constructor() {
@@ -141,7 +141,7 @@ export class AdminCenterRepository extends BaseRepository<any> {
   }
 }
 
-// ─── Singletons ───────────────────────────────────────────────────────────────
+// ─── Singletons 
 
 export const adminUserRepository = new AdminUserRepository();
 export const adminChildRepository = new AdminChildRepository();

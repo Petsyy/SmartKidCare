@@ -1,4 +1,3 @@
-
 import { AIResponseLanguage } from "./ai-chat.service";
 
 export type AIRole = "parent";
@@ -6,7 +5,16 @@ export type WriterRiskLevel = "LOW" | "MEDIUM" | "HIGH";
 export type WriterResponseTemplate = "fact" | "advice" | "alert";
 
 export type WriterFacts = {
-  scenario: "child_attendance" | "child_feeding" | "child_feeding_comparison" | "child_report" | "child_attendance_comparison" | "child_trend" | "class_attendance" | "class_feeding" | "class_report";
+  scenario:
+    | "child_attendance"
+    | "child_feeding"
+    | "child_feeding_comparison"
+    | "child_report"
+    | "child_attendance_comparison"
+    | "child_trend"
+    | "class_attendance"
+    | "class_feeding"
+    | "class_report";
   role: AIRole;
   language: AIResponseLanguage;
   timeframe: string;
@@ -73,8 +81,11 @@ export function renderWriterOutput(
   parts.push(output.analysis);
 
   if (policy.includeSuggestedActions && output.suggestedActions?.length) {
-    const label = facts.language === "tl" ? "Mga Mungkahing Hakbang" : "Suggested Actions";
-    parts.push(`${label}:\n${output.suggestedActions.map((s) => `- ${s}`).join("\n")}`);
+    const label =
+      facts.language === "tl" ? "Mga Mungkahing Hakbang" : "Suggested Actions";
+    parts.push(
+      `${label}:\n${output.suggestedActions.map((s) => `- ${s}`).join("\n")}`,
+    );
   }
 
   if (policy.includeFollowUp && output.followUp) {
@@ -88,12 +99,17 @@ export function renderWriterOutput(
 export function buildDeterministicNarrative(
   question: string,
   facts: WriterFacts,
-  policy: WriterDisplayPolicy
+  policy: WriterDisplayPolicy,
 ): string {
   // Simplification of the 31KB narrative file into a core deterministic generator
   const parts: string[] = [];
   const timeframe = facts.timeframe;
-  const subject = facts.role === "parent" ? (facts.language === "tl" ? "anak mo" : "your child") : facts.childName;
+  const subject =
+    facts.role === "parent"
+      ? facts.language === "tl"
+        ? "anak mo"
+        : "your child"
+      : facts.childName;
 
   // Headline
   if (facts.language === "tl") {
@@ -112,8 +128,14 @@ export function buildDeterministicNarrative(
 
   // Actions
   if (policy.includeSuggestedActions && facts.recommendationLines.length > 0) {
-    const label = facts.language === "tl" ? "Mga Mungkahing Hakbang" : "Suggested Actions";
-    parts.push(`${label}:\n${facts.recommendationLines.slice(0, 3).map(l => `- ${l}`).join("\n")}`);
+    const label =
+      facts.language === "tl" ? "Mga Mungkahing Hakbang" : "Suggested Actions";
+    parts.push(
+      `${label}:\n${facts.recommendationLines
+        .slice(0, 3)
+        .map((l) => `- ${l}`)
+        .join("\n")}`,
+    );
   }
 
   return parts.join("\n\n");

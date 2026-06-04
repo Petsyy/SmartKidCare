@@ -1,6 +1,7 @@
 import Child from "../../models/Child";
 import User, { IUser } from "../../models/Users";
 import { BaseRepository } from "../../shared/repositories/base.repository";
+import { teacherWithCenterPopulate } from "./shared";
 
 const escapeRegex = (value: string) =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -12,10 +13,31 @@ export class ChildRepository extends BaseRepository<any> {
     super(Child);
   }
 
-  /**
-   * Checks for an existing child with matching name + DOB.
-   * Replaces inline findOne in admin-child-create.service.ts.
-   */
+  async findChildrenWithDetails(query: Record<string, unknown>): Promise<any[]> {
+    return this.model.find(query)
+      .populate("parent", "firstName lastName email phone")
+      .populate(teacherWithCenterPopulate as never)
+      .populate("daycareCenter", "name barangay code isActive")
+      .sort({ createdAt: -1 })
+      .lean();
+  }
+
+  async findChildrenForParent(parentId: string): Promise<any[]> {
+    return this.model.find({ parent: parentId })
+      .populate(teacherWithCenterPopulate as never)
+      .populate("daycareCenter", "name barangay code isActive")
+      .sort({ createdAt: -1 })
+      .lean();
+  }
+
+  async findByIdWithDetails(id: string): Promise<any | null> {
+    return this.model.findById(id)
+      .populate("parent", "firstName lastName email phone")
+      .populate(teacherWithCenterPopulate as never)
+      .populate("daycareCenter", "name barangay code isActive")
+      .lean();
+  }
+
   async findDuplicate(
     firstName: string,
     lastName: string,
@@ -27,9 +49,6 @@ export class ChildRepository extends BaseRepository<any> {
       .lean();
   }
 
-  /**
-   * Case-insensitive name + DOB duplicate check (used in enrollment flows).
-   */
   async findDuplicateCaseInsensitive(
     firstName: string,
     lastName: string,
@@ -69,8 +88,7 @@ export class ChildRepository extends BaseRepository<any> {
   }
 }
 
-// ─── User sub-queries for child services ─────────────────────────────────────
-
+// ─── User sub-queries for child services 
 export class ChildUserRepository extends BaseRepository<IUser> {
   constructor() {
     super(User);
@@ -96,13 +114,11 @@ export class ChildUserRepository extends BaseRepository<IUser> {
   }
 }
 
-// ─── Singletons ───────────────────────────────────────────────────────────────
-
+// ─── Singletons
 export const childRepository = new ChildRepository();
 export const childUserRepository = new ChildUserRepository();
 
-// ─── Convenience exports ─────────────────────────────────────────────────────
-
+// ─── Convenience exports 
 export const findChildDuplicate = (
   firstName: string,
   lastName: string,

@@ -1,9 +1,9 @@
 import mongoose from "mongoose";
 import type { Request, Response } from "express";
-import Child from "../../../models/Child";
 import { ForbiddenError, NotFoundError, UnauthorizedError, ValidationError } from "../../../shared/errors/app-error";
 import { asyncHandler } from "../../../shared/utils/async-handler";
-import { ensureCanAccessChild, teacherWithCenterPopulate, withDerivedDaycareCenter } from "../shared";
+import { ensureCanAccessChild, withDerivedDaycareCenter } from "../shared";
+import { childRepository } from "../child.repository";
 
 export const getChildren = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user?.id) {
@@ -20,12 +20,7 @@ export const getChildren = asyncHandler(async (req: Request, res: Response) => {
     throw new ForbiddenError();
   }
 
-  const children = await Child.find(query)
-    .populate("parent", "firstName lastName email phone")
-    .populate(teacherWithCenterPopulate as never)
-    .populate("daycareCenter", "name barangay code isActive")
-    .sort({ createdAt: -1 })
-    .lean();
+  const children = await childRepository.findChildrenWithDetails(query);
 
   res.json(children.map((child) => withDerivedDaycareCenter(child)));
 });
@@ -40,11 +35,7 @@ export const getMyChildren = asyncHandler(
       throw new ForbiddenError("Parents only");
     }
 
-    const children = await Child.find({ parent: req.user.id })
-      .populate(teacherWithCenterPopulate as never)
-      .populate("daycareCenter", "name barangay code isActive")
-      .sort({ createdAt: -1 })
-      .lean();
+    const children = await childRepository.findChildrenForParent(req.user.id);
 
     res.json(children.map((child) => withDerivedDaycareCenter(child)));
   },
@@ -61,11 +52,7 @@ export const getChildById = asyncHandler(
       throw new ValidationError("Invalid child ID");
     }
 
-    const child = await Child.findById(id)
-      .populate("parent", "firstName lastName email phone")
-      .populate(teacherWithCenterPopulate as never)
-      .populate("daycareCenter", "name barangay code isActive")
-      .lean();
+    const child = await childRepository.findByIdWithDetails(id);
 
     if (!child) {
       throw new NotFoundError("Child");

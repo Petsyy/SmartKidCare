@@ -1,14 +1,14 @@
 import mongoose from "mongoose";
 import type { Request, Response } from "express";
-import Child from "../../../models/Child";
+import { asyncHandler } from "../../../shared/utils/async-handler";
 import {
   ForbiddenError,
   NotFoundError,
   ValidationError,
 } from "../../../shared/errors/app-error";
-import { asyncHandler } from "../../../shared/utils/async-handler";
 import { createChildForAdmin } from "../services";
-import { resolveTeacherAssignment, teacherWithCenterPopulate, withDerivedDaycareCenter } from "../shared";
+import { resolveTeacherAssignment, withDerivedDaycareCenter } from "../shared";
+import { childRepository } from "../child.repository";
 
 export const createChild = asyncHandler(async (req: Request, res: Response) => {
   const result = await createChildForAdmin({
@@ -16,8 +16,8 @@ export const createChild = asyncHandler(async (req: Request, res: Response) => {
     body: req.body ?? {},
     files: req.files as
       | {
-          [fieldname: string]: Express.Multer.File[];
-        }
+        [fieldname: string]: Express.Multer.File[];
+      }
       | undefined,
   });
 
@@ -29,7 +29,8 @@ export const updateChild = asyncHandler(async (req: Request, res: Response) => {
     throw new ForbiddenError("Admins only");
   }
 
-  const child = await Child.findById(req.params.id);
+  const child = await childRepository.findById(String(req.params.id));
+  
   if (!child) {
     throw new NotFoundError("Child");
   }
@@ -84,11 +85,7 @@ export const updateChild = asyncHandler(async (req: Request, res: Response) => {
 
   await child.save();
 
-  const updated = await Child.findById(child._id)
-    .populate("parent", "firstName lastName email phone")
-    .populate(teacherWithCenterPopulate as never)
-    .populate("daycareCenter", "name barangay code isActive")
-    .lean();
+  const updated = await childRepository.findByIdWithDetails(child._id.toString());
 
   res.json(withDerivedDaycareCenter(updated));
 });
@@ -103,7 +100,7 @@ export const deleteChild = asyncHandler(async (req: Request, res: Response) => {
     throw new ValidationError("Invalid child ID");
   }
 
-  const deleted = await Child.findByIdAndDelete(id);
+  const deleted = await childRepository.deleteById(id);
   if (!deleted) {
     throw new NotFoundError("Child");
   }
