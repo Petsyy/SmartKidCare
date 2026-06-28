@@ -1,24 +1,12 @@
 import { useMemo } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  StatusBar,
-  RefreshControl,
-  ActivityIndicator,
-} from "react-native";
+import { View, Text, ScrollView, Pressable, StatusBar, RefreshControl, ActivityIndicator, } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Icons from "lucide-react-native";
 import { useParentChildrenData } from "@/src/features/children/hooks";
 import type { Child } from "@/src/api/parent.api";
-import {
-  StatusRow,
-  ProgressMetric,
-  QuickActionRow,
-} from "@/src/features/children/components/parent-children-metrics";
+import { StatusRow, ProgressMetric, QuickActionRow, } from "@/src/features/children/components/parent-children-metrics";
 
 const getFullName = (child: Child): string => {
   const middle = child.middleName ? ` ${child.middleName}` : "";

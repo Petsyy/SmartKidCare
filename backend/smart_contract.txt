@@ -1,0 +1,49 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
+
+contract DocumentsRegistry {
+    address public immutable owner;
+
+    mapping(bytes32 => bytes32) private records;
+
+    error NotAuthorized();
+    error InvalidInput();
+
+    event DocumentsStored(
+        bytes32 indexed childIdHash,
+        bytes32 documentsHash
+    );
+
+    constructor() {
+        owner = msg.sender;
+    }
+
+    modifier onlyOwner() {
+        if (msg.sender != owner) revert NotAuthorized();
+        _;
+    }
+
+    function storeDocumentsHash(
+        bytes32 childIdHash,
+        bytes32 documentsHash
+    ) external onlyOwner {
+        if (childIdHash == 0 || documentsHash == 0) revert InvalidInput();
+        records[childIdHash] = documentsHash;
+        emit DocumentsStored(childIdHash, documentsHash);
+    }
+
+    function verifyDocuments(
+        bytes32 childIdHash,
+        bytes32 documentsHash
+    ) external view returns (bool) {
+        return records[childIdHash] == documentsHash;
+    }
+
+    function getDocumentsHash(bytes32 childIdHash)
+        external
+        view
+        returns (bytes32)
+    {
+        return records[childIdHash];
+    }
+}

@@ -1,10 +1,6 @@
 import { ForbiddenError } from "../../../shared/errors/app-error";
 import { normalizeString } from "../shared";
-import {
-  enrollmentRequestRepository,
-  enrollmentCenterRepository,
-  enrollmentUserRepository,
-} from "./enrollment.repository";
+import { enrollmentRequestRepository, enrollmentCenterRepository, enrollmentUserRepository, } from "./enrollment.repository";
 
 type AuthUser = {
   id?: string;

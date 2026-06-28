@@ -1,11 +1,7 @@
 import { Text, View } from "react-native";
 import { ShieldCheck } from "lucide-react-native";
 import type { TeacherEnrollmentRequest } from "@/src/api/teacher.api";
-import {
-  getBlockchainStatusInfo,
-  getBlockchainStatusPalette,
-  shortenHash,
-} from "@/src/utils/blockchain-status";
+import { getBlockchainStatusInfo, getBlockchainStatusPalette, shortenHash, } from "@/src/utils/blockchain-status";
 
 export function EnrollmentRequestBlockchainStatus({
   request,

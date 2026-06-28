@@ -1,16 +1,8 @@
 import mongoose from "mongoose";
 import ChildEnrollmentRequest from "../../../models/ChildEnrollmentRequest";
-import {
-  ForbiddenError,
-  NotFoundError,
-  ValidationError,
-} from "../../../shared/errors/app-error";
+import { ForbiddenError, NotFoundError, ValidationError } from "../../../shared/errors/app-error";
 import { normalizeString } from "../shared";
-import {
-  findParentByEmail,
-  getParentCredentials,
-  resetParentPassword,
-} from "../services";
+import { findParentByEmail, getParentCredentials, resetParentPassword } from "../services";
 
 type AuthUser = {
   id?: string;

@@ -1,6 +1,1 @@
-export {
-  DateField,
-  DocumentUploadField,
-  Input,
-  SelectField,
-} from "./form-fields";
+export { DateField, DocumentUploadField, Input, SelectField, } from "./form-fields";

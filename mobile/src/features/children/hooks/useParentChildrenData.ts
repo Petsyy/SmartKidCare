@@ -4,12 +4,7 @@ import { useFocusEffect } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/src/hooks/use-auth";
 import { getMyChildren, type Child } from "@/src/api/parent.api";
-import {
-  getAttendanceHistory,
-  getFeedingHistory,
-  getTodayAttendance,
-  getTodayFeeding,
-} from "@/src/api/records.api";
+import { getAttendanceHistory, getFeedingHistory, getTodayAttendance, getTodayFeeding } from "@/src/api/records.api";
 import { useParentChildrenStore } from "@/src/features/children/stores/parent-children.store";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 

@@ -1,17 +1,9 @@
 import mongoose from "mongoose";
-import {
-  ConflictError,
-  ForbiddenError,
-  NotFoundError,
-  ValidationError,
-} from "../../../shared/errors/app-error";
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../../../shared/errors/app-error";
 import { logger } from "../../../shared/lib/logger";
 import { createChildRecord, createParentAccount, findParentByEmail } from "../services";
 import { normalizeString } from "../shared";
-import {
-  enrollmentChildRepository,
-  enrollmentRequestRepository,
-} from "./enrollment.repository";
+import { enrollmentChildRepository, enrollmentRequestRepository, } from "./enrollment.repository";
 import { authUserRepository } from "../../auth/auth.repository";
 
 type AuthUser = {

@@ -1,37 +1,12 @@
 import { useMemo } from "react";
-import {
-  Linking,
-  Text,
-  View,
-  ActivityIndicator,
-  ScrollView,
-  StatusBar,
-  Pressable,
-} from "react-native";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { Linking, Text, View, ActivityIndicator, ScrollView, StatusBar, Pressable, } from "react-native";
+import { SafeAreaView, useSafeAreaInsets} from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { getChildById, type Child } from "@/src/api/parent.api";
 import { getTodayAttendance, getTodayFeeding } from "@/src/api/records.api";
 import { useAuth } from "@/src/hooks/use-auth";
-import {
-  ChevronLeft,
-  User,
-  Mail,
-  Phone,
-  Calendar,
-  BookOpen,
-  Activity,
-  ShieldCheck,
-} from "lucide-react-native";
-import {
-  buildBlockchainTransactionUrl,
-  getBlockchainStatusInfo,
-  getBlockchainStatusPalette,
-  shortenHash,
-} from "@/src/utils/blockchain-status";
+import { ChevronLeft, User, Mail, Phone,Calendar,BookOpen,Activity,ShieldCheck, } from "lucide-react-native";
+import { buildBlockchainTransactionUrl, getBlockchainStatusInfo, getBlockchainStatusPalette, shortenHash,} from "@/src/utils/blockchain-status";
 import { useQuery } from "@tanstack/react-query";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 

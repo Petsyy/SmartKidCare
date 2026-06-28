@@ -1,17 +1,6 @@
 import { useMemo } from "react";
-import {
-  Text,
-  View,
-  ActivityIndicator,
-  ScrollView,
-  StatusBar,
-  TextInput,
-  Pressable,
-} from "react-native";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { Text, View, ActivityIndicator, ScrollView, StatusBar, TextInput, Pressable } from "react-native";
+import { SafeAreaView, useSafeAreaInsets, } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { getChildren } from "@/src/api/teacher.api";
 import { getTodayAttendance, getTodayFeeding } from "@/src/api/records.api";

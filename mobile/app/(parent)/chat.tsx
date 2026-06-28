@@ -1,29 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  FlatList,
-  ActivityIndicator,
-  StatusBar,
-} from "react-native";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { View, Text, TextInput, Pressable, FlatList, ActivityIndicator, StatusBar } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import * as Icons from "lucide-react-native";
 import { useAuth } from "@/src/hooks/use-auth";
 import { sendAIChat } from "@/src/api/ai.api";
 import { getAttendanceHistory, getFeedingHistory } from "@/src/api/records.api";
-import {
-  extractAIBulletText,
-  extractAIRiskLevel,
-  getAIRiskBadgeStyle,
-  isAISectionLine,
-  removeAIRiskLevelLine,
-} from "@/src/components/ai/ai-chat";
+import { extractAIBulletText, extractAIRiskLevel, getAIRiskBadgeStyle, isAISectionLine, removeAIRiskLevelLine } from "@/src/components/ai/ai-chat";
 
 const SUGGESTIONS = [
   "Was my child present today?",

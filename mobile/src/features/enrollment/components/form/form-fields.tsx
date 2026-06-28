@@ -1,13 +1,5 @@
 import { useState } from "react";
-import {
-  Pressable,
-  Text,
-  TextInput,
-  type StyleProp,
-  type TextStyle,
-  View,
-  type ViewStyle,
-} from "react-native";
+import { Pressable, Text, TextInput, type StyleProp, type TextStyle, View, type ViewStyle, } from "react-native";
 import { CalendarDays, Camera, ChevronDown, Upload } from "lucide-react-native";
 import { displayDate, parseYmd } from "@/src/features/enrollment/utils";
 

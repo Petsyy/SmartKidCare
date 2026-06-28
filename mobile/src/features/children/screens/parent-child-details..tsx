@@ -1,30 +1,11 @@
 import { useMemo } from "react";
-import {
-  Text,
-  View,
-  ActivityIndicator,
-  ScrollView,
-  StatusBar,
-  Pressable,
-} from "react-native";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { Text, View, ActivityIndicator, ScrollView, StatusBar, Pressable, } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { getChildById, type Child } from "@/src/api/parent.api";
 import { getAttendanceHistory, getFeedingHistory } from "@/src/api/records.api";
 import { useAuth } from "@/src/hooks/use-auth";
-import {
-  ChevronLeft,
-  User,
-  Mail,
-  Phone,
-  Calendar,
-  BookOpen,
-  Activity,
-  AlertCircle,
-} from "lucide-react-native";
+import { ChevronLeft, User, Mail, Phone, Calendar, BookOpen, Activity, AlertCircle,} from "lucide-react-native";
 import { useQuery } from "@tanstack/react-query";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 

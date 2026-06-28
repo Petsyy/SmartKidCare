@@ -1,16 +1,7 @@
 import type { Express } from "express";
-import {
-  ConflictError,
-  ForbiddenError,
-  NotFoundError,
-  ValidationError,
-} from "../../../shared/errors/app-error";
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../../../shared/errors/app-error";
 import { logger } from "../../../shared/lib/logger";
-import {
-  deleteFromCloudinary,
-  uploadToCloudinary,
-  type UploadResult,
-} from "../../../shared/utils/upload-cloudinary";
+import { deleteFromCloudinary, uploadToCloudinary, type UploadResult, } from "../../../shared/utils/upload-cloudinary";
 import { hashFileBuffer } from "../../../blockchain/ethers";
 import {
   buildFullName,
@@ -40,8 +31,8 @@ type AuthUser = {
 
 type UploadedFiles =
   | {
-      [fieldname: string]: Express.Multer.File[];
-    }
+    [fieldname: string]: Express.Multer.File[];
+  }
   | undefined;
 
 export type SubmitEnrollmentRequestCommand = {

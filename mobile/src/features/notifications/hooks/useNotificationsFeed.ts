@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  loadNotificationArchiveState,
-  saveNotificationArchiveState,
-  type NotificationArchiveBaseItem,
+import { loadNotificationArchiveState, saveNotificationArchiveState, type NotificationArchiveBaseItem,
   type ArchivedNotificationItem,
   type NotificationAudience,
 } from "@/src/utils/notification-archive-storage";

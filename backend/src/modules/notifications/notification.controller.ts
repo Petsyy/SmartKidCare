@@ -318,18 +318,14 @@ export const getParentNotifications = async (req: Request, res: Response) => {
 
     const parsedDate = parseDateInput(req.query?.date);
     if (!parsedDate) {
-      return res
-        .status(400)
-        .json({ message: "Invalid date. Use ISO date format." });
+      return res.status(400).json({ message: "Invalid date. Use ISO date format." });
     }
 
     let parentId = req.user.id;
     if (req.user.role === "admin") {
       const requestedParentId = normalizeString(req.query?.parentId);
       if (!requestedParentId) {
-        return res
-          .status(400)
-          .json({ message: "parentId is required for admin requests." });
+        return res.status(400).json({ message: "parentId is required for admin requests." });
       }
       if (!isValidObjectId(requestedParentId)) {
         return res.status(400).json({ message: "Invalid parentId." });
