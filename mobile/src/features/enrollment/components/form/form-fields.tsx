@@ -14,6 +14,7 @@ type InputProps = {
   editable?: boolean;
   computed?: boolean;
   labelHint?: string;
+  error?: string;
 };
 
 const INPUT_PLACEHOLDER = "#9CA3AF";
@@ -29,17 +30,19 @@ export function Input({
   editable = true,
   computed = false,
   labelHint,
+  error,
 }: InputProps) {
   const [focused, setFocused] = useState(false);
   const readOnly = editable === false || computed;
 
   const inputVariantClasses = readOnly
     ? "border-[#99F6E4] bg-[#F0FDFA] text-[#134E4A]"
-    : focused
-      ? "border-[#0D9488] bg-[#F0FDFA] text-[#111827]"
-      : "border-[#E5E7EB] bg-[#FFFFFF] text-[#111827]";
+    : error 
+      ? "border-red-500 bg-red-50 text-[#111827]"
+      : focused
+        ? "border-[#0D9488] bg-[#F0FDFA] text-[#111827]"
+        : "border-[#E5E7EB] bg-[#FFFFFF] text-[#111827]";
 
-  // Strip trailing " *" to colour it separately
   const isRequired = label.endsWith(" *");
   const bareLabel = isRequired ? label.slice(0, -2) : label;
 
@@ -71,8 +74,11 @@ export function Input({
         editable={editable}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        className={`min-h-[48px] rounded-xl border-0 px-[14px] py-3 text-[15px] ${inputVariantClasses}`}
+        className={`min-h-[48px] rounded-xl border-[1.5px] px-[14px] py-3 text-[15px] ${inputVariantClasses}`}
       />
+      {error ? (
+        <Text className="mt-1.5 text-xs text-red-500">{error}</Text>
+      ) : null}
     </View>
   );
 }
@@ -81,10 +87,12 @@ export function DateField({
   label,
   value,
   onPress,
+  error,
 }: {
   label: string;
   value: string;
   onPress: () => void;
+  error?: string;
 }) {
   const hasValue = Boolean(value && parseYmd(value));
   const isRequired = label.endsWith(" *");
@@ -98,7 +106,9 @@ export function DateField({
       </Text>
       <Pressable
         onPress={onPress}
-        className="min-h-[50px] rounded-xl border-[1.5px] px-[14px] py-[13px] border-[#E5E7EB] bg-[#FFFFFF] active:border-[#0D9488] active:bg-[#F0FDFA]"
+        className={`min-h-[50px] rounded-xl border-[1.5px] px-[14px] py-[13px] ${
+          error ? "border-red-500 bg-red-50" : "border-[#E5E7EB] bg-[#FFFFFF] active:border-[#0D9488] active:bg-[#F0FDFA]"
+        }`}
       >
         <View className="flex-row items-center">
           <Text
@@ -114,6 +124,9 @@ export function DateField({
           </View>
         </View>
       </Pressable>
+      {error ? (
+        <Text className="mt-1.5 text-xs text-red-500">{error}</Text>
+      ) : null}
     </View>
   );
 }

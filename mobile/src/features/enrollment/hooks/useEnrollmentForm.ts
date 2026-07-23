@@ -1,9 +1,14 @@
 import { useState, useMemo } from "react";
 import { Alert } from "react-native";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { addYears, computeSchoolYear, formatYmd, toIsoUtc, validateDocument } from "@/src/features/enrollment/utils";
-import { computeAgeFromDateOfBirth, validateChildEnrollmentStepOne, validateChildEnrollmentStepTwo } from "@/src/validations/child-enrollment-validation";
+import { computeAgeFromDateOfBirth, childEnrollmentStepOneSchema, childEnrollmentStepTwoSchema } from "@/src/validations/child-enrollment-validation";
 import DocumentPicker from "expo-document-picker";
-import type { ProgramType, Step } from "@/src/features/enrollment/types";
+
+const enrollmentSchema = z.intersection(childEnrollmentStepOneSchema, childEnrollmentStepTwoSchema);
+export type EnrollmentFormValues = z.infer<typeof enrollmentSchema>;
 
 export const useEnrollmentForm = () => {
   const defaultEnrollmentDate = useMemo(() => formatYmd(new Date()), []);
@@ -12,95 +17,98 @@ export const useEnrollmentForm = () => {
   const minDateOfBirth = useMemo(() => addYears(today, -5), [today]);
   const maxDateOfBirth = useMemo(() => addYears(today, -3), [today]);
 
-  // Child form fields
-  const [firstName, setFirstName] = useState("");
-  const [middleName, setMiddleName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [dateOfBirth, setDateOfBirth] = useState("");
-  const [gender, setGender] = useState<"male" | "female">("male");
-  const [programType, setProgramType] = useState<ProgramType | "">("");
-  const [enrollmentDate, setEnrollmentDate] = useState(defaultEnrollmentDate);
-  const [schoolYear, setSchoolYear] = useState(defaultSchoolYear);
-  const [daycareCenterId, setDaycareCenterId] = useState("");
+  const form = useForm<EnrollmentFormValues>({
+    resolver: zodResolver(enrollmentSchema),
+    defaultValues: {
+      firstName: "",
+      middleName: "",
+      lastName: "",
+      dateOfBirth: "",
+      gender: "male",
+      programType: "" as any,
+      enrollmentDate: defaultEnrollmentDate,
+      schoolYear: defaultSchoolYear,
+      daycareCenterId: "",
+      parentFirstName: "",
+      parentMiddleName: "",
+      parentLastName: "",
+      parentEmail: "",
+      parentPhone: "",
+    },
+    mode: "onChange",
+  });
 
-  // Parent form fields
-  const [parentFirstName, setParentFirstName] = useState("");
-  const [parentMiddleName, setParentMiddleName] = useState("");
-  const [parentLastName, setParentLastName] = useState("");
-  const [parentEmail, setParentEmail] = useState("");
-  const [parentPhone, setParentPhone] = useState("");
+  const { watch, setValue, trigger, reset, getValues } = form;
 
   // Document fields
   const [birthCertificateFile, setBirthCertificateFile] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
   const [parentIdFile, setParentIdFile] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
 
-  // Computed values
+  // Watch for computed values
+  const dateOfBirth = watch("dateOfBirth");
+  const enrollmentDate = watch("enrollmentDate");
+
   const childFullName = useMemo(
-    () => [firstName, middleName, lastName].filter((v) => String(v || "").trim().length > 0).join(" "),
-    [firstName, middleName, lastName]
+    () => [watch("firstName"), watch("middleName"), watch("lastName")].filter((v) => String(v || "").trim().length > 0).join(" "),
+    [watch("firstName"), watch("middleName"), watch("lastName")]
   );
 
   const computedChildAge = dateOfBirth ? computeAgeFromDateOfBirth(dateOfBirth) : 0;
 
   const parentFullName = useMemo(
-    () => [parentFirstName, parentMiddleName, parentLastName].filter((v) => String(v || "").trim().length > 0).join(" "),
-    [parentFirstName, parentMiddleName, parentLastName]
+    () => [watch("parentFirstName"), watch("parentMiddleName"), watch("parentLastName")].filter((v) => String(v || "").trim().length > 0).join(" "),
+    [watch("parentFirstName"), watch("parentMiddleName"), watch("parentLastName")]
   );
 
   const resetForm = () => {
-    setFirstName("");
-    setMiddleName("");
-    setLastName("");
-    setDateOfBirth("");
-    setGender("male");
-    setProgramType("");
-    setEnrollmentDate(defaultEnrollmentDate);
-    setSchoolYear(defaultSchoolYear);
-    setDaycareCenterId("");
-    setParentFirstName("");
-    setParentMiddleName("");
-    setParentLastName("");
-    setParentEmail("");
-    setParentPhone("");
+    reset();
     setBirthCertificateFile(null);
     setParentIdFile(null);
   };
 
   // Validation functions
-  const validateStepOne = () => {
-    const result = validateChildEnrollmentStepOne({
-      firstName,
-      middleName,
-      lastName,
-      dateOfBirth,
-      gender,
-      daycareCenterId,
-      programType,
-      enrollmentDate,
-      schoolYear,
-    });
-
-    if (!result.success) {
-      Alert.alert("Validation", result.error.issues[0]?.message || "Please complete the child information.");
-      return false;
+  const validateStepOne = async () => {
+    const isValid = await trigger([
+      "firstName",
+      "middleName",
+      "lastName",
+      "dateOfBirth",
+      "gender",
+      "daycareCenterId",
+      "programType",
+      "enrollmentDate",
+      "schoolYear",
+    ]);
+    if (!isValid) {
+      const errors = form.formState.errors;
+      const firstError = Object.values(errors)[0] as { message?: string } | undefined;
+      if (firstError?.message) {
+        Alert.alert("Validation", firstError.message);
+      } else {
+        Alert.alert("Validation", "Please complete the child information.");
+      }
     }
-    return true;
+    return isValid;
   };
 
-  const validateStepTwo = () => {
-    const result = validateChildEnrollmentStepTwo({
-      parentFirstName,
-      parentMiddleName,
-      parentLastName,
-      parentEmail,
-      parentPhone,
-    });
-
-    if (!result.success) {
-      Alert.alert("Validation", result.error.issues[0]?.message || "Please complete the parent information.");
-      return false;
+  const validateStepTwo = async () => {
+    const isValid = await trigger([
+      "parentFirstName",
+      "parentMiddleName",
+      "parentLastName",
+      "parentEmail",
+      "parentPhone",
+    ]);
+    if (!isValid) {
+      const errors = form.formState.errors;
+      const firstError = Object.values(errors)[0] as { message?: string } | undefined;
+      if (firstError?.message) {
+        Alert.alert("Validation", firstError.message);
+      } else {
+        Alert.alert("Validation", "Please complete the parent information.");
+      }
     }
-    return true;
+    return isValid;
   };
 
   const validateStepThree = () => {
@@ -119,26 +127,27 @@ export const useEnrollmentForm = () => {
   };
 
   const getSubmissionData = () => {
-    const age = computeAgeFromDateOfBirth(dateOfBirth);
+    const values = getValues();
+    const age = computeAgeFromDateOfBirth(values.dateOfBirth);
     return {
       childData: {
-        firstName: firstName.trim(),
-        middleName: middleName.trim() || undefined,
-        lastName: lastName.trim(),
-        dateOfBirth: toIsoUtc(dateOfBirth),
+        firstName: values.firstName.trim(),
+        middleName: values.middleName?.trim() || undefined,
+        lastName: values.lastName.trim(),
+        dateOfBirth: toIsoUtc(values.dateOfBirth),
         age,
-        gender,
-        programType,
-        daycareCenterId: daycareCenterId.trim(),
-        enrollmentDate: toIsoUtc(enrollmentDate),
-        schoolYear: schoolYear.trim(),
+        gender: values.gender,
+        programType: values.programType,
+        daycareCenterId: values.daycareCenterId.trim(),
+        enrollmentDate: toIsoUtc(values.enrollmentDate),
+        schoolYear: values.schoolYear.trim(),
       },
       parentData: {
-        parentFirstName: parentFirstName.trim(),
-        parentMiddleName: parentMiddleName.trim() || undefined,
-        parentLastName: parentLastName.trim(),
-        parentEmail: parentEmail.trim().toLowerCase(),
-        parentPhone: parentPhone.trim(),
+        parentFirstName: values.parentFirstName.trim(),
+        parentMiddleName: values.parentMiddleName?.trim() || undefined,
+        parentLastName: values.parentLastName.trim(),
+        parentEmail: values.parentEmail.trim().toLowerCase(),
+        parentPhone: values.parentPhone.trim(),
       },
       documentData: {
         birthCertificate: birthCertificateFile
@@ -160,37 +169,25 @@ export const useEnrollmentForm = () => {
   };
 
   return {
-    // Child fields
-    firstName,
-    setFirstName,
-    middleName,
-    setMiddleName,
-    lastName,
-    setLastName,
-    dateOfBirth,
-    setDateOfBirth,
-    gender,
-    setGender,
-    programType,
-    setProgramType,
-    enrollmentDate,
-    setEnrollmentDate,
-    schoolYear,
-    setSchoolYear,
-    daycareCenterId,
-    setDaycareCenterId,
+    form, // RHF methods and state
+    control: form.control,
 
-    // Parent fields
-    parentFirstName,
-    setParentFirstName,
-    parentMiddleName,
-    setParentMiddleName,
-    parentLastName,
-    setParentLastName,
-    parentEmail,
-    setParentEmail,
-    parentPhone,
-    setParentPhone,
+    // Expose commonly used values explicitly if needed, but mostly we use form.watch() in parent
+    dateOfBirth,
+    enrollmentDate,
+    daycareCenterId: watch("daycareCenterId"),
+    gender: watch("gender"),
+    programType: watch("programType"),
+    schoolYear: watch("schoolYear"),
+    parentEmail: watch("parentEmail"),
+    parentPhone: watch("parentPhone"),
+
+    setDateOfBirth: (val: string) => setValue("dateOfBirth", val, { shouldValidate: true }),
+    setEnrollmentDate: (val: string) => setValue("enrollmentDate", val, { shouldValidate: true }),
+    setSchoolYear: (val: string) => setValue("schoolYear", val, { shouldValidate: true }),
+    setDaycareCenterId: (val: string) => setValue("daycareCenterId", val, { shouldValidate: true }),
+    setGender: (val: "male" | "female") => setValue("gender", val, { shouldValidate: true }),
+    setProgramType: (val: any) => setValue("programType", val, { shouldValidate: true }),
 
     // Documents
     birthCertificateFile,

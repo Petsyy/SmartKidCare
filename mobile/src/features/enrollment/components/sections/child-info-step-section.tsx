@@ -1,49 +1,25 @@
 import { CheckCircle2, User } from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
+import { Controller, type Control } from "react-hook-form";
 import { DateField, Input } from "@/src/features/enrollment/components/form";
 import { PROGRAM_TYPES } from "@/src/features/enrollment/constants";
 import { enrollFieldStyles } from "@/src/features/enrollment/styles";
-import type { ProgramType } from "@/src/features/enrollment/types";
-
+import type { EnrollmentFormValues } from "@/src/features/enrollment/hooks/useEnrollmentForm";
 
 export function ChildInfoStepSection({
-  firstName,
-  setFirstName,
-  middleName,
-  setMiddleName,
-  lastName,
-  setLastName,
-  dateOfBirth,
+  control,
   onPickDateOfBirth,
   computedChildAge,
-  gender,
-  setGender,
-  enrollmentDate,
   onPickEnrollmentDate,
   assignedCenterPrimary,
   assignedCenterSecondary,
-  programType,
-  setProgramType,
-  schoolYear,
 }: {
-  firstName: string;
-  setFirstName: (value: string) => void;
-  middleName: string;
-  setMiddleName: (value: string) => void;
-  lastName: string;
-  setLastName: (value: string) => void;
-  dateOfBirth: string;
+  control: Control<any>;
   onPickDateOfBirth: () => void;
   computedChildAge: number;
-  gender: "male" | "female";
-  setGender: (value: "male" | "female") => void;
-  enrollmentDate: string;
   onPickEnrollmentDate: () => void;
   assignedCenterPrimary: string;
   assignedCenterSecondary: string;
-  programType: ProgramType | "";
-  setProgramType: (value: ProgramType) => void;
-  schoolYear: string;
 }) {
   return (
     <View
@@ -70,33 +46,61 @@ export function ChildInfoStepSection({
       </Text>
 
       <View className="mt-4 flex-row gap-3">
-        <Input
-          containerStyle={enrollFieldStyles.inputHalf}
-          label="First Name *"
-          placeholder="e.g. Juan"
-          value={firstName}
-          onChangeText={setFirstName}
+        <Controller
+          control={control}
+          name="firstName"
+          render={({ field: { onChange, value }, fieldState: { error } }) => (
+            <Input
+              containerStyle={enrollFieldStyles.inputHalf}
+              label="First Name *"
+              placeholder="e.g. Juan"
+              value={value}
+              onChangeText={onChange}
+              error={error?.message}
+            />
+          )}
         />
-        <Input
-          containerStyle={enrollFieldStyles.inputHalf}
-          label="Last Name *"
-          placeholder="e.g. Dela Cruz"
-          value={lastName}
-          onChangeText={setLastName}
+        <Controller
+          control={control}
+          name="lastName"
+          render={({ field: { onChange, value }, fieldState: { error } }) => (
+            <Input
+              containerStyle={enrollFieldStyles.inputHalf}
+              label="Last Name *"
+              placeholder="e.g. Dela Cruz"
+              value={value}
+              onChangeText={onChange}
+              error={error?.message}
+            />
+          )}
         />
       </View>
 
-      <Input
-        label="Middle Name *"
-        placeholder="e.g. Santos"
-        value={middleName}
-        onChangeText={setMiddleName}
+      <Controller
+        control={control}
+        name="middleName"
+        render={({ field: { onChange, value }, fieldState: { error } }) => (
+          <Input
+            label="Middle Name *"
+            placeholder="e.g. Santos"
+            value={value}
+            onChangeText={onChange}
+            error={error?.message}
+          />
+        )}
       />
 
-      <DateField
-        label="Date of Birth *"
-        value={dateOfBirth}
-        onPress={onPickDateOfBirth}
+      <Controller
+        control={control}
+        name="dateOfBirth"
+        render={({ field: { value }, fieldState: { error } }) => (
+          <DateField
+            label="Date of Birth *"
+            value={value}
+            onPress={onPickDateOfBirth}
+            error={error?.message}
+          />
+        )}
       />
 
       <Input
@@ -110,53 +114,69 @@ export function ChildInfoStepSection({
       />
 
       {/* Gender */}
-      <View className="mb-4">
-        <Text
-          className="text-[13px] font-bold tracking-[0.6px] uppercase text-[#374151] mb-[10px]"
-        >
-          Gender <Text className="text-[#EF4444]">*</Text>
-        </Text>
-        <View className="flex-row gap-3">
-          {(["male", "female"] as const).map((g) => {
-            const isSelected = gender === g;
-            return (
-              <Pressable
-                key={g}
-                onPress={() => setGender(g)}
-                className="flex-1 flex-row items-center rounded-2xl border-2 px-4 py-3"
-                style={{
-                  borderColor: isSelected ? "#0D9488" : "#E5E7EB",
-                  backgroundColor: isSelected ? "#F0FDFA" : "#FFFFFF",
-                }}
-              >
-                <View
-                  className="h-5 w-5 items-center justify-center rounded-full border-2"
-                  style={{ borderColor: isSelected ? "#0D9488" : "#D1D5DB" }}
-                >
-                  {isSelected ? (
-                    <View className="h-2.5 w-2.5 rounded-full bg-teal-600" />
-                  ) : null}
-                </View>
-                <Text
-                  className="ml-2.5 flex-1 font-semibold capitalize"
-                  style={{
-                    color: isSelected ? "#0F766E" : "#374151",
-                    fontSize: 15,
-                  }}
-                >
-                  {g}
-                </Text>
-                {isSelected ? <CheckCircle2 size={18} color="#0D9488" /> : null}
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
+      <Controller
+        control={control}
+        name="gender"
+        render={({ field: { onChange, value }, fieldState: { error } }) => (
+          <View className="mb-4">
+            <Text
+              className="text-[13px] font-bold tracking-[0.6px] uppercase text-[#374151] mb-[10px]"
+            >
+              Gender <Text className="text-[#EF4444]">*</Text>
+            </Text>
+            <View className="flex-row gap-3">
+              {(["male", "female"] as const).map((g) => {
+                const isSelected = value === g;
+                return (
+                  <Pressable
+                    key={g}
+                    onPress={() => onChange(g)}
+                    className="flex-1 flex-row items-center rounded-2xl border-2 px-4 py-3"
+                    style={{
+                      borderColor: isSelected ? "#0D9488" : error ? "#EF4444" : "#E5E7EB",
+                      backgroundColor: isSelected ? "#F0FDFA" : error ? "#FEF2F2" : "#FFFFFF",
+                    }}
+                  >
+                    <View
+                      className="h-5 w-5 items-center justify-center rounded-full border-2"
+                      style={{ borderColor: isSelected ? "#0D9488" : "#D1D5DB" }}
+                    >
+                      {isSelected ? (
+                        <View className="h-2.5 w-2.5 rounded-full bg-teal-600" />
+                      ) : null}
+                    </View>
+                    <Text
+                      className="ml-2.5 flex-1 font-semibold capitalize"
+                      style={{
+                        color: isSelected ? "#0F766E" : "#374151",
+                        fontSize: 15,
+                      }}
+                    >
+                      {g}
+                    </Text>
+                    {isSelected ? <CheckCircle2 size={18} color="#0D9488" /> : null}
+                  </Pressable>
+                );
+              })}
+            </View>
+            {error ? (
+              <Text className="mt-1.5 text-xs text-red-500">{error.message}</Text>
+            ) : null}
+          </View>
+        )}
+      />
 
-      <DateField
-        label="Enrollment Date *"
-        value={enrollmentDate}
-        onPress={onPickEnrollmentDate}
+      <Controller
+        control={control}
+        name="enrollmentDate"
+        render={({ field: { value }, fieldState: { error } }) => (
+          <DateField
+            label="Enrollment Date *"
+            value={value}
+            onPress={onPickEnrollmentDate}
+            error={error?.message}
+          />
+        )}
       />
 
       <View style={enrollFieldStyles.inputContainer}>
@@ -174,86 +194,111 @@ export function ChildInfoStepSection({
             </Text>
           </View>
         </View>
-        <View
-          style={[
-            enrollFieldStyles.textInput,
-            enrollFieldStyles.textInputReadOnly,
-            { justifyContent: "center" },
-          ]}
-        >
-          <Text className="text-base font-semibold text-teal-900">
-            {assignedCenterPrimary}
-          </Text>
-          {assignedCenterSecondary ? (
-            <Text className="mt-0.5 text-sm text-teal-800">
-              {assignedCenterSecondary}
-            </Text>
-          ) : null}
-        </View>
+        <Controller
+          control={control}
+          name="daycareCenterId"
+          render={({ fieldState: { error } }) => (
+            <>
+              <View
+                style={[
+                  enrollFieldStyles.textInput,
+                  enrollFieldStyles.textInputReadOnly,
+                  { justifyContent: "center", borderColor: error ? "#EF4444" : "#99F6E4", backgroundColor: error ? "#FEF2F2" : "#F0FDFA" },
+                ]}
+              >
+                <Text className="text-base font-semibold text-teal-900">
+                  {assignedCenterPrimary}
+                </Text>
+                {assignedCenterSecondary ? (
+                  <Text className="mt-0.5 text-sm text-teal-800">
+                    {assignedCenterSecondary}
+                  </Text>
+                ) : null}
+              </View>
+              {error ? (
+                <Text className="mt-1.5 mb-2 text-xs text-red-500">{error.message}</Text>
+              ) : null}
+            </>
+          )}
+        />
       </View>
       <Text className="-mt-2 mb-5 text-sm leading-5 text-gray-500">
         This is based on your account center assignment.
       </Text>
 
       {/* Program Type */}
-      <View className="mb-4">
-        <Text
-          className="text-[13px] font-bold tracking-[0.6px] uppercase text-[#374151] mb-[10px]"
-        >
-          Program Type <Text className="text-[#EF4444]">*</Text>
-        </Text>
-        <View className="gap-2">
-          {PROGRAM_TYPES.map((option) => {
-            const isSelected = programType === option;
-            return (
-              <Pressable
-                key={option}
-                onPress={() => setProgramType(option)}
-                className="rounded-2xl border-2 px-4 py-3"
-                style={{
-                  borderColor: isSelected ? "#0D9488" : "#E5E7EB",
-                  backgroundColor: isSelected ? "#F0FDFA" : "#FFFFFF",
-                }}
-              >
-                <View className="flex-row items-center">
-                  <View
-                    className="h-5 w-5 items-center justify-center rounded-full border-2"
-                    style={{ borderColor: isSelected ? "#0D9488" : "#D1D5DB" }}
-                  >
-                    {isSelected ? (
-                      <View className="h-2.5 w-2.5 rounded-full bg-teal-600" />
-                    ) : null}
-                  </View>
-                  <Text
-                    className="ml-3 flex-1"
+      <Controller
+        control={control}
+        name="programType"
+        render={({ field: { onChange, value }, fieldState: { error } }) => (
+          <View className="mb-4">
+            <Text
+              className="text-[13px] font-bold tracking-[0.6px] uppercase text-[#374151] mb-[10px]"
+            >
+              Program Type <Text className="text-[#EF4444]">*</Text>
+            </Text>
+            <View className="gap-2">
+              {PROGRAM_TYPES.map((option) => {
+                const isSelected = value === option;
+                return (
+                  <Pressable
+                    key={option}
+                    onPress={() => onChange(option)}
+                    className="rounded-2xl border-2 px-4 py-3"
                     style={{
-                      fontSize: 15,
-                      fontWeight: isSelected ? "700" : "500",
-                      color: isSelected ? "#0F766E" : "#374151",
+                      borderColor: isSelected ? "#0D9488" : error ? "#EF4444" : "#E5E7EB",
+                      backgroundColor: isSelected ? "#F0FDFA" : error ? "#FEF2F2" : "#FFFFFF",
                     }}
                   >
-                    {option}
-                  </Text>
-                  {isSelected ? (
-                    <CheckCircle2 size={18} color="#0D9488" />
-                  ) : null}
-                </View>
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
+                    <View className="flex-row items-center">
+                      <View
+                        className="h-5 w-5 items-center justify-center rounded-full border-2"
+                        style={{ borderColor: isSelected ? "#0D9488" : "#D1D5DB" }}
+                      >
+                        {isSelected ? (
+                          <View className="h-2.5 w-2.5 rounded-full bg-teal-600" />
+                        ) : null}
+                      </View>
+                      <Text
+                        className="ml-3 flex-1"
+                        style={{
+                          fontSize: 15,
+                          fontWeight: isSelected ? "700" : "500",
+                          color: isSelected ? "#0F766E" : "#374151",
+                        }}
+                      >
+                        {option}
+                      </Text>
+                      {isSelected ? (
+                        <CheckCircle2 size={18} color="#0D9488" />
+                      ) : null}
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+            {error ? (
+              <Text className="mt-1.5 text-xs text-red-500">{error.message}</Text>
+            ) : null}
+          </View>
+        )}
+      />
 
-      <Input
-        label="School Year *"
-        value={schoolYear}
-        onChangeText={() => undefined}
-        placeholder="2026-2027"
-        editable={false}
-        computed
-        labelHint="Derived from enrollment date"
+      <Controller
+        control={control}
+        name="schoolYear"
+        render={({ field: { value } }) => (
+          <Input
+            label="School Year *"
+            value={value}
+            onChangeText={() => undefined}
+            placeholder="2026-2027"
+            editable={false}
+            computed
+            labelHint="Derived from enrollment date"
+          />
+        )}
       />
     </View>
   );
 }
-

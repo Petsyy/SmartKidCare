@@ -1,41 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StatusBar,
-  Text,
-  TextInput,
-  useWindowDimensions,
+import {KeyboardAvoidingView,Modal,Platform,Pressable,RefreshControl,
+  ScrollView,StatusBar,Text,TextInput,useWindowDimensions,
   View,
 } from "react-native";
+import { SafeAreaView, useSafeAreaInsets,} from "react-native-safe-area-context";
 import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
-import {
-  ChildInfoStepSection,
-  DocumentsStepSection,
-  EnrollmentStartState,
-  EnrollmentTabSwitcher,
-  ParentInfoStepSection,
-  ReviewSubmitStepSection,
+  ChildInfoStepSection,DocumentsStepSection,
+  EnrollmentStartState,EnrollmentTabSwitcher,ParentInfoStepSection,ReviewSubmitStepSection,
   SubmittedRequestsPanel,
 } from "@/src/features/enrollment/components/sections";
 import { StepProgress } from "@/src/features/enrollment/components/ui";
 import { displayDate, formatYmd } from "@/src/features/enrollment/utils";
 import { enrollFieldStyles } from "@/src/features/enrollment/styles";
-import {
-  useEnrollmentForm,
-  useEnrollmentCenters,
-  useSubmittedRequests,
-  useDatePicker,
-  useDocumentPicker,
-  useEnrollmentSubmit,
-} from "@/src/features/enrollment/hooks";
+import { useEnrollmentForm, useEnrollmentCenters, useSubmittedRequests, useDatePicker, useDocumentPicker, useEnrollmentSubmit,} from "@/src/features/enrollment/hooks";
 import type { Step } from "@/src/features/enrollment/types";
 import { getDaycareCenterDisplay } from "@/src/utils/daycare-center-format";
 import { ChevronLeft } from "lucide-react-native";
@@ -110,9 +87,9 @@ export default function EnrollChildScreen() {
     }
   }, [centers.enrollmentCenters, form.daycareCenterId]);
 
-  const nextStep = () => {
-    if (step === 1 && !form.validateStepOne()) return;
-    if (step === 2 && !form.validateStepTwo()) return;
+  const nextStep = async () => {
+    if (step === 1 && !(await form.validateStepOne())) return;
+    if (step === 2 && !(await form.validateStepTwo())) return;
     if (step === 3 && !form.validateStepThree()) return;
     setStep((prev) => (prev < 4 ? ((prev + 1) as Step) : prev));
   };
@@ -139,8 +116,8 @@ export default function EnrollChildScreen() {
 
   const handleSubmitEnrollment = async () => {
     if (
-      !form.validateStepOne() ||
-      !form.validateStepTwo() ||
+      !(await form.validateStepOne()) ||
+      !(await form.validateStepTwo()) ||
       !form.validateStepThree()
     )
       return;
@@ -267,44 +244,21 @@ export default function EnrollChildScreen() {
 
                   {step === 1 && (
                     <ChildInfoStepSection
-                      firstName={form.firstName}
-                      setFirstName={form.setFirstName}
-                      middleName={form.middleName}
-                      setMiddleName={form.setMiddleName}
-                      lastName={form.lastName}
-                      setLastName={form.setLastName}
-                      dateOfBirth={form.dateOfBirth}
+                      control={form.control as any}
                       onPickDateOfBirth={() =>
                         datePicker.openDatePicker("dateOfBirth")
                       }
                       computedChildAge={form.computedChildAge}
-                      gender={form.gender}
-                      setGender={form.setGender}
-                      enrollmentDate={form.enrollmentDate}
                       onPickEnrollmentDate={() =>
                         datePicker.openDatePicker("enrollmentDate")
                       }
                       assignedCenterPrimary={assignedCenterPrimary}
                       assignedCenterSecondary={assignedCenterSecondary}
-                      programType={form.programType}
-                      setProgramType={form.setProgramType}
-                      schoolYear={form.schoolYear}
                     />
                   )}
 
                   {step === 2 && (
-                    <ParentInfoStepSection
-                      parentFirstName={form.parentFirstName}
-                      setParentFirstName={form.setParentFirstName}
-                      parentMiddleName={form.parentMiddleName}
-                      setParentMiddleName={form.setParentMiddleName}
-                      parentLastName={form.parentLastName}
-                      setParentLastName={form.setParentLastName}
-                      parentEmail={form.parentEmail}
-                      setParentEmail={form.setParentEmail}
-                      parentPhone={form.parentPhone}
-                      setParentPhone={form.setParentPhone}
-                    />
+                    <ParentInfoStepSection control={form.control as any} />
                   )}
 
                   {step === 3 && (

@@ -1,10 +1,8 @@
 import { z } from "zod";
 
-// Zod Schemas
 const NAME_REGEX = /^[A-Za-z][A-Za-z .'-]*$/;
 const SCHOOL_YEAR_REGEX = /^(\d{4})-(\d{4})$/;
 
-// Utility function to sanitize phone input
 export const sanitizePhoneInput = (value: string): string => {
   const digitsOnly = String(value || "").replace(/\D/g, "");
   if (digitsOnly.startsWith("63")) {
@@ -198,15 +196,16 @@ export const validateAddChildForParentForm = (
 };
 
 // AddTeacher Schema and Types
-const createAddTeacherSchema = () =>
-  z.object({
-    firstName: nameSchema("First name", 2, 50),
-    middleName: nameSchema("Middle name", 2, 50),
-    lastName: nameSchema("Last name", 2, 50),
-    email: emailSchema("Email"),
-    phone: phoneSchema("Phone"),
-    daycareCenterId: z.string().trim().min(1, "Assigned center is required."),
-  });
+export const addTeacherSchema = z.object({
+  firstName: nameSchema("First name", 2, 50),
+  middleName: nameSchema("Middle name", 2, 50),
+  lastName: nameSchema("Last name", 2, 50),
+  email: emailSchema("Email"),
+  phone: phoneSchema("Phone"),
+  daycareCenterId: z.string().trim().min(1, "Assigned center is required."),
+});
+
+const createAddTeacherSchema = () => addTeacherSchema;
 
 export type AddTeacherFormValues = z.infer<
   ReturnType<typeof createAddTeacherSchema>
@@ -252,3 +251,23 @@ export const validateAddTeacherForm = (form: AddTeacherFormValues) => {
 
   return errors;
 };
+
+// EditChild Schema
+export const editChildSchema = createAddChildForParentSchema().and(
+  z.object({
+    teacherId: z.string().optional().nullable(),
+  })
+);
+
+export type EditChildFormValues = z.infer<typeof editChildSchema>;
+
+// EditUser Schema
+export const editUserSchema = z.object({
+  firstName: nameSchema("First name", 2, 50),
+  middleName: nameSchema("Middle name", 2, 50),
+  lastName: nameSchema("Last name", 2, 50),
+  email: emailSchema("Email"),
+  phone: phoneSchema("Phone"),
+});
+
+export type EditUserFormValues = z.infer<typeof editUserSchema>;

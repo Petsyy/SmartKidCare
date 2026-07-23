@@ -16,7 +16,7 @@ import Layout from "@/components/layout/Layout";
 import { AdminStatCard } from "@/components/admin/AdminStatCard";
 import EditChildModal, {
   type ChildForEdit,
-} from "@/components/modals/child/EditChildModal";
+} from "@/components/modals/edit-child-modal";
 import ChildDetailsModal from "../components/child/ChildDetailsModal";
 import { useChildrenManagement } from "@/hooks/useChildrenManagement";
 import { useContextMenu } from "@/hooks/useContextMenu";

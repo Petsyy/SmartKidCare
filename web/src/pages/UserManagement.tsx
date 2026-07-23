@@ -12,7 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { getUsers, type User } from "@/api/authentication.api";
-import AddTeacherModal from "@/components/modals/user/AddTeacherModal";
+import AddTeacherModal from "@/components/modals/add-teacher-modal";
 import Layout from "@/components/layout/Layout";
 import {
   showErrorModal,
@@ -28,7 +28,7 @@ import {
   type ParentLinkedChildItem,
 } from "@/api/admin.api";
 import Swal from "sweetalert2";
-import EditUserModal from "@/components/modals/user/EditUserModal";
+import EditUserModal from "@/components/modals/edit-user-modal";
 import { formatConfidentialName } from "@/utils/namePrivacy";
 import {
   useMutation,

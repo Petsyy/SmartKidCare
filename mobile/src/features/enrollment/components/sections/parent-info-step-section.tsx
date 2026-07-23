@@ -1,31 +1,13 @@
 import { Users } from "lucide-react-native";
 import { Text, View } from "react-native";
+import { Controller, type Control } from "react-hook-form";
 import { Input } from "@/src/features/enrollment/components/form";
 import { enrollFieldStyles } from "@/src/features/enrollment/styles";
 
-
 export function ParentInfoStepSection({
-  parentFirstName,
-  setParentFirstName,
-  parentMiddleName,
-  setParentMiddleName,
-  parentLastName,
-  setParentLastName,
-  parentEmail,
-  setParentEmail,
-  parentPhone,
-  setParentPhone,
+  control,
 }: {
-  parentFirstName: string;
-  setParentFirstName: (value: string) => void;
-  parentMiddleName: string;
-  setParentMiddleName: (value: string) => void;
-  parentLastName: string;
-  setParentLastName: (value: string) => void;
-  parentEmail: string;
-  setParentEmail: (value: string) => void;
-  parentPhone: string;
-  setParentPhone: (value: string) => void;
+  control: Control<any>;
 }) {
   return (
     <View
@@ -39,57 +21,92 @@ export function ParentInfoStepSection({
       }}
     >
       <View className="mb-2 flex-row items-center gap-3">
-        <View className="h-10 w-10 items-center justify-center rounded-2xl bg-sky-50">
-          <Users size={20} color="#0284C7" />
+        <View className="h-10 w-10 items-center justify-center rounded-2xl bg-teal-50">
+          <Users size={20} color="#0D9488" />
         </View>
         <Text className="text-2xl font-bold text-gray-900">
           Parent Information
         </Text>
       </View>
       <Text className="mt-2 text-lg leading-7 text-gray-600">
-        Provide the parent or guardian details needed for account creation and
-        follow-up updates.
+        Enter the details of the primary contact or guardian.
       </Text>
 
       <View className="mt-4 flex-row gap-3">
-        <Input
-          containerStyle={enrollFieldStyles.inputHalf}
-          label="First Name *"
-          placeholder="e.g. Maria"
-          value={parentFirstName}
-          onChangeText={setParentFirstName}
+        <Controller
+          control={control}
+          name="parentFirstName"
+          render={({ field: { onChange, value }, fieldState: { error } }) => (
+            <Input
+              containerStyle={enrollFieldStyles.inputHalf}
+              label="First Name *"
+              placeholder="e.g. Maria"
+              value={value}
+              onChangeText={onChange}
+              error={error?.message}
+            />
+          )}
         />
-        <Input
-          containerStyle={enrollFieldStyles.inputHalf}
-          label="Last Name *"
-          placeholder="e.g. Dela Cruz"
-          value={parentLastName}
-          onChangeText={setParentLastName}
+        <Controller
+          control={control}
+          name="parentLastName"
+          render={({ field: { onChange, value }, fieldState: { error } }) => (
+            <Input
+              containerStyle={enrollFieldStyles.inputHalf}
+              label="Last Name *"
+              placeholder="e.g. Dela Cruz"
+              value={value}
+              onChangeText={onChange}
+              error={error?.message}
+            />
+          )}
         />
       </View>
 
-      <Input
-        label="Middle Name *"
-        placeholder="e.g. Reyes"
-        value={parentMiddleName}
-        onChangeText={setParentMiddleName}
+      <Controller
+        control={control}
+        name="parentMiddleName"
+        render={({ field: { onChange, value }, fieldState: { error } }) => (
+          <Input
+            label="Middle Name *"
+            placeholder="e.g. Santos"
+            value={value}
+            onChangeText={onChange}
+            error={error?.message}
+          />
+        )}
       />
-      <Input
-        label="Email Address *"
-        placeholder="e.g. parent@email.com"
-        value={parentEmail}
-        onChangeText={setParentEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
+
+      <Controller
+        control={control}
+        name="parentEmail"
+        render={({ field: { onChange, value }, fieldState: { error } }) => (
+          <Input
+            label="Email Address *"
+            placeholder="maria@example.com"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            value={value}
+            onChangeText={onChange}
+            error={error?.message}
+          />
+        )}
       />
-      <Input
-        label="Phone Number *"
-        placeholder="e.g. 09171234567"
-        value={parentPhone}
-        onChangeText={setParentPhone}
-        keyboardType="phone-pad"
+
+      <Controller
+        control={control}
+        name="parentPhone"
+        render={({ field: { onChange, value }, fieldState: { error } }) => (
+          <Input
+            label="Phone Number *"
+            placeholder="0912 345 6789"
+            keyboardType="phone-pad"
+            value={value}
+            onChangeText={onChange}
+            error={error?.message}
+          />
+        )}
       />
     </View>
   );
 }
-
