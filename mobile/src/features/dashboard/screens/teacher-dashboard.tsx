@@ -6,6 +6,9 @@ import {Bell,Calendar, ChevronRight, ClipboardCheck, House, UserCheck, UserX, Us
 import { useTeacherDashboard } from "../hooks/useTeacherDashboard";
 import { StatCard, ActionCard, NoticeItem } from "../components";
 import type { TeacherNotificationFeedItem } from "@/src/api/notifications.api";
+import { useSystemSettings } from "@/src/context/system-settings-context";
+
+import { ScreenShell, ScreenHeader } from "@/src/components/ui";
 
 const NOTICE_TYPE_UI: Record<
   TeacherNotificationFeedItem["type"],
@@ -63,7 +66,8 @@ export default function TeacherDashboardScreen() {
     onRefresh,
   } = dashboardData;
 
-  const centerName = "Child Development Center";
+  const { settings, loading: settingsLoading } = useSystemSettings();
+  const centerName = settingsLoading ? "Loading..." : settings?.schoolName || "Smart KidCare";
 
   // Dynamic date
   const currentDate = new Date();
@@ -90,35 +94,19 @@ export default function TeacherDashboardScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
-        <StatusBar
-          barStyle="light-content"
-          translucent
-          backgroundColor="transparent"
-        />
-
-        {/* Header */}
-        <View
-          style={{ paddingTop: insets.top + 12 }}
-          className="bg-teal-600 px-5 pb-5"
-        >
-          <View className="flex-row items-start justify-between">
-            <View className="flex-1 pr-3">
-              <Text className="text-3xl font-extrabold text-white">
-                Dashboard
-              </Text>
-              <Text className="text-lg text-teal-100 mt-1">
-                Loading your overview...
-              </Text>
-            </View>
+      <ScreenShell>
+        <ScreenHeader
+          title="Dashboard"
+          subtitle="Loading your overview..."
+          rightAction={
             <Pressable
               onPress={() => router.push("/(teacher)/notifications")}
               className="h-11 w-11 items-center justify-center rounded-full bg-white/20"
             >
               <Icons.Bell size={20} color="#FFFFFF" />
             </Pressable>
-          </View>
-        </View>
+          }
+        />
 
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#14B8A6" />
@@ -126,40 +114,24 @@ export default function TeacherDashboardScreen() {
             Loading dashboard...
           </Text>
         </View>
-      </SafeAreaView>
+      </ScreenShell>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
-      <StatusBar
-        barStyle="light-content"
-        translucent
-        backgroundColor="transparent"
-      />
-
-      {/* Header */}
-      <View
-        style={{ paddingTop: insets.top + 12 }}
-        className="bg-teal-600 px-5 pb-5"
-      >
-        <View className="flex-row items-start justify-between">
-          <View className="flex-1 pr-3">
-            <Text className="text-3xl font-extrabold text-white">
-              Today's Overview, {teacherName}
-            </Text>
-            <Text className="text-lg text-teal-100 mt-1">
-              Here's your dashboard for today
-            </Text>
-          </View>
+    <ScreenShell>
+      <ScreenHeader
+        title={`Today's Overview, ${teacherName}`}
+        subtitle="Here's your dashboard for today"
+        rightAction={
           <Pressable
             onPress={() => router.push("/(teacher)/notifications")}
             className="h-11 w-11 items-center justify-center rounded-full bg-white/20"
           >
             <Icons.Bell size={20} color="#FFFFFF" />
           </Pressable>
-        </View>
-      </View>
+        }
+      />
 
       <ScrollView
         className="flex-1"
@@ -317,6 +289,6 @@ export default function TeacherDashboardScreen() {
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </ScreenShell>
   );
 }

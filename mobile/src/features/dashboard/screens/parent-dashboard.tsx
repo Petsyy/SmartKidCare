@@ -1,26 +1,10 @@
 import React, { useMemo } from "react";
 import { useRouter } from "expo-router";
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  StatusBar,
-  RefreshControl,
-  ActivityIndicator,
+import {View,Text,ScrollView,Pressable,StatusBar,RefreshControl,ActivityIndicator,
 } from "react-native";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
-import {
-  Calendar,
-  ChevronRight,
-  ClipboardCheck,
-  House,
-  MessageCircle,
-  UserCheck,
-  UserX,
+import {SafeAreaView,useSafeAreaInsets,} from "react-native-safe-area-context";
+import {Calendar,ChevronRight,ClipboardCheck,House,MessageCircle,UserCheck,
+UserX,
   Users,
   Utensils,
   UtensilsCrossed,
@@ -28,7 +12,9 @@ import {
 } from "lucide-react-native";
 import { useParentDashboard } from "../hooks/useParentDashboard";
 import { StatCard, ActionCard } from "../components";
-import { StatRow, ProgressBar } from "@/src/components/dashboard-overview";
+import { StatRow, ProgressBar } from "@/src/components/ui/dashboard-overview";
+import { ScreenShell, ScreenHeader } from "@/src/components/ui";
+import { useSystemSettings } from "@/src/context/system-settings-context";
 
 const Icons = {
   Users,
@@ -63,7 +49,8 @@ export default function ParentDashboardScreen() {
     onRefresh,
   } = dashboardData;
 
-  const centerName = "Child Development Center";
+  const { settings, loading: settingsLoading } = useSystemSettings();
+  const centerName = settingsLoading ? "Loading..." : settings?.schoolName || "Smart KidCare";
 
   // Dynamic date
   const currentDate = new Date();
@@ -104,42 +91,27 @@ export default function ParentDashboardScreen() {
   const childGender = selectedChild?.gender ? selectedChild.gender : "-";
   const enrolledText = selectedChild?.enrollmentDate
     ? (() => {
-      const parts = new Intl.DateTimeFormat("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-        timeZone: "Asia/Manila",
-      }).formatToParts(new Date(selectedChild.enrollmentDate));
+        const parts = new Intl.DateTimeFormat("en-US", {
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+          timeZone: "Asia/Manila",
+        }).formatToParts(new Date(selectedChild.enrollmentDate));
 
-      const month = parts.find((part) => part.type === "month")?.value ?? "";
-      const day = parts.find((part) => part.type === "day")?.value ?? "";
-      const year = parts.find((part) => part.type === "year")?.value ?? "";
+        const month = parts.find((part) => part.type === "month")?.value ?? "";
+        const day = parts.find((part) => part.type === "day")?.value ?? "";
+        const year = parts.find((part) => part.type === "year")?.value ?? "";
 
-      return `${month}, ${day} ${year}`.trim();
-    })()
+        return `${month}, ${day} ${year}`.trim();
+      })()
     : "-";
 
   const totalChildren = useMemo(() => children.length, [children.length]);
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
-        <StatusBar
-          barStyle="light-content"
-          translucent
-          backgroundColor="transparent"
-        />
-
-        {/* Header */}
-        <View
-          style={{ paddingTop: insets.top + 12 }}
-          className="bg-teal-600 px-5 pb-5"
-        >
-          <Text className="text-3xl font-extrabold text-white">Dashboard</Text>
-          <Text className="text-lg text-teal-100 mt-1">
-            Loading your overview...
-          </Text>
-        </View>
+      <ScreenShell>
+        <ScreenHeader title="Dashboard" subtitle="Loading your overview..." />
 
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#14B8A6" />
@@ -147,27 +119,14 @@ export default function ParentDashboardScreen() {
             Loading dashboard...
           </Text>
         </View>
-      </SafeAreaView>
+      </ScreenShell>
     );
   }
 
   if (error || !selectedChild) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
-        <StatusBar
-          barStyle="light-content"
-          translucent
-          backgroundColor="transparent"
-        />
-
-        {/* Header */}
-        <View
-          style={{ paddingTop: insets.top + 12 }}
-          className="bg-teal-600 px-5 pb-5"
-        >
-          <Text className="text-3xl font-extrabold text-white">Dashboard</Text>
-          <Text className="text-lg text-teal-100 mt-1">Parent Overview</Text>
-        </View>
+      <ScreenShell>
+        <ScreenHeader title="Dashboard" subtitle="Parent Overview" />
 
         <View className="flex-1 items-center justify-center px-6">
           <Icons.Users size={64} color="#D1D5DB" />
@@ -180,30 +139,16 @@ export default function ParentDashboardScreen() {
               : "No children are linked to your account yet."}
           </Text>
         </View>
-      </SafeAreaView>
+      </ScreenShell>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
-      <StatusBar
-        barStyle="light-content"
-        translucent
-        backgroundColor="transparent"
+    <ScreenShell>
+      <ScreenHeader
+        title="Today's Overview"
+        subtitle="Here's your child's dashboard"
       />
-
-      {/* Header */}
-      <View
-        style={{ paddingTop: insets.top + 12 }}
-        className="bg-teal-600 px-5 pb-5"
-      >
-        <Text className="text-3xl font-extrabold text-white">
-          Today&apos;s Overview
-        </Text>
-        <Text className="text-lg text-teal-100 mt-1">
-          Here&apos;s your child&apos;s dashboard
-        </Text>
-      </View>
 
       <ScrollView
         className="flex-1"
@@ -387,10 +332,10 @@ export default function ParentDashboardScreen() {
               <Text className="text-teal-600 font-semibold">
                 {stats.mealsCompleted + stats.mealsMissed > 0
                   ? Math.round(
-                    (stats.mealsCompleted /
-                      (stats.mealsCompleted + stats.mealsMissed)) *
-                    100
-                  )
+                      (stats.mealsCompleted /
+                        (stats.mealsCompleted + stats.mealsMissed)) *
+                        100,
+                    )
                   : 0}
                 %
               </Text>
@@ -400,10 +345,10 @@ export default function ParentDashboardScreen() {
                 percent={
                   stats.mealsCompleted + stats.mealsMissed > 0
                     ? Math.round(
-                      (stats.mealsCompleted /
-                        (stats.mealsCompleted + stats.mealsMissed)) *
-                      100
-                    )
+                        (stats.mealsCompleted /
+                          (stats.mealsCompleted + stats.mealsMissed)) *
+                          100,
+                      )
                     : 0
                 }
               />
@@ -476,6 +421,6 @@ export default function ParentDashboardScreen() {
       >
         <Icons.MessageCircle size={28} color="white" />
       </Pressable>
-    </SafeAreaView>
+    </ScreenShell>
   );
 }

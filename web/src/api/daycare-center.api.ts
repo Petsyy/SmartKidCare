@@ -7,6 +7,10 @@ export interface DaycareCenter {
   code: string;
   address?: string;
   isActive: boolean;
+  assignedCDW?: string;
+  childrenCount?: number;
+  attendanceToday?: { present: number; total: number };
+  lastActivity?: string;
   createdAt?: string;
   updatedAt?: string;
 }

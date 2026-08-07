@@ -1,15 +1,21 @@
 import { useMemo } from "react";
-import { Text, View, ActivityIndicator, ScrollView, StatusBar, TextInput, Pressable } from "react-native";
-import { SafeAreaView, useSafeAreaInsets, } from "react-native-safe-area-context";
+import {
+  Text,
+  View,
+  ActivityIndicator,
+  ScrollView,
+  Pressable,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { getChildren } from "@/src/api/teacher.api";
 import { getTodayAttendance, getTodayFeeding } from "@/src/api/records.api";
 import { useAuth } from "@/src/hooks/use-auth";
-import ChildCard from "@/src/components/child-card";
+import ChildCard from "@/src/components/ui/child-card";
 import { Search, Users, AlertCircle } from "lucide-react-native";
 import { useQuery } from "@tanstack/react-query";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
-import { useTeacherUiStore } from "@/src/features/teacher/stores/teacher-ui.store";
+import { useTeacherUi } from "@/src/context/teacher-ui-context";
+import { ScreenShell, ScreenHeader, SearchBar } from "@/src/components/ui";
 
 interface ChildStatus {
   attendance: "Present" | "Absent" | "Not Recorded";
@@ -18,12 +24,13 @@ interface ChildStatus {
 }
 
 export default function ChildScreen() {
-  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { isAuthenticated } = useAuth();
 
-  const { childrenSearchQuery: searchQuery, setChildrenSearchQuery: setSearchQuery } =
-    useTeacherUiStore();
+  const {
+    childrenSearchQuery: searchQuery,
+    setChildrenSearchQuery: setSearchQuery,
+  } = useTeacherUi();
   const {
     data,
     isLoading: loading,
@@ -99,30 +106,20 @@ export default function ChildScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
-        <StatusBar
-          barStyle="light-content"
-          translucent
-          backgroundColor="transparent"
-        />
+      <ScreenShell withKeyboardAvoiding={false}>
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#14B8A6" />
           <Text className="mt-4 text-lg text-gray-600 font-medium">
             Loading children...
           </Text>
         </View>
-      </SafeAreaView>
+      </ScreenShell>
     );
   }
 
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
-        <StatusBar
-          barStyle="light-content"
-          translucent
-          backgroundColor="transparent"
-        />
+      <ScreenShell withKeyboardAvoiding={false}>
         <View className="flex-1 items-center justify-center px-6">
           <View className="w-24 h-24 rounded-full bg-red-100 items-center justify-center mb-6">
             <AlertCircle size={48} color="#EF4444" />
@@ -149,55 +146,25 @@ export default function ChildScreen() {
             <Text className="text-white font-bold text-base">Try Again</Text>
           </Pressable>
         </View>
-      </SafeAreaView>
+      </ScreenShell>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
-      <StatusBar
-        barStyle="light-content"
-        translucent
-        backgroundColor="transparent"
+    <ScreenShell>
+      <ScreenHeader
+        title="Children List"
+        subtitle={`${children.length} Enrolled Children`}
       />
 
-      <View
-        style={{ paddingTop: insets.top + 12 }}
-        className="bg-teal-600 px-5 pb-5"
-      >
-        <View className="flex-row items-start">
-          <View className="flex-1">
-            <Text className="text-3xl font-extrabold text-white">
-              Children List
-            </Text>
-            <Text className="text-lg text-teal-100 mt-1">
-              {children.length} Enrolled Children
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      <View className="px-5 pt-4 pb-2 bg-gray-50">
-        <View
-          className="flex-row items-center bg-white rounded-2xl px-4 py-3.5 border border-gray-200"
-          style={{
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.05,
-            shadowRadius: 6,
-            elevation: 2,
-          }}
-        >
-          <Search size={24} color="#9CA3AF" />
-          <TextInput
-            className="flex-1 ml-3 text-lg font-bold text-gray-800"
-            placeholder="Search by name or student ID..."
-            placeholderTextColor="#9CA3AF"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-        </View>
-      </View>
+      <SearchBar
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+        placeholder="Search by name or student ID..."
+        containerClassName="px-5 pt-4 pb-2 bg-gray-50"
+        iconSize={24}
+        iconColor="#9CA3AF"
+      />
 
       <ScrollView
         className="flex-1"
@@ -266,6 +233,6 @@ export default function ChildScreen() {
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </ScreenShell>
   );
 }

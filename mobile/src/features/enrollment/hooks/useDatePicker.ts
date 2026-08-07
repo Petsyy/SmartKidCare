@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Alert, Platform } from "react-native";
-import { formatYmd, parseYmd, displayDate } from "@/src/features/enrollment/utils";
+import { formatYmd, parseYmd, displayDate } from "@/src/features/enrollment/utils/enrollment-utils";
 import type { DateFieldKey } from "@/src/features/enrollment/types";
 
 type DatePickerNativeModule = typeof import("@react-native-community/datetimepicker");

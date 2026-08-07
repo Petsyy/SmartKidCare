@@ -1,286 +1,29 @@
-import { useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import { useForm } from "react-hook-form";
 import { UserIcon, Lock, AlertCircle } from "lucide-react";
-import { API_BASE } from "@/components/config/config.api";
-import { useMutation } from "@tanstack/react-query";
-import { useAdminLoginStore } from "@/stores/admin-login.store";
-
-type ApiResponse = {
-  status: number;
-  data: any;
-};
-
-type AdminLoginFormValues = {
-  username: string;
-  password: string;
-  otp: string;
-};
-
-const parseApiResponse = async (response: Response): Promise<ApiResponse> => {
-  const raw = await response.text();
-  let data: any = null;
-
-  try {
-    data = raw ? JSON.parse(raw) : null;
-  } catch {
-    data = null;
-  }
-
-  return {
-    status: response.status,
-    data,
-  };
-};
+import { useAdminLogin } from "@/features/auth/hooks/useAdminLogin";
+import { useSystemSettings } from "@/context/SystemSettingsContext";
 
 export default function AdminLogin() {
-  const navigate = useNavigate();
+  const { settings } = useSystemSettings();
   const {
     mfaToken,
     mfaEmail,
     info,
     error,
-    setMfaToken,
-    setMfaEmail,
-    setInfo,
-    setError,
-    resetMessages,
-  } = useAdminLoginStore();
-  const { register, handleSubmit, watch, setValue } =
-    useForm<AdminLoginFormValues>({
-      defaultValues: {
-        username: "",
-        password: "",
-        otp: "",
-      },
-    });
-  const otpInputRefs = useRef<Array<HTMLInputElement | null>>([]);
-  const otp = watch("otp");
-  const loginMutation = useMutation({
-    mutationFn: async (variables: { username: string; password: string }) => {
-      const response = await fetch(`${API_BASE}/auth/admin/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(variables),
-      });
-      const { status, data } = await parseApiResponse(response);
-      if (!response.ok) {
-        throw new Error(
-          data?.message || data?.error || `Login failed (HTTP ${status})`,
-        );
-      }
-      return data;
-    },
-  });
-  const verifyMutation = useMutation({
-    mutationFn: async (variables: { mfaToken: string; otp: string }) => {
-      const response = await fetch(`${API_BASE}/auth/admin/mfa/verify`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(variables),
-      });
-      const { status, data } = await parseApiResponse(response);
-      if (!response.ok) {
-        throw new Error(
-          data?.message ||
-            data?.error ||
-            `OTP verification failed (HTTP ${status})`,
-        );
-      }
-      return data;
-    },
-  });
-  const resendMutation = useMutation({
-    mutationFn: async (variables: { mfaToken: string }) => {
-      const response = await fetch(`${API_BASE}/auth/admin/mfa/resend`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(variables),
-      });
-      const { status, data } = await parseApiResponse(response);
-      if (!response.ok) {
-        throw new Error(
-          data?.message ||
-            data?.error ||
-            `Failed to resend OTP (HTTP ${status})`,
-        );
-      }
-      return data;
-    },
-  });
-  const isLoading = loginMutation.isPending || verifyMutation.isPending;
-  const isResendingOtp = resendMutation.isPending;
+    isLoading,
+    isResendingOtp,
+    otp,
+    otpInputRefs,
+    register,
+    handleSubmit,
+    onSubmit,
+    handleOtpDigitChange,
+    handleOtpKeyDown,
+    handleOtpPaste,
+    handleResendOtp,
+  } = useAdminLogin();
 
   const inputClassName =
     "w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-500 dark:disabled:bg-slate-900";
-
-  const getOtpDigits = () =>
-    Array.from({ length: 6 }, (_, index) => otp[index] ?? "");
-
-  const updateOtpWithDigits = (nextDigits: string[]) => {
-    setValue("otp", nextDigits.join("").replace(/\D/g, "").slice(0, 6), {
-      shouldDirty: true,
-    });
-  };
-
-  const handleOtpDigitChange = (index: number, rawValue: string) => {
-    const cleaned = rawValue.replace(/\D/g, "");
-    const nextDigits = getOtpDigits();
-
-    if (!cleaned) {
-      nextDigits[index] = "";
-      updateOtpWithDigits(nextDigits);
-      return;
-    }
-
-    if (cleaned.length === 1) {
-      nextDigits[index] = cleaned;
-      updateOtpWithDigits(nextDigits);
-      if (index < 5) {
-        otpInputRefs.current[index + 1]?.focus();
-      }
-      return;
-    }
-
-    let cursor = index;
-    for (const digit of cleaned.slice(0, 6 - index)) {
-      nextDigits[cursor] = digit;
-      cursor += 1;
-    }
-    updateOtpWithDigits(nextDigits);
-    otpInputRefs.current[Math.min(cursor, 5)]?.focus();
-  };
-
-  const handleOtpKeyDown = (
-    index: number,
-    event: React.KeyboardEvent<HTMLInputElement>,
-  ) => {
-    if (event.key === "Backspace") {
-      const nextDigits = getOtpDigits();
-      if (nextDigits[index]) {
-        event.preventDefault();
-        nextDigits[index] = "";
-        updateOtpWithDigits(nextDigits);
-        return;
-      }
-      if (index > 0) {
-        event.preventDefault();
-        nextDigits[index - 1] = "";
-        updateOtpWithDigits(nextDigits);
-        otpInputRefs.current[index - 1]?.focus();
-      }
-      return;
-    }
-
-    if (event.key === "ArrowLeft" && index > 0) {
-      event.preventDefault();
-      otpInputRefs.current[index - 1]?.focus();
-      return;
-    }
-
-    if (event.key === "ArrowRight" && index < 5) {
-      event.preventDefault();
-      otpInputRefs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleOtpPaste = (
-    index: number,
-    event: React.ClipboardEvent<HTMLInputElement>,
-  ) => {
-    const pasted = event.clipboardData.getData("text").replace(/\D/g, "");
-    if (!pasted) {
-      return;
-    }
-
-    event.preventDefault();
-    const nextDigits = getOtpDigits();
-    let cursor = index;
-
-    for (const digit of pasted.slice(0, 6 - index)) {
-      nextDigits[cursor] = digit;
-      cursor += 1;
-    }
-
-    updateOtpWithDigits(nextDigits);
-    otpInputRefs.current[Math.min(cursor, 5)]?.focus();
-  };
-
-  const handleResendOtp = async () => {
-    if (!mfaToken || isResendingOtp) {
-      return;
-    }
-
-    resetMessages();
-
-    try {
-      const data = await resendMutation.mutateAsync({ mfaToken });
-
-      if (data?.mfaToken) {
-        setMfaToken(data.mfaToken);
-      }
-      if (data?.email) {
-        setMfaEmail(data.email);
-      }
-
-      setInfo(data?.message || "A new OTP has been sent.");
-    } catch (err: any) {
-      setError(err.message || "Failed to resend OTP.");
-    }
-  };
-
-  const onSubmit = async (values: AdminLoginFormValues) => {
-    resetMessages();
-
-    try {
-      if (!mfaToken) {
-        const username = values.username.trim();
-        const password = values.password;
-        if (!username || !password) {
-          throw new Error("Please fill in all fields");
-        }
-
-        const data = await loginMutation.mutateAsync({ username, password });
-
-        if (data?.requiresMfa) {
-          if (!data?.mfaToken) {
-            throw new Error("MFA challenge is missing. Please try again.");
-          }
-
-          setMfaToken(data.mfaToken);
-          setMfaEmail(data.email || null);
-          setValue("otp", "");
-          setInfo(
-            data?.message || "A verification code was sent to your email.",
-          );
-          return;
-        }
-
-        navigate("/dashboard");
-        return;
-      }
-
-      const otp = values.otp.trim();
-      if (!otp) {
-        throw new Error("Please enter the verification code.");
-      }
-
-      await verifyMutation.mutateAsync({ mfaToken, otp });
-
-      navigate("/dashboard");
-    } catch (err: any) {
-      setError(err.message || "Login failed. Please try again.");
-    }
-  };
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-slate-100 dark:bg-linear-to-br dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
@@ -310,7 +53,7 @@ export default function AdminLogin() {
             <div className="border-b border-slate-200 px-8 py-7 dark:border-slate-800 md:px-10">
               <div>
                 <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-slate-100">
-                  Smart KidCare
+                  {settings?.schoolName || "Smart KidCare"}
                 </h1>
                 <p className="text-sm text-slate-500 dark:text-slate-400">Admin Portal</p>
               </div>
@@ -394,7 +137,7 @@ export default function AdminLogin() {
                       </label>
                       <button
                         type="button"
-                        onClick={handleResendOtp}
+                        onClick={() => void handleResendOtp()}
                         disabled={isLoading || isResendingOtp}
                         className="cursor-pointer text-sm font-medium text-teal-700 transition hover:text-teal-800 disabled:cursor-not-allowed disabled:text-teal-400 dark:text-teal-300 dark:hover:text-teal-200 dark:disabled:text-teal-700"
                       >
@@ -417,13 +160,12 @@ export default function AdminLogin() {
                           onPaste={(event) => handleOtpPaste(index, event)}
                           inputMode="numeric"
                           maxLength={1}
-                        className="h-12 w-12 rounded-xl border border-slate-300 bg-white text-center text-lg font-semibold text-slate-900 shadow-sm transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100 dark:disabled:bg-slate-900"
+                          className="h-12 w-12 rounded-xl border border-slate-300 bg-white text-center text-lg font-semibold text-slate-900 shadow-sm transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100 dark:disabled:bg-slate-900"
                           disabled={isLoading}
                           aria-label={`OTP digit ${index + 1}`}
                         />
                       ))}
                     </div>
-                    <input type="hidden" {...register("otp")} />
                     <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
                       Check your inbox and enter the one-time code to continue.
                     </p>
@@ -451,7 +193,7 @@ export default function AdminLogin() {
 
             <div className="border-t border-slate-200 bg-slate-50 px-8 py-5 dark:border-slate-800 dark:bg-slate-900 md:px-10">
               <p className="text-center text-xs text-slate-500 dark:text-slate-400">
-                Copyright 2026 Smart KidCare. All rights reserved.
+                &copy; 2026 {settings?.schoolName || "Smart KidCare"}. All rights reserved.
               </p>
             </div>
           </section>

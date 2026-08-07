@@ -1,7 +1,7 @@
 import { CheckCircle2, User } from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
 import { Controller, type Control } from "react-hook-form";
-import { DateField, Input } from "@/src/features/enrollment/components/form";
+import {FormDateField,FormInput,FormSelectField,Input} from "@/src/features/enrollment/components/form";
 import { PROGRAM_TYPES } from "@/src/features/enrollment/constants";
 import { enrollFieldStyles } from "@/src/features/enrollment/styles";
 import type { EnrollmentFormValues } from "@/src/features/enrollment/hooks/useEnrollmentForm";
@@ -13,6 +13,8 @@ export function ChildInfoStepSection({
   onPickEnrollmentDate,
   assignedCenterPrimary,
   assignedCenterSecondary,
+  computedBmi,
+  computedNutritionalStatus,
 }: {
   control: Control<any>;
   onPickDateOfBirth: () => void;
@@ -20,6 +22,8 @@ export function ChildInfoStepSection({
   onPickEnrollmentDate: () => void;
   assignedCenterPrimary: string;
   assignedCenterSecondary: string;
+  computedBmi: number | null;
+  computedNutritionalStatus: string | null;
 }) {
   return (
     <View
@@ -46,61 +50,42 @@ export function ChildInfoStepSection({
       </Text>
 
       <View className="mt-4 flex-row gap-3">
-        <Controller
+        <FormInput
           control={control}
           name="firstName"
-          render={({ field: { onChange, value }, fieldState: { error } }) => (
-            <Input
-              containerStyle={enrollFieldStyles.inputHalf}
-              label="First Name *"
-              placeholder="e.g. Juan"
-              value={value}
-              onChangeText={onChange}
-              error={error?.message}
-            />
-          )}
+          containerStyle={enrollFieldStyles.inputHalf}
+          label="First Name *"
+          placeholder="e.g. Juan"
         />
-        <Controller
+        <FormInput
           control={control}
           name="lastName"
-          render={({ field: { onChange, value }, fieldState: { error } }) => (
-            <Input
-              containerStyle={enrollFieldStyles.inputHalf}
-              label="Last Name *"
-              placeholder="e.g. Dela Cruz"
-              value={value}
-              onChangeText={onChange}
-              error={error?.message}
-            />
-          )}
+          containerStyle={enrollFieldStyles.inputHalf}
+          label="Last Name *"
+          placeholder="e.g. Dela Cruz"
         />
       </View>
 
-      <Controller
+      <FormInput
         control={control}
         name="middleName"
-        render={({ field: { onChange, value }, fieldState: { error } }) => (
-          <Input
-            label="Middle Name *"
-            placeholder="e.g. Santos"
-            value={value}
-            onChangeText={onChange}
-            error={error?.message}
-          />
-        )}
+        label="Middle Name *"
+        placeholder="e.g. Santos"
       />
 
-      <Controller
+      <FormDateField
         control={control}
         name="dateOfBirth"
-        render={({ field: { value }, fieldState: { error } }) => (
-          <DateField
-            label="Date of Birth *"
-            value={value}
-            onPress={onPickDateOfBirth}
-            error={error?.message}
-          />
-        )}
+        label="Date of Birth *"
+        onPress={onPickDateOfBirth}
+      />
+
+      <FormInput
+        control={control}
+        name="homeAddress"
+        label="Complete Home Address *"
+        placeholder="House no., street, barangay, city"
+        autoCapitalize="words"
       />
 
       <Input
@@ -119,9 +104,7 @@ export function ChildInfoStepSection({
         name="gender"
         render={({ field: { onChange, value }, fieldState: { error } }) => (
           <View className="mb-4">
-            <Text
-              className="text-[13px] font-bold tracking-[0.6px] uppercase text-[#374151] mb-[10px]"
-            >
+            <Text className="text-[13px] font-bold tracking-[0.6px] uppercase text-[#374151] mb-[10px]">
               Gender <Text className="text-[#EF4444]">*</Text>
             </Text>
             <View className="flex-row gap-3">
@@ -133,13 +116,23 @@ export function ChildInfoStepSection({
                     onPress={() => onChange(g)}
                     className="flex-1 flex-row items-center rounded-2xl border-2 px-4 py-3"
                     style={{
-                      borderColor: isSelected ? "#0D9488" : error ? "#EF4444" : "#E5E7EB",
-                      backgroundColor: isSelected ? "#F0FDFA" : error ? "#FEF2F2" : "#FFFFFF",
+                      borderColor: isSelected
+                        ? "#0D9488"
+                        : error
+                          ? "#EF4444"
+                          : "#E5E7EB",
+                      backgroundColor: isSelected
+                        ? "#F0FDFA"
+                        : error
+                          ? "#FEF2F2"
+                          : "#FFFFFF",
                     }}
                   >
                     <View
                       className="h-5 w-5 items-center justify-center rounded-full border-2"
-                      style={{ borderColor: isSelected ? "#0D9488" : "#D1D5DB" }}
+                      style={{
+                        borderColor: isSelected ? "#0D9488" : "#D1D5DB",
+                      }}
                     >
                       {isSelected ? (
                         <View className="h-2.5 w-2.5 rounded-full bg-teal-600" />
@@ -154,37 +147,74 @@ export function ChildInfoStepSection({
                     >
                       {g}
                     </Text>
-                    {isSelected ? <CheckCircle2 size={18} color="#0D9488" /> : null}
+                    {isSelected ? (
+                      <CheckCircle2 size={18} color="#0D9488" />
+                    ) : null}
                   </Pressable>
                 );
               })}
             </View>
             {error ? (
-              <Text className="mt-1.5 text-xs text-red-500">{error.message}</Text>
+              <Text className="mt-1.5 text-xs text-red-500">
+                {error.message}
+              </Text>
             ) : null}
           </View>
         )}
       />
 
-      <Controller
+      {/* Weight & Height */}
+      <View className="mb-4 flex-row gap-3">
+        <FormInput
+          control={control}
+          name="weight"
+          containerStyle={enrollFieldStyles.inputHalf}
+          label="Weight (kg) *"
+          placeholder="e.g. 15.5"
+          keyboardType="decimal-pad"
+        />
+        <FormInput
+          control={control}
+          name="height"
+          containerStyle={enrollFieldStyles.inputHalf}
+          label="Height (cm) *"
+          placeholder="e.g. 105"
+          keyboardType="decimal-pad"
+        />
+      </View>
+
+      <View className="mb-4 flex-row gap-3">
+        <Input
+          containerStyle={enrollFieldStyles.inputHalf}
+          label="BMI"
+          value={computedBmi !== null ? String(computedBmi) : ""}
+          onChangeText={() => undefined}
+          placeholder="Auto-computed"
+          editable={false}
+          computed
+        />
+        <Input
+          containerStyle={enrollFieldStyles.inputHalf}
+          label="Status"
+          value={computedNutritionalStatus || ""}
+          onChangeText={() => undefined}
+          placeholder="Auto-classified"
+          editable={false}
+          computed
+        />
+      </View>
+
+      <FormDateField
         control={control}
         name="enrollmentDate"
-        render={({ field: { value }, fieldState: { error } }) => (
-          <DateField
-            label="Enrollment Date *"
-            value={value}
-            onPress={onPickEnrollmentDate}
-            error={error?.message}
-          />
-        )}
+        label="Enrollment Date *"
+        onPress={onPickEnrollmentDate}
       />
 
       <View style={enrollFieldStyles.inputContainer}>
         <View className="mb-2.5 flex-row flex-wrap items-start justify-between gap-2">
           <View className="flex-1">
-            <Text
-              className="text-[13px] font-bold tracking-[0.6px] uppercase text-[#374151]"
-            >
+            <Text className="text-[13px] font-bold tracking-[0.6px] uppercase text-[#374151]">
               Assigned Center <Text className="text-[#EF4444]">*</Text>
             </Text>
           </View>
@@ -203,7 +233,8 @@ export function ChildInfoStepSection({
                 style={[
                   enrollFieldStyles.textInput,
                   enrollFieldStyles.textInputReadOnly,
-                  { justifyContent: "center", borderColor: error ? "#EF4444" : "#99F6E4", backgroundColor: error ? "#FEF2F2" : "#F0FDFA" },
+                  enrollFieldStyles.assignedCenterContainer,
+                  error && enrollFieldStyles.textInputError,
                 ]}
               >
                 <Text className="text-base font-semibold text-teal-900">
@@ -216,7 +247,9 @@ export function ChildInfoStepSection({
                 ) : null}
               </View>
               {error ? (
-                <Text className="mt-1.5 mb-2 text-xs text-red-500">{error.message}</Text>
+                <Text className="mt-1.5 mb-2 text-xs text-red-500">
+                  {error.message}
+                </Text>
               ) : null}
             </>
           )}
@@ -232,9 +265,7 @@ export function ChildInfoStepSection({
         name="programType"
         render={({ field: { onChange, value }, fieldState: { error } }) => (
           <View className="mb-4">
-            <Text
-              className="text-[13px] font-bold tracking-[0.6px] uppercase text-[#374151] mb-[10px]"
-            >
+            <Text className="text-[13px] font-bold tracking-[0.6px] uppercase text-[#374151] mb-[10px]">
               Program Type <Text className="text-[#EF4444]">*</Text>
             </Text>
             <View className="gap-2">
@@ -244,16 +275,23 @@ export function ChildInfoStepSection({
                   <Pressable
                     key={option}
                     onPress={() => onChange(option)}
-                    className="rounded-2xl border-2 px-4 py-3"
-                    style={{
-                      borderColor: isSelected ? "#0D9488" : error ? "#EF4444" : "#E5E7EB",
-                      backgroundColor: isSelected ? "#F0FDFA" : error ? "#FEF2F2" : "#FFFFFF",
-                    }}
+                    style={[
+                      enrollFieldStyles.programOptionCard,
+                      isSelected
+                        ? enrollFieldStyles.programOptionCardSelected
+                        : error
+                          ? enrollFieldStyles.programOptionCardError
+                          : enrollFieldStyles.programOptionCardUnselected,
+                    ]}
                   >
                     <View className="flex-row items-center">
                       <View
-                        className="h-5 w-5 items-center justify-center rounded-full border-2"
-                        style={{ borderColor: isSelected ? "#0D9488" : "#D1D5DB" }}
+                        style={[
+                          enrollFieldStyles.programOptionRadio,
+                          isSelected
+                            ? enrollFieldStyles.programOptionRadioSelected
+                            : enrollFieldStyles.programOptionRadioUnselected,
+                        ]}
                       >
                         {isSelected ? (
                           <View className="h-2.5 w-2.5 rounded-full bg-teal-600" />
@@ -261,11 +299,12 @@ export function ChildInfoStepSection({
                       </View>
                       <Text
                         className="ml-3 flex-1"
-                        style={{
-                          fontSize: 15,
-                          fontWeight: isSelected ? "700" : "500",
-                          color: isSelected ? "#0F766E" : "#374151",
-                        }}
+                        style={[
+                          enrollFieldStyles.programOptionText,
+                          isSelected
+                            ? enrollFieldStyles.programOptionTextSelected
+                            : enrollFieldStyles.programOptionTextUnselected,
+                        ]}
                       >
                         {option}
                       </Text>
@@ -278,26 +317,22 @@ export function ChildInfoStepSection({
               })}
             </View>
             {error ? (
-              <Text className="mt-1.5 text-xs text-red-500">{error.message}</Text>
+              <Text className="mt-1.5 text-xs text-red-500">
+                {error.message}
+              </Text>
             ) : null}
           </View>
         )}
       />
 
-      <Controller
-        control={control}
-        name="schoolYear"
-        render={({ field: { value } }) => (
-          <Input
-            label="School Year *"
-            value={value}
-            onChangeText={() => undefined}
-            placeholder="2026-2027"
-            editable={false}
-            computed
-            labelHint="Derived from enrollment date"
-          />
-        )}
+      <Input
+        label="School Year *"
+        value={control._formValues?.schoolYear || ""}
+        onChangeText={() => undefined}
+        placeholder="2026-2027"
+        editable={false}
+        computed
+        labelHint="Derived from enrollment date"
       />
     </View>
   );

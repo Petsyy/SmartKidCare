@@ -3,6 +3,7 @@ import { Stack } from "expo-router";
 import { ActivityIndicator, LogBox, StyleSheet, View } from "react-native";
 import { AuthProvider } from "@/src/context/auth-context";
 import { useAuth } from "@/src/hooks/use-auth";
+import { SystemSettingsProvider } from "@/src/context/system-settings-context";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import {
   configureReanimatedLogger,
@@ -11,7 +12,7 @@ import {
 import { useEffect } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/src/lib/query-client";
-import { ErrorBoundary } from "@/src/components/error-boundary";
+import { ErrorBoundary } from "@/src/components/ui/error-boundary";
 
 configureReanimatedLogger({
   level: ReanimatedLogLevel.warn,
@@ -50,7 +51,9 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <SafeAreaProvider>
           <AuthProvider>
-            <LayoutContent />
+            <SystemSettingsProvider>
+              <LayoutContent />
+            </SystemSettingsProvider>
           </AuthProvider>
         </SafeAreaProvider>
       </QueryClientProvider>

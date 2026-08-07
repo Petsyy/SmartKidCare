@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/src/hooks/use-auth";
 import { getChildren } from "@/src/api/teacher.api";
 import {
@@ -15,9 +16,8 @@ import {
   getManilaDateKey,
   isValidManilaDateKey,
 } from "@/src/utils/manila-date";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
-import { useTeacherUiStore } from "@/src/features/teacher/stores/teacher-ui.store";
+import { useTeacherUi } from "@/src/context/teacher-ui-context";
 
 const foodMenuOptions = [
   "Sinigang, Adobo",
@@ -33,6 +33,25 @@ const foodMenuOptions = [
   "Other",
 ];
 
+const buildSnapshot = (
+  childIds: string[],
+  foodServed: string,
+  feedingStatus: Record<string, boolean>,
+  feedingNotes: Record<string, string>,
+) =>
+  JSON.stringify({
+    childIds: [...childIds].sort(),
+    foodServed: foodServed.trim(),
+    feedingStatus: childIds.reduce<Record<string, boolean>>((acc, childId) => {
+      acc[childId] = Boolean(feedingStatus[childId]);
+      return acc;
+    }, {}),
+    feedingNotes: childIds.reduce<Record<string, string>>((acc, childId) => {
+      acc[childId] = String(feedingNotes[childId] ?? "").trim();
+      return acc;
+    }, {}),
+  });
+
 export const useTeacherFeeding = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -41,20 +60,27 @@ export const useTeacherFeeding = () => {
 
   const [children, setChildren] = useState<Child[]>([]);
   const [feedingStatus, setFeedingStatus] = useState<Record<string, boolean>>({});
+  const [feedingNotes, setFeedingNotes] = useState<Record<string, string>>({});
   const [foodServed, setFoodServed] = useState("");
   const [showMenuModal, setShowMenuModal] = useState(false);
   const [isReadOnly, setIsReadOnly] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { feedingSearchQuery: searchQuery, setFeedingSearchQuery: setSearchQuery } =
-    useTeacherUiStore();
+  const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null);
+  const {
+    feedingSearchQuery: searchQuery,
+    setFeedingSearchQuery: setSearchQuery,
+  } = useTeacherUi();
 
   const presentChildrenIds = useMemo(() => {
     try {
-      return params.presentChildren ? (JSON.parse(params.presentChildren as string) as string[]) : [];
+      return params.presentChildren
+        ? (JSON.parse(params.presentChildren as string) as string[])
+        : [];
     } catch {
       return [];
     }
   }, [params.presentChildren]);
+
   const presentChildrenIdsKey = useMemo(
     () => [...presentChildrenIds].sort().join(","),
     [presentChildrenIds],
@@ -68,29 +94,59 @@ export const useTeacherFeeding = () => {
   const attendanceDateLabel = useMemo(() => {
     const explicitLabel = String(params.attendanceDateLabel || "").trim();
     if (explicitLabel) return explicitLabel;
+
     const legacyDateLabel = String(params.attendanceDate || "").trim();
     if (legacyDateLabel) {
       const parsedLegacy = new Date(legacyDateLabel);
-      if (!Number.isNaN(parsedLegacy.getTime())) return formatManilaDateLabel(parsedLegacy);
+      if (!Number.isNaN(parsedLegacy.getTime())) {
+        return formatManilaDateLabel(parsedLegacy);
+      }
     }
+
     return formatManilaDateLabel(attendanceDateKey);
   }, [attendanceDateKey, params.attendanceDate, params.attendanceDateLabel]);
 
   const interactionDisabled = isReadOnly || isSubmitting;
+
   const { data, isLoading } = useQuery({
-    queryKey: mobileQueryKeys.teacherFeedingSetup(attendanceDateKey, presentChildrenIdsKey),
+    queryKey: mobileQueryKeys.teacherFeedingSetup(
+      attendanceDateKey,
+      presentChildrenIdsKey,
+    ),
     enabled: isAuthenticated,
     queryFn: async () => {
-      const [childrenData, todayRecord] = await Promise.all([getChildren(), getTodayFeeding()]);
+      const [childrenData, todayRecord] = await Promise.all([
+        getChildren(),
+        getTodayFeeding(),
+      ]);
+
       if (todayRecord) {
-        const recordedChildIds = new Set(todayRecord.records.map((r: any) => String(r.child._id || r.child)));
-        const childrenToShow = childrenData.filter((child) => recordedChildIds.has(child._id));
+        const recordedChildIds = new Set(
+          todayRecord.records.map((record: any) =>
+            String(record.child?._id || record.child),
+          ),
+        );
+        const childrenToShow = childrenData.filter((child) =>
+          recordedChildIds.has(child._id),
+        );
         const existingStatus: Record<string, boolean> = {};
+        const existingNotes: Record<string, string> = {};
+
         todayRecord.records.forEach((record: any) => {
-          existingStatus[String(record.child._id || record.child)] = record.status !== "completed";
+          const childId = String(record.child?._id || record.child);
+          existingStatus[childId] = record.status !== "completed";
+          existingNotes[childId] = String(record.notes || "");
         });
-        return { childrenToShow, isReadOnly: true, foodServed: String(todayRecord.foodServed || ""), feedingStatus: existingStatus };
+
+        return {
+          childrenToShow,
+          isReadOnly: true,
+          foodServed: String(todayRecord.foodServed || ""),
+          feedingStatus: existingStatus,
+          feedingNotes: existingNotes,
+        };
       }
+
       let childrenToShow: Child[] = [];
       if (presentChildrenIds.length > 0) {
         const presentIds = new Set(presentChildrenIds.map(String));
@@ -98,17 +154,40 @@ export const useTeacherFeeding = () => {
       } else {
         const todayAttendance = await getTodayAttendance();
         if (todayAttendance?.records) {
-          const presentIds = new Set(todayAttendance.records.filter((r: any) => r.status === "present").map((r: any) => String(r.child._id || r.child)));
-          childrenToShow = childrenData.filter((child) => presentIds.has(child._id));
+          const presentIds = new Set(
+            todayAttendance.records
+              .filter((record: any) => record.status === "present")
+              .map((record: any) => String(record.child?._id || record.child)),
+          );
+          childrenToShow = childrenData.filter((child) =>
+            presentIds.has(child._id),
+          );
         }
       }
+
       const initialStatus: Record<string, boolean> = {};
-      childrenToShow.forEach((child) => { initialStatus[child._id] = true; });
-      return { childrenToShow, isReadOnly: false, foodServed: "", feedingStatus: initialStatus };
+      const initialNotes: Record<string, string> = {};
+      childrenToShow.forEach((child) => {
+        initialStatus[child._id] = true;
+        initialNotes[child._id] = "";
+      });
+
+      return {
+        childrenToShow,
+        isReadOnly: false,
+        foodServed: "",
+        feedingStatus: initialStatus,
+        feedingNotes: initialNotes,
+      };
     },
   });
+
   const submitFeedingMutation = useMutation({
-    mutationFn: async (payload: { date: string; foodServed: string; records: FeedingRecord[] }) => submitFeeding(payload),
+    mutationFn: async (payload: {
+      date: string;
+      foodServed: string;
+      records: FeedingRecord[];
+    }) => submitFeeding(payload),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["teacherFeedingSetup"] });
       void queryClient.invalidateQueries({ queryKey: ["teacherDashboard"] });
@@ -117,15 +196,27 @@ export const useTeacherFeeding = () => {
 
   useEffect(() => {
     if (!data) return;
+
+    const childIds = data.childrenToShow.map((child) => child._id);
     setChildren(data.childrenToShow);
     setIsReadOnly(data.isReadOnly);
     setFoodServed(data.foodServed);
     setFeedingStatus(data.feedingStatus);
+    setFeedingNotes(data.feedingNotes);
+    setSavedSnapshot(
+      buildSnapshot(
+        childIds,
+        data.foodServed,
+        data.feedingStatus,
+        data.feedingNotes,
+      ),
+    );
   }, [data]);
 
   const filteredChildren = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     if (!query) return children;
+
     return children.filter((child) => {
       const fullName = `${child.lastName}, ${child.firstName} ${child.middleName || ""}`.toLowerCase();
       const studentId = String(child.studentId || "").toLowerCase();
@@ -139,41 +230,154 @@ export const useTeacherFeeding = () => {
     return { fed, missed, total: children.length };
   }, [feedingStatus, children.length]);
 
+  const hasUnsavedChanges = useMemo(() => {
+    if (!data || isReadOnly || savedSnapshot === null) return false;
+    return (
+      buildSnapshot(
+        children.map((child) => child._id),
+        foodServed,
+        feedingStatus,
+        feedingNotes,
+      ) !== savedSnapshot
+    );
+  }, [
+    children,
+    data,
+    feedingNotes,
+    feedingStatus,
+    foodServed,
+    isReadOnly,
+    savedSnapshot,
+  ]);
+
   const toggleChildFeeding = useCallback((childId: string) => {
     setFeedingStatus((prev) => ({ ...prev, [childId]: !prev[childId] }));
   }, []);
 
+  const setChildNote = useCallback((childId: string, value: string) => {
+    setFeedingNotes((prev) => ({ ...prev, [childId]: value }));
+  }, []);
+
   const markAllAsCompleted = useCallback(() => {
     const allFed: Record<string, boolean> = {};
-    children.forEach((child) => { allFed[child._id] = false; });
+    children.forEach((child) => {
+      allFed[child._id] = false;
+    });
     setFeedingStatus(allFed);
   }, [children]);
 
-  const handleSubmit = async () => {
+  const submitFeedingRecord = useCallback(async () => {
     if (isSubmitting) return;
-    if (isReadOnly) { router.push("/(teacher)"); return; }
-    if (!isAuthenticated) { Alert.alert("Authentication Error", "You must be logged in to submit feeding records."); return; }
-    if (!foodServed) { Alert.alert("Validation Error", "Please select food served"); return; }
+    if (isReadOnly) return;
+    if (!isAuthenticated) {
+      throw new Error("You must be logged in to submit feeding records.");
+    }
+    if (!foodServed.trim()) {
+      throw new Error("Please select the food served before submitting.");
+    }
+
+    const snapshot = buildSnapshot(
+      children.map((child) => child._id),
+      foodServed,
+      feedingStatus,
+      feedingNotes,
+    );
+
     setIsSubmitting(true);
     try {
-      const records: FeedingRecord[] = Object.entries(feedingStatus).map(([childId, isMissed]) => ({
-        child: childId, status: !isMissed ? ("completed" as const) : ("missed" as const),
-      }));
-      await submitFeedingMutation.mutateAsync({ date: attendanceDateKey, foodServed, records });
-      Alert.alert("Success", "Records saved successfully!", [{ text: "OK", onPress: () => router.push("/(teacher)") }]);
-    } catch (error) {
-      Alert.alert("Submission Error", "Failed to submit feeding records. Please try again.");
-      console.error("Feeding submission error:", error);
+      const records: FeedingRecord[] = Object.entries(feedingStatus).map(
+        ([childId, isMissed]) => ({
+          child: childId,
+          status: isMissed ? "missed" : "completed",
+          notes: String(feedingNotes[childId] || "").trim(),
+        }),
+      );
+
+      await submitFeedingMutation.mutateAsync({
+        date: attendanceDateKey,
+        foodServed: foodServed.trim(),
+        records,
+      });
+
+      setSavedSnapshot(snapshot);
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [
+    attendanceDateKey,
+    children,
+    feedingNotes,
+    feedingStatus,
+    foodServed,
+    isAuthenticated,
+    isReadOnly,
+    isSubmitting,
+    submitFeedingMutation,
+  ]);
+
+  const handleSubmit = useCallback(async () => {
+    if (isReadOnly) {
+      router.push("/(teacher)");
+      return;
+    }
+
+    try {
+      await submitFeedingRecord();
+      Alert.alert(
+        "Submitted",
+        "Feeding record submitted to the focal person.",
+        [{ text: "OK", onPress: () => router.push("/(teacher)") }],
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to submit feeding records. Please try again.";
+      Alert.alert("Unable to Submit", message);
+      console.error("Feeding submission error:", error);
+    }
+  }, [isReadOnly, router, submitFeedingRecord]);
+
+  const submitBeforeLeaving = useCallback(async () => {
+    try {
+      await submitFeedingRecord();
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to submit feeding records. Please try again.";
+      Alert.alert("Unable to Submit", message);
+      console.error("Feeding save-before-leave error:", error);
+      throw error;
+    }
+  }, [submitFeedingRecord]);
 
   return {
-    children, loading: isLoading, feedingStatus, foodServed, setFoodServed,
-    searchQuery, setSearchQuery, showMenuModal, setShowMenuModal,
-    isReadOnly, isSubmitting, presentChildrenIds, attendanceDateKey,
-    attendanceDateLabel, interactionDisabled, filteredChildren, stats,
-    toggleChildFeeding, markAllAsCompleted, handleSubmit, router, foodMenuOptions,
+    router,
+    children,
+    loading: isLoading,
+    feedingStatus,
+    feedingNotes,
+    foodServed,
+    setFoodServed,
+    searchQuery,
+    setSearchQuery,
+    showMenuModal,
+    setShowMenuModal,
+    isReadOnly,
+    isSubmitting,
+    presentChildrenIds,
+    attendanceDateKey,
+    attendanceDateLabel,
+    interactionDisabled,
+    filteredChildren,
+    stats,
+    hasUnsavedChanges,
+    toggleChildFeeding,
+    setChildNote,
+    markAllAsCompleted,
+    handleSubmit,
+    submitBeforeLeaving,
+    foodMenuOptions,
   };
 };

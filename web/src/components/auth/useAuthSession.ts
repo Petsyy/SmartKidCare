@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { API_BASE } from "../config/config.api";
+import { API_BASE } from "@/api/config";
 import { webQueryKeys } from "@/lib/query-keys";
 
 type AuthSessionState = {
@@ -60,9 +60,7 @@ export function useAuthSession(): AuthSessionResult {
       throw new Error(await parseSessionError(response));
     },
     retry: false,
-    staleTime: 15_000,
-    refetchInterval: 30_000,
-    refetchIntervalInBackground: false,
+    staleTime: Infinity,
   });
 
   return {

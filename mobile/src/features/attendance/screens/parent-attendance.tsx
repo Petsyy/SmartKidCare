@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from "react-native";
 import { UserCheck, UserX, Calendar } from "lucide-react-native";
-import { MonthlyRecordViewer } from "@/src/components/monthly-record-viewer";
+import { MonthlyRecordViewer } from "@/src/components/ui/monthly-record-viewer";
 import { useParentAttendance } from "@/src/features/attendance/hooks";
 
 type AttendanceDay = {

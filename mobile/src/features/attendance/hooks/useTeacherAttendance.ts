@@ -9,7 +9,7 @@ import { formatManilaDateLabel, getManilaDateKey } from "@/src/utils/manila-date
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
-import { useTeacherUiStore } from "@/src/features/teacher/stores/teacher-ui.store";
+import { useTeacherUi } from "@/src/context/teacher-ui-context";
 
 export const useTeacherAttendance = () => {
   const router = useRouter();
@@ -18,7 +18,7 @@ export const useTeacherAttendance = () => {
   const [attendance, setAttendance] = useState<Record<string, boolean>>({});
   const [isReadOnly, setIsReadOnly] = useState(false);
   const { attendanceSearchQuery: searchQuery, setAttendanceSearchQuery: setSearchQuery } =
-    useTeacherUiStore();
+    useTeacherUi();
 
   const selectedDateKey = useMemo(() => getManilaDateKey(), []);
   const selectedDateLabel = useMemo(

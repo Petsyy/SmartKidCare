@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/src/hooks/use-auth";
 import { getMyChildren, Child } from "@/src/api/parent.api";
 import {
@@ -12,7 +12,6 @@ import {
   type ParentNotificationFeedItem,
 } from "@/src/api/notifications.api";
 import { useQuery } from "@tanstack/react-query";
-import { useDashboardUiStore } from "@/src/features/dashboard/stores/dashboard-ui.store";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 
 export interface ChildStats {
@@ -42,7 +41,7 @@ export interface ParentDashboardData {
 
 export function useParentDashboard(): ParentDashboardData {
   const { isAuthenticated } = useAuth();
-  const { selectedChildId, setSelectedChildId } = useDashboardUiStore();
+  const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
   const { data, isLoading, isRefetching, error, refetch } = useQuery({
     queryKey: mobileQueryKeys.parentDashboard(),
     enabled: isAuthenticated,

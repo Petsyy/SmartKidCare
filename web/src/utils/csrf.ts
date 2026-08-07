@@ -1,4 +1,4 @@
-import { API_BASE } from "../components/config/config.api";
+import { API_BASE } from "@/api/config";
 
 const CSRF_COOKIE_NAME = "csrfToken";
 const CSRF_HEADER_NAME = "x-csrf-token";

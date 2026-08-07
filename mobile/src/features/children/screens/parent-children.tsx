@@ -1,12 +1,11 @@
 import { useMemo } from "react";
-import { View, Text, ScrollView, Pressable, StatusBar, RefreshControl, ActivityIndicator, } from "react-native";
+import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator, } from "react-native";
 import { useRouter } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { SafeAreaView } from "react-native-safe-area-context";
 import * as Icons from "lucide-react-native";
 import { useParentChildrenData } from "@/src/features/children/hooks";
 import type { Child } from "@/src/api/parent.api";
 import { StatusRow, ProgressMetric, QuickActionRow, } from "@/src/features/children/components/parent-children-metrics";
+import { ScreenShell, ScreenHeader } from "@/src/components/ui";
 
 const getFullName = (child: Child): string => {
   const middle = child.middleName ? ` ${child.middleName}` : "";
@@ -30,7 +29,6 @@ export default function ParentChildrenScreen() {
     scrollBottomPadding,
   } = useParentChildrenData();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
 
   const monthLabel = new Intl.DateTimeFormat("en-PH", {
     month: "long",
@@ -39,24 +37,11 @@ export default function ParentChildrenScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
-        <StatusBar
-          barStyle="light-content"
-          translucent
-          backgroundColor="transparent"
+      <ScreenShell withKeyboardAvoiding={false}>
+        <ScreenHeader
+          title="My Children"
+          subtitle="Children linked to your account"
         />
-
-        <View
-          style={{ paddingTop: insets.top + 12 }}
-          className="bg-teal-600 px-5 pb-5"
-        >
-          <Text className="text-3xl font-extrabold text-white">
-            My Children
-          </Text>
-          <Text className="text-lg text-teal-100 mt-1">
-            Children linked to your account
-          </Text>
-        </View>
 
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#0F766E" />
@@ -64,30 +49,17 @@ export default function ParentChildrenScreen() {
             Please wait...
           </Text>
         </View>
-      </SafeAreaView>
+      </ScreenShell>
     );
   }
 
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
-        <StatusBar
-          barStyle="light-content"
-          translucent
-          backgroundColor="transparent"
+      <ScreenShell withKeyboardAvoiding={false}>
+        <ScreenHeader
+          title="My Children"
+          subtitle="Children linked to your account"
         />
-
-        <View
-          style={{ paddingTop: insets.top + 12 }}
-          className="bg-teal-600 px-5 pb-5"
-        >
-          <Text className="text-3xl font-extrabold text-white">
-            My Children
-          </Text>
-          <Text className="text-lg text-teal-100 mt-1">
-            Children linked to your account
-          </Text>
-        </View>
 
         <View className="mx-5 rounded-3xl border border-red-100 bg-white p-5">
           <View className="flex-row items-start">
@@ -111,27 +83,16 @@ export default function ParentChildrenScreen() {
             <Text className="text-sm font-semibold text-white">Try again</Text>
           </Pressable>
         </View>
-      </SafeAreaView>
+      </ScreenShell>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
-      <StatusBar
-        barStyle="light-content"
-        translucent
-        backgroundColor="transparent"
+    <ScreenShell>
+      <ScreenHeader
+        title="My Children"
+        subtitle="Children linked to your account"
       />
-
-      <View
-        style={{ paddingTop: insets.top + 12 }}
-        className="bg-teal-600 px-5 pb-5"
-      >
-        <Text className="text-3xl font-extrabold text-white">My Children</Text>
-        <Text className="text-lg text-teal-100 mt-1">
-          Children linked to your account
-        </Text>
-      </View>
 
       <ScrollView
         className="flex-1"
@@ -360,7 +321,7 @@ export default function ParentChildrenScreen() {
           </>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </ScreenShell>
   );
 }
 

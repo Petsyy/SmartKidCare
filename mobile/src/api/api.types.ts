@@ -47,11 +47,17 @@ export interface Child {
   lastName: string;
   age: number;
   gender: string;
+  homeAddress?: string;
+  parentRelationship?: string;
   studentId: string;
   schoolYear: string;
   status: string;
   enrollmentDate: string;
   dateOfBirth?: string;
+  weight?: number;
+  height?: number;
+  bmi?: number;
+  nutritionalStatus?: string;
   documentIntegrity?: ChildDocumentIntegrity | null;
 
   parent?: {
@@ -80,7 +86,10 @@ export interface ChildEnrollmentRequestPayload {
   dateOfBirth: string;
   age: number;
   gender: "male" | "female";
+  homeAddress: string;
   programType: "4Ps Beneficiary" | "Regular Enrollee (Non-beneficiary)";
+  weight: number;
+  height: number;
   daycareCenterId: string;
   enrollmentDate: string;
   schoolYear: string;
@@ -89,6 +98,7 @@ export interface ChildEnrollmentRequestPayload {
   parentLastName: string;
   parentEmail: string;
   parentPhone: string;
+  parentRelationship: "Mother" | "Father" | "Guardian" | "Grandparent" | "Other";
 }
 
 export interface ChildEnrollmentRequestFiles {
@@ -123,9 +133,14 @@ export interface TeacherEnrollmentRequest {
     dateOfBirth: string;
     age: number;
     gender: "male" | "female";
+    homeAddress: string;
     programType: "4Ps Beneficiary" | "Regular Enrollee (Non-beneficiary)";
     enrollmentDate: string;
     schoolYear: string;
+    weight?: number;
+    height?: number;
+    bmi?: number;
+    nutritionalStatus?: string;
   };
   parent: {
     firstName: string;
@@ -133,6 +148,7 @@ export interface TeacherEnrollmentRequest {
     lastName: string;
     email: string;
     phone: string;
+    relationship: string;
   };
   review?: {
     reviewedAt?: string | null;
@@ -188,6 +204,7 @@ export interface AttendanceRecord {
 export interface FeedingRecord {
   child: string;
   status: "completed" | "missed";
+  notes?: string;
 }
 
 export interface BlockchainResult {

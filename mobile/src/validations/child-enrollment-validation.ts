@@ -62,6 +62,7 @@ export const childEnrollmentStepOneSchema = z
       required_error: "Gender is required.",
       invalid_type_error: "Gender is required.",
     }),
+    homeAddress: z.string().trim().min(5, "Complete home address is required.").max(300),
     daycareCenterId: z
       .string()
       .trim()
@@ -72,6 +73,22 @@ export const childEnrollmentStepOneSchema = z
     }),
     enrollmentDate: ymdDateSchema("Enrollment date"),
     schoolYear: z.string().trim().min(1, "School year is required."),
+    weight: z
+      .string()
+      .trim()
+      .min(1, "Weight is required.")
+      .refine((v) => {
+        const n = Number(v);
+        return Number.isFinite(n) && n >= 5 && n <= 50;
+      }, { message: "Weight must be between 5 and 50 kg." }),
+    height: z
+      .string()
+      .trim()
+      .min(1, "Height is required.")
+      .refine((v) => {
+        const n = Number(v);
+        return Number.isFinite(n) && n >= 60 && n <= 150;
+      }, { message: "Height must be between 60 and 150 cm." }),
   })
   .superRefine((data, ctx) => {
     const age = computeAgeFromDateOfBirth(data.dateOfBirth);
@@ -97,6 +114,9 @@ export const childEnrollmentStepTwoSchema = z.object({
     .min(1, "Parent email is required.")
     .regex(simpleEmailRegex, "Please enter a valid parent email address."),
   parentPhone: z.string().trim().min(1, "Parent phone is required."),
+  parentRelationship: z.enum(["Mother", "Father", "Guardian", "Grandparent", "Other"], {
+    required_error: "Relationship to the child is required.",
+  }),
 });
 
 export const validateChildEnrollmentStepOne = (payload: {
@@ -105,10 +125,13 @@ export const validateChildEnrollmentStepOne = (payload: {
   lastName: string;
   dateOfBirth: string;
   gender: "male" | "female";
+  homeAddress: string;
   daycareCenterId: string;
   programType: (typeof PROGRAM_TYPES)[number] | "";
   enrollmentDate: string;
   schoolYear: string;
+  weight: string;
+  height: string;
 }) => childEnrollmentStepOneSchema.safeParse(payload);
 
 export const validateChildEnrollmentStepTwo = (payload: {
@@ -117,4 +140,5 @@ export const validateChildEnrollmentStepTwo = (payload: {
   parentLastName: string;
   parentEmail: string;
   parentPhone: string;
+  parentRelationship: "Mother" | "Father" | "Guardian" | "Grandparent" | "Other";
 }) => childEnrollmentStepTwoSchema.safeParse(payload);

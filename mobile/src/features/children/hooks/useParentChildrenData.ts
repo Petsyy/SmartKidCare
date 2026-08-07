@@ -1,11 +1,10 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useFocusEffect } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/src/hooks/use-auth";
 import { getMyChildren, type Child } from "@/src/api/parent.api";
 import { getAttendanceHistory, getFeedingHistory, getTodayAttendance, getTodayFeeding } from "@/src/api/records.api";
-import { useParentChildrenStore } from "@/src/features/children/stores/parent-children.store";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 
 export type DailyAttendance = "Present" | "Absent" | "No update yet";
@@ -57,7 +56,7 @@ const toPercent = (done: number, total: number): number => {
 export const useParentChildrenData = () => {
   const { isAuthenticated } = useAuth();
   const tabBarHeight = useBottomTabBarHeight();
-  const { selectedChildId, setSelectedChildId } = useParentChildrenStore();
+  const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
   const { data, isLoading, isRefetching, error, refetch } = useQuery({
     queryKey: mobileQueryKeys.parentChildrenDashboard(),
     enabled: isAuthenticated,

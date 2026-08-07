@@ -1,4 +1,4 @@
-import { API_BASE } from "../components/config/config.api";
+import { API_BASE } from "./config";
 import { apiRequestOrThrow } from "./api-client";
 import type { ChildBlockchainProof } from "@/types/child";
 
@@ -51,6 +51,10 @@ export const updateChild = async (
     dateOfBirth?: string;
     age?: number;
     gender?: string;
+    homeAddress?: string;
+    parentRelationship?: string;
+    weight?: number;
+    height?: number;
     enrollmentDate?: string;
     schoolYear?: string;
     status?: string;

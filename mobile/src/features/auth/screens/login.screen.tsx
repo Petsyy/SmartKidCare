@@ -4,23 +4,22 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Pressable,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
   Image,
   ScrollView,
   StatusBar,
 } from "react-native";
 import { useForm } from "react-hook-form";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Eye, EyeOff, Mail, Lock, ShieldCheck } from "lucide-react-native";
+import { Mail, Lock, ShieldCheck } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/src/hooks/use-auth";
 import type { User } from "@/src/context/auth-context";
 import { login as apiLogin } from "@/src/api/authentication.api";
+import { PasswordInput, GradientButton } from "@/src/components/ui";
 
 type LoginFormValues = {
   identifier: string;
@@ -49,7 +48,6 @@ const FormField = ({
 export default function Login() {
   const router = useRouter();
   const { login } = useAuth();
-  const [showPassword, setShowPassword] = useState(false);
   const [focusedField, setFocusedField] = useState<"identifier" | "password" | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -205,38 +203,18 @@ export default function Login() {
                   </FormField>
 
                   <FormField label="Password" icon={Lock}>
-                    <View className="relative">
-                      <TextInput
-                        className={`px-4 py-3.5 rounded-xl text-lg text-gray-900 pr-12 border ${
-                          focusedField === "password"
-                            ? "border-emerald-500 bg-white"
-                            : "border-gray-200 bg-gray-50"
-                        }`}
-                        secureTextEntry={!showPassword}
-                        placeholder="Enter your password"
-                        placeholderTextColor="#9CA3AF"
-                        value={password}
-                        onChangeText={(text) => {
-                          if (errorMessage) setErrorMessage("");
-                          setValue("password", text);
-                        }}
-                        returnKeyType="go"
-                        onSubmitEditing={handleLogin}
-                        onFocus={() => setFocusedField("password")}
-                        onBlur={() => setFocusedField(null)}
-                      />
-                      <TouchableOpacity
-                        className="absolute right-4 h-full justify-center"
-                        onPress={() => setShowPassword(!showPassword)}
-                        activeOpacity={0.7}
-                      >
-                        {showPassword ? (
-                          <EyeOff size={22} color="#6b7280" />
-                        ) : (
-                          <Eye size={22} color="#6b7280" />
-                        )}
-                      </TouchableOpacity>
-                    </View>
+                    <PasswordInput
+                      placeholder="Enter your password"
+                      value={password}
+                      onChangeText={(text) => {
+                        if (errorMessage) setErrorMessage("");
+                        setValue("password", text);
+                      }}
+                      returnKeyType="go"
+                      onSubmitEditing={handleLogin}
+                      onFocus={() => setFocusedField("password")}
+                      onBlur={() => setFocusedField(null)}
+                    />
                   </FormField>
 
                   {errorMessage ? (
@@ -256,34 +234,12 @@ export default function Login() {
                     </Text>
                   </TouchableOpacity>
 
-                  <Pressable
+                  <GradientButton
+                    label="Sign In"
                     onPress={handleLogin}
-                    disabled={loginMutation.isPending}
-                    className="rounded-xl overflow-hidden"
-                    style={({ pressed }) => [
-                      { opacity: loginMutation.isPending ? 0.75 : pressed ? 0.88 : 1 },
-                    ]}
-                  >
-                    <LinearGradient
-                      colors={["#14b8a6", "#059669"]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      className="w-full py-4 items-center justify-center rounded-xl shadow-lg shadow-emerald-200"
-                    >
-                      {loginMutation.isPending ? (
-                        <View className="flex-row items-center justify-center gap-3">
-                          <ActivityIndicator size="small" color="#fff" />
-                          <Text className="text-white text-center text-xl font-bold">
-                            Signing In...
-                          </Text>
-                        </View>
-                      ) : (
-                        <Text className="text-white text-center text-xl font-bold">
-                          Sign In
-                        </Text>
-                      )}
-                    </LinearGradient>
-                  </Pressable>
+                    loading={loginMutation.isPending}
+                    loadingLabel="Signing In..."
+                  />
 
                   <View className="mt-4 flex-row items-center justify-center">
                     <ShieldCheck size={14} color="#047857" />

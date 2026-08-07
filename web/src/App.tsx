@@ -1,6 +1,7 @@
 import { Suspense, lazy } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import ProtectedLayout from "./components/auth/ProtectedLayout";
+import { SystemSettingsProvider } from "./context/SystemSettingsContext";
 
 const AdminLogin = lazy(() => import("./pages/AdminLogin"));
 const UserManagement = lazy(() => import("./pages/UserManagement"));
@@ -15,27 +16,29 @@ const DaycareCenters = lazy(() => import("./pages/DaycareCenters"));
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Suspense fallback={null}>
-        <Routes>
-          <Route path="/login" element={<AdminLogin />} />
+    <SystemSettingsProvider>
+      <BrowserRouter>
+        <Suspense fallback={null}>
+          <Routes>
+            <Route path="/login" element={<AdminLogin />} />
 
-          <Route element={<ProtectedLayout />}>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/users" element={<UserManagement />} />
-            <Route path="/children" element={<ChildrenManagement />} />
-            <Route path="/enrollment-requests" element={<EnrollmentRequests />} />
-            <Route path="/centers" element={<DaycareCenters />} />
-            <Route path="/dashboard" element={<AdminDashboard />} />
-            <Route path="/attendance" element={<AttendanceTracking />} />
-            <Route path="/feeding" element={<FeedingProgram />} />
-            <Route path="/reports" element={<ReportAnalytics />} />
-            <Route path="/settings" element={<AdminSettings />} />
-          </Route>
+            <Route element={<ProtectedLayout />}>
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/users" element={<UserManagement />} />
+              <Route path="/children" element={<ChildrenManagement />} />
+              <Route path="/enrollment-requests" element={<EnrollmentRequests />} />
+              <Route path="/centers" element={<DaycareCenters />} />
+              <Route path="/dashboard" element={<AdminDashboard />} />
+              <Route path="/attendance" element={<AttendanceTracking />} />
+              <Route path="/feeding" element={<FeedingProgram />} />
+              <Route path="/reports" element={<ReportAnalytics />} />
+              <Route path="/settings" element={<AdminSettings />} />
+            </Route>
 
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </Suspense>
-    </BrowserRouter>
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </Suspense>
+      </BrowserRouter>
+    </SystemSettingsProvider>
   );
 }

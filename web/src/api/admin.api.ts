@@ -1,4 +1,4 @@
-import { API_BASE } from "../components/config/config.api";
+import { API_BASE } from "./config";
 import { apiRequestOrThrow, parseApiError } from "./api-client";
 
 export type EnrollmentRequestStatus = "pending" | "approved" | "rejected";
@@ -14,7 +14,6 @@ export interface ParentLinkedChildItem {
 }
 
 export interface EnrollmentRequestItem {
-
   _id: string;
   status: EnrollmentRequestStatus;
   child: {
@@ -28,6 +27,10 @@ export interface EnrollmentRequestItem {
     programType?: "4Ps Beneficiary" | "Regular Enrollee (Non-beneficiary)";
     enrollmentDate: string;
     schoolYear: string;
+    weight?: number | null;
+    height?: number | null;
+    bmi?: number | null;
+    nutritionalStatus?: string | null;
   };
 
   daycareCenter?: {
@@ -93,7 +96,7 @@ export interface EnrollmentRequestItem {
 }
 
 export const resetUserPassword = async (userId: string) => {
-  return apiRequestOrThrow<{ message?: string }>(
+  return apiRequestOrThrow<{ message?: string; credentials?: { email: string; tempPassword: string } }>(
     `/admin/users/${userId}/reset-password`,
     "Reset failed",
     { method: "POST" },
@@ -221,7 +224,7 @@ export const getEnrollmentRequests = async (
   if (status) query.set("status", status);
 
   const data = await apiRequestOrThrow<{ requests?: EnrollmentRequestItem[] }>(
-    `/children/enrollment-requests${query.toString() ? `?${query.toString()}` : ""}`,
+    `/enrollment/requests${query.toString() ? `?${query.toString()}` : ""}`,
     "Failed to fetch requests",
   );
 
@@ -241,7 +244,7 @@ export const reviewEnrollmentRequest = async (
       tempPassword: string | null;
     };
   }>(
-    `/children/enrollment-requests/${requestId}/review`,
+    `/enrollment/requests/${requestId}/review`,
     "Failed to review request",
     {
       method: "PATCH",
@@ -252,7 +255,7 @@ export const reviewEnrollmentRequest = async (
 
 export const deleteEnrollmentRequest = async (requestId: string) => {
   return apiRequestOrThrow<{ message: string }>(
-    `/children/enrollment-requests/${requestId}`,
+    `/enrollment/requests/${requestId}`,
     "Failed to delete enrollment request",
     { method: "DELETE" },
   );

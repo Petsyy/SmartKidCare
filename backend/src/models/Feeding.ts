@@ -11,6 +11,12 @@ const FeedingRecordSchema = new mongoose.Schema({
     enum: ["completed", "missed"],
     required: true,
   },
+  notes: {
+    type: String,
+    trim: true,
+    maxlength: 500,
+    default: "",
+  },
 });
 
 const FeedingSchema = new mongoose.Schema(

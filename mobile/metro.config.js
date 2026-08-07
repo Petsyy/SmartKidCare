@@ -6,7 +6,8 @@ const config = getDefaultConfig(__dirname);
 
 // Add alias resolver
 config.resolver.alias = {
-  "@": path.resolve(__dirname, "app"),
+  ...config.resolver.alias,
+  "@": path.resolve(__dirname, "."),
 };
 
 module.exports = withNativeWind(config, { input: "./global.css" });

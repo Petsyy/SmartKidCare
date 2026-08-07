@@ -60,6 +60,12 @@ export const requestsQueryKeys = {
   submittedRequests: () => ["submittedRequests"] as const,
 };
 
+export const competencyQueryKeys = {
+  competencyDefinitions: () => ["competencyDefinitions"] as const,
+  competencyLatest: (childId: string | null) => ["competencyLatest", childId] as const,
+  competencyHistory: (childId: string | null) => ["competencyHistory", childId] as const,
+};
+
 export const mobileQueryKeys = {
   ...attendanceQueryKeys,
   ...feedingQueryKeys,
@@ -68,4 +74,5 @@ export const mobileQueryKeys = {
   ...notificationsQueryKeys,
   ...childrenQueryKeys,
   ...requestsQueryKeys,
+  ...competencyQueryKeys,
 };

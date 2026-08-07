@@ -1,14 +1,36 @@
 import { useState } from "react";
-import { Pressable, Text, TextInput, type StyleProp, type TextStyle, View, type ViewStyle, } from "react-native";
+import {
+  Controller,
+  type Control,
+  type FieldValues,
+  type Path,
+} from "react-hook-form";
+import {
+  Pressable,
+  Text,
+  TextInput,
+  type StyleProp,
+  type TextStyle,
+  View,
+  type ViewStyle,
+} from "react-native";
 import { CalendarDays, Camera, ChevronDown, Upload } from "lucide-react-native";
-import { displayDate, parseYmd } from "@/src/features/enrollment/utils";
+import {
+  displayDate,
+  parseYmd,
+} from "@/src/features/enrollment/utils/enrollment-utils";
 
 type InputProps = {
   label: string;
   value: string;
   onChangeText: (value: string) => void;
   placeholder?: string;
-  keyboardType?: "default" | "email-address" | "phone-pad";
+  keyboardType?:
+    | "default"
+    | "email-address"
+    | "phone-pad"
+    | "number-pad"
+    | "decimal-pad";
   autoCapitalize?: "none" | "sentences" | "words" | "characters";
   containerStyle?: StyleProp<ViewStyle>;
   editable?: boolean;
@@ -37,7 +59,7 @@ export function Input({
 
   const inputVariantClasses = readOnly
     ? "border-[#99F6E4] bg-[#F0FDFA] text-[#134E4A]"
-    : error 
+    : error
       ? "border-red-500 bg-red-50 text-[#111827]"
       : focused
         ? "border-[#0D9488] bg-[#F0FDFA] text-[#111827]"
@@ -52,15 +74,21 @@ export function Input({
         <View className="flex-1">
           <Text className="text-[13px] font-bold tracking-[0.6px] uppercase text-[#374151]">
             {bareLabel}
-            {isRequired ? <Text className="text-[#EF4444] font-bold"> *</Text> : null}
+            {isRequired ? (
+              <Text className="text-[#EF4444] font-bold"> *</Text>
+            ) : null}
           </Text>
           {labelHint ? (
-            <Text className="mt-0.5 text-[11px] leading-[15px] text-[#9CA3AF]">{labelHint}</Text>
+            <Text className="mt-0.5 text-[11px] leading-[15px] text-[#9CA3AF]">
+              {labelHint}
+            </Text>
           ) : null}
         </View>
         {computed ? (
           <View className="rounded-full bg-[#CCFBF1] px-2 py-0.5 border border-[#99F6E4]">
-            <Text className="text-[9px] font-extrabold tracking-[0.8px] text-[#0F766E]">AUTO</Text>
+            <Text className="text-[9px] font-extrabold tracking-[0.8px] text-[#0F766E]">
+              AUTO
+            </Text>
           </View>
         ) : null}
       </View>
@@ -102,19 +130,25 @@ export function DateField({
     <View className="mb-[18px]">
       <Text className="text-[13px] font-bold tracking-[0.6px] uppercase text-[#374151] mb-2">
         {bareLabel}
-        {isRequired ? <Text className="text-[#EF4444] font-bold"> *</Text> : null}
+        {isRequired ? (
+          <Text className="text-[#EF4444] font-bold"> *</Text>
+        ) : null}
       </Text>
       <Pressable
         onPress={onPress}
         className={`min-h-[50px] rounded-xl border-[1.5px] px-[14px] py-[13px] ${
-          error ? "border-red-500 bg-red-50" : "border-[#E5E7EB] bg-[#FFFFFF] active:border-[#0D9488] active:bg-[#F0FDFA]"
+          error
+            ? "border-red-500 bg-red-50"
+            : "border-[#E5E7EB] bg-[#FFFFFF] active:border-[#0D9488] active:bg-[#F0FDFA]"
         }`}
       >
         <View className="flex-row items-center">
           <Text
             numberOfLines={1}
             className={`flex-1 text-[15px] ${
-              hasValue ? "text-[#111827] font-medium" : "text-[#9CA3AF] font-normal"
+              hasValue
+                ? "text-[#111827] font-medium"
+                : "text-[#9CA3AF] font-normal"
             }`}
           >
             {hasValue ? displayDate(value) : "dd/mm/yyyy"}
@@ -181,7 +215,9 @@ export function SelectField({
           <Text
             numberOfLines={1}
             className={`flex-1 text-[15px] ${
-              selectedOption ? "text-[#111827] font-medium" : "text-[#9CA3AF] font-normal"
+              selectedOption
+                ? "text-[#111827] font-medium"
+                : "text-[#9CA3AF] font-normal"
             }`}
           >
             {labelToShow}
@@ -190,7 +226,9 @@ export function SelectField({
             <ChevronDown
               size={20}
               color={disabled ? "#9CA3AF" : "#0F766E"}
-              style={expanded ? { transform: [{ rotate: "180deg" }] } : undefined}
+              style={
+                expanded ? { transform: [{ rotate: "180deg" }] } : undefined
+              }
             />
           </View>
         </View>
@@ -214,7 +252,9 @@ export function SelectField({
                 <Text
                   numberOfLines={1}
                   className={`text-[15px] ${
-                    isSelected ? "text-[#0F766E] font-bold" : "text-[#111827] font-medium"
+                    isSelected
+                      ? "text-[#0F766E] font-bold"
+                      : "text-[#111827] font-medium"
                   }`}
                 >
                   {option.label}
@@ -254,12 +294,19 @@ export function DocumentUploadField({
 
   return (
     <View className="mb-[18px]" style={containerStyle}>
-      <Text className="text-[13px] font-bold tracking-[0.6px] uppercase text-[#374151] mb-2" style={labelStyle}>
+      <Text
+        className="text-[13px] font-bold tracking-[0.6px] uppercase text-[#374151] mb-2"
+        style={labelStyle}
+      >
         {bareLabel}
-        {isRequired ? <Text className="text-[#EF4444] font-bold"> *</Text> : null}
+        {isRequired ? (
+          <Text className="text-[#EF4444] font-bold"> *</Text>
+        ) : null}
       </Text>
 
-      <View className={`w-full ${hasPhotoOption ? "flex-row gap-3" : "flex-col"}`}>
+      <View
+        className={`w-full ${hasPhotoOption ? "flex-row gap-3" : "flex-col"}`}
+      >
         {hasPhotoOption ? (
           <Pressable
             onPress={onUploadImage}
@@ -307,8 +354,13 @@ export function DocumentUploadField({
               >
                 {fileName}
               </Text>
-              <Pressable onPress={onClear} className="rounded-lg bg-[#FFFFFF] px-2.5 py-1.5">
-                <Text className="text-[11px] font-bold text-[#DC2626]">Remove</Text>
+              <Pressable
+                onPress={onClear}
+                className="rounded-lg bg-[#FFFFFF] px-2.5 py-1.5"
+              >
+                <Text className="text-[11px] font-bold text-[#DC2626]">
+                  Remove
+                </Text>
               </Pressable>
             </View>
           </View>
@@ -333,3 +385,90 @@ export function DocumentUploadField({
   );
 }
 
+// --- React Hook Form Wrappers ---
+
+export function FormInput<T extends FieldValues>({
+  control,
+  name,
+  ...props
+}: Omit<InputProps, "value" | "onChangeText" | "error"> & {
+  control: Control<T>;
+  name: Path<T>;
+}) {
+  return (
+    <Controller
+      control={control}
+      name={name}
+      render={({ field: { onChange, value }, fieldState: { error } }) => (
+        <Input
+          {...props}
+          value={value as string}
+          onChangeText={onChange}
+          error={error?.message}
+        />
+      )}
+    />
+  );
+}
+
+export function FormDateField<T extends FieldValues>({
+  control,
+  name,
+  label,
+  onPress,
+}: {
+  control: Control<T>;
+  name: Path<T>;
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Controller
+      control={control}
+      name={name}
+      render={({ field: { value }, fieldState: { error } }) => (
+        <DateField
+          label={label}
+          value={value as string}
+          onPress={onPress}
+          error={error?.message}
+        />
+      )}
+    />
+  );
+}
+
+export function FormSelectField<T extends FieldValues>({
+  control,
+  name,
+  ...props
+}: {
+  control: Control<T>;
+  name: Path<T>;
+  label: string;
+  options: SelectOption[];
+  placeholder?: string;
+  disabled?: boolean;
+  loading?: boolean;
+}) {
+  return (
+    <Controller
+      control={control}
+      name={name}
+      render={({ field: { onChange, value }, fieldState: { error } }) => (
+        <View>
+          <SelectField
+            {...props}
+            value={value as string}
+            onValueChange={onChange}
+          />
+          {error ? (
+            <Text className="mt-1 text-xs text-red-500 mb-2">
+              {error.message}
+            </Text>
+          ) : null}
+        </View>
+      )}
+    />
+  );
+}

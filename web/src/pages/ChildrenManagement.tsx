@@ -1,32 +1,21 @@
-import { useEffect, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import {
-  School,
-  Search,
-  Trash2,
-  Unlink,
-  ToggleLeft,
-  UserCheck,
-  UserX,
-  Users,
-  ClipboardList,
-} from "lucide-react";
+import {School,Search,UserCheck,UserX,Users,ClipboardList} from "lucide-react";
 import Layout from "@/components/layout/Layout";
-import { AdminStatCard } from "@/components/admin/AdminStatCard";
-import EditChildModal, {
-  type ChildForEdit,
-} from "@/components/modals/edit-child-modal";
-import ChildDetailsModal from "../components/child/ChildDetailsModal";
-import { useChildrenManagement } from "@/hooks/useChildrenManagement";
-import { useContextMenu } from "@/hooks/useContextMenu";
-import { ChildrenTable } from "@/components/ChildrenTable";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Pagination } from "@/components/ui/Pagination";
+import { StatCard } from "@/components/ui/StatCard";
+import EditChildModal, {type ChildForEdit} from "@/features/children/components/EditChildModal";
+import ChildDetailsModal from "@/features/children/components/ChildDetailsModal";
+import { useChildrenManagement } from "@/features/children/hooks/useChildrenManagement";
+import { useContextMenu } from "@/features/children/hooks/useContextMenu";
+import { useChildrenFilters } from "@/features/children/hooks/useChildrenFilters";
+import { ChildrenTable } from "@/features/children/components/ChildrenTable";
+import { ChildContextMenu } from "@/features/children/components/ChildContextMenu";
+import { ChangeStatusModal } from "@/features/children/components/ChangeStatusModal";
+import { DeleteChildModal } from "@/features/children/components/DeleteChildModal";
 import { getChildBlockchainProof, getChildDocumentUrl } from "@/api/child.api";
-import type {
-  Child,
-  ChildBlockchainProof,
-  ChildDocumentType,
-} from "@/types/child";
+import type {Child,ChildBlockchainProof,ChildDocumentType} from "@/types/child";
 
 export default function ChildrenManagement() {
   const navigate = useNavigate();
@@ -48,147 +37,53 @@ export default function ChildrenManagement() {
 
   const {
     children,
-    search,
-    setSearch,
     isLoading,
-    filteredChildren,
     handleChangeStatus,
     handleUnlinkParent,
     handleDeleteChild,
   } = useChildrenManagement();
 
-  const [statusFilter, setStatusFilter] = useState<
-    "all" | "Active" | "Inactive"
-  >("all");
-  const [assignmentFilter, setAssignmentFilter] = useState<
-    "all" | "assigned" | "unassigned"
-  >("all");
-  const [centerFilter, setCenterFilter] = useState<string>("all");
-  const [schoolYearFilter, setSchoolYearFilter] = useState<string>("all");
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
   const prefillSearch = searchParams.get("prefillSearch");
+
+  const {
+    searchTerm,
+    setSearchTerm,
+    statusFilter,
+    setStatusFilter,
+    assignmentFilter,
+    setAssignmentFilter,
+    centerFilter,
+    setCenterFilter,
+    schoolYearFilter,
+    setSchoolYearFilter,
+    page: safePage,
+    setPage,
+    limit,
+    setLimit,
+    centerOptions,
+    schoolYearOptions,
+    totalPages,
+    rangeLabel,
+    pagedChildren,
+    hasActiveFilters,
+    clearFilters,
+    stats,
+  } = useChildrenFilters({ childrenList: children });
 
   useEffect(() => {
     if (!prefillSearch) return;
 
-    setSearch(prefillSearch);
+    setSearchTerm(prefillSearch);
     setPage(1);
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      next.delete("prefillSearch");
-      return next;
-    }, { replace: true });
-  }, [prefillSearch, setPage, setSearch, setSearchParams]);
-
-  const schoolYearOptions = useMemo(() => {
-    const years = Array.from(
-      new Set(
-        children
-          .map((child) => String(child.schoolYear || "").trim())
-          .filter(Boolean),
-      ),
-    ).sort((a, b) => b.localeCompare(a));
-    return years;
-  }, [children]);
-
-  const centerOptions = useMemo(() => {
-    const uniqueCenters = new Map<string, { id: string; label: string }>();
-
-    children.forEach((child) => {
-      const center = child.daycareCenter;
-      if (!center?._id) return;
-
-      if (!uniqueCenters.has(center._id)) {
-        const barangay = String(center.barangay || "").trim();
-        uniqueCenters.set(center._id, {
-          id: center._id,
-          label: barangay ? `${center.name} (${barangay})` : center.name,
-        });
-      }
-    });
-
-    return Array.from(uniqueCenters.values()).sort((a, b) =>
-      a.label.localeCompare(b.label),
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("prefillSearch");
+        return next;
+      },
+      { replace: true },
     );
-  }, [children]);
-
-  useEffect(() => {
-    if (centerFilter === "all") return;
-    const hasSelectedCenter = centerOptions.some(
-      (center) => center.id === centerFilter,
-    );
-    if (!hasSelectedCenter) {
-      setCenterFilter("all");
-    }
-  }, [centerFilter, centerOptions]);
-
-  const filteredByControls = useMemo(() => {
-    return filteredChildren.filter((child) => {
-      if (statusFilter !== "all" && child.status !== statusFilter) {
-        return false;
-      }
-
-      if (assignmentFilter !== "all") {
-        const hasTeacher = Boolean(child.teacher);
-        if (assignmentFilter === "assigned" && !hasTeacher) return false;
-        if (assignmentFilter === "unassigned" && hasTeacher) return false;
-      }
-
-      if (centerFilter !== "all") {
-        const centerId = String(child.daycareCenter?._id || "");
-        if (centerId !== centerFilter) return false;
-      }
-
-      if (schoolYearFilter !== "all" && child.schoolYear !== schoolYearFilter) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [
-    assignmentFilter,
-    centerFilter,
-    filteredChildren,
-    schoolYearFilter,
-    statusFilter,
-  ]);
-
-  const total = filteredByControls.length;
-  const totalPages = total > 0 ? Math.ceil(total / limit) : 0;
-  const safePage = totalPages > 0 ? Math.min(page, totalPages) : page;
-  const start = total === 0 ? 0 : (safePage - 1) * limit + 1;
-  const end = total === 0 ? 0 : Math.min(safePage * limit, total);
-  const rangeLabel = `${start}-${end} of ${total}`;
-
-  const pagedChildren = useMemo(() => {
-    const sliceStart = (safePage - 1) * limit;
-    return filteredByControls.slice(sliceStart, sliceStart + limit);
-  }, [filteredByControls, limit, safePage]);
-
-  const hasActiveFilters =
-    statusFilter !== "all" ||
-    assignmentFilter !== "all" ||
-    centerFilter !== "all" ||
-    schoolYearFilter !== "all";
-
-  const clearFilters = () => {
-    setStatusFilter("all");
-    setAssignmentFilter("all");
-    setCenterFilter("all");
-    setSchoolYearFilter("all");
-    setPage(1);
-  };
-
-  const stats = useMemo(() => {
-    const totalChildren = children.length;
-    const active = children.filter((child) => child.status === "Active").length;
-    const inactive = children.filter(
-      (child) => child.status === "Inactive",
-    ).length;
-    const unassigned = children.filter((child) => !child.teacher).length;
-    return { totalChildren, active, inactive, unassigned };
-  }, [children]);
+  }, [prefillSearch, setPage, setSearchTerm, setSearchParams]);
 
   const {
     openMenuUserId,
@@ -277,39 +172,34 @@ export default function ChildrenManagement() {
       onNavigate={(path) => navigate(`/${path}`)}
     >
       <div className="space-y-6 p-8">
-        {/* Page Header */}
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-slate-100">
-            Children Records
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-slate-400">
-            View and manage student information
-          </p>
-        </div>
+        <PageHeader
+          title="Children Records"
+          subtitle="View and manage student information"
+        />
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <AdminStatCard
+          <StatCard
             title="Total enrollment"
             value={String(stats.totalChildren)}
             subtitle={`${stats.active} active students`}
             icon={Users}
             color="blue"
           />
-          <AdminStatCard
+          <StatCard
             title="Active"
             value={String(stats.active)}
             subtitle="Currently marked as Active"
             icon={UserCheck}
             color="teal"
           />
-          <AdminStatCard
+          <StatCard
             title="Inactive"
             value={String(stats.inactive)}
             subtitle="Currently marked as Inactive"
             icon={UserX}
             color="rose"
           />
-          <AdminStatCard
+          <StatCard
             title="Unassigned"
             value={String(stats.unassigned)}
             subtitle="Without an assigned teacher"
@@ -337,13 +227,10 @@ export default function ChildrenManagement() {
                 />
                 <input
                   type="text"
-                  placeholder="Search records..."
-                  value={search}
-                  onChange={(e) => {
-                    setPage(1);
-                    setSearch(e.target.value);
-                  }}
-                  className="w-64 rounded-lg border border-gray-300 py-2 pl-10 pr-4 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-400"
+                  placeholder="Search children..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 bg-white pl-9 pr-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
                 />
               </div>
 
@@ -384,7 +271,7 @@ export default function ChildrenManagement() {
                   }}
                   className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
                 >
-                  <option value="all">All School Years</option>
+                  <option value="all">All Years</option>
                   {schoolYearOptions.map((year) => (
                     <option key={year} value={year}>
                       {year}
@@ -436,48 +323,19 @@ export default function ChildrenManagement() {
             onMenuClick={openMenu}
           />
 
-          <div className="flex items-center justify-between border-t border-gray-200 px-6 py-4 dark:border-slate-700">
-            <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-slate-400">
-              <span>{rangeLabel}</span>
-              <select
-                value={limit}
-                onChange={(event) => {
-                  setPage(1);
-                  setLimit(Number(event.target.value));
-                }}
-                className="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
-              >
-                <option value={10}>10 / page</option>
-                <option value={25}>25 / page</option>
-                <option value={50}>50 / page</option>
-              </select>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                disabled={isLoading || safePage <= 1 || totalPages === 0}
-                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
-              >
-                Previous
-              </button>
-              <span className="text-sm text-gray-600 dark:text-slate-400">
-                Page {totalPages === 0 ? 0 : safePage} / {totalPages}
-              </span>
-              <button
-                type="button"
-                onClick={() =>
-                  setPage((prev) =>
-                    totalPages > 0 ? Math.min(totalPages, prev + 1) : prev,
-                  )
-                }
-                disabled={isLoading || totalPages === 0 || safePage >= totalPages}
-                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
-              >
-                Next
-              </button>
-            </div>
-          </div>
+          <Pagination
+            page={safePage}
+            totalPages={totalPages}
+            rangeLabel={rangeLabel}
+            onPageChange={setPage}
+            disabled={isLoading}
+            pageSizeOptions={[10, 25, 50]}
+            pageSize={limit}
+            onPageSizeChange={(newSize) => {
+              setPage(1);
+              setLimit(newSize);
+            }}
+          />
         </div>
       </div>
 
@@ -491,54 +349,19 @@ export default function ChildrenManagement() {
         />
       )}
 
-      {openMenuUserId &&
-        menuChild &&
-        menuAnchorRect &&
-        createPortal(
-          <div
-            className="fixed z-50 w-48 rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-slate-600 dark:bg-slate-900"
-            style={{
-              top: menuAnchorRect.bottom + 4,
-              left: menuAnchorRect.left,
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => {
-                setStatusModalChild(menuChild as Child);
-                setStatusModalValue((menuChild as Child).status || "Active");
-                closeMenu();
-              }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 transition hover:bg-gray-50 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
-            >
-              <ToggleLeft size={14} />
-              Change Status
-            </button>
-            {(menuChild as Child).parent && (
-              <button
-                onClick={() => {
-                  handleUnlinkParent(menuChild as Child);
-                  closeMenu();
-                }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 transition hover:bg-red-50 dark:hover:bg-red-500/10 cursor-pointer"
-              >
-                <Unlink size={14} />
-                Unlink Parent
-              </button>
-            )}
-            <button
-              onClick={async () => {
-                closeMenu();
-                setDeleteModalChild(menuChild as Child);
-              }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 transition hover:bg-red-50 dark:hover:bg-red-500/10 cursor-pointer"
-            >
-              <Trash2 size={14} />
-              Delete Child
-            </button>
-          </div>,
-          document.body,
-        )}
+      {openMenuUserId && menuChild && menuAnchorRect && (
+        <ChildContextMenu
+          child={menuChild as Child}
+          anchorRect={menuAnchorRect}
+          onClose={closeMenu}
+          onChangeStatus={(child) => {
+            setStatusModalChild(child);
+            setStatusModalValue(child.status || "Active");
+          }}
+          onUnlinkParent={handleUnlinkParent}
+          onDelete={(child) => setDeleteModalChild(child)}
+        />
+      )}
 
       <ChildDetailsModal
         child={viewingChild}
@@ -552,91 +375,25 @@ export default function ChildrenManagement() {
       />
 
       {statusModalChild && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
-            <div className="border-b border-gray-200 px-6 py-4 dark:border-slate-700">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-50">
-                Change Status
-              </h3>
-              <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">
-                Update status for{" "}
-                {`${statusModalChild.firstName} ${statusModalChild.lastName}`}.
-              </p>
-            </div>
-            <div className="space-y-4 px-6 py-4">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-gray-600 dark:text-slate-300">
-                  Status
-                </label>
-                <select
-                  value={statusModalValue}
-                  onChange={(e) => setStatusModalValue(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
-                >
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                </select>
-              </div>
-            </div>
-            <div className="flex items-center justify-end gap-2 border-t border-gray-200 px-6 py-4 dark:border-slate-700">
-              <button
-                type="button"
-                onClick={() => setStatusModalChild(null)}
-                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!statusModalChild) return;
-                  await handleChangeStatus(statusModalChild, statusModalValue);
-                  setStatusModalChild(null);
-                }}
-                className="rounded-md bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white"
-              >
-                Update
-              </button>
-            </div>
-          </div>
-        </div>
+        <ChangeStatusModal
+          child={statusModalChild}
+          value={statusModalValue}
+          onChangeValue={setStatusModalValue}
+          onClose={() => setStatusModalChild(null)}
+          onSubmit={async (child, newStatus) => {
+            await handleChangeStatus(child, newStatus);
+          }}
+        />
       )}
 
       {deleteModalChild && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
-            <div className="border-b border-gray-200 px-6 py-4 dark:border-slate-700">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-50">
-                Delete Child
-              </h3>
-              <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">
-                Are you sure you want to delete{" "}
-                {`${deleteModalChild.firstName} ${deleteModalChild.lastName}`}?
-                This action cannot be undone.
-              </p>
-            </div>
-            <div className="flex items-center justify-end gap-2 border-t border-gray-200 px-6 py-4 dark:border-slate-700">
-              <button
-                type="button"
-                onClick={() => setDeleteModalChild(null)}
-                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!deleteModalChild) return;
-                  await handleDeleteChild(deleteModalChild);
-                  setDeleteModalChild(null);
-                }}
-                className="rounded-md bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
+        <DeleteChildModal
+          child={deleteModalChild}
+          onClose={() => setDeleteModalChild(null)}
+          onDelete={async (child) => {
+            await handleDeleteChild(child);
+          }}
+        />
       )}
     </Layout>
   );

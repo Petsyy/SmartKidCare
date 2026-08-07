@@ -1,7 +1,7 @@
 import { Alert } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import { ALLOWED_MIME_TYPES } from "@/src/features/enrollment/constants";
-import { validateDocument } from "@/src/features/enrollment/utils";
+import { validateDocument } from "@/src/features/enrollment/utils/enrollment-utils";
 
 export const useDocumentPicker = () => {
   const pickDocument = async (

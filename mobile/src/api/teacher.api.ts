@@ -1,8 +1,6 @@
 import { apiClient, apiFormDataClient } from "./client";
 import type { Child } from "./api.types";
 
-
-
 export type {
   ChildEnrollmentRequestPayload,
   ChildEnrollmentRequestFiles,
@@ -25,7 +23,7 @@ import type {
 
 export const getEnrollmentCenters = async (): Promise<EnrollmentCenterOption[]> => {
   const data = await apiClient<{ centers?: EnrollmentCenterOption[] }>(
-    "/api/children/enrollment-centers",
+    "/api/enrollment/centers",
   );
   return Array.isArray(data.centers) ? data.centers : [];
 };
@@ -60,14 +58,14 @@ export const submitChildEnrollmentRequest = async (
   }
 
   return apiFormDataClient<ChildEnrollmentSubmissionResponse>(
-    "/api/children/enrollment-requests",
+    "/api/enrollment/requests",
     formData,
   );
 };
 
 export const getMyEnrollmentRequests = async (): Promise<TeacherEnrollmentRequest[]> => {
   const data = await apiClient<{ requests?: TeacherEnrollmentRequest[] }>(
-    "/api/children/enrollment-requests/mine",
+    "/api/enrollment/requests/mine",
   );
   return Array.isArray(data.requests) ? data.requests : [];
 };
@@ -76,7 +74,7 @@ export const resetEnrollmentRequestParentPassword = async (
   requestId: string,
 ): Promise<ParentResetPasswordResponse> => {
   return apiClient<ParentResetPasswordResponse>(
-    `/api/children/enrollment-requests/${requestId}/reset-parent-password`,
+    `/api/enrollment/requests/${requestId}/reset-parent-password`,
     { method: "POST" },
   );
 };
@@ -85,7 +83,7 @@ export const getEnrollmentRequestParentCredentials = async (
   requestId: string,
 ): Promise<ParentCredentialsResponse> => {
   return apiClient<ParentCredentialsResponse>(
-    `/api/children/enrollment-requests/${requestId}/parent-credentials`,
+    `/api/enrollment/requests/${requestId}/parent-credentials`,
   );
 };
 

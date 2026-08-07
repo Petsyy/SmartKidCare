@@ -3,25 +3,20 @@ import {
   Alert,
   Modal,
   ScrollView,
-  StatusBar,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
 import * as Icons from "lucide-react-native";
 import { PasswordStrengthFeedback } from "@/src/features/auth/components";
-import UserGuideModal from "@/src/components/user-guide";
+import UserGuideModal from "@/src/components/ui/user-guide";
 import { getDaycareCenterDisplay } from "@/src/utils/daycare-center-format";
 import {
   type ProfileRole,
   type UserProfile,
   useProfileScreen,
 } from "@/src/features/profile/hooks/useProfileScreen";
+import { ScreenShell, ScreenHeader, PasswordInput } from "@/src/components/ui";
 
 type Props = {
   role: ProfileRole;
@@ -36,7 +31,6 @@ export default function ProfileScreen({
   fetchProfile,
   showAssignedCenter = false,
 }: Props) {
-  const insets = useSafeAreaInsets();
   const {
     profile,
     loading,
@@ -75,36 +69,17 @@ export default function ProfileScreen({
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
-        <StatusBar
-          barStyle="light-content"
-          translucent
-          backgroundColor="transparent"
-        />
+      <ScreenShell withKeyboardAvoiding={false}>
         <View className="flex-1 items-center justify-center">
           <View className="w-8 h-8 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" />
         </View>
-      </SafeAreaView>
+      </ScreenShell>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
-      <StatusBar
-        barStyle="light-content"
-        translucent
-        backgroundColor="transparent"
-      />
-
-      <View
-        style={{ paddingTop: insets.top + 12 }}
-        className="bg-teal-600 px-5 pb-5"
-      >
-        <Text className="text-3xl font-extrabold text-white">Profile</Text>
-        <Text className="text-lg text-teal-100 mt-1">
-          Manage your account settings
-        </Text>
-      </View>
+    <ScreenShell>
+      <ScreenHeader title="Profile" subtitle="Manage your account settings" />
 
       <ScrollView className="flex-1" contentContainerClassName="pb-8">
         <View className="m-6 rounded-3xl bg-teal-600 p-8 shadow-lg">
@@ -264,54 +239,26 @@ export default function ProfileScreen({
                 <Text className="text-sm font-semibold text-gray-700 mb-2">
                   Current Password
                 </Text>
-                <View className="relative">
-                  <TextInput
-                    secureTextEntry={hideCurrentPassword}
-                    value={currentPassword}
-                    onChangeText={setCurrentPassword}
-                    placeholder="Enter current password"
-                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-2xl text-gray-900"
-                    editable={!passwordLoading}
-                  />
-                  <TouchableOpacity
-                    onPress={() => setHideCurrentPassword((prev) => !prev)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2"
-                    disabled={passwordLoading}
-                  >
-                    {hideCurrentPassword ? (
-                      <Icons.Eye size={20} color="#6B7280" />
-                    ) : (
-                      <Icons.EyeOff size={20} color="#6B7280" />
-                    )}
-                  </TouchableOpacity>
-                </View>
+                <PasswordInput
+                  value={currentPassword}
+                  onChangeText={setCurrentPassword}
+                  placeholder="Enter current password"
+                  inputClassName="rounded-2xl"
+                  editable={!passwordLoading}
+                />
               </View>
 
               <View>
                 <Text className="text-sm font-semibold text-gray-700 mb-2">
                   New Password
                 </Text>
-                <View className="relative">
-                  <TextInput
-                    secureTextEntry={hideNewPassword}
-                    value={newPassword}
-                    onChangeText={setNewPassword}
-                    placeholder="Enter new password"
-                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-2xl text-gray-900"
-                    editable={!passwordLoading}
-                  />
-                  <TouchableOpacity
-                    onPress={() => setHideNewPassword((prev) => !prev)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2"
-                    disabled={passwordLoading}
-                  >
-                    {hideNewPassword ? (
-                      <Icons.Eye size={20} color="#6B7280" />
-                    ) : (
-                      <Icons.EyeOff size={20} color="#6B7280" />
-                    )}
-                  </TouchableOpacity>
-                </View>
+                <PasswordInput
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  placeholder="Enter new password"
+                  inputClassName="rounded-2xl"
+                  editable={!passwordLoading}
+                />
                 <PasswordStrengthFeedback password={newPassword} />
               </View>
 
@@ -319,27 +266,13 @@ export default function ProfileScreen({
                 <Text className="text-sm font-semibold text-gray-700 mb-2">
                   Confirm Password
                 </Text>
-                <View className="relative">
-                  <TextInput
-                    secureTextEntry={hideConfirmPassword}
-                    value={confirmPassword}
-                    onChangeText={setConfirmPassword}
-                    placeholder="Confirm new password"
-                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-2xl text-gray-900"
-                    editable={!passwordLoading}
-                  />
-                  <TouchableOpacity
-                    onPress={() => setHideConfirmPassword((prev) => !prev)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2"
-                    disabled={passwordLoading}
-                  >
-                    {hideConfirmPassword ? (
-                      <Icons.Eye size={20} color="#6B7280" />
-                    ) : (
-                      <Icons.EyeOff size={20} color="#6B7280" />
-                    )}
-                  </TouchableOpacity>
-                </View>
+                <PasswordInput
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  placeholder="Confirm new password"
+                  inputClassName="rounded-2xl"
+                  editable={!passwordLoading}
+                />
               </View>
             </View>
 
@@ -387,6 +320,6 @@ export default function ProfileScreen({
         onClose={() => setShowHelpModal(false)}
         role={role}
       />
-    </SafeAreaView>
+    </ScreenShell>
   );
 }

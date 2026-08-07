@@ -8,7 +8,7 @@ import {
   resetEnrollmentRequestParentPassword,
   type TeacherEnrollmentRequest,
 } from "@/src/api/teacher.api";
-import { inferMimeType } from "@/src/features/enrollment/utils";
+import { inferMimeType } from "@/src/features/enrollment/utils/enrollment-utils";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { useAuth } from "@/src/hooks/use-auth";
 
@@ -16,11 +16,14 @@ interface SubmissionData {
   childData: {
     firstName: string; middleName?: string; lastName: string;
     dateOfBirth: string; age: number; gender: "male" | "female";
+    homeAddress: string;
     programType: string; daycareCenterId: string; enrollmentDate: string; schoolYear: string;
+    weight: number; height: number;
   };
   parentData: {
     parentFirstName: string; parentMiddleName?: string; parentLastName: string;
     parentEmail: string; parentPhone: string;
+    parentRelationship: "Mother" | "Father" | "Guardian" | "Grandparent" | "Other";
   };
   documentData: {
     birthCertificate: { uri: string; name: string; mimeType: string } | null;
@@ -104,29 +107,41 @@ export const useEnrollmentSubmit = (onSuccess?: () => void) => {
     [submitEnrollmentMutation, queryClient, onSuccess],
   );
 
+  const viewPasswordMutation = useMutation({
+    mutationFn: async (requestId: string) => {
+      if (!isAuthenticated) throw new Error("No authentication token.");
+      return getEnrollmentRequestParentCredentials(requestId);
+    },
+  });
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: async (requestId: string) => {
+      if (!isAuthenticated) throw new Error("No authentication token.");
+      return resetEnrollmentRequestParentPassword(requestId);
+    },
+  });
+
   const viewParentPassword = useCallback(
     async (request: TeacherEnrollmentRequest) => {
-      if (!isAuthenticated) { Alert.alert("Error", "No authentication token."); return; }
       try {
-        const response = await getEnrollmentRequestParentCredentials(request._id);
+        const response = await viewPasswordMutation.mutateAsync(request._id);
         showCredentialsAlert("Parent Credentials", response.credentials);
       } catch (error: any) {
         Alert.alert("View Password Error", error?.message || "Failed to fetch parent credentials.");
       }
     },
-    [isAuthenticated, showCredentialsAlert],
+    [viewPasswordMutation, showCredentialsAlert],
   );
 
   const resetParentPassword = useCallback(
     (request: TeacherEnrollmentRequest, onRefresh: () => void) => {
-      if (!isAuthenticated) { Alert.alert("Error", "No authentication token."); return; }
       Alert.alert("Reset Parent Password", `Generate a new temporary password for ${request.parent.firstName} ${request.parent.lastName}?`, [
         { text: "Cancel", style: "cancel" },
         {
           text: "Reset", style: "destructive",
           onPress: async () => {
             try {
-              const response = await resetEnrollmentRequestParentPassword(request._id);
+              const response = await resetPasswordMutation.mutateAsync(request._id);
               showCredentialsAlert("Parent Credentials Updated", response.credentials);
               onRefresh();
             } catch (error: any) {
@@ -136,8 +151,15 @@ export const useEnrollmentSubmit = (onSuccess?: () => void) => {
         },
       ]);
     },
-    [isAuthenticated, showCredentialsAlert],
+    [resetPasswordMutation, showCredentialsAlert],
   );
 
-  return { isSubmitting: submitEnrollmentMutation.isPending, submitEnrollment, viewParentPassword, resetParentPassword };
+  return {
+    isSubmitting: submitEnrollmentMutation.isPending,
+    isViewingPassword: viewPasswordMutation.isPending,
+    isResettingPassword: resetPasswordMutation.isPending,
+    submitEnrollment,
+    viewParentPassword,
+    resetParentPassword,
+  };
 };

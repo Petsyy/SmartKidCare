@@ -4,12 +4,12 @@ import {
   Utensils,
   BarChart3,
   Settings,
-  Shield,
   ClipboardList,
   Building2,
   Baby,
   UserCog,
 } from "lucide-react";
+import { useSystemSettings } from "../../context/SystemSettingsContext";
 
 type NavItem = {
   icon: React.ElementType;
@@ -67,16 +67,15 @@ export default function Sidebar({
   activeItem = "users",
   onNavigate,
 }: SidebarProps) {
+  const { settings, loading } = useSystemSettings();
+
   return (
     <aside className="fixed left-0 top-0 flex h-screen w-60 flex-col bg-linear-to-b from-teal-600 to-teal-700 text-white transition-colors dark:from-slate-900 dark:to-slate-800">
       {/* Logo Section */}
       <div className="border-b border-teal-500/30 p-6 dark:border-slate-700">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-100 ring-1 ring-cyan-200 dark:bg-cyan-500/20 dark:ring-cyan-500/30">
-            <Shield className="text-cyan-700 dark:text-cyan-300" size={24} />
-          </div>
           <div>
-            <h1 className="text-lg font-bold">Smart KidCare</h1>
+            <h1 className="text-lg font-bold">{loading ? "Loading..." : settings?.schoolName || "Smart KidCare"}</h1>
             <p className="text-xs text-teal-200 dark:text-slate-300">
               Admin Panel
             </p>

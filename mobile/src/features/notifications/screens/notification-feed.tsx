@@ -1,21 +1,10 @@
 import type { ComponentType } from "react";
 import { AlertCircle } from "lucide-react-native";
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StatusBar,
-  Text,
-  View,
+import {ActivityIndicator,Alert,Pressable,RefreshControl,ScrollView,Text,View,
 } from "react-native";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
 import type { NotificationFilter } from "@/src/features/notifications/types";
 import { formatArchivedAt, formatDateLabel } from "@/src/features/notifications/utils";
+import { ScreenShell, ScreenHeader } from "@/src/components/ui";
 
 type NotificationItemBase = {
   id: string;
@@ -93,7 +82,7 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
   cardUi,
   resolveTitle = defaultResolveTitle,
 }: Props<T>) {
-  const insets = useSafeAreaInsets();
+
   const fallbackUi: CardUI = {
     fallbackTitle: "Notification",
     icon: AlertCircle,
@@ -103,13 +92,11 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-
-      <View style={{ paddingTop: insets.top + 12 }} className="bg-teal-600 px-5 pb-5">
-        <Text className="text-3xl font-extrabold text-white">Notifications</Text>
-        <Text className="mt-1 text-lg text-teal-100">{subtitle}</Text>
-      </View>
+    <ScreenShell>
+      <ScreenHeader
+        title="Notifications"
+        subtitle={subtitle}
+      />
 
       <ScrollView
         className="flex-1 px-6"
@@ -365,6 +352,6 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
           ) : null}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </ScreenShell>
   );
 }

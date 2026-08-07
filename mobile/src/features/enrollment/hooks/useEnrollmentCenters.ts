@@ -1,8 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import {
-  getEnrollmentCenters,
-  type EnrollmentCenterOption,
-} from "@/src/api/teacher.api";
+import {getEnrollmentCenters,type EnrollmentCenterOption} from "@/src/api/teacher.api";
 import { getProfile } from "@/src/api/authentication.api";
 import { useAuth } from "@/src/hooks/use-auth";
 

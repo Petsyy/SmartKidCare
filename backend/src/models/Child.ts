@@ -9,6 +9,12 @@ const ChildSchema = new mongoose.Schema(
     dateOfBirth: { type: Date, required: true },
     age: { type: Number, required: true },
     gender: { type: String, enum: ["male", "female"], required: true },
+    homeAddress: { type: String, required: true, trim: true, maxlength: 300 },
+    parentRelationship: {
+      type: String,
+      enum: ["Mother", "Father", "Guardian", "Grandparent", "Other"],
+      required: true,
+    },
     programType: {
       type: String,
       enum: ["4Ps Beneficiary", "Regular Enrollee (Non-beneficiary)"],
@@ -18,6 +24,14 @@ const ChildSchema = new mongoose.Schema(
 
     enrollmentDate: { type: Date, required: true },
     schoolYear: { type: String, required: true },
+    weight: { type: Number, default: null },
+    height: { type: Number, default: null },
+    bmi: { type: Number, default: null },
+    nutritionalStatus: {
+      type: String,
+      enum: ["Normal", "Underweight", "Severely Underweight", "Overweight", null],
+      default: null,
+    },
     status: {
       type: String,
       enum: ["Active", "Inactive"],

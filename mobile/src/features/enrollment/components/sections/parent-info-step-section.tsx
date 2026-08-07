@@ -1,14 +1,10 @@
 import { Users } from "lucide-react-native";
 import { Text, View } from "react-native";
-import { Controller, type Control } from "react-hook-form";
-import { Input } from "@/src/features/enrollment/components/form";
+import { type Control } from "react-hook-form";
+import { FormInput, FormSelectField } from "@/src/features/enrollment/components/form";
 import { enrollFieldStyles } from "@/src/features/enrollment/styles";
 
-export function ParentInfoStepSection({
-  control,
-}: {
-  control: Control<any>;
-}) {
+export function ParentInfoStepSection({ control }: { control: Control<any> }) {
   return (
     <View
       className="rounded-3xl border border-gray-200 bg-white p-4"
@@ -33,79 +29,57 @@ export function ParentInfoStepSection({
       </Text>
 
       <View className="mt-4 flex-row gap-3">
-        <Controller
+        <FormInput
           control={control}
           name="parentFirstName"
-          render={({ field: { onChange, value }, fieldState: { error } }) => (
-            <Input
-              containerStyle={enrollFieldStyles.inputHalf}
-              label="First Name *"
-              placeholder="e.g. Maria"
-              value={value}
-              onChangeText={onChange}
-              error={error?.message}
-            />
-          )}
+          containerStyle={enrollFieldStyles.inputHalf}
+          label="First Name *"
+          placeholder="e.g. Maria"
         />
-        <Controller
+        <FormInput
           control={control}
           name="parentLastName"
-          render={({ field: { onChange, value }, fieldState: { error } }) => (
-            <Input
-              containerStyle={enrollFieldStyles.inputHalf}
-              label="Last Name *"
-              placeholder="e.g. Dela Cruz"
-              value={value}
-              onChangeText={onChange}
-              error={error?.message}
-            />
-          )}
+          containerStyle={enrollFieldStyles.inputHalf}
+          label="Last Name *"
+          placeholder="e.g. Dela Cruz"
         />
       </View>
 
-      <Controller
+      <FormInput
         control={control}
         name="parentMiddleName"
-        render={({ field: { onChange, value }, fieldState: { error } }) => (
-          <Input
-            label="Middle Name *"
-            placeholder="e.g. Santos"
-            value={value}
-            onChangeText={onChange}
-            error={error?.message}
-          />
-        )}
+        label="Middle Name *"
+        placeholder="e.g. Santos"
       />
 
-      <Controller
+      <FormInput
         control={control}
         name="parentEmail"
-        render={({ field: { onChange, value }, fieldState: { error } }) => (
-          <Input
-            label="Email Address *"
-            placeholder="maria@example.com"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            value={value}
-            onChangeText={onChange}
-            error={error?.message}
-          />
-        )}
+        label="Email Address *"
+        placeholder="maria@example.com"
+        keyboardType="email-address"
+        autoCapitalize="none"
       />
 
-      <Controller
+      <FormInput
         control={control}
         name="parentPhone"
-        render={({ field: { onChange, value }, fieldState: { error } }) => (
-          <Input
-            label="Phone Number *"
-            placeholder="0912 345 6789"
-            keyboardType="phone-pad"
-            value={value}
-            onChangeText={onChange}
-            error={error?.message}
-          />
-        )}
+        label="Phone Number *"
+        placeholder="0912 345 6789"
+        keyboardType="phone-pad"
+      />
+
+      <FormSelectField
+        control={control}
+        name="parentRelationship"
+        label="Relationship to Child *"
+        options={[
+          { label: "Mother", value: "Mother" },
+          { label: "Father", value: "Father" },
+          { label: "Guardian", value: "Guardian" },
+          { label: "Grandparent", value: "Grandparent" },
+          { label: "Other", value: "Other" },
+        ]}
       />
     </View>
   );

@@ -1,21 +1,11 @@
 import { useMemo } from "react";
 import { useForm } from "react-hook-form";
-import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
+import { View, Text, TextInput, Pressable, Alert } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
-import { ChevronLeft, MailCheck } from "lucide-react-native";
+import { MailCheck } from "lucide-react-native";
 import { resendTeacherPasswordOtp, verifyTeacherPasswordOtp, } from "@/src/api/authentication.api";
+import { AuthLayout, GradientButton } from "@/src/components/ui";
 
 export default function VerifyOtpScreen() {
   const router = useRouter();
@@ -81,83 +71,55 @@ export default function VerifyOtpScreen() {
   };
 
   return (
-    <LinearGradient colors={["#ecfdf5", "#d1fae5", "#a7f3d0"]} className="flex-1">
-      <SafeAreaView className="flex-1" edges={["top"]}>
-        <Pressable
-          onPress={() => router.replace("/(auth)/login")}
-          className="ml-4 mt-2 p-2 self-start"
-        >
-          <ChevronLeft size={28} color="#0d9488" />
-        </Pressable>
+    <AuthLayout onBack={() => router.replace("/(auth)/login")}>
+      <View className="items-center mb-6">
+        <View className="w-16 h-16 rounded-full bg-teal-100 items-center justify-center mb-3">
+          <MailCheck size={30} color="#0d9488" />
+        </View>
+        <Text className="text-2xl font-bold text-gray-900 text-center">
+          Verify OTP
+        </Text>
+        <Text className="text-gray-600 text-center mt-2">
+          Enter the 6-digit code sent to
+        </Text>
+        <Text className="text-teal-700 font-semibold text-center mt-1">
+          {email || "your email"}
+        </Text>
+      </View>
 
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-          className="flex-1 justify-center px-6"
-        >
-          <View className="bg-white rounded-3xl p-6 shadow-lg shadow-gray-200">
-            <View className="items-center mb-6">
-              <View className="w-16 h-16 rounded-full bg-teal-100 items-center justify-center mb-3">
-                <MailCheck size={30} color="#0d9488" />
-              </View>
-              <Text className="text-2xl font-bold text-gray-900 text-center">
-                Verify OTP
-              </Text>
-              <Text className="text-gray-600 text-center mt-2">
-                Enter the 6-digit code sent to
-              </Text>
-              <Text className="text-teal-700 font-semibold text-center mt-1">
-                {email || "your email"}
-              </Text>
-            </View>
+      <Text className="text-sm font-semibold text-gray-700 mb-2">
+        One-Time Password
+      </Text>
+      <TextInput
+        value={otp}
+        onChangeText={(value) =>
+          setValue("otp", value.replace(/[^0-9]/g, "").slice(0, 6))
+        }
+        keyboardType="number-pad"
+        maxLength={6}
+        placeholder="Enter 6-digit OTP"
+        placeholderTextColor="#9CA3AF"
+        className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 text-center tracking-[6px]"
+      />
 
-            <Text className="text-sm font-semibold text-gray-700 mb-2">
-              One-Time Password
-            </Text>
-            <TextInput
-              value={otp}
-              onChangeText={(value) =>
-                setValue("otp", value.replace(/[^0-9]/g, "").slice(0, 6))
-              }
-              keyboardType="number-pad"
-              maxLength={6}
-              placeholder="Enter 6-digit OTP"
-              placeholderTextColor="#9CA3AF"
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 text-center tracking-[6px]"
-            />
+      <GradientButton
+        label="Verify OTP"
+        onPress={handleVerifyOtp}
+        loading={verifyMutation.isPending}
+        colors={["#10b981", "#059669"]}
+        className="mt-6"
+      />
 
-            <Pressable
-              onPress={handleVerifyOtp}
-              disabled={verifyMutation.isPending}
-              className="mt-6 rounded-xl overflow-hidden"
-              style={({ pressed }) => [{ opacity: verifyMutation.isPending ? 0.7 : pressed ? 0.85 : 1 }]}
-            >
-              <LinearGradient
-                colors={["#10b981", "#059669"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                className="w-full py-4 items-center justify-center rounded-xl"
-              >
-                {verifyMutation.isPending ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text className="text-white text-lg font-bold">Verify OTP</Text>
-                )}
-              </LinearGradient>
-            </Pressable>
-
-            <Pressable
-              onPress={handleResendOtp}
-              disabled={resendMutation.isPending}
-              className="mt-4 items-center"
-              style={({ pressed }) => [{ opacity: resendMutation.isPending ? 0.7 : pressed ? 0.8 : 1 }]}
-            >
-              <Text className="text-teal-700 font-semibold">
-                {resendMutation.isPending ? "Resending..." : "Resend OTP"}
-              </Text>
-            </Pressable>
-          </View>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </LinearGradient>
+      <Pressable
+        onPress={handleResendOtp}
+        disabled={resendMutation.isPending}
+        className="mt-4 items-center"
+        style={({ pressed }) => [{ opacity: resendMutation.isPending ? 0.7 : pressed ? 0.8 : 1 }]}
+      >
+        <Text className="text-teal-700 font-semibold">
+          {resendMutation.isPending ? "Resending..." : "Resend OTP"}
+        </Text>
+      </Pressable>
+    </AuthLayout>
   );
 }

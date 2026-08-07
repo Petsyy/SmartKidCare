@@ -9,6 +9,7 @@ export default function ChildDetailsLayout() {
           headerShown: false,
         }}
       />
+      <Stack.Screen name="competencies/[childId]" options={{ headerShown: false }} />
     </Stack>
   );
 }

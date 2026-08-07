@@ -3,20 +3,16 @@ import {
   Text,
   Pressable,
   ActivityIndicator,
-  TextInput,
   ScrollView,
-  Alert,
   StatusBar,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import {
-  ChevronLeft,
-  Search,
   CheckCircle2,
   XCircle,
   Users,
 } from "lucide-react-native";
 import { useTeacherAttendance } from "@/src/features/attendance/hooks";
+import { ScreenShell, ScreenHeader, SearchBar, MiniStatCard } from "@/src/components/ui";
 
 export default function RecordAttendance() {
   const {
@@ -38,40 +34,20 @@ export default function RecordAttendance() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 justify-center items-center">
+      <ScreenShell className="flex-1 bg-gray-50 justify-center items-center" withKeyboardAvoiding={false}>
         <ActivityIndicator size="large" color="#14B8A6" />
         <Text className="mt-4 text-gray-600">Loading children...</Text>
-      </SafeAreaView>
+      </ScreenShell>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
-      <StatusBar
-        barStyle="light-content"
-        translucent
-        backgroundColor="transparent"
+    <ScreenShell>
+      <ScreenHeader
+        title="Record Attendance"
+        subtitle={selectedDateLabel}
+        onBack={() => router.push("/(teacher)")}
       />
-
-      {/* HEADER */}
-      <View className="bg-teal-600 px-6 pt-12 pb-6">
-        <View className="flex-row mb-2">
-          <Pressable
-            onPress={() => router.push("/(teacher)")}
-            className="h-10 w-10 items-center justify-center rounded-full bg-white/20 mr-3 mt-4"
-          >
-            <ChevronLeft size={22} color="#FFFFFF" />
-          </Pressable>
-          <View className="flex-1">
-            <Text className="text-3xl font-extrabold text-white">
-              Record Attendance
-            </Text>
-            <Text className="text-base text-teal-100 mt-1">
-              {selectedDateLabel}
-            </Text>
-          </View>
-        </View>
-      </View>
 
       <ScrollView className="flex-1" keyboardDismissMode="on-drag">
         {/* Read-Only Banner */}
@@ -98,47 +74,24 @@ export default function RecordAttendance() {
         {/* Stats Cards */}
         <View className="px-6 pb-5 pt-4">
           <View className="flex-row justify-between gap-3">
-            <View className="flex-1 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
-              <View className="flex-row items-center">
-                <View className="h-8 w-8 items-center justify-center rounded-lg bg-gray-100">
-                  <Users size={16} color="#4B5563" />
-                </View>
-                <Text className="ml-2 text-sm font-semibold uppercase tracking-wide text-gray-600">
-                  Total
-                </Text>
-              </View>
-              <Text className="mt-2 text-3xl font-black text-gray-800">
-                {stats.total}
-              </Text>
-            </View>
-
-            <View className="flex-1 rounded-2xl border border-teal-200 bg-teal-50 p-3 shadow-sm">
-              <View className="flex-row items-center">
-                <View className="h-8 w-8 items-center justify-center rounded-lg bg-teal-100">
-                  <CheckCircle2 size={16} color="#0F766E" />
-                </View>
-                <Text className="ml-2 text-sm font-semibold uppercase tracking-wide text-teal-700">
-                  Present
-                </Text>
-              </View>
-              <Text className="mt-2 text-3xl font-black text-teal-700">
-                {stats.present}
-              </Text>
-            </View>
-
-            <View className="flex-1 rounded-2xl border border-red-200 bg-red-50 p-3 shadow-sm">
-              <View className="flex-row items-center">
-                <View className="h-8 w-8 items-center justify-center rounded-lg bg-red-100">
-                  <XCircle size={16} color="#B91C1C" />
-                </View>
-                <Text className="ml-2 text-sm font-semibold uppercase tracking-wide text-red-700">
-                  Absent
-                </Text>
-              </View>
-              <Text className="mt-2 text-3xl font-black text-red-700">
-                {stats.absent}
-              </Text>
-            </View>
+            <MiniStatCard
+              label="Total"
+              value={stats.total}
+              icon={Users}
+              variant="default"
+            />
+            <MiniStatCard
+              label="Present"
+              value={stats.present}
+              icon={CheckCircle2}
+              variant="teal"
+            />
+            <MiniStatCard
+              label="Absent"
+              value={stats.absent}
+              icon={XCircle}
+              variant="red"
+            />
           </View>
         </View>
 
@@ -169,19 +122,11 @@ export default function RecordAttendance() {
           </View>
         )}
 
-        {/* Search Bar */}
-        <View className="px-6 pb-5">
-          <View className="flex-row items-center rounded-2xl border border-gray-200 bg-white px-4 py-3.5 shadow-sm">
-            <Search size={20} color="#6B7280" />
-            <TextInput
-              className="flex-1 ml-3 text-lg text-gray-800"
-              placeholder="Search by child name or student ID"
-              placeholderTextColor="#9CA3AF"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-          </View>
-        </View>
+        <SearchBar
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder="Search by child name or student ID"
+        />
 
         {/* Children List */}
         <View className="px-6">
@@ -294,6 +239,6 @@ export default function RecordAttendance() {
           </Pressable>
         )}
       </View>
-    </SafeAreaView>
+    </ScreenShell>
   );
 }

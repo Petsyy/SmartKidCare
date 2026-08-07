@@ -17,47 +17,6 @@ export type UploadedChildDocument = {
   hash?: string;
 };
 
-export const normalizeString = (value: unknown): string =>
-  String(value ?? "").trim();
-
-export const normalizeOptionalString = (
-  value: unknown,
-): string | undefined => {
-  const normalized = normalizeString(value);
-  return normalized ? normalized : undefined;
-};
-
-export const normalizeEmail = (value: unknown): string | undefined => {
-  const normalized = normalizeOptionalString(value);
-  return normalized ? normalized.toLowerCase() : undefined;
-};
-
-export const escapeRegex = (value: string) =>
-  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-export const parseDate = (value: unknown): Date | null => {
-  const normalized = normalizeString(value);
-  if (!normalized) return null;
-
-  const parsed = new Date(normalized);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-};
-
-export const computeAgeFromDate = (value: Date): number => {
-  const phTime = new Date().toLocaleString("en-US", {
-    timeZone: "Asia/Manila",
-  });
-  const now = new Date(phTime);
-
-  let age = now.getFullYear() - value.getFullYear();
-  const monthDiff = now.getMonth() - value.getMonth();
-
-  if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < value.getDate())) {
-    age -= 1;
-  }
-
-  return Math.max(0, age);
-};
 
 export const splitChildName = (
   rawFullName: string,

@@ -6,12 +6,18 @@ export type Child = {
   middleName?: string;
   lastName: string;
   gender: string;
+  homeAddress?: string;
+  parentRelationship?: string;
   age: string | number;
   studentId: string;
   schoolYear: string;
   status: string;
   enrollmentDate: string;
   dateOfBirth?: string | Date;
+  weight?: number | null;
+  height?: number | null;
+  bmi?: number | null;
+  nutritionalStatus?: string | null;
   parent?: {
     firstName: string;
     middleName?: string;

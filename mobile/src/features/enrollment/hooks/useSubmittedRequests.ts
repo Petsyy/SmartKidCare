@@ -1,19 +1,14 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getMyEnrollmentRequests } from "@/src/api/teacher.api";
-import { buildRequestChildName } from "@/src/features/enrollment/utils";
+import { buildRequestChildName } from "@/src/features/enrollment/utils/enrollment-utils";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
-import { useSubmittedRequestsUiStore } from "@/src/features/enrollment/stores/submitted-requests-ui.store";
 import { useAuth } from "@/src/hooks/use-auth";
 
 export const useSubmittedRequests = () => {
   const { isAuthenticated } = useAuth();
-  const {
-    submittedStatusFilter,
-    submittedSearchQuery,
-    setSubmittedStatusFilter,
-    setSubmittedSearchQuery,
-  } = useSubmittedRequestsUiStore();
+  const [submittedStatusFilter, setSubmittedStatusFilter] = useState<"all" | "pending" | "rejected">("all");
+  const [submittedSearchQuery, setSubmittedSearchQuery] = useState("");
 
   const {
     data: submittedRequests = [],

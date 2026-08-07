@@ -2,7 +2,7 @@ import { Search, Bell, ChevronRight, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { API_BASE } from "../config/config.api";
+import { API_BASE } from "@/api/config";
 import { useAuthSession } from "../auth/useAuthSession";
 import { webQueryKeys } from "@/lib/query-keys";
 

@@ -1,84 +1,17 @@
 import { useNavigate } from "react-router-dom";
-import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
-import {
-  Users,
-  Home,
-  UserCircle,
-  Heart,
-  Smile,
-  Download,
-  RefreshCw,
-  Clock,
-} from "lucide-react";
+import { Users, Home, UserCircle, Heart, Smile } from "lucide-react";
 import Layout from "@/components/layout/Layout";
-import {
-  useReportAnalytics,
-  type ReportDatePreset,
-} from "@/hooks/useReportAnalytics";
-
-const PRESET_OPTIONS: Array<{ value: ReportDatePreset; label: string }> = [
-  { value: "7d", label: "Last 7 Days" },
-  { value: "30d", label: "Last 30 Days" },
-  { value: "90d", label: "Last 90 Days" },
-  { value: "all", label: "All Time" },
-  { value: "custom", label: "Custom" },
-];
+import { PageHeader } from "@/components/ui/PageHeader";
+import { ErrorAlert } from "@/components/ui/ErrorAlert";
+import { useReportAnalytics } from "@/features/reports/hooks/useReportAnalytics";
+import { ReportsFilters } from "@/features/reports/components/ReportsFilters";
+import { ReportsDailySummaryTable } from "@/features/reports/components/ReportsTables";
+import { StatCard } from "@/components/ui/StatCard";
+import { CompetencyAnalytics } from "@/features/reports/components/CompetencyAnalytics";
+import { PrintableReportSection } from "@/features/reports/components/PrintableReportSection";
 
 const NUMBER_FORMATTER = new Intl.NumberFormat("en-PH");
-
 const formatNumber = (value: number) => NUMBER_FORMATTER.format(value);
-
-const StatCard = ({
-  title,
-  value,
-  subtitle,
-  icon: Icon,
-  color,
-}: {
-  title: string;
-  value: string;
-  subtitle: string;
-  icon: any;
-  color: "blue" | "teal" | "purple" | "rose";
-}) => {
-  const colorMap = {
-    blue: "bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300",
-    teal: "bg-teal-50 text-teal-600 dark:bg-teal-500/15 dark:text-teal-300",
-    purple: "bg-purple-50 text-purple-600 dark:bg-purple-500/15 dark:text-purple-300",
-    rose: "bg-rose-50 text-rose-600 dark:bg-rose-500/15 dark:text-rose-300",
-  };
-
-  return (
-    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1">
-          <p className="text-sm font-medium text-gray-600 dark:text-slate-400">{title}</p>
-          <div className="mt-2 flex items-baseline gap-2">
-            <p className="text-3xl font-semibold text-gray-900 dark:text-slate-100">{value}</p>
-          </div>
-          <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">{subtitle}</p>
-        </div>
-        <div className={`rounded-lg p-3 ${colorMap[color]}`}>
-          <Icon className="h-6 w-6" />
-        </div>
-      </div>
-    </div>
-  );
-};
 
 export default function ReportAnalytics() {
   const navigate = useNavigate();
@@ -95,18 +28,20 @@ export default function ReportAnalytics() {
     activeRange,
     lastUpdatedLabel,
     summary,
-    dailyTrends,
+    genderBreakdown,
+    ageBreakdown,
+    studentList,
+    studentListPagination,
+    studentPage,
+    setStudentPage,
+    studentPageSize,
+    setStudentPageSize,
     recentDailyRows,
-    topExceptions,
-    statusDistribution,
     hasData,
     fetchReportData,
     downloadCsv,
+    printReport,
   } = useReportAnalytics();
-
-  const hasRealStatusData = statusDistribution.some(
-    (item) => item.name !== "No Data",
-  );
 
   return (
     <Layout
@@ -115,108 +50,44 @@ export default function ReportAnalytics() {
       onNavigate={(path) => navigate(`/${path}`)}
     >
       <div className="space-y-6 p-8">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-slate-50">
-            Reports & Analytics
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-slate-400">
-            Performance reports for attendance, feeding, and exception trends.
-          </p>
+        <div className="no-print">
+          <PageHeader
+            title="Reports & Analytics"
+            subtitle="Attendance, feeding, enrollment, competency, and printable student reports."
+          />
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div>
-              <p className="text-sm font-semibold text-gray-900 dark:text-slate-50">
-                Report Range
-              </p>
-              <p className="text-sm text-gray-600 dark:text-slate-400">{activeRange.label}</p>
-              <p className="mt-1 inline-flex items-center gap-1 text-xs text-gray-500 dark:text-slate-400">
-                <Clock className="h-3.5 w-3.5" />
-                Last refreshed: {lastUpdatedLabel}
-              </p>
-            </div>
+        <ReportsFilters
+          datePreset={datePreset}
+          setDatePreset={setDatePreset}
+          customStartDate={customStartDate}
+          setCustomStartDate={setCustomStartDate}
+          customEndDate={customEndDate}
+          setCustomEndDate={setCustomEndDate}
+          customRangeError={customRangeError}
+          activeRange={activeRange}
+          lastUpdatedLabel={lastUpdatedLabel}
+          hasData={hasData}
+          onRefresh={() => void fetchReportData()}
+          onExport={downloadCsv}
+          onPrint={printReport}
+        />
 
-            <div className="flex flex-wrap gap-2">
-              {PRESET_OPTIONS.map((option) => {
-                const isActive = datePreset === option.value;
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => setDatePreset(option.value)}
-                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
-                      isActive
-                        ? "border-teal-300 bg-teal-100 text-teal-800 dark:border-teal-700 dark:bg-teal-900/40 dark:text-teal-200"
-                        : "border-gray-300 bg-white text-gray-600 hover:border-teal-200 hover:text-teal-700 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:border-teal-600 dark:hover:text-teal-200"
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {datePreset === "custom" && (
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <label className="space-y-1">
-                <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
-                  Start Date
-                </span>
-                <input
-                  type="date"
-                  value={customStartDate}
-                  onChange={(event) => setCustomStartDate(event.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
-                />
-              </label>
-              <label className="space-y-1">
-                <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
-                  End Date
-                </span>
-                <input
-                  type="date"
-                  value={customEndDate}
-                  onChange={(event) => setCustomEndDate(event.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
-                />
-              </label>
-            </div>
-          )}
-
-          {customRangeError && (
-            <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
-              {customRangeError}
-            </div>
-          )}
-
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => void fetchReportData()}
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Refresh Data
-            </button>
-            <button
-              type="button"
-              onClick={downloadCsv}
-              disabled={!hasData || !activeRange.isValid}
-              className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-3.5 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <Download className="h-4 w-4" />
-              Export CSV
-            </button>
-          </div>
-        </div>
-
-        {error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-200">
-            {error}
+        {!isLoading && (
+          <div className="no-print grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+            <StatCard title="Total Child Development Centers" value={formatNumber(summary.totalChildDevelopmentCenters)} subtitle="Active centers" icon={Home} color="blue" />
+            <StatCard title="Child Development Workers" value={formatNumber(summary.childDevelopmentWorkers)} subtitle="Active teacher accounts" icon={Users} color="teal" />
+            <StatCard title="Total Enrolled Children" value={formatNumber(summary.totalEnrolledChildren)} subtitle="Children in selected range" icon={UserCircle} color="purple" />
+            <StatCard title="4P's Beneficiaries" value={formatNumber(summary.fourPsBeneficiaries)} subtitle="Children under 4Ps program" icon={Heart} color="rose" />
+            <StatCard title="Regular Attendees" value={formatNumber(summary.regularAttendees)} subtitle="Non-beneficiary enrollees" icon={Smile} color="blue" />
           </div>
         )}
+
+        {error && <ErrorAlert message={error} />}
+
+        <div className="no-print">
+          <CompetencyAnalytics />
+        </div>
 
         {isLoading ? (
           <div className="flex h-56 items-center justify-center rounded-xl border border-gray-200 bg-white text-sm text-gray-500 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
@@ -224,315 +95,24 @@ export default function ReportAnalytics() {
           </div>
         ) : (
           <>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-              <StatCard
-                title="Total Child Development Centers"
-                value={formatNumber(summary.totalChildDevelopmentCenters)}
-                subtitle="Active centers"
-                icon={Home}
-                color="blue"
-              />
-              <StatCard
-                title="Child Development Workers"
-                value={formatNumber(summary.childDevelopmentWorkers)}
-                subtitle="Active teacher accounts"
-                icon={Users}
-                color="teal"
-              />
-              <StatCard
-                title="Total Enrolled Children"
-                value={formatNumber(summary.totalEnrolledDaycares)}
-                subtitle="Total enrolled children"
-                icon={UserCircle}
-                color="purple"
-              />
-              <StatCard
-                title="4P's Beneficiaries"
-                value={formatNumber(summary.fourPsBeneficiaries)}
-                subtitle="Children under 4Ps program"
-                icon={Heart}
-                color="rose"
-              />
-              <StatCard
-                title="Regular Attendees"
-                value={formatNumber(summary.regularAttendees)}
-                subtitle="Non-beneficiary enrollees"
-                icon={Smile}
-                color="blue"
-              />
+            <div className="no-print mt-4">
+              <ReportsDailySummaryTable recentDailyRows={recentDailyRows} />
             </div>
 
-            <div className="grid gap-4 lg:grid-cols-2">
-              <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-50">
-                    Daily Compliance Trend
-                  </h3>
-                  <p className="text-sm text-gray-500 dark:text-slate-400">
-                    Attendance and feeding compliance rates by day.
-                  </p>
-                </div>
-                {dailyTrends.length === 0 ? (
-                  <div className="flex h-64 items-center justify-center text-sm text-gray-500 dark:text-slate-400">
-                    No trend data for the selected range.
-                  </div>
-                ) : (
-                  <ResponsiveContainer width="100%" height={280}>
-                    <LineChart data={dailyTrends}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                      <XAxis
-                        dataKey="label"
-                        stroke="#6b7280"
-                        style={{ fontSize: "12px" }}
-                      />
-                      <YAxis
-                        domain={[0, 100]}
-                        stroke="#6b7280"
-                        style={{ fontSize: "12px" }}
-                        tickFormatter={(value) => `${value}%`}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "#fff",
-                          border: "1px solid #e5e7eb",
-                          borderRadius: "0.5rem",
-                          fontSize: "12px",
-                        }}
-                      />
-                      <Legend wrapperStyle={{ fontSize: "12px" }} />
-                      <Line
-                        type="monotone"
-                        dataKey="attendanceRate"
-                        stroke="#14b8a6"
-                        strokeWidth={2.5}
-                        dot={{ r: 3 }}
-                        name="Attendance Rate"
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="feedingRate"
-                        stroke="#10b981"
-                        strokeWidth={2.5}
-                        dot={{ r: 3 }}
-                        name="Feeding Rate"
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-
-              <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-50">
-                    Operational Comparison
-                  </h3>
-                  <p className="text-sm text-gray-500 dark:text-slate-400">
-                    Side-by-side comparison of your core child development metrics.
-                  </p>
-                </div>
-                {!hasRealStatusData ? (
-                  <div className="flex h-64 items-center justify-center text-sm text-gray-500 dark:text-slate-400">
-                    No overview data available.
-                  </div>
-                ) : (
-                  <ResponsiveContainer width="100%" height={280}>
-                    <BarChart
-                      data={statusDistribution}
-                      layout="vertical"
-                      margin={{ top: 8, right: 16, left: 24, bottom: 8 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                      <XAxis
-                        type="number"
-                        stroke="#6b7280"
-                        style={{ fontSize: "12px" }}
-                        allowDecimals={false}
-                      />
-                      <YAxis
-                        type="category"
-                        dataKey="name"
-                        width={175}
-                        stroke="#6b7280"
-                        style={{ fontSize: "12px" }}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "#fff",
-                          border: "1px solid #e5e7eb",
-                          borderRadius: "0.5rem",
-                          fontSize: "12px",
-                        }}
-                        formatter={(value?: number | string) => [
-                          formatNumber(Number(value ?? 0)),
-                          "Count",
-                        ]}
-                      />
-                      <Bar dataKey="value" radius={[0, 6, 6, 0]} name="Count">
-                        {statusDistribution.map((entry, index) => (
-                          <Cell key={`overview-bar-${index}`} fill={entry.color} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-            </div>
-
-            <div className="grid gap-4 lg:grid-cols-2">
-              <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-50">
-                    Overview Distribution
-                  </h3>
-                  <p className="text-sm text-gray-500 dark:text-slate-400">
-                    High-level share of centers, workers, enrollments, and program types.
-                  </p>
-                </div>
-                <ResponsiveContainer width="100%" height={280}>
-                  <PieChart>
-                    <Pie
-                      data={statusDistribution}
-                      dataKey="value"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={95}
-                      labelLine={false}
-                      label={false}
-                    >
-                      {statusDistribution.map((entry, index) => (
-                        <Cell key={`status-cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    {hasRealStatusData && <Legend />}
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-
-              <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-50">
-                    Top Exceptions by Child
-                  </h3>
-                  <p className="text-sm text-gray-500 dark:text-slate-400">
-                    Children with the highest combined absences and missed
-                    meals, shown with confidential masked names.
-                  </p>
-                </div>
-                {topExceptions.length === 0 ? (
-                  <div className="flex h-64 items-center justify-center text-sm text-gray-500 dark:text-slate-400">
-                    No exception records in this range.
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse text-sm">
-                      <thead className="border-b border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-900/50">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
-                            Child (Confidential)
-                          </th>
-                          <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
-                            Absences
-                          </th>
-                          <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
-                            Missed Meals
-                          </th>
-                          <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
-                            Total
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
-                        {topExceptions.map((row) => (
-                          <tr key={row.childId} className="hover:bg-gray-50 dark:hover:bg-slate-700/50">
-                            <td className="px-4 py-3 font-medium text-gray-900 dark:text-slate-100">
-                              {row.childLabel}
-                            </td>
-                            <td className="px-4 py-3 text-right text-gray-700 dark:text-slate-300">
-                              {formatNumber(row.absentCount)}
-                            </td>
-                            <td className="px-4 py-3 text-right text-gray-700 dark:text-slate-300">
-                              {formatNumber(row.missedCount)}
-                            </td>
-                            <td className="px-4 py-3 text-right font-semibold text-rose-700 dark:text-rose-400">
-                              {formatNumber(row.totalExceptions)}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-              <div className="mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-50">
-                  Recent Daily Summary
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-slate-400">
-                  Snapshot of the latest days in the selected range.
-                </p>
-              </div>
-              {recentDailyRows.length === 0 ? (
-                <div className="py-10 text-center text-sm text-gray-500 dark:text-slate-400">
-                  No daily summaries available.
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse text-sm">
-                    <thead className="border-b border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-900/50">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
-                          Date
-                        </th>
-                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
-                          Attendance Rate
-                        </th>
-                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
-                          Feeding Rate
-                        </th>
-                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
-                          Present / Absent
-                        </th>
-                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
-                          Completed / Missed
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
-                      {recentDailyRows.map((row) => (
-                        <tr key={row.dateKey} className="hover:bg-gray-50 dark:hover:bg-slate-700/50">
-                          <td className="px-4 py-3 font-medium text-gray-900 dark:text-slate-100">
-                            {new Intl.DateTimeFormat("en-PH", {
-                              month: "short",
-                              day: "2-digit",
-                              year: "numeric",
-                              timeZone: "Asia/Manila",
-                            }).format(new Date(row.dateKey))}
-                          </td>
-                          <td className="px-4 py-3 text-right text-teal-700 dark:text-teal-400">
-                            {row.attendanceRate}%
-                          </td>
-                          <td className="px-4 py-3 text-right text-emerald-700 dark:text-emerald-400">
-                            {row.feedingRate}%
-                          </td>
-                          <td className="px-4 py-3 text-right text-gray-700 dark:text-slate-300">
-                            {formatNumber(row.present)} /{" "}
-                            {formatNumber(row.absent)}
-                          </td>
-                          <td className="px-4 py-3 text-right text-gray-700 dark:text-slate-300">
-                            {formatNumber(row.completed)} /{" "}
-                            {formatNumber(row.missed)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
+            <PrintableReportSection
+              activeRangeLabel={activeRange.label}
+              generatedAtLabel={lastUpdatedLabel}
+              summary={summary}
+              genderBreakdown={genderBreakdown}
+              ageBreakdown={ageBreakdown}
+              studentList={studentList}
+              studentListPagination={studentListPagination}
+              studentPage={studentPage}
+              setStudentPage={setStudentPage}
+              studentPageSize={studentPageSize}
+              setStudentPageSize={setStudentPageSize}
+              recentDailyRows={recentDailyRows}
+            />
           </>
         )}
       </div>

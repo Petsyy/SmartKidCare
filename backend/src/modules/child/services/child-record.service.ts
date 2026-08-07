@@ -1,41 +1,9 @@
 import type { HydratedDocument } from "mongoose";
-import { storeChildDocumentHashes } from "../../../blockchain/blockchain.service";
+import { storeChildDocumentHashes } from "../../blockchain/services/blockchain.service";
 import type { UploadResult } from "../../../shared/utils/upload-cloudinary";
 import { extractUploadedDocument } from "../shared";
-import { childRepository } from "../child.repository";
-
-export type ChildDocumentUploads = {
-  birthUpload?: UploadResult | null;
-  parentUpload?: UploadResult | null;
-  birthDocumentHash?: string | null;
-  parentIdDocumentHash?: string | null;
-};
-
-export type CreateChildRecordPayload = {
-  firstName: string;
-  middleName?: string;
-  lastName: string;
-  dateOfBirth: Date | string;
-  age: number;
-  gender: string;
-  programType: string;
-  enrollmentDate: Date | string;
-  schoolYear: string;
-  status: string;
-  studentId: string;
-  parent?: import("mongoose").Types.ObjectId | string | null;
-  teacher?: import("mongoose").Types.ObjectId | string | null;
-  daycareCenter?: import("mongoose").Types.ObjectId | string | null;
-};
-
-export type ChildAnchorResult = Awaited<
-  ReturnType<typeof storeChildDocumentHashes>
->;
-
-export type ChildRecordCreationResult = {
-  child: HydratedDocument<any>;
-  documentsAnchor: ChildAnchorResult;
-};
+import { childRepository } from "../repositories/child.repository";
+import type { ChildDocumentUploads, CreateChildRecordPayload, ChildAnchorResult, ChildRecordCreationResult } from "../types/child-record.types";
 
 const buildDocumentsPayload = (uploads: ChildDocumentUploads) => {
   const birthCertificate = extractUploadedDocument(
@@ -68,6 +36,10 @@ export const createChildRecord = async (
     parent: payload.parent || undefined,
     teacher: payload.teacher || undefined,
     daycareCenter: payload.daycareCenter || undefined,
+    weight: payload.weight ?? null,
+    height: payload.height ?? null,
+    bmi: payload.bmi ?? null,
+    nutritionalStatus: payload.nutritionalStatus ?? null,
     ...(documents ? { documents } : {}),
   });
 
@@ -91,3 +63,10 @@ export const createChildRecord = async (
 
   return { child, documentsAnchor };
 };
+
+export type {
+  ChildDocumentUploads,
+  CreateChildRecordPayload,
+  ChildAnchorResult,
+  ChildRecordCreationResult,
+} from "../types/child-record.types";

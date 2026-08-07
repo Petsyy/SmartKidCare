@@ -5,7 +5,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { getChildById, type Child } from "@/src/api/parent.api";
 import { getTodayAttendance, getTodayFeeding } from "@/src/api/records.api";
 import { useAuth } from "@/src/hooks/use-auth";
-import { ChevronLeft, User, Mail, Phone,Calendar,BookOpen,Activity,ShieldCheck, } from "lucide-react-native";
+import { ChevronLeft, User, Mail, Phone,Calendar,BookOpen,Activity,ShieldCheck, MapPin, Scale, Ruler, Award } from "lucide-react-native";
 import { buildBlockchainTransactionUrl, getBlockchainStatusInfo, getBlockchainStatusPalette, shortenHash,} from "@/src/utils/blockchain-status";
 import { useQuery } from "@tanstack/react-query";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
@@ -301,13 +301,31 @@ export default function TeacherChildDetailsScreen() {
             elevation: 3,
           }}
         >
-          <View className="flex-row items-center mb-4 gap-3">
-            <View className="h-10 w-10 items-center justify-center rounded-2xl bg-teal-50">
-              <User size={20} color="#0D9488" />
+          <View className="mb-4 flex-row items-center justify-between gap-3">
+            <View className="min-w-0 flex-1 flex-row items-center gap-3">
+              <View className="h-10 w-10 items-center justify-center rounded-2xl bg-teal-50">
+                <User size={20} color="#0D9488" />
+              </View>
+              <Text className="flex-1 text-xl font-bold text-gray-900">
+                Child Information
+              </Text>
             </View>
-            <Text className="text-xl font-bold text-gray-900">
-              Child Information
-            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Evaluate child competencies"
+              accessibilityHint="Opens the competency evaluation checklist"
+              onPress={() =>
+                router.push({
+                  pathname:
+                    "/(teacher)/child-details/competencies/[childId]",
+                  params: { childId: child._id },
+                })
+              }
+              className="min-h-11 flex-row items-center justify-center gap-1.5 rounded-xl border border-teal-500 bg-teal-50 px-3 active:bg-teal-100"
+            >
+              <Award size={17} color="#0D9488" />
+              <Text className="text-sm font-bold text-teal-700">Evaluate</Text>
+            </Pressable>
           </View>
 
           <View className="flex-row flex-wrap">
@@ -323,6 +341,34 @@ export default function TeacherChildDetailsScreen() {
                 icon={<User size={18} color="#0D9488" />}
                 label="Gender"
                 value={child.gender}
+              />
+            </View>
+            <View className="w-full mb-4">
+              <InfoRow
+                icon={<MapPin size={18} color="#0D9488" />}
+                label="Complete Home Address"
+                value={child.homeAddress || "Not provided"}
+              />
+            </View>
+            <View className="w-1/2 pr-2 mb-4">
+              <InfoRow
+                icon={<Scale size={18} color="#0D9488" />}
+                label="Weight"
+                value={child.weight ? `${child.weight} kg` : "Not provided"}
+              />
+            </View>
+            <View className="w-1/2 pl-2 mb-4">
+              <InfoRow
+                icon={<Ruler size={18} color="#0D9488" />}
+                label="Height"
+                value={child.height ? `${child.height} cm` : "Not provided"}
+              />
+            </View>
+            <View className="w-full mb-4">
+              <InfoRow
+                icon={<Activity size={18} color="#0D9488" />}
+                label="Body Type / Nutritional Status"
+                value={child.nutritionalStatus || "Not classified"}
               />
             </View>
             <View className="w-1/2 pr-2 mb-4">
@@ -490,6 +536,11 @@ export default function TeacherChildDetailsScreen() {
                 icon={<User size={18} color="#0284C7" />}
                 label="Name"
                 value={`${child.parent.firstName} ${child.parent.lastName}`}
+              />
+              <InfoRow
+                icon={<User size={18} color="#0284C7" />}
+                label="Relationship"
+                value={child.parentRelationship || "Not provided"}
               />
               <InfoRow
                 icon={<Mail size={18} color="#0284C7" />}

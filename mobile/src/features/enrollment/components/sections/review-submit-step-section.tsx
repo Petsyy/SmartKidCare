@@ -1,15 +1,15 @@
 import { CheckCircle2, Info } from "lucide-react-native";
 import { Text, View } from "react-native";
-import { ReviewRow, ReviewSection } from "@/src/features/enrollment/components/ui";
+import {ReviewRow,ReviewSection} from "@/src/features/enrollment/components/ui";
 import type { ProgramType } from "@/src/features/enrollment/types";
-import { displayDate } from "@/src/features/enrollment/utils";
-
+import { displayDate } from "@/src/features/enrollment/utils/enrollment-utils";
 
 export function ReviewSubmitStepSection({
   childFullName,
   dateOfBirth,
   computedChildAge,
   gender,
+  homeAddress,
   enrollmentDate,
   assignedCenterReviewValue,
   programType,
@@ -17,6 +17,7 @@ export function ReviewSubmitStepSection({
   parentFullName,
   parentEmail,
   parentPhone,
+  parentRelationship,
   hasBirthCertificate,
   hasParentId,
 }: {
@@ -24,6 +25,7 @@ export function ReviewSubmitStepSection({
   dateOfBirth: string;
   computedChildAge: number;
   gender: "male" | "female";
+  homeAddress: string;
   enrollmentDate: string;
   assignedCenterReviewValue: string;
   programType: ProgramType | "";
@@ -31,6 +33,7 @@ export function ReviewSubmitStepSection({
   parentFullName: string;
   parentEmail: string;
   parentPhone: string;
+  parentRelationship: string;
   hasBirthCertificate: boolean;
   hasParentId: boolean;
 }) {
@@ -71,6 +74,7 @@ export function ReviewSubmitStepSection({
           }
         />
         <ReviewRow label="Gender" value={gender === "male" ? "Boy" : "Girl"} />
+        <ReviewRow label="Home Address" value={homeAddress || "Not provided"} />
         <ReviewRow
           label="Enrollment Date"
           value={enrollmentDate ? displayDate(enrollmentDate) : "Not provided"}
@@ -90,6 +94,7 @@ export function ReviewSubmitStepSection({
         />
         <ReviewRow label="Email" value={parentEmail || "Not provided"} />
         <ReviewRow label="Phone" value={parentPhone || "Not provided"} />
+        <ReviewRow label="Relationship" value={parentRelationship || "Not provided"} />
       </ReviewSection>
 
       <ReviewSection title="Documents">
@@ -113,4 +118,3 @@ export function ReviewSubmitStepSection({
     </View>
   );
 }
-

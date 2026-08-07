@@ -1,4 +1,4 @@
-import { API_BASE } from "../components/config/config.api";
+import { API_BASE } from "./config";
 
 type ApiMethod = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
 

@@ -6,14 +6,14 @@ dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 import app from "./app";
 import { connectDB } from "./shared/config/db";
-import { verifyMailer } from "./shared/lib/mailer";
+import { competencyService } from "./modules/competencies/services/competency.service";
 
 const PORT = process.env.PORT || 5001;
 
 const bootstrap = async (): Promise<void> => {
   try {
     await connectDB();
-    await verifyMailer();
+    await competencyService.initializeCatalog();
 
     app.listen(PORT, () => {
       console.log(`Server running at http://localhost:${PORT}`);
