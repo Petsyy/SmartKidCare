@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useMemo, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient, } from "@tanstack/react-query";
 import Swal from "sweetalert2";
 import { deleteEnrollmentRequest, getEnrollmentRequests, reviewEnrollmentRequest, type EnrollmentRequestItem, } from "@/api/admin.api";
@@ -15,14 +15,38 @@ export function useEnrollmentRequests() {
     processingId,
     selectedRequest,
     openMenuId,
+    menuAnchorRect,
+    menuRequest,
     statusFilter,
+    deletingRequest,
     setProcessingId,
     setSelectedRequest,
     setOpenMenuId,
+    setMenuAnchorRect,
+    setMenuRequest,
     setStatusFilter,
+    setDeletingRequest,
   } = useEnrollmentRequestsStore();
 
-  const menuRef = useRef<HTMLDivElement | null>(null);
+  const openMenu = (request: EnrollmentRequestItem, buttonEl: HTMLButtonElement) => {
+    setMenuRequest(request);
+    setOpenMenuId(request._id);
+    setMenuAnchorRect(buttonEl.getBoundingClientRect());
+  };
+
+  const closeMenu = () => {
+    setOpenMenuId(null);
+    setMenuAnchorRect(null);
+    setMenuRequest(null);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = () => closeMenu();
+    if (openMenuId) {
+      document.addEventListener("click", handleClickOutside);
+      return () => document.removeEventListener("click", handleClickOutside);
+    }
+  }, [openMenuId]);
 
   const {
     data: requests = [],
@@ -143,38 +167,15 @@ export function useEnrollmentRequests() {
     }
   };
 
-  const handleDelete = async (request: EnrollmentRequestItem) => {
-    setOpenMenuId(null);
+  const handleDelete = (request: EnrollmentRequestItem) => {
+    closeMenu();
+    setDeletingRequest(request);
+  };
 
-    const result = await Swal.fire({
-      title: "Delete Enrollment Request?",
-      text: `Delete submission ${formatSubmissionId(request._id)}? This cannot be undone.`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Delete",
-      cancelButtonText: "Cancel",
-      confirmButtonColor: "#DC2626",
-      cancelButtonColor: "#6B7280",
-    });
-
-    if (!result.isConfirmed) return;
-
-    setProcessingId(request._id);
-    try {
-      const response = await deleteMutation.mutateAsync(request._id);
-      await Swal.fire({
-        title: "Deleted",
-        text: response.message,
-        icon: "success",
-        confirmButtonColor: "#0D9488",
-      });
-      if (selectedRequest?._id === request._id) {
-        setSelectedRequest(null);
-      }
-    } catch (error: any) {
-      showErrorModal(error?.message || "Failed to delete request");
-    } finally {
-      setProcessingId(null);
+  const confirmDeleteRequest = async (request: EnrollmentRequestItem) => {
+    await deleteMutation.mutateAsync(request._id);
+    if (selectedRequest?._id === request._id) {
+      setSelectedRequest(null);
     }
   };
 
@@ -185,13 +186,18 @@ export function useEnrollmentRequests() {
     processingId,
     selectedRequest,
     openMenuId,
+    menuAnchorRect,
+    menuRequest,
     statusFilter,
-    menuRef,
+    deletingRequest,
     setSelectedRequest,
-    setOpenMenuId,
     setStatusFilter,
+    setDeletingRequest,
+    openMenu,
+    closeMenu,
     handleApprove,
     handleReject,
-    handleDelete
+    handleDelete,
+    confirmDeleteRequest
   };
 }

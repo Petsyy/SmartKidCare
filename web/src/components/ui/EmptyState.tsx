@@ -9,7 +9,7 @@ export function EmptyState({
 }: EmptyStateProps) {
   if (colSpan !== undefined) {
     return (
-      <tr>
+      <tr data-slot="empty-state">
         <td
           colSpan={colSpan}
           className="px-6 py-12 text-center text-sm text-gray-500 dark:text-slate-400"
@@ -21,7 +21,7 @@ export function EmptyState({
   }
 
   return (
-    <div className="py-12 text-center text-sm text-gray-500 dark:text-slate-400">
+    <div data-slot="empty-state" className="py-12 text-center text-sm text-gray-500 dark:text-slate-400">
       {message}
     </div>
   );

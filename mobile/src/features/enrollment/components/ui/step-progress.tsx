@@ -3,7 +3,7 @@ import { Check } from "lucide-react-native";
 import { STEPS } from "@/src/features/enrollment/constants";
 import type { Step } from "@/src/features/enrollment/types";
 
-const STEP_POSITIONS = [0.125, 0.375, 0.625, 0.875] as const;
+const STEP_POSITIONS = [0.1, 0.3, 0.5, 0.7, 0.9] as const;
 const STEP_CHIP = 36;
 const STEP_CHIP_HALF = STEP_CHIP / 2;
 const TRACK_LEFT_PCT = STEP_POSITIONS[0] * 100;

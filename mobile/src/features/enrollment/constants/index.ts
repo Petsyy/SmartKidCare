@@ -1,10 +1,11 @@
 import type { ProgramType, Step } from "@/src/features/enrollment/types";
 
 export const STEPS: { id: Step; label: string }[] = [
-  { id: 1, label: "Child Info" },
-  { id: 2, label: "Parent Info" },
-  { id: 3, label: "Documents" },
-  { id: 4, label: "Review" },
+  { id: 1, label: "Basic Info" },
+  { id: 2, label: "Health & Center" },
+  { id: 3, label: "Parent Info" },
+  { id: 4, label: "Documents" },
+  { id: 5, label: "Review" },
 ];
 
 export const ALLOWED_MIME_TYPES = [

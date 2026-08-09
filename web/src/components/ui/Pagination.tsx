@@ -1,4 +1,5 @@
 import { Button } from "./Button";
+import { NativeSelect } from "./NativeSelect";
 
 type PaginationProps = {
   page: number;
@@ -22,11 +23,11 @@ export function Pagination({
   onPageSizeChange,
 }: PaginationProps) {
   return (
-    <div className="flex items-center justify-between border-t border-gray-200 px-6 py-4 dark:border-slate-700">
+    <div data-slot="pagination" className="flex items-center justify-between border-t border-gray-200 px-6 py-4 dark:border-slate-700">
       <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-slate-400">
         <span>{rangeLabel}</span>
         {pageSizeOptions && pageSize !== undefined && onPageSizeChange && (
-          <select
+          <NativeSelect
             value={pageSize}
             onChange={(e) => onPageSizeChange(Number(e.target.value))}
             className="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
@@ -36,7 +37,7 @@ export function Pagination({
                 {size} / page
               </option>
             ))}
-          </select>
+          </NativeSelect>
         )}
       </div>
       <div className="flex items-center gap-2">

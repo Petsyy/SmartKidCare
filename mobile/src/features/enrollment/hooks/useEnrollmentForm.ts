@@ -67,6 +67,7 @@ export const useEnrollmentForm = () => {
   const weightValue = Number(watch("weight"));
   const heightValue = Number(watch("height"));
 
+
   const computedBmi = useMemo(() => {
     if (weightValue > 0 && heightValue > 0) {
       return calculateBmi(weightValue, heightValue);
@@ -87,7 +88,6 @@ export const useEnrollmentForm = () => {
     setParentIdFile(null);
   };
 
-  // Validation functions
   const validateStepOne = async () => {
     const isValid = await trigger([
       "firstName",
@@ -96,6 +96,21 @@ export const useEnrollmentForm = () => {
       "dateOfBirth",
       "gender",
       "homeAddress",
+    ]);
+    if (!isValid) {
+      const errors = form.formState.errors;
+      const firstError = Object.values(errors)[0] as { message?: string } | undefined;
+      if (firstError?.message) {
+        Alert.alert("Validation", firstError.message);
+      } else {
+        Alert.alert("Validation", "Please complete the child's basic information.");
+      }
+    }
+    return isValid;
+  };
+
+  const validateStepTwo = async () => {
+    const isValid = await trigger([
       "daycareCenterId",
       "programType",
       "enrollmentDate",
@@ -109,13 +124,13 @@ export const useEnrollmentForm = () => {
       if (firstError?.message) {
         Alert.alert("Validation", firstError.message);
       } else {
-        Alert.alert("Validation", "Please complete the child information.");
+        Alert.alert("Validation", "Please complete the health & enrollment information.");
       }
     }
     return isValid;
   };
 
-  const validateStepTwo = async () => {
+  const validateStepThree = async () => {
     const isValid = await trigger([
       "parentFirstName",
       "parentMiddleName",
@@ -136,7 +151,7 @@ export const useEnrollmentForm = () => {
     return isValid;
   };
 
-  const validateStepThree = () => {
+  const validateStepFour = () => {
     const birthError = validateDocument(birthCertificateFile);
     if (birthError) {
       Alert.alert("Validation", `Birth Certificate: ${birthError}`);
@@ -241,6 +256,7 @@ export const useEnrollmentForm = () => {
     validateStepOne,
     validateStepTwo,
     validateStepThree,
+    validateStepFour,
     getSubmissionData,
     minDateOfBirth,
     maxDateOfBirth,

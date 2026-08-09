@@ -5,7 +5,6 @@ import { toggleUserStatus, resetUserPassword, deleteUser, getParentChildren, typ
 import { webQueryKeys } from "@/lib/query-keys";
 import { useUserManagementStore } from "@/stores/user-management.store";
 import { showErrorModal, showResetPasswordModal, showToggleUserStatusModal, showToggleUserStatusSuccessModal } from "@/utils/sweet-alert-modal";
-import Swal from "sweetalert2";
 import { formatConfidentialName } from "@/utils/name-privacy";
 
 export type AccountStatusFilter = "all" | "active" | "inactive";
@@ -40,6 +39,7 @@ export function useUserManagement() {
     activeTab,
     showAddTeacherModal,
     editingUser,
+    deletingUser,
     openMenuUserId,
     menuAnchorRect,
     menuUser,
@@ -56,6 +56,7 @@ export function useUserManagement() {
     setActiveTab,
     setShowAddTeacherModal,
     setEditingUser,
+    setDeletingUser,
     setOpenMenuUserId,
     setMenuAnchorRect,
     setMenuUser,
@@ -165,31 +166,13 @@ export function useUserManagement() {
     }
   };
 
-  const handleDeleteUser = async (user: User) => {
-    const result = await Swal.fire({
-      title: "Delete User?",
-      text: `Are you sure you want to delete ${user.firstName} ${user.lastName}? This action cannot be undone.`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#DC2626",
-      cancelButtonColor: "#6B7280",
-      confirmButtonText: "Yes, delete",
-      cancelButtonText: "Cancel",
-    });
+  const handleDeleteUser = (user: User) => {
+    setDeletingUser(user);
+    closeMenu();
+  };
 
-    if (!result.isConfirmed) return;
-
-    try {
-      await deleteUserMutation.mutateAsync(user._id);
-      await Swal.fire({
-        title: "Deleted",
-        text: "User has been deleted",
-        icon: "success",
-        confirmButtonColor: "#0D9488",
-      });
-    } catch (err: any) {
-      showErrorModal(err.message || "Failed to delete user");
-    }
+  const confirmDeleteUser = async (user: User) => {
+    await deleteUserMutation.mutateAsync(user._id);
   };
 
   const errorMessage = error instanceof Error ? error.message : null;
@@ -398,6 +381,7 @@ export function useUserManagement() {
     activeTab,
     showAddTeacherModal,
     editingUser,
+    deletingUser,
     openMenuUserId,
     menuAnchorRect,
     menuUser,
@@ -440,6 +424,8 @@ export function useUserManagement() {
     handleResetPassword,
     handleToggleStatus,
     handleDeleteUser,
+    confirmDeleteUser,
+    setDeletingUser,
 
     // Parent Children Logic
     parentChildrenLoadingByUserId,

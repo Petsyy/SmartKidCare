@@ -12,7 +12,10 @@ export type CompetencySeed = {
 };
 
 const EVALUATION_POPULATE = [
-  { path: "entries.competency", select: "code name description category displayOrder" },
+  {
+    path: "entries.competency",
+    select: "code name description category displayOrder",
+  },
   { path: "teacher", select: "firstName middleName lastName" },
 ];
 
@@ -21,7 +24,9 @@ export class CompetencyDefinitionRepository extends BaseRepository<any> {
     super(model);
   }
 
-  async ensureDefaults(definitions: ReadonlyArray<CompetencySeed>): Promise<void> {
+  async ensureDefaults(
+    definitions: ReadonlyArray<CompetencySeed>,
+  ): Promise<void> {
     await Promise.all(
       definitions.map((definition) =>
         this.model.updateOne(
@@ -48,7 +53,6 @@ export class CompetencyDefinitionRepository extends BaseRepository<any> {
   }
 }
 
-
 export class CompetencyEvaluationRepository extends BaseRepository<any> {
   constructor(model: Model<any> = CompetencyEvaluation) {
     super(model);
@@ -63,7 +67,11 @@ export class CompetencyEvaluationRepository extends BaseRepository<any> {
     }
   }
 
-  async findByChildSchoolYearAndPeriod(childId: string, schoolYear: string, period: string): Promise<any | null> {
+  async findByChildSchoolYearAndPeriod(
+    childId: string,
+    schoolYear: string,
+    period: string,
+  ): Promise<any | null> {
     return this.model.findOne({
       child: childId,
       schoolYear,
@@ -82,7 +90,10 @@ export class CompetencyEvaluationRepository extends BaseRepository<any> {
       .lean();
   }
 
-  async findByChildAndPeriod(childId: string, period: string): Promise<any | null> {
+  async findByChildAndPeriod(
+    childId: string,
+    period: string,
+  ): Promise<any | null> {
     return this.model
       .findOne({ child: childId, period })
       .sort({ updatedAt: -1 })
@@ -90,7 +101,11 @@ export class CompetencyEvaluationRepository extends BaseRepository<any> {
       .lean();
   }
 
-  async findHistoryByChild(childId: string, skip: number, limit: number): Promise<any[]> {
+  async findHistoryByChild(
+    childId: string,
+    skip: number,
+    limit: number,
+  ): Promise<any[]> {
     return this.model
       .find({ child: childId, status: "submitted" })
       .sort({ evaluationDate: -1 })
@@ -104,7 +119,10 @@ export class CompetencyEvaluationRepository extends BaseRepository<any> {
     return this.model.countDocuments({ child: childId, status: "submitted" });
   }
 
-  async aggregateLatestSubmitted(filters: { period?: string; schoolYear?: string }): Promise<any[]> {
+  async aggregateLatestSubmitted(filters: {
+    period?: string;
+    schoolYear?: string;
+  }): Promise<any[]> {
     const match: Record<string, unknown> = { status: "submitted" };
     if (filters.period) match.period = filters.period;
     if (filters.schoolYear) match.schoolYear = filters.schoolYear;
@@ -119,7 +137,9 @@ export class CompetencyEvaluationRepository extends BaseRepository<any> {
   }
 
   async findSubmittedSchoolYears(): Promise<string[]> {
-    const values = await this.model.distinct("schoolYear", { status: "submitted" });
+    const values = await this.model.distinct("schoolYear", {
+      status: "submitted",
+    });
     return values
       .map((value: unknown) => String(value || "").trim())
       .filter(Boolean)
@@ -127,6 +147,7 @@ export class CompetencyEvaluationRepository extends BaseRepository<any> {
   }
 }
 
-export const competencyDefinitionRepository = new CompetencyDefinitionRepository();
-export const competencyEvaluationRepository = new CompetencyEvaluationRepository();
-
+export const competencyDefinitionRepository =
+  new CompetencyDefinitionRepository();
+export const competencyEvaluationRepository =
+  new CompetencyEvaluationRepository();

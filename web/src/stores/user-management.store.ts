@@ -7,6 +7,7 @@ type UserManagementUiState = {
   activeTab: "teacher" | "parent";
   showAddTeacherModal: boolean;
   editingUser: User | null;
+  deletingUser: User | null;
   openMenuUserId: string | null;
   menuAnchorRect: DOMRect | null;
   menuUser: User | null;
@@ -23,6 +24,7 @@ type UserManagementUiState = {
   setActiveTab: (value: "teacher" | "parent") => void;
   setShowAddTeacherModal: (value: boolean) => void;
   setEditingUser: (value: User | null) => void;
+  setDeletingUser: (value: User | null) => void;
   setOpenMenuUserId: (value: string | null) => void;
   setMenuAnchorRect: (value: DOMRect | null) => void;
   setMenuUser: (value: User | null) => void;
@@ -42,6 +44,7 @@ export const useUserManagementStore = create<UserManagementUiState>((set) => ({
   activeTab: "teacher",
   showAddTeacherModal: false,
   editingUser: null,
+  deletingUser: null,
   openMenuUserId: null,
   menuAnchorRect: null,
   menuUser: null,
@@ -58,6 +61,7 @@ export const useUserManagementStore = create<UserManagementUiState>((set) => ({
   setActiveTab: (value) => set({ activeTab: value }),
   setShowAddTeacherModal: (value) => set({ showAddTeacherModal: value }),
   setEditingUser: (value) => set({ editingUser: value }),
+  setDeletingUser: (value) => set({ deletingUser: value }),
   setOpenMenuUserId: (value) => set({ openMenuUserId: value }),
   setMenuAnchorRect: (value) => set({ menuAnchorRect: value }),
   setMenuUser: (value) => set({ menuUser: value }),

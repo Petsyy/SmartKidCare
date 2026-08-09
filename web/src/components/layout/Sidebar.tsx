@@ -6,7 +6,7 @@ import {
   Settings,
   ClipboardList,
   Building2,
-  Baby,
+  UsersRound,
   UserCog,
 } from "lucide-react";
 import { useSystemSettings } from "../../context/SystemSettingsContext";
@@ -31,7 +31,7 @@ const navGroups: NavGroup[] = [
     groupName: "OPERATIONS",
     items: [
       { icon: Building2, label: "Centers", path: "centers" },
-      { icon: Baby, label: "Children Records", path: "children" },
+      { icon: UsersRound, label: "Children Records", path: "children" },
       {
         icon: ClipboardList,
         label: "Enrollment Requests",

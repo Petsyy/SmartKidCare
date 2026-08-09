@@ -1,3 +1,15 @@
+import { Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { ErrorAlert } from "@/components/ui/ErrorAlert";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+} from "@/components/ui/AlertDialog";
+
 type DeleteModalProps = {
   deletingId: string | null;
   actionError: string | null;
@@ -16,45 +28,45 @@ export const FeedingDeleteModal = ({
   if (!deletingId) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
-        <div className="border-b border-gray-200 px-6 py-4 dark:border-slate-700">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-50">
-            Delete feeding record
-          </h3>
-          <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">
-            This removes the child record from the selected feeding entry.
+    <AlertDialog open onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <AlertDialogContent>
+        <AlertDialogHeader className="flex-row items-center gap-3 space-y-0 text-left">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-400">
+            <Trash2 size={20} />
+          </div>
+          <div className="flex-1">
+            <AlertDialogTitle>Delete feeding record</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes the child record from the selected feeding entry.
+            </AlertDialogDescription>
+          </div>
+        </AlertDialogHeader>
+        <div className="bg-slate-50/60 space-y-4 px-6 py-5 dark:bg-slate-950/30">
+          <ErrorAlert message={actionError} />
+          <p className="text-sm font-normal text-slate-700 dark:text-slate-300">
+            Are you sure you want to delete this record? This action cannot be
+            undone.
           </p>
         </div>
-        <div className="space-y-4 px-6 py-4">
-          {actionError && (
-            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-900 dark:bg-red-900/20 dark:text-red-200">
-              {actionError}
-            </div>
-          )}
-          <p className="text-sm text-gray-700 dark:text-slate-200">
-            Are you sure you want to delete this record?
-          </p>
-        </div>
-        <div className="flex items-center justify-end gap-2 border-t border-gray-200 px-6 py-4 dark:border-slate-700">
-          <button
-            type="button"
+        <AlertDialogFooter>
+          <Button
+            variant="secondary"
+            size="md"
             onClick={onClose}
             disabled={isSaving}
-            className="cursor-pointer rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
           >
             Cancel
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant="danger"
+            size="md"
             onClick={onDelete}
-            disabled={isSaving}
-            className="cursor-pointer rounded-md bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+            loading={isSaving}
           >
-            {isSaving ? "Deleting..." : "Delete"}
-          </button>
-        </div>
-      </div>
-    </div>
+            Delete
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 };

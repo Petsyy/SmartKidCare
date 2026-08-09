@@ -7,6 +7,8 @@ import type { EnrollmentRequestStatus } from "@/api/admin.api";
 import { useEnrollmentRequests } from "@/features/enrollment/hooks/useEnrollmentRequests";
 import { EnrollmentTable } from "@/features/enrollment/components/EnrollmentTable";
 import { ViewRequestModal } from "@/features/enrollment/components/ViewRequestModal";
+import { DeleteEnrollmentRequestModal } from "@/features/enrollment/components/DeleteEnrollmentRequestModal";
+import { EnrollmentActionMenu } from "@/features/enrollment/components/EnrollmentActionMenu";
 import { useState, useMemo } from "react";
 
 export default function EnrollmentRequests() {
@@ -18,14 +20,19 @@ export default function EnrollmentRequests() {
     processingId,
     selectedRequest,
     openMenuId,
+    menuAnchorRect,
+    menuRequest,
     statusFilter,
-    menuRef,
+    deletingRequest,
     setSelectedRequest,
-    setOpenMenuId,
     setStatusFilter,
+    setDeletingRequest,
+    openMenu,
+    closeMenu,
     handleApprove,
     handleReject,
-    handleDelete
+    handleDelete,
+    confirmDeleteRequest
   } = useEnrollmentRequests();
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -129,8 +136,7 @@ export default function EnrollmentRequests() {
             statusFilter={statusFilter}
             processingId={processingId}
             openMenuId={openMenuId}
-            menuRef={menuRef}
-            onSetOpenMenuId={setOpenMenuId}
+            onOpenMenu={openMenu}
             onSetSelectedRequest={setSelectedRequest}
             onApprove={(req) => void handleApprove(req)}
             onReject={(req) => void handleReject(req)}
@@ -146,6 +152,24 @@ export default function EnrollmentRequests() {
           onClose={() => setSelectedRequest(null)}
           onReject={(req) => void handleReject(req)}
           onApprove={(req) => void handleApprove(req)}
+        />
+      )}
+
+      {deletingRequest && (
+        <DeleteEnrollmentRequestModal
+          request={deletingRequest}
+          onClose={() => setDeletingRequest(null)}
+          onDelete={confirmDeleteRequest}
+        />
+      )}
+
+      {openMenuId && menuRequest && menuAnchorRect && (
+        <EnrollmentActionMenu
+          request={menuRequest}
+          anchorRect={menuAnchorRect}
+          onClose={closeMenu}
+          onDelete={(req) => void handleDelete(req)}
+          isProcessing={processingId === menuRequest._id}
         />
       )}
     </Layout>

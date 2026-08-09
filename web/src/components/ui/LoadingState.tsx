@@ -9,7 +9,7 @@ export function LoadingState({
 }: LoadingStateProps) {
   if (colSpan !== undefined) {
     return (
-      <tr>
+      <tr data-slot="loading-state">
         <td
           colSpan={colSpan}
           className="px-6 py-10 text-center text-sm text-gray-500 dark:text-slate-400"
@@ -21,7 +21,7 @@ export function LoadingState({
   }
 
   return (
-    <div className="flex h-64 items-center justify-center">
+    <div data-slot="loading-state" className="flex h-64 items-center justify-center">
       <div className="text-center text-gray-500 dark:text-slate-400">
         {message}
       </div>

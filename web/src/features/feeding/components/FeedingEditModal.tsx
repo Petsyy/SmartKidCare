@@ -1,3 +1,11 @@
+import { X, Utensils } from "lucide-react";
+import { ErrorAlert } from "@/components/ui/ErrorAlert";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/Dialog";
 import type { FeedingStatusFilter } from "@/features/feeding/hooks/useFeedingProgram";
 
 type EditModalProps = {
@@ -22,56 +30,84 @@ export const FeedingEditModal = ({
   if (!editingId) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
-        <div className="border-b border-gray-200 px-6 py-4 dark:border-slate-700">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-50">
-            Edit feeding record
-          </h3>
-          <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">
-            Only feeding status is editable in the current API.
-          </p>
-        </div>
-        <div className="space-y-4 px-6 py-4">
-          {actionError && (
-            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-900 dark:bg-red-900/20 dark:text-red-200">
-              {actionError}
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent
+        overlayClassName="bg-transparent"
+        className="fixed inset-0 z-60 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm outline-none transition-all"
+        onClick={onClose}
+      >
+        <DialogTitle className="sr-only">Edit Feeding Record</DialogTitle>
+        <DialogDescription className="sr-only">
+          Update feeding status.
+        </DialogDescription>
+        <div
+          className="w-full max-w-lg overflow-hidden rounded-3xl border border-white/20 bg-white/95 shadow-2xl backdrop-blur-xl dark:border-slate-700/50 dark:bg-slate-900/95"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <div className="flex items-center justify-between border-b border-gray-200/50 bg-gradient-to-r from-teal-50 to-emerald-50/50 px-6 py-5 backdrop-blur-md dark:border-slate-700/50 dark:from-teal-900/30 dark:to-emerald-900/20">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-100 text-teal-600 dark:bg-teal-900/40 dark:text-teal-400">
+                <Utensils size={20} />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+                  Edit Feeding Record
+                </h3>
+                <p className="text-sm font-normal text-slate-600 dark:text-slate-400">
+                  Only feeding status is editable in the current API.
+                </p>
+              </div>
             </div>
-          )}
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-gray-600 dark:text-slate-300">
-              Feeding status
-            </label>
-            <select
-              value={editingStatus}
-              onChange={(e) =>
-                setEditingStatus(e.target.value as FeedingStatusFilter)
-              }
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
+            <button
+              onClick={onClose}
+              className="cursor-pointer rounded-xl bg-white/50 p-2 text-gray-500 shadow-sm backdrop-blur-sm transition-all duration-200 hover:bg-white hover:text-gray-700 dark:bg-slate-800/50 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+              aria-label="Close modal"
             >
-              <option value="completed">Completed</option>
-            </select>
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className="p-6">
+            <ErrorAlert message={actionError} />
+
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">
+                  Feeding Status
+                </label>
+                <select
+                  value={editingStatus}
+                  onChange={(event) =>
+                    setEditingStatus(event.target.value as FeedingStatusFilter)
+                  }
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none transition-colors focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-500/10 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-100 dark:focus:border-teal-500"
+                >
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="mt-8 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isSaving}
+                className="rounded-xl border border-gray-200 px-5 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={onSave}
+                disabled={isSaving}
+                className="inline-flex items-center justify-center rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500/30 disabled:cursor-not-allowed disabled:bg-teal-400"
+              >
+                {isSaving ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
           </div>
         </div>
-        <div className="flex items-center justify-end gap-2 border-t border-gray-200 px-6 py-4 dark:border-slate-700">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isSaving}
-            className="cursor-pointer rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={onSave}
-            disabled={isSaving}
-            className="cursor-pointer rounded-md bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
-          >
-            {isSaving ? "Saving..." : "Save"}
-          </button>
-        </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };

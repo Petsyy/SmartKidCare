@@ -1,6 +1,7 @@
 export * from "../ui/tab-switcher";
 export * from "./enrollment-start-state";
 export * from "./child-info-step-section";
+export * from "./child-health-enrollment-step-section";
 export * from "./parent-info-step-section";
 export * from "./documents-step-section";
 export * from "./review-submit-step-section";

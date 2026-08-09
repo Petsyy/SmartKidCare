@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {Modal,Platform,Pressable,ScrollView,Text,TextInput,View,
 } from "react-native";
-import {ChildInfoStepSection,DocumentsStepSection,EnrollmentStartState,ParentInfoStepSection,
-  ReviewSubmitStepSection,
+import {ChildInfoStepSection,ChildHealthEnrollmentStepSection,DocumentsStepSection,EnrollmentStartState,ParentInfoStepSection,ReviewSubmitStepSection,
 } from "@/src/features/enrollment/components/sections";
 import { StepProgress } from "@/src/features/enrollment/components/ui";
 import {displayDate,formatYmd} from "@/src/features/enrollment/utils/enrollment-utils";
@@ -62,8 +61,9 @@ export function NewEnrollmentForm({
   const nextStep = async () => {
     if (step === 1 && !(await form.validateStepOne())) return;
     if (step === 2 && !(await form.validateStepTwo())) return;
-    if (step === 3 && !form.validateStepThree()) return;
-    setStep((prev) => (prev < 4 ? ((prev + 1) as Step) : prev));
+    if (step === 3 && !(await form.validateStepThree())) return;
+    if (step === 4 && !form.validateStepFour()) return;
+    setStep((prev) => (prev < 5 ? ((prev + 1) as Step) : prev));
   };
 
   const previousStep = () => {
@@ -90,7 +90,8 @@ export function NewEnrollmentForm({
     if (
       !(await form.validateStepOne()) ||
       !(await form.validateStepTwo()) ||
-      !form.validateStepThree()
+      !(await form.validateStepThree()) ||
+      !form.validateStepFour()
     )
       return;
 
@@ -127,7 +128,7 @@ export function NewEnrollmentForm({
     : assignedCenterDisplayInfo.secondary;
 
   const primaryLabel =
-    step < 4 ? "Next" : isSubmitting ? "Submitting..." : "Submit Request";
+    step < 5 ? "Next" : isSubmitting ? "Submitting..." : "Submit Request";
 
   return (
     <>
@@ -173,6 +174,12 @@ export function NewEnrollmentForm({
                     datePicker.openDatePicker("dateOfBirth")
                   }
                   computedChildAge={form.computedChildAge}
+                />
+              )}
+
+              {step === 2 && (
+                <ChildHealthEnrollmentStepSection
+                  control={form.control as any}
                   onPickEnrollmentDate={() =>
                     datePicker.openDatePicker("enrollmentDate")
                   }
@@ -180,14 +187,15 @@ export function NewEnrollmentForm({
                   assignedCenterSecondary={assignedCenterSecondary}
                   computedBmi={form.computedBmi}
                   computedNutritionalStatus={form.computedNutritionalStatus}
+                  schoolYear={form.schoolYear}
                 />
               )}
 
-              {step === 2 && (
+              {step === 3 && (
                 <ParentInfoStepSection control={form.control as any} />
               )}
 
-              {step === 3 && (
+              {step === 4 && (
                 <DocumentsStepSection
                   isWide={Boolean(isWide)}
                   birthCertificateFile={form.birthCertificateFile}
@@ -201,7 +209,7 @@ export function NewEnrollmentForm({
                 />
               )}
 
-              {step === 4 && (
+              {step === 5 && (
                 <ReviewSubmitStepSection
                   childFullName={form.childFullName}
                   dateOfBirth={form.dateOfBirth}
@@ -236,7 +244,7 @@ export function NewEnrollmentForm({
                 </Pressable>
 
                 <Pressable
-                  onPress={step < 4 ? nextStep : handleSubmitEnrollment}
+                  onPress={step < 5 ? nextStep : handleSubmitEnrollment}
                   disabled={isSubmitting}
                   className="active:scale-95"
                   style={[

@@ -1,4 +1,4 @@
-import { Eye, MoreVertical, Trash2 } from "lucide-react";
+import { Eye, MoreVertical } from "lucide-react";
 import type { EnrollmentRequestItem, EnrollmentRequestStatus } from "@/api/admin.api";
 import { formatSubmissionId } from "../hooks/useEnrollmentRequests";
 
@@ -47,8 +47,7 @@ type EnrollmentTableProps = {
   statusFilter: EnrollmentRequestStatus;
   processingId: string | null;
   openMenuId: string | null;
-  menuRef: React.MutableRefObject<HTMLDivElement | null>;
-  onSetOpenMenuId: (id: string | null) => void;
+  onOpenMenu: (request: EnrollmentRequestItem, buttonEl: HTMLButtonElement) => void;
   onSetSelectedRequest: (request: EnrollmentRequestItem | null) => void;
   onApprove: (request: EnrollmentRequestItem) => void;
   onReject: (request: EnrollmentRequestItem) => void;
@@ -60,13 +59,10 @@ export const EnrollmentTable = ({
   loading,
   statusFilter,
   processingId,
-  openMenuId,
-  menuRef,
-  onSetOpenMenuId,
+  onOpenMenu,
   onSetSelectedRequest,
   onApprove,
   onReject,
-  onDelete,
 }: EnrollmentTableProps) => {
   if (loading) {
     return (
@@ -212,43 +208,18 @@ export const EnrollmentTable = ({
                         Reviewed
                       </span>
                     )}
-                    <div
-                      className="relative"
-                      ref={openMenuId === request._id ? menuRef : null}
-                    >
+                    <div className="relative">
                       <button
-                        onClick={() =>
-                          onSetOpenMenuId(
-                            openMenuId === request._id ? null : request._id,
-                          )
-                        }
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onOpenMenu(request, e.currentTarget);
+                        }}
                         className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-semibold text-gray-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-gray-300 hover:bg-gray-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-gray-400/30 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:bg-slate-800 cursor-pointer"
                         title="More actions"
                         aria-label="More actions"
                       >
                         <MoreVertical size={14} />
                       </button>
-
-                      {openMenuId === request._id ? (
-                        <div className="absolute right-0 top-10 z-20 min-w-42.5 rounded-xl border border-gray-200 bg-white p-1.5 shadow-xl dark:border-slate-700 dark:bg-slate-900">
-                          <button
-                            onClick={() => onDelete(request)}
-                            disabled={
-                              isProcessing || request.status === "approved"
-                            }
-                            className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium transition cursor-pointer ${
-                              isProcessing || request.status === "approved"
-                                ? "cursor-not-allowed text-gray-400 dark:text-slate-500"
-                                : "text-rose-600 hover:bg-rose-50 dark:text-rose-300 dark:hover:bg-rose-500/10"
-                            }`}
-                          >
-                            <Trash2 size={14} />
-                            {request.status === "approved"
-                              ? "Delete unavailable"
-                              : "Delete request"}
-                          </button>
-                        </div>
-                      ) : null}
                     </div>
                   </div>
                 </td>

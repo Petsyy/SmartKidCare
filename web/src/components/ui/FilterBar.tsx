@@ -15,7 +15,7 @@ export function FilterBar({
   resultCount,
 }: FilterBarProps) {
   return (
-    <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+    <div data-slot="filter-bar" className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
       <div className="flex flex-1 flex-wrap items-center gap-2">{children}</div>
       <div className="flex items-center justify-between gap-3 xl:justify-end">
         {resultCount !== undefined && (
@@ -23,12 +23,7 @@ export function FilterBar({
             {resultCount} result{resultCount === 1 ? "" : "s"}
           </p>
         )}
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={onClear}
-          disabled={!hasActiveFilters}
-        >
+        <Button variant="secondary" size="sm" onClick={onClear} disabled={!hasActiveFilters}>
           Clear Filters
         </Button>
       </div>
