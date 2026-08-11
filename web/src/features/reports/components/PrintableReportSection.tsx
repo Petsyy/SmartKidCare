@@ -36,6 +36,7 @@ const ATTENDANCE_COLOR = "#0d9488";
 const FEEDING_COLOR = "#3b82f6";
 
 type PrintableReportSectionProps = {
+
   activeRangeLabel: string;
   generatedAtLabel: string;
   summary: ReportSummary;
@@ -58,10 +59,10 @@ export function PrintableReportSection({
   ageBreakdown,
   studentList,
   studentListPagination,
-  studentPage,
+  studentPage, 
   setStudentPage,
-  studentPageSize,
   setStudentPageSize,
+  studentPageSize,
   recentDailyRows,
 }: PrintableReportSectionProps) {
   const studentRangeLabel =

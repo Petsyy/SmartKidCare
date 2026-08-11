@@ -21,6 +21,7 @@ import aiRoutes from "./modules/ai/routes/ai.routes";
 import notificationRoutes from "./modules/notifications/routes/notification.routes";
 import settingsRoutes from "./modules/settings/routes/settings.routes";
 import competencyRoutes from "./modules/competencies/routes/competency.routes";
+import nutritionRoutes from "./modules/nutrition/routes/nutrition.routes";
 
 const app = express();
 const isProduction = process.env.NODE_ENV === "production";
@@ -146,6 +147,7 @@ app.use("/api/enrollment", enrollmentRoutes);
 app.use("/api/blockchain", blockchainRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/competencies", competencyRoutes);
+app.use("/api/nutrition", nutritionRoutes);
 
 app.use(corsErrorHandler);
 

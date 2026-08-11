@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Routes, Route, NavLink, Navigate, useLocation } from "react-router-dom";
 import { Users, Home, UserCircle, Heart, Smile } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -8,13 +8,34 @@ import { ReportsFilters } from "@/features/reports/components/ReportsFilters";
 import { ReportsDailySummaryTable } from "@/features/reports/components/ReportsTables";
 import { StatCard } from "@/components/ui/StatCard";
 import { CompetencyAnalytics } from "@/features/reports/components/CompetencyAnalytics";
+import { NutritionAnalytics } from "@/features/reports/components/NutritionAnalytics";
 import { PrintableReportSection } from "@/features/reports/components/PrintableReportSection";
 
 const NUMBER_FORMATTER = new Intl.NumberFormat("en-PH");
 const formatNumber = (value: number) => NUMBER_FORMATTER.format(value);
 
+function TabLink({ to, children }: { to: string; children: React.ReactNode }) {
+  return (
+    <NavLink
+      to={to}
+      className={({ isActive }) =>
+        `flex items-center px-4 py-2 font-medium text-sm rounded-lg transition-colors ${
+          isActive
+            ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+            : "text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800"
+        }`
+      }
+    >
+      {children}
+    </NavLink>
+  );
+}
+
 export default function ReportAnalytics() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isExportTab = location.pathname.includes("/export");
+
   const {
     isLoading,
     error,
@@ -73,32 +94,71 @@ export default function ReportAnalytics() {
           onPrint={printReport}
         />
 
-        {!isLoading && (
-          <div className="no-print grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-            <StatCard title="Total Child Development Centers" value={formatNumber(summary.totalChildDevelopmentCenters)} subtitle="Active centers" icon={Home} color="blue" />
-            <StatCard title="Child Development Workers" value={formatNumber(summary.childDevelopmentWorkers)} subtitle="Active teacher accounts" icon={Users} color="teal" />
-            <StatCard title="Total Enrolled Children" value={formatNumber(summary.totalEnrolledChildren)} subtitle="Children in selected range" icon={UserCircle} color="purple" />
-            <StatCard title="4P's Beneficiaries" value={formatNumber(summary.fourPsBeneficiaries)} subtitle="Children under 4Ps program" icon={Heart} color="rose" />
-            <StatCard title="Regular Attendees" value={formatNumber(summary.regularAttendees)} subtitle="Non-beneficiary enrollees" icon={Smile} color="blue" />
-          </div>
-        )}
+        <div className="no-print flex space-x-2 border-b border-gray-200 pb-4 dark:border-slate-800 overflow-x-auto">
+          <TabLink to="/reports/overview">Overview</TabLink>
+          <TabLink to="/reports/nutrition">Health & Nutrition</TabLink>
+          <TabLink to="/reports/academics">Academic Competency</TabLink>
+          <TabLink to="/reports/export">Export & Print</TabLink>
+        </div>
 
         {error && <ErrorAlert message={error} />}
 
-        <div className="no-print">
-          <CompetencyAnalytics />
-        </div>
+        <Routes>
+          <Route path="/" element={<Navigate to="overview" replace />} />
 
-        {isLoading ? (
-          <div className="flex h-56 items-center justify-center rounded-xl border border-gray-200 bg-white text-sm text-gray-500 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
-            Loading report analytics...
-          </div>
-        ) : (
-          <>
-            <div className="no-print mt-4">
-              <ReportsDailySummaryTable recentDailyRows={recentDailyRows} />
+          <Route
+            path="overview"
+            element={
+              <>
+                {!isLoading && (
+                  <div className="no-print grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+                    <StatCard title="Total Child Development Centers" value={formatNumber(summary.totalChildDevelopmentCenters)} subtitle="Active centers" icon={Home} color="blue" />
+                    <StatCard title="Child Development Workers" value={formatNumber(summary.childDevelopmentWorkers)} subtitle="Active teacher accounts" icon={Users} color="teal" />
+                    <StatCard title="Total Enrolled Children" value={formatNumber(summary.totalEnrolledChildren)} subtitle="Children in selected range" icon={UserCircle} color="purple" />
+                    <StatCard title="4P's Beneficiaries" value={formatNumber(summary.fourPsBeneficiaries)} subtitle="Children under 4Ps program" icon={Heart} color="rose" />
+                    <StatCard title="Regular Attendees" value={formatNumber(summary.regularAttendees)} subtitle="Non-beneficiary enrollees" icon={Smile} color="blue" />
+                  </div>
+                )}
+                {isLoading ? (
+                  <div className="flex h-56 items-center justify-center rounded-xl border border-gray-200 bg-white text-sm text-gray-500 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+                    Loading report analytics...
+                  </div>
+                ) : (
+                  <div className="no-print mt-4">
+                    <ReportsDailySummaryTable recentDailyRows={recentDailyRows} />
+                  </div>
+                )}
+              </>
+            }
+          />
+
+          <Route
+            path="nutrition"
+            element={
+              <div className="no-print">
+                <NutritionAnalytics />
+              </div>
+            }
+          />
+
+          <Route
+            path="academics"
+            element={
+              <div className="no-print">
+                <CompetencyAnalytics />
+              </div>
+            }
+          />
+
+          <Route path="export" element={<div className="hidden" />} />
+        </Routes>
+
+        <div className={isExportTab ? "" : "hidden print:block"}>
+          {isLoading ? (
+            <div className="no-print flex h-56 items-center justify-center rounded-xl border border-gray-200 bg-white text-sm text-gray-500 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+              Loading report analytics...
             </div>
-
+          ) : (
             <PrintableReportSection
               activeRangeLabel={activeRange.label}
               generatedAtLabel={lastUpdatedLabel}
@@ -113,8 +173,8 @@ export default function ReportAnalytics() {
               setStudentPageSize={setStudentPageSize}
               recentDailyRows={recentDailyRows}
             />
-          </>
-        )}
+          )}
+        </div>
       </div>
     </Layout>
   );

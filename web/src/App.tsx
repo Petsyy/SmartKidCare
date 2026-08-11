@@ -31,7 +31,7 @@ export default function App() {
               <Route path="/dashboard" element={<AdminDashboard />} />
               <Route path="/attendance" element={<AttendanceTracking />} />
               <Route path="/feeding" element={<FeedingProgram />} />
-              <Route path="/reports" element={<ReportAnalytics />} />
+              <Route path="/reports/*" element={<ReportAnalytics />} />
               <Route path="/settings" element={<AdminSettings />} />
             </Route>
 

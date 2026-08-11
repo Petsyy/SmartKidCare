@@ -5,6 +5,7 @@ import { createChildRecord } from "../../child/services";
 import { parentService } from "../../parents/services/parents.service";
 import { normalizeString } from "../../../shared/utils/string.utils";
 import { enrollmentChildRepository, enrollmentRequestRepository, } from "../repositories/enrollment.repository";
+import NutritionRecord from "../../../models/NutritionRecord";
 import { authUserRepository } from "../../auth/repositories/auth.repository";
 import type { AuthUser } from "../types/enrollment-review.types";
 
@@ -178,6 +179,22 @@ export const reviewEnrollmentRequest = async (
         parentIdDocumentHash: requestDocuments?.parentId?.hash || null,
       },
     );
+
+    if (childData.weight != null && childData.height != null) {
+      await NutritionRecord.create({
+        childId: created.child._id,
+        schoolYear: String(childData.schoolYear || "").trim(),
+        period: "initial",
+        recordedBy: new mongoose.Types.ObjectId(user.id),
+        status: "submitted",
+        weight: childData.weight,
+        height: childData.height,
+        bmi: childData.bmi,
+        nutritionalStatus: childData.nutritionalStatus,
+        measurementDate: new Date(),
+        submittedAt: new Date(),
+      });
+    }
 
     enrollmentRequest.status = "approved";
     enrollmentRequest.createdChild = created.child._id as never;

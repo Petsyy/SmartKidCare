@@ -1,5 +1,8 @@
 import { Eye, MoreVertical } from "lucide-react";
-import type { EnrollmentRequestItem, EnrollmentRequestStatus } from "@/api/admin.api";
+import type {
+  EnrollmentRequestItem,
+  EnrollmentRequestStatus,
+} from "@/api/admin.api";
 import { formatSubmissionId } from "../hooks/useEnrollmentRequests";
 
 export const formatDateLabel = (value: string | Date) => {
@@ -28,8 +31,7 @@ export const statusClassName: Record<EnrollmentRequestStatus, string> = {
     "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200",
   approved:
     "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200",
-  rejected:
-    "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-200",
+  rejected: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-200",
 };
 
 export const formatLabelValue = (value?: string | null) => {
@@ -47,7 +49,10 @@ type EnrollmentTableProps = {
   statusFilter: EnrollmentRequestStatus;
   processingId: string | null;
   openMenuId: string | null;
-  onOpenMenu: (request: EnrollmentRequestItem, buttonEl: HTMLButtonElement) => void;
+  onOpenMenu: (
+    request: EnrollmentRequestItem,
+    buttonEl: HTMLButtonElement,
+  ) => void;
   onSetSelectedRequest: (request: EnrollmentRequestItem | null) => void;
   onApprove: (request: EnrollmentRequestItem) => void;
   onReject: (request: EnrollmentRequestItem) => void;
