@@ -54,7 +54,7 @@ export function DeleteUserModal({
           </div>
         </AlertDialogHeader>
         <div className="bg-slate-50/60 px-6 py-5 dark:bg-slate-950/30">
-          {error && <ErrorAlert message={error} className="mb-4" />}
+          {error && <ErrorAlert message={error} />}
           <p className="text-sm font-normal text-slate-700 dark:text-slate-300">
             Are you sure you want to delete this user? This action cannot be
             undone.
