@@ -1,6 +1,5 @@
 import { Eye, Edit2 } from "lucide-react";
 import { type DaycareCenter } from "@/api/daycare-center.api";
-import { formatLastActivity } from "../utils/date.utils";
 
 type CentersTableProps = {
   centers: DaycareCenter[];
