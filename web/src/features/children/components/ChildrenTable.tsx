@@ -1,6 +1,7 @@
 import { Eye, MoreVertical, Pencil } from "lucide-react";
 import type { Child } from "@/types/child";
 import { formatConfidentialName } from "@/utils/name-privacy";
+import { TableSkeleton } from "@/components/ui/TableSkeleton";
 
 interface ChildrenTableProps {
   isLoading: boolean;
@@ -56,14 +57,7 @@ export function ChildrenTable({
 
         <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
           {isLoading ? (
-            <tr>
-              <td
-                colSpan={9}
-                className="px-6 py-10 text-center text-sm text-gray-500 dark:text-slate-400"
-              >
-                Loading students...
-              </td>
-            </tr>
+            <TableSkeleton columns={9} />
           ) : children.length === 0 ? (
             <tr>
               <td

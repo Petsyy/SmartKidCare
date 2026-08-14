@@ -2,6 +2,7 @@ import { Eye, Pencil, MoreVertical } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { User } from "@/api/authentication.api";
 import type { ParentLinkedChildItem } from "@/api/admin.api";
+import { TableSkeleton } from "@/components/ui/TableSkeleton";
 
 type UserTableProps = {
   activeTab: "teacher" | "parent";
@@ -80,16 +81,7 @@ export const UserTable = ({
           </thead>
 
           <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
-            {isLoading && (
-              <tr>
-                <td
-                  colSpan={tableColumnCount}
-                  className="px-6 py-10 text-center text-gray-500 dark:text-slate-400"
-                >
-                  Loading users...
-                </td>
-              </tr>
-            )}
+            {isLoading && <TableSkeleton columns={tableColumnCount} />}
 
             {!isLoading && usersLength === 0 && (
               <tr>

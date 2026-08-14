@@ -5,6 +5,7 @@ import Layout from "@/components/layout/Layout";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Pagination } from "@/components/ui/Pagination";
 import { StatCard } from "@/components/ui/StatCard";
+import { StatCardSkeleton } from "@/components/ui/StatCardSkeleton";
 import EditChildModal, {type ChildForEdit} from "@/features/children/components/EditChildModal";
 import ChildDetailsModal from "@/features/children/components/ChildDetailsModal";
 import { useChildrenManagement } from "@/features/children/hooks/useChildrenManagement";
@@ -178,34 +179,45 @@ export default function ChildrenManagement() {
         />
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <StatCard
-            title="Total enrollment"
-            value={String(stats.totalChildren)}
-            subtitle={`${stats.active} active students`}
-            icon={Users}
-            color="blue"
-          />
-          <StatCard
-            title="Active"
-            value={String(stats.active)}
-            subtitle="Currently marked as Active"
-            icon={UserCheck}
-            color="teal"
-          />
-          <StatCard
-            title="Inactive"
-            value={String(stats.inactive)}
-            subtitle="Currently marked as Inactive"
-            icon={UserX}
-            color="rose"
-          />
-          <StatCard
-            title="Unassigned"
-            value={String(stats.unassigned)}
-            subtitle="Without an assigned teacher"
-            icon={School}
-            color="purple"
-          />
+          {isLoading ? (
+            <>
+              <StatCardSkeleton color="blue" />
+              <StatCardSkeleton color="teal" />
+              <StatCardSkeleton color="rose" />
+              <StatCardSkeleton color="purple" />
+            </>
+          ) : (
+            <>
+              <StatCard
+                title="Total enrollment"
+                value={String(stats.totalChildren)}
+                subtitle={`${stats.active} active students`}
+                icon={Users}
+                color="blue"
+              />
+              <StatCard
+                title="Active"
+                value={String(stats.active)}
+                subtitle="Currently marked as Active"
+                icon={UserCheck}
+                color="teal"
+              />
+              <StatCard
+                title="Inactive"
+                value={String(stats.inactive)}
+                subtitle="Currently marked as Inactive"
+                icon={UserX}
+                color="rose"
+              />
+              <StatCard
+                title="Unassigned"
+                value={String(stats.unassigned)}
+                subtitle="Without an assigned teacher"
+                icon={School}
+                color="purple"
+              />
+            </>
+          )}
         </div>
 
         {/* Student Directory Card */}

@@ -8,6 +8,7 @@ import { ReportsDailySummaryTable } from "@/features/reports/components/ReportsT
 import { CompetencyAnalytics } from "@/features/reports/components/CompetencyAnalytics";
 import { NutritionAnalytics } from "@/features/reports/components/NutritionAnalytics";
 import { PrintableReportSection } from "@/features/reports/components/PrintableReportSection";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 function TabLink({ to, children }: { to: string; children: React.ReactNode }) {
   return (
@@ -107,9 +108,7 @@ export default function ReportAnalytics() {
               <>
 
                 {isLoading ? (
-                  <div className="flex h-56 items-center justify-center rounded-xl border border-gray-200 bg-white text-sm text-gray-500 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
-                    Loading report analytics...
-                  </div>
+                  <Skeleton className="mt-4 h-56 w-full rounded-xl" />
                 ) : (
                   <div className="no-print mt-4">
                     <ReportsDailySummaryTable recentDailyRows={recentDailyRows} />
@@ -142,9 +141,7 @@ export default function ReportAnalytics() {
 
         <div className={isExportTab ? "" : "hidden print:block"}>
           {isLoading ? (
-            <div className="no-print flex h-56 items-center justify-center rounded-xl border border-gray-200 bg-white text-sm text-gray-500 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
-              Loading report analytics...
-            </div>
+            <Skeleton className="h-56 w-full rounded-xl no-print" />
           ) : (
             <PrintableReportSection
               activeRangeLabel={activeRange.label}

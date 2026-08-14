@@ -1,15 +1,18 @@
 import { Eye, Edit2 } from "lucide-react";
 import { type DaycareCenter } from "@/api/daycare-center.api";
+import { TableSkeleton } from "@/components/ui/TableSkeleton";
 
 type CentersTableProps = {
   centers: DaycareCenter[];
   isLoading: boolean;
+  onView: (center: DaycareCenter) => void;
   onEdit: (center: DaycareCenter) => void;
 };
 
 export function CentersTable({
   centers,
   isLoading,
+  onView,
   onEdit,
 }: CentersTableProps) {
   return (
@@ -37,14 +40,7 @@ export function CentersTable({
         </thead>
         <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
           {isLoading ? (
-            <tr>
-              <td
-                colSpan={5}
-                className="px-6 py-10 text-center text-sm text-gray-500 dark:text-slate-400"
-              >
-                Loading centers...
-              </td>
-            </tr>
+            <TableSkeleton columns={5} />
           ) : centers.length === 0 ? (
             <tr>
               <td
@@ -92,6 +88,7 @@ export function CentersTable({
                 <td className="px-6 py-4 text-right">
                   <div className="flex justify-end items-center gap-1.5">
                     <button
+                      onClick={() => onView(center)}
                       className="group inline-flex items-center gap-1.5 rounded-lg border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-teal-500/30 dark:border-teal-900/50 dark:bg-teal-900/20 dark:text-teal-300 dark:hover:bg-teal-900/40 cursor-pointer"
                       title="View"
                     >

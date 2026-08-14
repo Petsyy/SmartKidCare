@@ -3,6 +3,7 @@ import { Filter, Search, ClipboardList, Clock, CheckCircle, XCircle } from "luci
 import Layout from "@/components/layout/Layout";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatCard } from "@/components/ui/StatCard";
+import { StatCardSkeleton } from "@/components/ui/StatCardSkeleton";
 import type { EnrollmentRequestStatus } from "@/api/admin.api";
 import { useEnrollmentRequests } from "@/features/enrollment/hooks/useEnrollmentRequests";
 import { EnrollmentTable } from "@/features/enrollment/components/EnrollmentTable";
@@ -60,34 +61,45 @@ export default function EnrollmentRequests() {
         />
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <StatCard
-            title="Total"
-            value={String(stats.total)}
-            subtitle="Total submissions"
-            icon={ClipboardList}
-            color="blue"
-          />
-          <StatCard
-            title="Pending"
-            value={String(stats.pending)}
-            subtitle="Awaiting review"
-            icon={Clock}
-            color="teal"
-          />
-          <StatCard
-            title="Approved"
-            value={String(stats.approved)}
-            subtitle="Official records"
-            icon={CheckCircle}
-            color="purple"
-          />
-          <StatCard
-            title="Rejected"
-            value={String(stats.rejected)}
-            subtitle="Denied submissions"
-            icon={XCircle}
-            color="rose"
-          />
+          {loading ? (
+            <>
+              <StatCardSkeleton color="blue" />
+              <StatCardSkeleton color="teal" />
+              <StatCardSkeleton color="purple" />
+              <StatCardSkeleton color="rose" />
+            </>
+          ) : (
+            <>
+              <StatCard
+                title="Total"
+                value={String(stats.total)}
+                subtitle="Total submissions"
+                icon={ClipboardList}
+                color="blue"
+              />
+              <StatCard
+                title="Pending"
+                value={String(stats.pending)}
+                subtitle="Awaiting review"
+                icon={Clock}
+                color="teal"
+              />
+              <StatCard
+                title="Approved"
+                value={String(stats.approved)}
+                subtitle="Official records"
+                icon={CheckCircle}
+                color="purple"
+              />
+              <StatCard
+                title="Rejected"
+                value={String(stats.rejected)}
+                subtitle="Denied submissions"
+                icon={XCircle}
+                color="rose"
+              />
+            </>
+          )}
         </div>
 
         <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">

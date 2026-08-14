@@ -4,6 +4,7 @@ import { CheckCircle2, Gauge, Utensils } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { useTeacherCenterFilter } from "@/shared/hooks/useTeacherCenterFilter";
 import { StatCard } from "@/components/ui/StatCard";
+import { StatCardSkeleton } from "@/components/ui/StatCardSkeleton";
 import { FeedingTable } from "@/features/feeding/components/FeedingTable";
 import { FeedingFilters } from "@/features/feeding/components/FeedingFilters";
 import { FeedingEditModal } from "@/features/feeding/components/FeedingEditModal";
@@ -152,27 +153,37 @@ export default function FeedingProgram() {
         />
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <StatCard
-            title="Records on page"
-            value={String(analytics.total)}
-            subtitle="Current filtered results"
-            icon={Utensils}
-            color="blue"
-          />
-          <StatCard
-            title="Completed"
-            value={String(analytics.completed)}
-            subtitle="Meals recorded as completed"
-            icon={CheckCircle2}
-            color="teal"
-          />
-          <StatCard
-            title="Completion rate"
-            value={`${analytics.rate}%`}
-            subtitle="Across filtered records on this page"
-            icon={Gauge}
-            color="purple"
-          />
+          {isLoading ? (
+            <>
+              <StatCardSkeleton color="blue" />
+              <StatCardSkeleton color="teal" />
+              <StatCardSkeleton color="purple" />
+            </>
+          ) : (
+            <>
+              <StatCard
+                title="Records on page"
+                value={String(analytics.total)}
+                subtitle="Current filtered results"
+                icon={Utensils}
+                color="blue"
+              />
+              <StatCard
+                title="Completed"
+                value={String(analytics.completed)}
+                subtitle="Meals recorded as completed"
+                icon={CheckCircle2}
+                color="teal"
+              />
+              <StatCard
+                title="Completion rate"
+                value={`${analytics.rate}%`}
+                subtitle="Across filtered records on this page"
+                icon={Gauge}
+                color="purple"
+              />
+            </>
+          )}
         </div>
 
         <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">

@@ -1,9 +1,7 @@
 import { Eye, MoreVertical } from "lucide-react";
-import type {
-  EnrollmentRequestItem,
-  EnrollmentRequestStatus,
-} from "@/api/admin.api";
+import type { EnrollmentRequestItem, EnrollmentRequestStatus } from "@/api/admin.api";
 import { formatSubmissionId } from "../hooks/useEnrollmentRequests";
+import { TableSkeleton } from "@/components/ui/TableSkeleton";
 
 export const formatDateLabel = (value: string | Date) => {
   const parsed = new Date(value);
@@ -69,15 +67,7 @@ export const EnrollmentTable = ({
   onApprove,
   onReject,
 }: EnrollmentTableProps) => {
-  if (loading) {
-    return (
-      <div className="px-6 py-14 text-center text-gray-500 dark:text-slate-400">
-        Loading enrollment requests...
-      </div>
-    );
-  }
-
-  if (requests.length === 0) {
+  if (!loading && requests.length === 0) {
     return (
       <div className="px-6 py-14 text-center text-gray-500 dark:text-slate-400">
         No {statusFilter} requests found.
@@ -111,10 +101,13 @@ export const EnrollmentTable = ({
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
-          {requests.map((request) => {
-            const teacherName = request.requestedBy
-              ? formatName(request.requestedBy)
-              : "Unknown Teacher";
+          {loading ? (
+            <TableSkeleton columns={6} />
+          ) : (
+            requests.map((request) => {
+              const teacherName = request.requestedBy
+                ? formatName(request.requestedBy)
+                : "Unknown Teacher";
             const centerName =
               request.daycareCenter?.name || "Unassigned Center";
             const centerBarangay =
@@ -230,7 +223,7 @@ export const EnrollmentTable = ({
                 </td>
               </tr>
             );
-          })}
+          }))}
         </tbody>
       </table>
     </div>

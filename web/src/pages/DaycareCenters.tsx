@@ -3,12 +3,14 @@ import { Search, Plus, Building2, CheckCircle, XCircle } from "lucide-react";
 import { CentersTable } from "@/features/centers/components/CentersTable";
 import { AddCenterModal } from "@/features/centers/components/AddCenterModal";
 import { EditCenterModal } from "@/features/centers/components/EditCenterModal";
+import { ViewCenterModal } from "@/features/centers/components/ViewCenterModal";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Pagination } from "@/components/ui/Pagination";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { StatCard } from "@/components/ui/StatCard";
+import { StatCardSkeleton } from "@/components/ui/StatCardSkeleton";
 import { type DaycareCenter } from "@/api/daycare-center.api";
 import { useDaycareCenters } from "@/features/centers/hooks/useDaycareCenters";
 
@@ -16,6 +18,7 @@ export default function DaycareCenters() {
   const navigate = useNavigate();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingCenter, setEditingCenter] = useState<DaycareCenter | null>(null);
+  const [viewingCenter, setViewingCenter] = useState<DaycareCenter | null>(null);
 
   const {
     centers,
@@ -51,24 +54,34 @@ export default function DaycareCenters() {
         />
 
         <div className="grid gap-4 md:grid-cols-3">
-          <StatCard
-            title="Total Centers"
-            value={String(centers.length)}
-            icon={Building2}
-            color="blue"
-          />
-          <StatCard
-            title="Active Centers"
-            value={String(activeCount)}
-            icon={CheckCircle}
-            color="teal"
-          />
-          <StatCard
-            title="Inactive Centers"
-            value={String(inactiveCount)}
-            icon={XCircle}
-            color="rose"
-          />
+          {isLoading ? (
+            <>
+              <StatCardSkeleton color="blue" />
+              <StatCardSkeleton color="teal" />
+              <StatCardSkeleton color="rose" />
+            </>
+          ) : (
+            <>
+              <StatCard
+                title="Total Centers"
+                value={String(centers.length)}
+                icon={Building2}
+                color="blue"
+              />
+              <StatCard
+                title="Active Centers"
+                value={String(activeCount)}
+                icon={CheckCircle}
+                color="teal"
+              />
+              <StatCard
+                title="Inactive Centers"
+                value={String(inactiveCount)}
+                icon={XCircle}
+                color="rose"
+              />
+            </>
+          )}
         </div>
 
         <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -123,6 +136,7 @@ export default function DaycareCenters() {
           <CentersTable
             centers={paginatedCenters}
             isLoading={isLoading}
+            onView={setViewingCenter}
             onEdit={setEditingCenter}
           />
 
@@ -150,6 +164,10 @@ export default function DaycareCenters() {
         center={editingCenter}
         onClose={() => setEditingCenter(null)}
         onUpdate={handleUpdateCenter}
+      />
+      <ViewCenterModal
+        center={viewingCenter}
+        onClose={() => setViewingCenter(null)}
       />
     </Layout>
   );

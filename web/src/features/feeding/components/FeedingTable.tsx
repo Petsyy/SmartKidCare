@@ -1,6 +1,7 @@
 import { Eye, Pencil, Trash2 } from "lucide-react";
 import type { FeedingRow } from "@/features/feeding/hooks/useFeedingProgram";
 import { FeedingStatusBadge } from "./FeedingStatusBadge";
+import { TableSkeleton } from "@/components/ui/TableSkeleton";
 
 type FeedingTableProps = {
   isLoading: boolean;
@@ -70,14 +71,7 @@ export function FeedingTable({
         </thead>
         <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
           {isLoading ? (
-            <tr>
-              <td
-                colSpan={8}
-                className="px-6 py-10 text-center text-sm text-gray-500 dark:text-slate-400"
-              >
-                Loading feeding records...
-              </td>
-            </tr>
+            <TableSkeleton columns={8} />
           ) : rows.length === 0 ? (
             <tr>
               <td

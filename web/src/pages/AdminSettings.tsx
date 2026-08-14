@@ -1,33 +1,21 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import {
-  Bell,
-  ShieldCheck,
-  UserCog,
-  Building2,
-  type LucideIcon,
-} from "lucide-react";
+import {Bell,ShieldCheck,UserCog,Building2,type LucideIcon} from "lucide-react";
 import Layout from "../components/layout/Layout";
 import { PageHeader } from "@/components/ui/PageHeader";
-import {
-  type AdminPreferencesForm,
-  type AdminProfileForm,
-  useAdminSettings,
+import {type AdminPreferencesForm,type AdminProfileForm,useAdminSettings,
 } from "@/features/settings/hooks/useAdminSettings";
-import {
-  type PasswordForm,
-  useAdminPassword2FA,
+import {type PasswordForm,useAdminPassword2FA,
 } from "@/features/settings/hooks/useAdminPassword2FA";
-import {
-  showAdminPasswordChangedModal,
-  showAdminProfileSavedModal,
+import {showAdminPasswordChangedModal,showAdminProfileSavedModal,
 } from "@/utils/sweet-alert-modal";
 
 import { ProfileSection } from "@/features/settings/components/ProfileSection";
 import { SecuritySection } from "@/features/settings/components/SecuritySection";
 import { PreferencesSection } from "@/features/settings/components/PreferencesSection";
 import { SystemSection } from "@/features/settings/components/SystemSection";
+import { Skeleton, SkeletonText } from "@/components/ui/Skeleton";
 
 type SettingsSectionId = "profile" | "security" | "preferences" | "system";
 
@@ -342,8 +330,32 @@ export default function AdminSettings() {
         />
 
         {isLoading && (
-          <div className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-            Loading settings...
+          <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
+            <aside className="h-fit rounded-2xl border border-slate-200 bg-white p-3 shadow-sm xl:sticky xl:top-6 dark:border-slate-700 dark:bg-slate-900">
+              <Skeleton className="mb-4 h-4 w-24" />
+              <div className="space-y-2">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="flex items-start gap-3 rounded-xl border border-transparent p-3">
+                    <Skeleton className="h-8 w-8 shrink-0 rounded-lg" />
+                    <SkeletonText lines={2} className="w-full" />
+                  </div>
+                ))}
+              </div>
+            </aside>
+            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+              <div className="mb-6 flex items-start gap-3">
+                <Skeleton className="h-9 w-9 shrink-0 rounded-lg" />
+                <SkeletonText lines={2} className="w-48" />
+              </div>
+              <div className="space-y-6">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="space-y-2">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                ))}
+              </div>
+            </section>
           </div>
         )}
 
