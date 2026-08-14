@@ -27,12 +27,7 @@ export function CentersTable({
             <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
               Children
             </th>
-            <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
-              Attendance Today
-            </th>
-            <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
-              Last Activity
-            </th>
+
             <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
               Status
             </th>
@@ -45,7 +40,7 @@ export function CentersTable({
           {isLoading ? (
             <tr>
               <td
-                colSpan={7}
+                colSpan={5}
                 className="px-6 py-10 text-center text-sm text-gray-500 dark:text-slate-400"
               >
                 Loading centers...
@@ -54,7 +49,7 @@ export function CentersTable({
           ) : centers.length === 0 ? (
             <tr>
               <td
-                colSpan={7}
+                colSpan={5}
                 className="px-6 py-10 text-center text-sm text-gray-500 dark:text-slate-400"
               >
                 No centers match your search.
@@ -82,14 +77,7 @@ export function CentersTable({
                 <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-300">
                   {center.childrenCount || 0}
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-300">
-                  {center.attendanceToday
-                    ? `${center.attendanceToday.present} / ${center.attendanceToday.total}`
-                    : "0 / 0"}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-300">
-                  {formatLastActivity(center.lastActivity)}
-                </td>
+
                 <td className="px-6 py-4">
                   <span
                     className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${

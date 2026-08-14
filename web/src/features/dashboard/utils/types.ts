@@ -24,17 +24,6 @@ export type PieDataPoint = {
   color: string;
 };
 
-export type RecentActivity = {
-  id: string;
-  type: "attendance" | "feeding";
-  childName: string;
-  teacherName: string;
-  centerName: string;
-  action: string;
-  timestamp: string;
-  sortTime: number;
-  status: string;
-};
 
 export type DashboardDateMeta = {
   todayKey: string;

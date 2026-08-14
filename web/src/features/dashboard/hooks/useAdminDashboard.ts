@@ -9,7 +9,6 @@ import {
   type DashboardStats,
   type ChartDataPoint,
   type PieDataPoint,
-  type RecentActivity,
   type DashboardDateMeta,
 } from "../utils";
 
@@ -17,7 +16,6 @@ export type {
   DashboardStats,
   ChartDataPoint,
   PieDataPoint,
-  RecentActivity,
   DashboardDateMeta,
 };
 
@@ -68,7 +66,6 @@ export function useAdminDashboard() {
   const stats = data?.stats ?? DEFAULT_STATS;
   const chartData = data?.chartData ?? [];
   const pieData = data?.pieData ?? [];
-  const recentActivities = data?.recentActivities ?? [];
   const dateMeta = data?.dateMeta ?? DEFAULT_DATE_META;
   const fetchDashboardData = useMemo(() => refetch, [refetch]);
 
@@ -76,7 +73,6 @@ export function useAdminDashboard() {
     stats,
     chartData,
     pieData,
-    recentActivities,
     isLoading,
     dateMeta,
     fetchDashboardData,

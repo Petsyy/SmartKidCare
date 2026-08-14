@@ -1,18 +1,13 @@
 import { useNavigate, Routes, Route, NavLink, Navigate, useLocation } from "react-router-dom";
-import { Users, Home, UserCircle, Heart, Smile } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { useReportAnalytics } from "@/features/reports/hooks/useReportAnalytics";
 import { ReportsFilters } from "@/features/reports/components/ReportsFilters";
 import { ReportsDailySummaryTable } from "@/features/reports/components/ReportsTables";
-import { StatCard } from "@/components/ui/StatCard";
 import { CompetencyAnalytics } from "@/features/reports/components/CompetencyAnalytics";
 import { NutritionAnalytics } from "@/features/reports/components/NutritionAnalytics";
 import { PrintableReportSection } from "@/features/reports/components/PrintableReportSection";
-
-const NUMBER_FORMATTER = new Intl.NumberFormat("en-PH");
-const formatNumber = (value: number) => NUMBER_FORMATTER.format(value);
 
 function TabLink({ to, children }: { to: string; children: React.ReactNode }) {
   return (
@@ -110,15 +105,7 @@ export default function ReportAnalytics() {
             path="overview"
             element={
               <>
-                {!isLoading && (
-                  <div className="no-print grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-                    <StatCard title="Total Child Development Centers" value={formatNumber(summary.totalChildDevelopmentCenters)} subtitle="Active centers" icon={Home} color="blue" />
-                    <StatCard title="Child Development Workers" value={formatNumber(summary.childDevelopmentWorkers)} subtitle="Active teacher accounts" icon={Users} color="teal" />
-                    <StatCard title="Total Enrolled Children" value={formatNumber(summary.totalEnrolledChildren)} subtitle="Children in selected range" icon={UserCircle} color="purple" />
-                    <StatCard title="4P's Beneficiaries" value={formatNumber(summary.fourPsBeneficiaries)} subtitle="Children under 4Ps program" icon={Heart} color="rose" />
-                    <StatCard title="Regular Attendees" value={formatNumber(summary.regularAttendees)} subtitle="Non-beneficiary enrollees" icon={Smile} color="blue" />
-                  </div>
-                )}
+
                 {isLoading ? (
                   <div className="flex h-56 items-center justify-center rounded-xl border border-gray-200 bg-white text-sm text-gray-500 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
                     Loading report analytics...

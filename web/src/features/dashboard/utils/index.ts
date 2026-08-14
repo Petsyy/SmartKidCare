@@ -2,13 +2,10 @@ export * from "./types";
 export * from "./helpers";
 export * from "./stats";
 export * from "./charts";
-export * from "./activities";
-
 import type { DashboardDateMeta } from "./types";
 import { getLocalDateKey, getLatestDateKey, getRecordDateKey } from "./helpers";
 import { computeStats } from "./stats";
 import { computeChartData, computePieData } from "./charts";
-import { computeRecentActivities } from "./activities";
 
 export function processDashboardData(
   childrenPayload: any,
@@ -48,17 +45,9 @@ export function processDashboardData(
   const weekAttendanceArray = attendanceArray.filter((entry: any) => weekKeys.has(getRecordDateKey(entry.date)));
   const weekFeedingArray = feedingArray.filter((entry: any) => weekKeys.has(getRecordDateKey(entry.date)));
   
-  const childEntries: Array<[string, any]> = childrenArray.reduce((acc: Array<[string, any]>, child: any) => {
-    const id = String(child?._id || "");
-    if (id) acc.push([id, child]);
-    return acc;
-  }, []);
-  const childMap = new Map<string, any>(childEntries);
-
   const stats = computeStats(childrenArray, usersArray, centersArray, attendanceArray, feedingArray);
   const chartData = computeChartData(weekAttendanceArray, weekFeedingArray, today);
   const pieData = computePieData(stats);
-  const recentActivities = computeRecentActivities(attendanceArray, feedingArray, childMap, usersArray, centersArray);
 
-  return { stats, chartData, pieData, recentActivities, dateMeta };
+  return { stats, chartData, pieData, dateMeta };
 }
