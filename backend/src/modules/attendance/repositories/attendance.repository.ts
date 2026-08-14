@@ -55,5 +55,4 @@ export const findChildIdsByParent = (parent: string) => childRepository.findChil
 
 export const findAttendanceByTeacherAndDay = (teacher: string, range: DateRange) => attendanceRepository.findByTeacherAndDay(teacher, range);
 export const createAttendance = (data: any) => attendanceRepository.create({ date: data.date, teacher: data.teacherId, records: data.records });
-export const findAttendanceById = (id: string) => attendanceRepository.findById(id);
 export const findAttendanceHistory = (query: any) => attendanceRepository.findHistory(query);

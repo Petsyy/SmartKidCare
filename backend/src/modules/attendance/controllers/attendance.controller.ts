@@ -4,8 +4,6 @@ import { ForbiddenError } from "../../../shared/errors/app-error";
 import {
   submitAttendance as submitAttendanceSvc,
   getAttendanceHistory as getAttendanceHistorySvc,
-  updateAttendanceRecord as updateAttendanceSvc,
-  deleteAttendanceRecord as deleteAttendanceSvc,
 } from "../services/attendance.service";
 
 export const submitAttendance = asyncHandler(async (req: Request, res: Response) => {
@@ -28,12 +26,3 @@ export const getAttendanceHistory = asyncHandler(async (req: Request, res: Respo
   res.json(result);
 });
 
-export const updateAttendanceRecord = asyncHandler(async (req: Request, res: Response) => {
-  const result = await updateAttendanceSvc(req.user, req.params.id, req.body ?? {});
-  res.json(result);
-});
-
-export const deleteAttendanceRecord = asyncHandler(async (req: Request, res: Response) => {
-  const result = await deleteAttendanceSvc(req.user, req.params.id);
-  res.json(result);
-});

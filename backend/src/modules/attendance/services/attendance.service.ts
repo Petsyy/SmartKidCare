@@ -1,8 +1,6 @@
 import type { Request } from "express";
-import { ValidationError, ForbiddenError, NotFoundError } from "../../../shared/errors/app-error";
-import {childRepository,attendanceRepository,findChildIdsByParent,findAttendanceHistory,
-  findAttendanceById,
-} from "../repositories/attendance.repository";
+import { ValidationError, ForbiddenError } from "../../../shared/errors/app-error";
+import {childRepository,attendanceRepository,findChildIdsByParent,findAttendanceHistory} from "../repositories/attendance.repository";
 import { notifyAttendanceSubmitted } from "../../notifications/services/record-event-notification.service";
 import {parsePositiveInt,shouldPaginate,formatChildName,getDateRangeFromPreset,
 } from "../../../shared/utils/records.utils";
@@ -184,52 +182,12 @@ const getAttendanceHistoryOperation = async (
 };
 
 
-const updateAttendanceRecordOperation = async (user: AuthUser | undefined, id: unknown, body: Record<string, unknown>, dependencies: AttendanceServiceDependencies): Promise<{ message: string }> => {
-  const status = body.status as "present" | "absent";
-  const validUser = dependencies.support.assertPrivileged(user);
-  const parsedId = dependencies.support.parseCompositeId(id);
-
-  const attendance = await dependencies.findById(parsedId.parentId);
-  if (!attendance) throw new NotFoundError("Attendance");
-  if (!dependencies.support.canMutateTeacherRecord(validUser, attendance.teacher)) throw new ForbiddenError("Forbidden");
-
-  const record = attendance.records.find((row: any) => String(row.child) === parsedId.childId || String(row.child?._id) === parsedId.childId);
-  if (!record) throw new NotFoundError("Child record");
-
-  if (record.status !== status) {
-    record.status = status;
-    attendance.markModified("records");
-    await attendance.save();
-  }
-
-  return { message: "Attendance record updated" };
-};
-
-const deleteAttendanceRecordOperation = async (user: AuthUser | undefined, id: unknown, dependencies: AttendanceServiceDependencies): Promise<{ message: string }> => {
-  const validUser = dependencies.support.assertPrivileged(user);
-  const parsedId = dependencies.support.parseCompositeId(id);
-
-  const attendance = await dependencies.findById(parsedId.parentId);
-  if (!attendance) throw new NotFoundError("Attendance");
-  if (!dependencies.support.canMutateTeacherRecord(validUser, attendance.teacher)) throw new ForbiddenError("Forbidden");
-
-  const initialLength = attendance.records.length;
-  attendance.records.pull({ child: parsedId.childId });
-
-  if (attendance.records.length === initialLength) throw new NotFoundError("Child record");
-
-  attendance.markModified("records");
-  await attendance.save();
-
-  return { message: "Attendance record deleted" };
-};
 const defaultAttendanceDependencies: AttendanceServiceDependencies = {
   support: recordServiceSupport,
   childRepository,
   attendanceRepository,
   findChildIdsByParent,
   findHistory: findAttendanceHistory,
-  findById: findAttendanceById,
   notifySubmitted: notifyAttendanceSubmitted,
 };
 
@@ -244,19 +202,10 @@ export class AttendanceService {
     return getAttendanceHistoryOperation(user, query, this.dependencies);
   }
 
-  updateRecord(user: AuthUser | undefined, id: unknown, body: Record<string, unknown>): Promise<{ message: string }> {
-    return updateAttendanceRecordOperation(user, id, body, this.dependencies);
-  }
-
-  deleteRecord(user: AuthUser | undefined, id: unknown): Promise<{ message: string }> {
-    return deleteAttendanceRecordOperation(user, id, this.dependencies);
-  }
 }
 
 export const attendanceService = new AttendanceService(defaultAttendanceDependencies);
 export const submitAttendance = attendanceService.submit.bind(attendanceService);
 export const getAttendanceHistory = attendanceService.getHistory.bind(attendanceService);
-export const updateAttendanceRecord = attendanceService.updateRecord.bind(attendanceService);
-export const deleteAttendanceRecord = attendanceService.deleteRecord.bind(attendanceService);
 
 export type { AttendanceAuthUser, SubmitAttendanceInput, AttendanceResult, PaginatedResult, AttendanceServiceDependencies } from "../types/attendance.types";

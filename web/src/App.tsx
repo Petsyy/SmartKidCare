@@ -6,7 +6,6 @@ import { SystemSettingsProvider } from "./context/SystemSettingsContext";
 const AdminLogin = lazy(() => import("./pages/AdminLogin"));
 const UserManagement = lazy(() => import("./pages/UserManagement"));
 const ChildrenManagement = lazy(() => import("./pages/ChildrenManagement"));
-const AttendanceTracking = lazy(() => import("./pages/AttendanceTracking"));
 const FeedingProgram = lazy(() => import("./pages/FeedingProgram"));
 const ReportAnalytics = lazy(() => import("./pages/Reports&Analytics"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
@@ -29,7 +28,6 @@ export default function App() {
               <Route path="/enrollment-requests" element={<EnrollmentRequests />} />
               <Route path="/centers" element={<DaycareCenters />} />
               <Route path="/dashboard" element={<AdminDashboard />} />
-              <Route path="/attendance" element={<AttendanceTracking />} />
               <Route path="/feeding" element={<FeedingProgram />} />
               <Route path="/reports/*" element={<ReportAnalytics />} />
               <Route path="/settings" element={<AdminSettings />} />

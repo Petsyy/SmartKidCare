@@ -1,6 +1,6 @@
 import type { RecordServiceSupport } from "../../../shared/services/record-service-support";
 import type { notifyAttendanceSubmitted } from "../../notifications/services/record-event-notification.service";
-import type { attendanceRepository, childRepository, findAttendanceById, findAttendanceHistory, findChildIdsByParent } from "../repositories/attendance.repository";
+import type { attendanceRepository, childRepository, findAttendanceHistory, findChildIdsByParent } from "../repositories/attendance.repository";
 export type AttendanceAuthUser = { id: string; role: string };
 
 export type AuthUser = AttendanceAuthUser;
@@ -33,6 +33,5 @@ export interface AttendanceServiceDependencies {
   attendanceRepository: typeof attendanceRepository;
   findChildIdsByParent: typeof findChildIdsByParent;
   findHistory: typeof findAttendanceHistory;
-  findById: typeof findAttendanceById;
   notifySubmitted: typeof notifyAttendanceSubmitted;
 }

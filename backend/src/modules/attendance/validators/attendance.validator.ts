@@ -18,13 +18,6 @@ const submitAttendanceSchema = z.object({
     .min(1, "At least one record is required."),
 });
 
-const updateAttendanceSchema = z.object({
-  status: z.enum(["present", "absent"], {
-    message: "Status must be either 'present' or 'absent'.",
-  }),
-  notes: z.string().trim().optional(),
-});
-
 const attendanceHistoryQuerySchema = z.object({
   childId: z.string().trim().optional(),
   date: z.string().trim().optional(),
@@ -36,7 +29,6 @@ const attendanceHistoryQuerySchema = z.object({
 });
 
 export const validateSubmitAttendance = validate(submitAttendanceSchema);
-export const validateUpdateAttendance = validate(updateAttendanceSchema);
 export const validateAttendanceHistoryQuery = validate(
   attendanceHistoryQuerySchema,
   "query",

@@ -1,6 +1,5 @@
 import {
   LayoutDashboard,
-  Calendar,
   Utensils,
   BarChart3,
   Settings,
@@ -42,7 +41,6 @@ const navGroups: NavGroup[] = [
   {
     groupName: "MONITORING",
     items: [
-      { icon: Calendar, label: "Attendance Tracking", path: "attendance" },
       { icon: Utensils, label: "Feeding Program", path: "feeding" },
     ],
   },

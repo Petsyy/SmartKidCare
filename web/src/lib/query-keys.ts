@@ -11,8 +11,6 @@ export const webQueryKeys = {
     ["competencyAnalytics", period, schoolYear] as const,
   children: () => ["children"] as const,
   adminDashboard: () => ["adminDashboard"] as const,
-  attendanceTracking: (paramsKey: string) =>
-    ["attendanceTracking", paramsKey] as const,
   feedingTracking: (paramsKey: string) => ["feedingTracking", paramsKey] as const,
   adminSettings: () => ["adminSettings"] as const,
 };
