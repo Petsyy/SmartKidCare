@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useWindowDimensions } from "react-native";
 import {
-  EnrollmentTabSwitcher,
   SubmittedRequestsPanel,
   NewEnrollmentForm,
 } from "@/src/features/enrollment/components/sections";
+import { EnrollmentTabSwitcher } from "@/src/features/enrollment/components/ui";
 import { useEnrollmentSubmit } from "@/src/features/enrollment/hooks";
 import { useNavigation } from "expo-router";
 import { ScreenShell, ScreenHeader } from "@/src/components/ui";

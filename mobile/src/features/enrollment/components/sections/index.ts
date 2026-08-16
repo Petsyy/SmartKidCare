@@ -1,4 +1,4 @@
-export * from "../ui/tab-switcher";
+
 export * from "./enrollment-start-state";
 export * from "./child-info-step-section";
 export * from "./child-health-enrollment-step-section";

@@ -1,8 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import {Modal,Platform,Pressable,ScrollView,Text,TextInput,View,
 } from "react-native";
-import {ChildInfoStepSection,ChildHealthEnrollmentStepSection,DocumentsStepSection,EnrollmentStartState,ParentInfoStepSection,ReviewSubmitStepSection,
-} from "@/src/features/enrollment/components/sections";
+import { ChildInfoStepSection } from "./child-info-step-section";
+import { ChildHealthEnrollmentStepSection } from "./child-health-enrollment-step-section";
+import { DocumentsStepSection } from "./documents-step-section";
+import { EnrollmentStartState } from "./enrollment-start-state";
+import { ParentInfoStepSection } from "./parent-info-step-section";
+import { ReviewSubmitStepSection } from "./review-submit-step-section";
 import { StepProgress } from "@/src/features/enrollment/components/ui";
 import {displayDate,formatYmd} from "@/src/features/enrollment/utils/enrollment-utils";
 import { enrollFieldStyles } from "@/src/features/enrollment/styles";
