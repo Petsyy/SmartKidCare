@@ -226,7 +226,7 @@ export default function ChildrenManagement() {
           <div className="flex flex-col gap-4 border-b p-6 dark:border-slate-700 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-3">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
-                Children Directory
+                Child Directory
               </h2>
             </div>
 
