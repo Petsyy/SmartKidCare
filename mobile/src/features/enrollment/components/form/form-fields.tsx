@@ -1,45 +1,8 @@
 import { useState } from "react";
-import {
-  Controller,
-  type Control,
-  type FieldValues,
-  type Path,
-} from "react-hook-form";
-import {
-  Pressable,
-  Text,
-  TextInput,
-  type StyleProp,
-  type TextStyle,
-  View,
-  type ViewStyle,
-} from "react-native";
+import {Pressable,StyleProp,Text,TextInput,TextStyle,View,ViewStyle} from "react-native";
 import { CalendarDays, Camera, ChevronDown, Upload } from "lucide-react-native";
-import {
-  displayDate,
-  parseYmd,
-} from "@/src/features/enrollment/utils/enrollment-utils";
-
-type InputProps = {
-  label: string;
-  value: string;
-  onChangeText: (value: string) => void;
-  placeholder?: string;
-  keyboardType?:
-    | "default"
-    | "email-address"
-    | "phone-pad"
-    | "number-pad"
-    | "decimal-pad";
-  autoCapitalize?: "none" | "sentences" | "words" | "characters";
-  containerStyle?: StyleProp<ViewStyle>;
-  editable?: boolean;
-  computed?: boolean;
-  labelHint?: string;
-  error?: string;
-};
-
-const INPUT_PLACEHOLDER = "#9CA3AF";
+import {displayDate,parseYmd} from "@/src/features/enrollment/utils/enrollment-utils";
+import { type InputProps, INPUT_PLACEHOLDER } from "../types/enrollment-types";
 
 export function Input({
   label,
@@ -165,7 +128,7 @@ export function DateField({
   );
 }
 
-type SelectOption = {
+export type SelectOption = {
   label: string;
   value: string;
 };
@@ -382,93 +345,5 @@ export function DocumentUploadField({
         )}
       </View>
     </View>
-  );
-}
-
-// --- React Hook Form Wrappers ---
-
-export function FormInput<T extends FieldValues>({
-  control,
-  name,
-  ...props
-}: Omit<InputProps, "value" | "onChangeText" | "error"> & {
-  control: Control<T>;
-  name: Path<T>;
-}) {
-  return (
-    <Controller
-      control={control}
-      name={name}
-      render={({ field: { onChange, value }, fieldState: { error } }) => (
-        <Input
-          {...props}
-          value={value as string}
-          onChangeText={onChange}
-          error={error?.message}
-        />
-      )}
-    />
-  );
-}
-
-export function FormDateField<T extends FieldValues>({
-  control,
-  name,
-  label,
-  onPress,
-}: {
-  control: Control<T>;
-  name: Path<T>;
-  label: string;
-  onPress: () => void;
-}) {
-  return (
-    <Controller
-      control={control}
-      name={name}
-      render={({ field: { value }, fieldState: { error } }) => (
-        <DateField
-          label={label}
-          value={value as string}
-          onPress={onPress}
-          error={error?.message}
-        />
-      )}
-    />
-  );
-}
-
-export function FormSelectField<T extends FieldValues>({
-  control,
-  name,
-  ...props
-}: {
-  control: Control<T>;
-  name: Path<T>;
-  label: string;
-  options: SelectOption[];
-  placeholder?: string;
-  disabled?: boolean;
-  loading?: boolean;
-}) {
-  return (
-    <Controller
-      control={control}
-      name={name}
-      render={({ field: { onChange, value }, fieldState: { error } }) => (
-        <View>
-          <SelectField
-            {...props}
-            value={value as string}
-            onValueChange={onChange}
-          />
-          {error ? (
-            <Text className="mt-1 text-xs text-red-500 mb-2">
-              {error.message}
-            </Text>
-          ) : null}
-        </View>
-      )}
-    />
   );
 }
