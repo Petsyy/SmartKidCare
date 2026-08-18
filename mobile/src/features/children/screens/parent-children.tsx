@@ -120,8 +120,8 @@ export default function ParentChildrenScreen() {
               No linked children yet
             </Text>
             <Text className="mt-3 text-base leading-7 text-gray-600">
-              Ask your school for a child link code, then add it from your
-              account to start receiving attendance and feeding updates.
+              Your child will appear here once their teacher completes enrollment.
+              Contact your daycare center if you believe your child should be listed.
             </Text>
           </View>
         ) : (
@@ -129,7 +129,7 @@ export default function ParentChildrenScreen() {
             {children.length > 1 ? (
               <View className="mb-6">
                 <Text className="mb-3 text-base font-semibold uppercase tracking-wide text-gray-500">
-                  Linked Children ({children.length})
+                  Your Children ({children.length})
                 </Text>
                 <ScrollView
                   horizontal
@@ -179,8 +179,10 @@ export default function ParentChildrenScreen() {
               >
                 <View className="flex-row items-start justify-between">
                   <View className="flex-row flex-1 pr-3">
-                    <View className="h-16 w-16 items-center justify-center rounded-2xl bg-teal-50">
-                      <Icons.Baby size={32} color="#0F766E" />
+                    <View className="h-16 w-16 items-center justify-center rounded-full bg-teal-600">
+                      <Text className="text-2xl font-bold text-white">
+                        {selectedChild.firstName.charAt(0)}{selectedChild.lastName.charAt(0)}
+                      </Text>
                     </View>
 
                     <View className="ml-3 flex-1">
@@ -200,9 +202,21 @@ export default function ParentChildrenScreen() {
                   <Icons.ChevronRight size={28} color="#94A3B8" />
                 </View>
 
-                <View className="mt-4 rounded-2xl border border-gray-100 bg-gray-50 p-4">
-                  <Text className="text-lg font-bold text-gray-700">
-                    Today Status
+                <View className={`mt-4 rounded-2xl border p-4 ${
+                  childStatus.tone === "good"
+                    ? "border-emerald-200 bg-emerald-50"
+                    : childStatus.tone === "warning"
+                      ? "border-amber-200 bg-amber-50"
+                      : "border-gray-100 bg-gray-50"
+                }`}>
+                  <Text className={`text-lg font-bold ${
+                    childStatus.tone === "good"
+                      ? "text-emerald-800"
+                      : childStatus.tone === "warning"
+                        ? "text-amber-800"
+                        : "text-gray-700"
+                  }`}>
+                    Today's Status
                   </Text>
 
                   <View className="mt-3 gap-2">
@@ -237,36 +251,7 @@ export default function ParentChildrenScreen() {
               </Pressable>
             ) : null}
 
-            <View className="mb-6 rounded-[28px] border border-gray-100 bg-white p-5">
-              <View className="mb-4 flex-row items-center">
-                <View className="h-10 w-10 items-center justify-center rounded-2xl bg-teal-50">
-                  <Icons.BarChart3 size={19} color="#0F766E" />
-                </View>
-                <View className="ml-3 flex-1">
-                  <Text className="text-2xl font-black text-gray-900">
-                    {monthLabel} Overview
-                  </Text>
-                  <Text className="text-base font-bold text-gray-500">
-                    Progress this month for selected child
-                  </Text>
-                </View>
-              </View>
 
-              <ProgressMetric
-                label="Attendance Rate"
-                value={monthlySummary.attendanceRate}
-                done={monthlySummary.attendanceDone}
-                total={monthlySummary.attendanceTotal}
-                barColor="#0EA5E9"
-              />
-              <ProgressMetric
-                label="Feeding Rate"
-                value={monthlySummary.feedingRate}
-                done={monthlySummary.feedingDone}
-                total={monthlySummary.feedingTotal}
-                barColor="#10B981"
-              />
-            </View>
 
             <View className="mb-6 rounded-[28px] border border-gray-100 bg-white p-5">
               <View className="mb-4 flex-row items-center">
@@ -279,6 +264,7 @@ export default function ParentChildrenScreen() {
               </View>
 
               <View className="gap-3">
+
                 <QuickActionRow
                   icon={<Icons.ClipboardCheck size={20} color="#0F766E" />}
                   title="View Attendance History"

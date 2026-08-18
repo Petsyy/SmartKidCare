@@ -24,6 +24,7 @@ export type MonthlySummary = {
   attendanceTotal: number;
   feedingDone: number;
   feedingTotal: number;
+  periodLabel: string;
 };
 
 const getMonthRange = () => {
@@ -183,6 +184,7 @@ export const useParentChildrenData = () => {
         attendanceTotal: 0,
         feedingDone: 0,
         feedingTotal: 0,
+        periodLabel: "",
       };
     let attendanceDone = 0,
       attendanceTotal = 0,
@@ -204,6 +206,9 @@ export const useParentChildrenData = () => {
         if (entry.status === "completed") feedingDone += 1;
       });
     });
+    const now = new Date();
+    const periodLabel = `${now.toLocaleDateString("en-US", { month: "short" })} 1 - ${now.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+
     return {
       attendanceRate: toPercent(attendanceDone, attendanceTotal),
       feedingRate: toPercent(feedingDone, feedingTotal),
@@ -211,6 +216,7 @@ export const useParentChildrenData = () => {
       attendanceTotal,
       feedingDone,
       feedingTotal,
+      periodLabel,
     };
   }, [selectedChild, monthAttendanceRecords, monthFeedingRecords]);
 

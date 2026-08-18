@@ -17,6 +17,8 @@ export interface FeedingDay {
   foodServed?: string;
 }
 
+const EMPTY_CHILDREN: Child[] = [];
+
 export const useParentFeeding = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -31,7 +33,7 @@ export const useParentFeeding = () => {
     currentDate.getMonth() + 1,
   ).padStart(2, "0")}`;
 
-  const { data: childrenData = [], isLoading: isLoadingChildren } = useQuery({
+  const { data: childrenData = EMPTY_CHILDREN, isLoading: isLoadingChildren } = useQuery({
     queryKey: mobileQueryKeys.parentFeedingChildren(),
     enabled: isAuthenticated,
     queryFn: () => getMyChildren(),

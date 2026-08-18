@@ -41,6 +41,7 @@ export interface ChildDocumentIntegrity {
 }
 
 export interface Child {
+  programType: string;
   _id: string;
   firstName: string;
   middleName?: string;

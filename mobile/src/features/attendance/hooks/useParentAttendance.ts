@@ -16,6 +16,8 @@ export interface AttendanceDay {
   recordedAt?: string;
 }
 
+const EMPTY_CHILDREN: Child[] = [];
+
 export const useParentAttendance = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -32,7 +34,7 @@ export const useParentAttendance = () => {
     currentDate.getMonth() + 1,
   ).padStart(2, "0")}`;
   const {
-    data: childrenData = [],
+    data: childrenData = EMPTY_CHILDREN,
     isLoading: isLoadingChildren,
     refetch: refetchChildren,
   } = useQuery({

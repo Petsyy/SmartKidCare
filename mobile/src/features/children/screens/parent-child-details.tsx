@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { Text, View, ActivityIndicator, ScrollView, StatusBar, Pressable, } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { ScreenShell, ScreenHeader } from "@/src/components/ui";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { getChildById, type Child } from "@/src/api/parent.api";
 import { getAttendanceHistory, getFeedingHistory } from "@/src/api/records.api";
@@ -108,42 +109,26 @@ export default function ParentChildDetailsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
-        <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-        <View
-          style={{ paddingTop: insets.top + 12 }}
-          className="bg-teal-600 px-5 pb-6"
-        >
-          <View className="flex-row items-center">
-            <Pressable onPress={() => router.back()} className="mr-3">
-              <ChevronLeft size={28} color="white" />
-            </Pressable>
-            <Text className="text-3xl font-extrabold text-white">Child Details</Text>
-          </View>
-        </View>
+      <ScreenShell withKeyboardAvoiding={false}>
+        <ScreenHeader
+          title="Child Details"
+          onBack={() => router.back()}
+        />
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#14B8A6" />
           <Text className="mt-4 text-base font-medium text-gray-500">Loading details...</Text>
         </View>
-      </SafeAreaView>
+      </ScreenShell>
     );
   }
 
   if (error || !child) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
-        <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-        <View
-          style={{ paddingTop: insets.top + 12 }}
-          className="bg-teal-600 px-5 pb-6"
-        >
-          <View className="flex-row items-center">
-            <Pressable onPress={() => router.back()} className="mr-3">
-              <ChevronLeft size={28} color="white" />
-            </Pressable>
-            <Text className="text-3xl font-extrabold text-white">Child Details</Text>
-          </View>
-        </View>
+      <ScreenShell withKeyboardAvoiding={false}>
+        <ScreenHeader
+          title="Child Details"
+          onBack={() => router.back()}
+        />
         <View className="flex-1 items-center justify-center px-6">
           <View className="h-16 w-16 items-center justify-center rounded-2xl bg-red-50 mb-4">
             <AlertCircle size={28} color="#EF4444" />
@@ -170,38 +155,19 @@ export default function ParentChildDetailsScreen() {
             </Text>
           </Pressable>
         </View>
-      </SafeAreaView>
+      </ScreenShell>
     );
   }
 
   const fullName = `${child.firstName} ${child.middleName ? child.middleName + " " : ""}${child.lastName}`;
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-
-      <View
-        style={{ paddingTop: insets.top + 12 }}
-        className="bg-teal-600 px-5 pb-6"
-      >
-        <View className="flex-row items-center">
-          <Pressable
-            onPress={() => router.back()}
-            className="h-10 w-10 items-center justify-center rounded-full bg-white/20 mr-3"
-          >
-            <ChevronLeft size={22} color="white" />
-          </Pressable>
-
-          <View className="flex-1">
-            <Text className="text-2xl font-extrabold text-white" numberOfLines={1}>
-              {fullName}
-            </Text>
-            <Text className="text-base text-teal-100 mt-0.5">
-              Student ID: {child.studentId}
-            </Text>
-          </View>
-        </View>
-      </View>
+    <ScreenShell>
+      <ScreenHeader
+        title={fullName}
+        subtitle={`Student ID: ${child.studentId || "N/A"}`}
+        onBack={() => router.back()}
+      />
 
       <ScrollView
         className="flex-1"
@@ -287,6 +253,55 @@ export default function ParentChildDetailsScreen() {
           }}
         >
           <View className="flex-row items-center mb-4 gap-3">
+            <View className="h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50">
+              <Activity size={20} color="#059669" />
+            </View>
+            <Text className="text-xl font-bold text-gray-900">Health & Nutrition</Text>
+          </View>
+
+          <View className="flex-row flex-wrap">
+            <View className="w-1/2 pr-2 mb-4">
+              <InfoRow
+                icon={<Activity size={18} color="#059669" />}
+                label="Weight"
+                value={child.weight ? `${child.weight} kg` : "N/A"}
+              />
+            </View>
+            <View className="w-1/2 pl-2 mb-4">
+              <InfoRow
+                icon={<Activity size={18} color="#059669" />}
+                label="Height"
+                value={child.height ? `${child.height} cm` : "N/A"}
+              />
+            </View>
+            <View className="w-1/2 pr-2 mb-4">
+              <InfoRow
+                icon={<Activity size={18} color="#059669" />}
+                label="BMI"
+                value={child.bmi ? child.bmi.toString() : "N/A"}
+              />
+            </View>
+            <View className="w-1/2 pl-2 mb-4">
+              <InfoRow
+                icon={<Activity size={18} color="#059669" />}
+                label="Status"
+                value={child.nutritionalStatus || "N/A"}
+              />
+            </View>
+          </View>
+        </View>
+
+        <View
+          className="rounded-3xl bg-white p-5 mb-4"
+          style={{
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.06,
+            shadowRadius: 8,
+            elevation: 3,
+          }}
+        >
+          <View className="flex-row items-center mb-4 gap-3">
             <View className="h-10 w-10 items-center justify-center rounded-2xl bg-teal-50">
               <User size={20} color="#0D9488" />
             </View>
@@ -352,6 +367,20 @@ export default function ParentChildDetailsScreen() {
                     timeZone: "Asia/Manila",
                   },
                 )}
+              />
+            </View>
+            <View className="w-1/2 pr-2 mb-4">
+              <InfoRow
+                icon={<BookOpen size={18} color="#0D9488" />}
+                label="Program"
+                value={child.programType || "N/A"}
+              />
+            </View>
+            <View className="w-1/2 pl-2 mb-4">
+              <InfoRow
+                icon={<User size={18} color="#0D9488" />}
+                label="Home Address"
+                value={child.homeAddress || "N/A"}
               />
             </View>
           </View>
@@ -422,6 +451,6 @@ export default function ParentChildDetailsScreen() {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </ScreenShell>
   );
 }
