@@ -43,6 +43,7 @@
       "expo-font",
       "expo-web-browser"
     ],
+    "newArchEnabled": true,
     "experiments": {
       "typedRoutes": true
     },
