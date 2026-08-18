@@ -179,14 +179,14 @@ export default function Login() {
 
               <View className="-mt-10 pb-4">
                 <View className="bg-white rounded-3xl p-6 shadow-xl shadow-emerald-100 border border-emerald-50">
-                  <FormField label="Email Address or Phone Number" icon={Mail}>
+                  <FormField label="Email Address" icon={Mail}>
                     <TextInput
                       className={`px-4 py-3.5 rounded-xl text-lg text-gray-900 border ${
                         focusedField === "identifier"
                           ? "border-emerald-500 bg-white"
                           : "border-gray-200 bg-gray-50"
                       }`}
-                      placeholder="Email address or phone number"
+                      placeholder="Enter your login email"
                       placeholderTextColor="#9CA3AF"
                       value={identifier}
                       onChangeText={(text) => {

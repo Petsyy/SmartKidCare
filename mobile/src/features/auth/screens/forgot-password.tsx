@@ -1,5 +1,5 @@
 import { useForm } from "react-hook-form";
-import { View, Text, TextInput } from "react-native";
+import { Alert, View, Text, TextInput } from "react-native";
 import { useRouter } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 import { Mail } from "lucide-react-native";
@@ -21,7 +21,15 @@ export default function ForgotPasswordScreen() {
   const handleSendOtp = async () => {
     const trimmedEmail = email.trim();
     if (!trimmedEmail) {
-      alert("Please enter your email address.");
+      Alert.alert("Email Required", "Please enter your email address.");
+      return;
+    }
+
+    if (trimmedEmail.toLowerCase().endsWith("@smartkidcare.local")) {
+      Alert.alert(
+        "Parent Account Recovery",
+        "Please ask your teacher to contact the administrator. The administrator will verify your account and provide a one-time temporary password.",
+      );
       return;
     }
 
@@ -32,7 +40,7 @@ export default function ForgotPasswordScreen() {
         params: { email: trimmedEmail },
       });
     } catch (error: any) {
-      alert(error.message || "Unable to send OTP.");
+      Alert.alert("Recovery Error", error.message || "Unable to send OTP.");
     }
   };
 

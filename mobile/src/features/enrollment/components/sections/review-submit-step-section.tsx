@@ -15,7 +15,6 @@ export function ReviewSubmitStepSection({
   programType,
   schoolYear,
   parentFullName,
-  parentEmail,
   parentPhone,
   parentRelationship,
   hasBirthCertificate,
@@ -31,7 +30,6 @@ export function ReviewSubmitStepSection({
   programType: ProgramType | "";
   schoolYear: string;
   parentFullName: string;
-  parentEmail: string;
   parentPhone: string;
   parentRelationship: string;
   hasBirthCertificate: boolean;
@@ -92,7 +90,7 @@ export function ReviewSubmitStepSection({
           label="Parent Name"
           value={parentFullName || "Not provided"}
         />
-        <ReviewRow label="Email" value={parentEmail || "Not provided"} />
+        <ReviewRow label="Login Email" value="Generated after submission" />
         <ReviewRow label="Phone" value={parentPhone || "Not provided"} />
         <ReviewRow label="Relationship" value={parentRelationship || "Not provided"} />
       </ReviewSection>

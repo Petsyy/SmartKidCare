@@ -5,7 +5,7 @@ import { type UploadResult } from "../../../shared/utils/upload-cloudinary";
 import { storageService } from "../../../shared/services/storage.service";
 import { hashFileBuffer } from "../../blockchain/utils/ethers";
 import {buildFullName,extractUploadedDocument,isChildGender,isChildProgramType,splitChildName} from "../../child/shared";
-import {normalizeEmail,normalizeOptionalString,normalizeString} from "../../../shared/utils/string.utils";
+import {normalizeOptionalString,normalizeString} from "../../../shared/utils/string.utils";
 import {computeAgeFromDate,parseDate,} from "../../../shared/utils/date.utils";
 import { createChildRecord } from "../../child/services";
 import { calculateBmi, classifyNutritionalStatus } from "../../../shared/utils/nutrition.utils";
@@ -52,8 +52,7 @@ export const submitChildEnrollmentRequest = async (
   const parentFirstName = normalizeString(command.body.parentFirstName);
   const parentMiddleName = normalizeOptionalString(command.body.parentMiddleName);
   const parentLastName = normalizeString(command.body.parentLastName);
-  const parentEmail = normalizeEmail(command.body.parentEmail);
-  const parentPhone = normalizeString(command.body.parentPhone);
+  const parentPhone = normalizeString(command.body.parentPhone).replace(/\D/g, "");
   const parentRelationship = normalizeString(command.body.parentRelationship);
   const weight = command.body.weight ? Number(command.body.weight) : null;
   const height = command.body.height ? Number(command.body.height) : null;
@@ -68,7 +67,6 @@ export const submitChildEnrollmentRequest = async (
     !schoolYear ||
     !parentFirstName ||
     !parentLastName ||
-    !parentEmail ||
     !parentPhone ||
     !homeAddress ||
     !parentRelationship ||
@@ -158,10 +156,13 @@ export const submitChildEnrollmentRequest = async (
     throw new ConflictError("A pending enrollment request already exists.");
   }
 
-  const existingUserByEmail = await parentService.findUserByEmail(parentEmail);
-  if (existingUserByEmail && existingUserByEmail.role !== "parent") {
+  const [existingParent, existingNonParentByPhone] = await Promise.all([
+    parentService.findParentByIdentity(parentFirstName, parentLastName, parentPhone),
+    parentService.findNonParentByPhone(parentPhone),
+  ]);
+  if (existingNonParentByPhone) {
     throw new ConflictError(
-      "Email is already used by a non-parent account. Use a different parent email.",
+      "Phone number is already used by a non-parent account. Use a different parent phone number.",
     );
   }
 
@@ -190,22 +191,21 @@ export const submitChildEnrollmentRequest = async (
     }
 
     let parentCredentials = {
-      email: parentEmail,
+      email: existingParent?.email || "",
       phone: parentPhone,
       tempPassword: null as string | null,
     };
 
-    if (!existingUserByEmail) {
+    if (!existingParent) {
       const createdParent = await parentService.createParentAccount({
         firstName: parentFirstName,
         middleName: parentMiddleName,
         lastName: parentLastName,
-        email: parentEmail,
         phone: parentPhone,
       });
       createdParentId = String(createdParent.parent._id);
       parentCredentials = {
-        email: parentEmail,
+        email: createdParent.parent.email,
         phone: parentPhone,
         tempPassword: createdParent.tempPassword,
       };
@@ -236,7 +236,7 @@ export const submitChildEnrollmentRequest = async (
         firstName: parentFirstName,
         middleName: parentMiddleName,
         lastName: parentLastName,
-        email: parentEmail,
+        email: parentCredentials.email,
         phone: parentPhone,
         relationship: parentRelationship,
       },

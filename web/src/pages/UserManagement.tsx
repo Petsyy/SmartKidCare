@@ -61,10 +61,6 @@ export default function UserManagement() {
     handleToggleStatus,
     handleDeleteUser,
     confirmDeleteUser,
-
-    parentChildrenLoadingByUserId,
-    parentChildrenByUserId,
-    maskChildName
   } = useUserManagement();
 
   return (
@@ -127,13 +123,10 @@ export default function UserManagement() {
             filteredUsersLength={filteredUsers.length}
             paginatedUsers={paginatedUsers}
             openMenuUserId={openMenuUserId}
-            parentChildrenLoadingByUserId={parentChildrenLoadingByUserId}
-            parentChildrenByUserId={parentChildrenByUserId}
             onOpenMenu={openMenu}
             onCloseMenu={closeMenu}
             onViewUser={handleViewUser}
             onEditUser={handleEditUser}
-            maskChildName={maskChildName}
             paginationRangeLabel={paginationRangeLabel}
             safeCurrentPage={safeCurrentPage}
             totalPages={totalPages}

@@ -100,7 +100,7 @@ export function NewEnrollmentForm({
       return;
 
     const submissionData = form.getSubmissionData();
-    await submitEnrollment(submissionData, form.parentEmail, form.parentPhone);
+    await submitEnrollment(submissionData);
   };
 
   const assignedCenterSource = useMemo(() => {
@@ -225,7 +225,6 @@ export function NewEnrollmentForm({
                   programType={form.programType}
                   schoolYear={form.schoolYear}
                   parentFullName={form.parentFullName}
-                  parentEmail={form.parentEmail}
                   parentPhone={form.parentPhone}
                   parentRelationship={form.parentRelationship}
                   hasBirthCertificate={Boolean(form.birthCertificateFile)}

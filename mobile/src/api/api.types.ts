@@ -96,7 +96,6 @@ export interface ChildEnrollmentRequestPayload {
   parentFirstName: string;
   parentMiddleName?: string;
   parentLastName: string;
-  parentEmail: string;
   parentPhone: string;
   parentRelationship: "Mother" | "Father" | "Guardian" | "Grandparent" | "Other";
 }

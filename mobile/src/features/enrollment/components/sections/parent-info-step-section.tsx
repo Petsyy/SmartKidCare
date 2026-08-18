@@ -54,20 +54,16 @@ export function ParentInfoStepSection({ control }: { control: Control<any> }) {
 
       <FormInput
         control={control}
-        name="parentEmail"
-        label="Email Address *"
-        placeholder="maria@example.com"
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
-
-      <FormInput
-        control={control}
         name="parentPhone"
         label="Phone Number *"
         placeholder="0912 345 6789"
         keyboardType="phone-pad"
       />
+
+      <Text className="mb-4 text-sm leading-5 text-teal-700">
+        A unique SmartKidCare login email will be generated automatically from
+        the parent&apos;s first and last name.
+      </Text>
 
       <FormSelectField
         control={control}

@@ -18,7 +18,7 @@ interface SubmissionData {
   };
   parentData: {
     parentFirstName: string; parentMiddleName?: string; parentLastName: string;
-    parentEmail: string; parentPhone: string;
+    parentPhone: string;
     parentRelationship: "Mother" | "Father" | "Guardian" | "Grandparent" | "Other";
   };
   documentData: {
@@ -49,18 +49,17 @@ export const useEnrollmentSubmit = (onSuccess?: () => void) => {
   });
 
   const submitEnrollment = useCallback(
-    async (data: SubmissionData, parentEmail: string, parentPhone: string) => {
+    async (data: SubmissionData) => {
       try {
         const submission = await submitEnrollmentMutation.mutateAsync({ data });
         await queryClient.invalidateQueries({ queryKey: mobileQueryKeys.submittedRequests() });
 
         const credentials = submission.parentCredentials;
-        const submittedEmail = credentials?.email || parentEmail.trim().toLowerCase();
-        const submittedPhone = credentials?.phone || parentPhone.trim();
+        const submittedEmail = credentials?.email || "Unavailable";
         const generatedPassword = credentials?.tempPassword;
         const credentialMessage = generatedPassword
-          ? `Login Email: ${submittedEmail}\nLogin Phone: ${submittedPhone}\nGenerated Password: ${generatedPassword}`
-          : `Login Email: ${submittedEmail}\nLogin Phone: ${submittedPhone}\nGenerated Password: Parent account already exists. Use the current password.`;
+          ? `Login Email: ${submittedEmail}\nTemporary Password: ${generatedPassword}\n\nThe parent must create a new password during first login.`
+          : `Login Email: ${submittedEmail}\n\nParent account already exists. Use the current password.`;
 
         Alert.alert("Submitted", `Enrollment request submitted successfully.\n\n${credentialMessage}`, [
           { text: "View Submitted Requests", onPress: () => { onSuccess?.(); } },

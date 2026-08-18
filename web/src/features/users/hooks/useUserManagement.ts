@@ -1,11 +1,10 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getUsers, type User } from "@/api/authentication.api";
-import { toggleUserStatus, resetUserPassword, deleteUser, getParentChildren, type ParentLinkedChildItem } from "@/api/admin.api";
+import { toggleUserStatus, resetUserPassword, deleteUser } from "@/api/admin.api";
 import { webQueryKeys } from "@/lib/query-keys";
 import { useUserManagementStore } from "@/stores/user-management.store";
 import { showErrorModal, showResetPasswordModal, showToggleUserStatusModal, showToggleUserStatusSuccessModal } from "@/utils/sweet-alert-modal";
-import { formatConfidentialName } from "@/utils/name-privacy";
 
 export type AccountStatusFilter = "all" | "active" | "inactive";
 export const PAGE_SIZE_OPTIONS = [10, 20, 50];
@@ -15,26 +14,8 @@ const getUserFullName = (user: User) =>
     .replace(/\s+/g, " ")
     .trim();
 
-const withTimeout = <T,>(promise: Promise<T>, timeoutMs = 10000) =>
-  new Promise<T>((resolve, reject) => {
-    const timeoutId = window.setTimeout(() => {
-      reject(new Error("Request timeout"));
-    }, timeoutMs);
-
-    promise
-      .then((value) => {
-        window.clearTimeout(timeoutId);
-        resolve(value);
-      })
-      .catch((error) => {
-        window.clearTimeout(timeoutId);
-        reject(error);
-      });
-  });
-
 export function useUserManagement() {
   const queryClient = useQueryClient();
-  const isMountedRef = useRef(true);
   const {
     activeTab,
     showAddTeacherModal,
@@ -71,18 +52,6 @@ export function useUserManagement() {
     setParentPageSize,
     setViewingUser,
   } = useUserManagementStore();
-
-  const [parentChildrenByUserId, setParentChildrenByUserId] = useState<
-    Record<string, ParentLinkedChildItem[]>
-  >({});
-  const [parentChildrenLoadingByUserId, setParentChildrenLoadingByUserId] =
-    useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
 
   const openMenu = (user: User, buttonEl: HTMLButtonElement) => {
     setMenuUser(user);
@@ -313,69 +282,6 @@ export function useUserManagement() {
         filteredUsers.length,
       )} of ${filteredUsers.length}`;
 
-  const maskChildName = (child: ParentLinkedChildItem) =>
-    formatConfidentialName({
-      lastName: child.lastName,
-      firstName: child.firstName,
-      middleName: child.middleName,
-    }) || "Unknown";
-
-  useEffect(() => {
-    if (activeTab !== "parent") return;
-
-    const parentIds = paginatedUsers.map((user) => user._id).filter(Boolean);
-    const missingParentIds = parentIds.filter(
-      (parentId) =>
-        parentChildrenByUserId[parentId] === undefined &&
-        !parentChildrenLoadingByUserId[parentId],
-    );
-
-    if (!missingParentIds.length) return;
-
-    setParentChildrenLoadingByUserId((prev) => {
-      const next = { ...prev };
-      let hasChanges = false;
-      missingParentIds.forEach((parentId) => {
-        if (!next[parentId]) {
-          next[parentId] = true;
-          hasChanges = true;
-        }
-      });
-      return hasChanges ? next : prev;
-    });
-
-    missingParentIds.forEach((parentId) => {
-      void (async () => {
-        let linkedChildren: ParentLinkedChildItem[] = [];
-        try {
-          linkedChildren = await withTimeout(
-            getParentChildren(parentId),
-            10000,
-          );
-        } catch {
-          linkedChildren = [];
-        }
-
-        if (!isMountedRef.current) return;
-
-        setParentChildrenByUserId((prev) => {
-          if (prev[parentId] === linkedChildren) return prev;
-          return { ...prev, [parentId]: linkedChildren };
-        });
-
-        setParentChildrenLoadingByUserId((prev) => {
-          if (!prev[parentId]) return prev;
-          return { ...prev, [parentId]: false };
-        });
-      })();
-    });
-  }, [
-    activeTab,
-    paginatedUsers,
-    parentChildrenByUserId,
-    parentChildrenLoadingByUserId,
-  ]);
-
   return {
     // State from store
     activeTab,
@@ -427,9 +333,5 @@ export function useUserManagement() {
     confirmDeleteUser,
     setDeletingUser,
 
-    // Parent Children Logic
-    parentChildrenLoadingByUserId,
-    parentChildrenByUserId,
-    maskChildName
   };
 }

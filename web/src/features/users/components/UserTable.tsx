@@ -1,7 +1,5 @@
 import { Eye, Pencil, MoreVertical } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import type { User } from "@/api/authentication.api";
-import type { ParentLinkedChildItem } from "@/api/admin.api";
 import { TableSkeleton } from "@/components/ui/TableSkeleton";
 
 type UserTableProps = {
@@ -11,13 +9,10 @@ type UserTableProps = {
   filteredUsersLength: number;
   paginatedUsers: User[];
   openMenuUserId: string | null;
-  parentChildrenLoadingByUserId: Record<string, boolean>;
-  parentChildrenByUserId: Record<string, ParentLinkedChildItem[]>;
   onOpenMenu: (user: User, element: HTMLButtonElement) => void;
   onCloseMenu: () => void;
   onViewUser: (user: User) => void;
   onEditUser: (user: User) => void;
-  maskChildName: (child: ParentLinkedChildItem) => string;
   paginationRangeLabel: string;
   safeCurrentPage: number;
   totalPages: number;
@@ -31,20 +26,16 @@ export const UserTable = ({
   filteredUsersLength,
   paginatedUsers,
   openMenuUserId,
-  parentChildrenLoadingByUserId,
-  parentChildrenByUserId,
   onOpenMenu,
   onCloseMenu,
   onViewUser,
   onEditUser,
-  maskChildName,
   paginationRangeLabel,
   safeCurrentPage,
   totalPages,
   onPageChange,
 }: UserTableProps) => {
-  const navigate = useNavigate();
-  const tableColumnCount = 6;
+  const tableColumnCount = activeTab === "teacher" ? 6 : 5;
 
   return (
     <>
@@ -61,11 +52,6 @@ export const UserTable = ({
               <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
                 Phone
               </th>
-              {activeTab === "parent" && (
-                <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
-                  Child Name
-                </th>
-              )}
               {activeTab === "teacher" && (
                 <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
                   Assigned Center
@@ -119,42 +105,6 @@ export const UserTable = ({
                 <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-300">
                   {user.phone || "-"}
                 </td>
-                {activeTab === "parent" && (
-                  <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-300">
-                    {parentChildrenLoadingByUserId[user._id] ? (
-                      <span className="text-xs text-gray-500 dark:text-slate-400">
-                        Loading...
-                      </span>
-                    ) : (parentChildrenByUserId[user._id] || []).length === 0 ? (
-                      <span className="text-xs text-gray-500 dark:text-slate-400">
-                        No linked child
-                      </span>
-                    ) : (
-                      <div className="flex flex-wrap gap-2">
-                        {(parentChildrenByUserId[user._id] || []).map((child) => (
-                          <button
-                            key={`${user._id}-${child._id}-${child.studentId || "no-id"}`}
-                            type="button"
-                            onClick={() =>
-                              navigate(
-                                `/children?prefillSearch=${encodeURIComponent(
-                                  child.studentId || `${child.lastName} ${child.firstName}`,
-                                )}`,
-                              )
-                            }
-                            className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-teal-200 bg-teal-50 px-2.5 py-1.5 text-xs text-teal-700 transition hover:border-teal-300 hover:bg-teal-100 dark:border-teal-900/50 dark:bg-teal-900/20 dark:text-teal-300 dark:hover:bg-teal-900/35"
-                            title="Open in Child Table"
-                          >
-                            <span className="font-mono">
-                              {child.studentId || "No ID"}
-                            </span>
-                            <span>{maskChildName(child)}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </td>
-                )}
                 {activeTab === "teacher" && (
                   <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-300">
                     {user.daycareCenter ? (

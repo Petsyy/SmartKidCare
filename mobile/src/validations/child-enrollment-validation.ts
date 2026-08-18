@@ -102,17 +102,10 @@ export const childEnrollmentStepOneSchema = z
     }
   });
 
-const simpleEmailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
 export const childEnrollmentStepTwoSchema = z.object({
   parentFirstName: z.string().trim().min(1, "Parent first name is required."),
   parentMiddleName: z.string().trim().min(1, "Parent middle name is required."),
   parentLastName: z.string().trim().min(1, "Parent last name is required."),
-  parentEmail: z
-    .string()
-    .trim()
-    .min(1, "Parent email is required.")
-    .regex(simpleEmailRegex, "Please enter a valid parent email address."),
   parentPhone: z.string().trim().min(1, "Parent phone is required."),
   parentRelationship: z.enum(["Mother", "Father", "Guardian", "Grandparent", "Other"], {
     required_error: "Relationship to the child is required.",
@@ -138,7 +131,6 @@ export const validateChildEnrollmentStepTwo = (payload: {
   parentFirstName: string;
   parentMiddleName: string;
   parentLastName: string;
-  parentEmail: string;
   parentPhone: string;
   parentRelationship: "Mother" | "Father" | "Guardian" | "Grandparent" | "Other";
 }) => childEnrollmentStepTwoSchema.safeParse(payload);
