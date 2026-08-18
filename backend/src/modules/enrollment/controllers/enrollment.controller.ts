@@ -10,10 +10,6 @@ import {
   deleteEnrollmentRequest as deleteEnrollmentRequestService,
   reviewEnrollmentRequest as reviewEnrollmentRequestService,
 } from "../services/enrollment-review.service";
-import {
-  getEnrollmentRequestParentCredentials as getEnrollmentRequestParentCredentialsService,
-  resetEnrollmentRequestParentPassword as resetEnrollmentRequestParentPasswordService,
-} from "../services/enrollment-parent-credentials.service";
 
 const toUploadedFiles = (req: Request) =>
   req.files as
@@ -73,22 +69,3 @@ export const deleteEnrollmentRequest = asyncHandler(
   },
 );
 
-export const resetEnrollmentRequestParentPassword = asyncHandler(
-  async (req: Request, res: Response) => {
-    const result = await resetEnrollmentRequestParentPasswordService(
-      req.user,
-      req.params.id,
-    );
-    res.json(result);
-  },
-);
-
-export const getEnrollmentRequestParentCredentials = asyncHandler(
-  async (req: Request, res: Response) => {
-    const result = await getEnrollmentRequestParentCredentialsService(
-      req.user,
-      req.params.id,
-    );
-    res.json(result);
-  },
-);

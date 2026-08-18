@@ -163,7 +163,6 @@ export interface TeacherEnrollmentRequest {
     documentIntegrity?: ChildDocumentIntegrity | null;
   } | null;
   
-  showResetParentPassword?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -172,24 +171,6 @@ export interface ChildEnrollmentSubmissionResponse {
   message: string;
   request: TeacherEnrollmentRequest;
   parentCredentials?: {
-    email: string;
-    phone: string;
-    tempPassword: string | null;
-  };
-}
-
-export interface ParentResetPasswordResponse {
-  message: string;
-  credentials: {
-    email: string;
-    phone: string;
-    tempPassword: string;
-  };
-}
-
-export interface ParentCredentialsResponse {
-  message: string;
-  credentials: {
     email: string;
     phone: string;
     tempPassword: string | null;

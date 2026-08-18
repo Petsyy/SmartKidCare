@@ -42,44 +42,5 @@ export const getMyEnrollmentRequests = async (user?: AuthUser) => {
   }
 
   const requests = await enrollmentRequestRepository.findByTeacher(user.id);
-
-  const parentEmails = [
-    ...new Set(
-      (requests as Array<{ parent?: { email?: string } }>)
-        .map((row) => String(row.parent?.email || "").trim().toLowerCase())
-        .filter(Boolean),
-    ),
-  ];
-
-  const parentUsers = parentEmails.length
-    ? await enrollmentUserRepository.findParentsByEmails(parentEmails)
-    : [];
-
-  const mustChangeByEmail = new Map<string, boolean>();
-  for (const parentUser of parentUsers as Array<{
-    email?: string;
-    mustChangePassword?: boolean;
-  }>) {
-    mustChangeByEmail.set(
-      String(parentUser.email || "").toLowerCase(),
-      Boolean(parentUser.mustChangePassword),
-    );
-  }
-
-  return {
-    requests: (requests as Array<Record<string, unknown>>).map((row) => {
-      const email = String(
-        (row as { parent?: { email?: string } }).parent?.email || "",
-      )
-        .trim()
-        .toLowerCase();
-
-      return {
-        ...row,
-        showResetParentPassword: email
-          ? mustChangeByEmail.get(email) === true
-          : false,
-      };
-    }),
-  };
+  return { requests };
 };

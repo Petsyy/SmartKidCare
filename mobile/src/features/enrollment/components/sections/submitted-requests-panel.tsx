@@ -1,8 +1,6 @@
 import {
   Clock3,
-  Eye,
   FileText,
-  Key,
   Mail,
   Phone,
   Search,
@@ -11,13 +9,11 @@ import {
 import {
   Pressable,
   Text,
-  TextInput,
   View,
   ScrollView,
   RefreshControl,
 } from "react-native";
 import React, { useEffect } from "react";
-import type { TeacherEnrollmentRequest } from "@/src/api/teacher.api";
 import {
   EnrollmentRequestBlockchainStatus,
   FilterChips,
@@ -32,16 +28,9 @@ import { useSubmittedRequests } from "@/src/features/enrollment/hooks/useSubmitt
 import { ENROLL_COLORS } from "@/src/features/enrollment/constants";
 
 export function SubmittedRequestsPanel({
-  onViewParentPassword,
-  onResetParentPassword,
   contentPadding,
   contentMaxWidth,
 }: {
-  onViewParentPassword: (request: TeacherEnrollmentRequest) => void;
-  onResetParentPassword: (
-    request: TeacherEnrollmentRequest,
-    onRefresh: () => void,
-  ) => void;
   contentPadding?: number;
   contentMaxWidth?: number;
 }) {
@@ -346,30 +335,6 @@ export function SubmittedRequestsPanel({
                       <EnrollmentRequestBlockchainStatus request={request} />
                     </View>
 
-                    <View className="mt-[14px] flex-row flex-wrap justify-end gap-[8px] border-t border-[#E5E7EB] pt-[14px]">
-                      <Pressable
-                        onPress={() => onViewParentPassword(request)}
-                        className="flex-row items-center gap-[8px] rounded-[16px] border-[1.5px] border-[#BFDBFE] bg-[#EFF6FF] px-[16px] py-[10px]"
-                      >
-                        <Eye size={14} color="#1D4ED8" />
-                        <Text className="text-[15px] font-bold text-[#1E40AF]">
-                          View Password
-                        </Text>
-                      </Pressable>
-                      {request.showResetParentPassword !== false ? (
-                        <Pressable
-                          onPress={() =>
-                            onResetParentPassword(request, refreshSubmitted)
-                          }
-                          className="flex-row items-center gap-[8px] rounded-[16px] border-[1.5px] border-[#FDE68A] bg-[#FFFBEB] px-[16px] py-[10px]"
-                        >
-                          <Key size={14} color="#B45309" />
-                          <Text className="text-[15px] font-bold text-[#92400E]">
-                            Reset Password
-                          </Text>
-                        </Pressable>
-                      ) : null}
-                    </View>
                   </View>
                 </View>
               );

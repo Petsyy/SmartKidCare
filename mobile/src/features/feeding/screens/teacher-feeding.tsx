@@ -1,29 +1,11 @@
-import {
-  View,
-  Text,
-  Pressable,
-  FlatList,
-  ActivityIndicator,
-  Modal,
-  TextInput,
+import {View,Text,Pressable,FlatList,ActivityIndicator,Modal,TextInput,
 } from "react-native";
-import {
-  Check,
-  X,
-  ChevronDown,
-  Search,
-  CheckCircle,
-} from "lucide-react-native";
+import {Check,X,ChevronDown,Search,CheckCircle,} from "lucide-react-native";
 import { useCallback } from "react";
 import { useTeacherFeeding } from "@/src/features/feeding/hooks";
 import type { Child } from "@/src/api/parent.api";
 import { useUnsavedChangesGuard } from "@/src/hooks/use-unsaved-changes-guard";
-import {
-  ScreenShell,
-  ScreenHeader,
-  SearchBar,
-  MiniStatCard,
-} from "@/src/components/ui";
+import {ScreenShell,ScreenHeader,SearchBar,MiniStatCard,} from "@/src/components/ui";
 
 export default function RecordFeeding() {
   const {
@@ -121,25 +103,6 @@ export default function RecordFeeding() {
             </View>
           </View>
         </Pressable>
-
-        <View className="border-t border-gray-100 px-4 pb-4 pt-3">
-          <Text className="mb-2 text-sm font-semibold text-gray-700">
-            Notes for focal person (optional)
-          </Text>
-          <TextInput
-            value={feedingNotes[child._id] || ""}
-            onChangeText={(value) => setChildNote(child._id, value)}
-            editable={!interactionDisabled}
-            multiline
-            maxLength={500}
-            placeholder="Add observations like refused vegetables, asked for extra rice, or partial intake details"
-            textAlignVertical="top"
-            className="min-h-[92px] rounded-2xl border border-gray-200 bg-white px-4 py-3 text-base text-gray-800"
-          />
-          <Text className="mt-2 text-right text-xs text-gray-400">
-            {(feedingNotes[child._id] || "").length}/500
-          </Text>
-        </View>
       </View>
     ),
     [

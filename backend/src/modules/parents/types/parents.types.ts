@@ -5,9 +5,3 @@ export type ParentAccountInput = {
   email: string;
   phone: string;
 };
-
-export type ParentCredentials = {
-  email: string;
-  phone: string;
-  tempPassword: string | null;
-};

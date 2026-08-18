@@ -140,12 +140,6 @@ export class EnrollmentUserRepository extends BaseRepository<IUser> {
     });
   }
 
-  async findParentsByEmails(emails: string[]): Promise<any[]> {
-    return this.model
-      .find({ role: "parent", email: { $in: emails } })
-      .select("email mustChangePassword")
-      .lean();
-  }
 }
 
 // ─── Singletons ───────────────────────────────────────────────────────────────

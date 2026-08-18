@@ -5,7 +5,6 @@ import {
   NewEnrollmentForm,
 } from "@/src/features/enrollment/components/sections";
 import { EnrollmentTabSwitcher } from "@/src/features/enrollment/components/ui";
-import { useEnrollmentSubmit } from "@/src/features/enrollment/hooks";
 import { useNavigation } from "expo-router";
 import { ScreenShell, ScreenHeader } from "@/src/components/ui";
 
@@ -15,11 +14,6 @@ export default function EnrollChildScreen() {
   const isWide = width >= 768;
   const contentMaxWidth = isWide ? 860 : undefined;
   const contentPadding = isWide ? 28 : 16;
-
-  const {
-    viewParentPassword,
-    resetParentPassword,
-  } = useEnrollmentSubmit(handleSubmitSuccess);
 
   const [activeTab, setActiveTab] = useState<"new" | "submitted">("new");
   const [hasStarted, setHasStarted] = useState(false);
@@ -60,8 +54,6 @@ export default function EnrollChildScreen() {
         />
       ) : (
         <SubmittedRequestsPanel
-          onViewParentPassword={viewParentPassword}
-          onResetParentPassword={resetParentPassword}
           contentPadding={contentPadding}
           contentMaxWidth={contentMaxWidth}
         />

@@ -1,12 +1,8 @@
 import { useCallback } from "react";
 import { Alert } from "react-native";
-import * as Clipboard from "expo-clipboard";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   submitChildEnrollmentRequest,
-  getEnrollmentRequestParentCredentials,
-  resetEnrollmentRequestParentPassword,
-  type TeacherEnrollmentRequest,
 } from "@/src/api/teacher.api";
 import { inferMimeType } from "@/src/features/enrollment/utils/enrollment-utils";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
@@ -34,37 +30,6 @@ interface SubmissionData {
 export const useEnrollmentSubmit = (onSuccess?: () => void) => {
   const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
-
-  const copyToClipboard = useCallback(async (value: string, successMessage: string) => {
-    try {
-      await Clipboard.setStringAsync(value);
-      Alert.alert("Copied", successMessage);
-    } catch {
-      Alert.alert("Copy Error", "Failed to copy to clipboard.");
-    }
-  }, []);
-
-  const showCredentialsAlert = useCallback(
-    (title: string, credentials: { email: string; phone: string; tempPassword: string | null }) => {
-      const hasPassword = Boolean(credentials.tempPassword);
-      const message = hasPassword
-        ? `Login Email: ${credentials.email}\nLogin Phone: ${credentials.phone || "Not set"}\nGenerated Password: ${credentials.tempPassword}`
-        : `Login Email: ${credentials.email}\nLogin Phone: ${credentials.phone || "Not set"}\nGenerated Password: Temporary password unavailable (parent may have already changed it).`;
-      const fullCredentialsText = hasPassword
-        ? `Login Email: ${credentials.email}\nLogin Phone: ${credentials.phone || "Not set"}\nGenerated Password: ${credentials.tempPassword}`
-        : `Login Email: ${credentials.email}\nLogin Phone: ${credentials.phone || "Not set"}`;
-
-      const buttons: { text: string; style?: "cancel"; onPress?: () => void }[] = [
-        { text: "Copy Details", onPress: () => { void copyToClipboard(fullCredentialsText, "Credentials copied to clipboard."); } },
-        { text: "Close", style: "cancel" },
-      ];
-      if (hasPassword && credentials.tempPassword) {
-        buttons.unshift({ text: "Copy Password", onPress: () => { void copyToClipboard(credentials.tempPassword as string, "Password copied to clipboard."); } });
-      }
-      Alert.alert(title, message, buttons);
-    },
-    [copyToClipboard],
-  );
 
   const submitEnrollmentMutation = useMutation({
     mutationFn: async ({ data }: { data: SubmissionData }) => {
@@ -107,59 +72,8 @@ export const useEnrollmentSubmit = (onSuccess?: () => void) => {
     [submitEnrollmentMutation, queryClient, onSuccess],
   );
 
-  const viewPasswordMutation = useMutation({
-    mutationFn: async (requestId: string) => {
-      if (!isAuthenticated) throw new Error("No authentication token.");
-      return getEnrollmentRequestParentCredentials(requestId);
-    },
-  });
-
-  const resetPasswordMutation = useMutation({
-    mutationFn: async (requestId: string) => {
-      if (!isAuthenticated) throw new Error("No authentication token.");
-      return resetEnrollmentRequestParentPassword(requestId);
-    },
-  });
-
-  const viewParentPassword = useCallback(
-    async (request: TeacherEnrollmentRequest) => {
-      try {
-        const response = await viewPasswordMutation.mutateAsync(request._id);
-        showCredentialsAlert("Parent Credentials", response.credentials);
-      } catch (error: any) {
-        Alert.alert("View Password Error", error?.message || "Failed to fetch parent credentials.");
-      }
-    },
-    [viewPasswordMutation, showCredentialsAlert],
-  );
-
-  const resetParentPassword = useCallback(
-    (request: TeacherEnrollmentRequest, onRefresh: () => void) => {
-      Alert.alert("Reset Parent Password", `Generate a new temporary password for ${request.parent.firstName} ${request.parent.lastName}?`, [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Reset", style: "destructive",
-          onPress: async () => {
-            try {
-              const response = await resetPasswordMutation.mutateAsync(request._id);
-              showCredentialsAlert("Parent Credentials Updated", response.credentials);
-              onRefresh();
-            } catch (error: any) {
-              Alert.alert("Reset Error", error?.message || "Failed to reset parent password.");
-            }
-          },
-        },
-      ]);
-    },
-    [resetPasswordMutation, showCredentialsAlert],
-  );
-
   return {
     isSubmitting: submitEnrollmentMutation.isPending,
-    isViewingPassword: viewPasswordMutation.isPending,
-    isResettingPassword: resetPasswordMutation.isPending,
     submitEnrollment,
-    viewParentPassword,
-    resetParentPassword,
   };
 };

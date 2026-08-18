@@ -1,5 +1,12 @@
 import { apiClient, apiFormDataClient } from "./client";
-import type { Child } from "./api.types";
+import type {
+  Child,
+  ChildEnrollmentRequestPayload,
+  ChildEnrollmentRequestFiles,
+  EnrollmentCenterOption,
+  ChildEnrollmentSubmissionResponse,
+  TeacherEnrollmentRequest,
+} from "./api.types";
 
 export type {
   ChildEnrollmentRequestPayload,
@@ -7,19 +14,7 @@ export type {
   EnrollmentCenterOption,
   ChildEnrollmentSubmissionResponse,
   TeacherEnrollmentRequest,
-  ParentResetPasswordResponse,
-  ParentCredentialsResponse,
-} from "./api.types";
-
-import type {
-  ChildEnrollmentRequestPayload,
-  ChildEnrollmentRequestFiles,
-  EnrollmentCenterOption,
-  ChildEnrollmentSubmissionResponse,
-  TeacherEnrollmentRequest,
-  ParentResetPasswordResponse,
-  ParentCredentialsResponse,
-} from "./api.types";
+};
 
 export const getEnrollmentCenters = async (): Promise<EnrollmentCenterOption[]> => {
   const data = await apiClient<{ centers?: EnrollmentCenterOption[] }>(
@@ -68,23 +63,6 @@ export const getMyEnrollmentRequests = async (): Promise<TeacherEnrollmentReques
     "/api/enrollment/requests/mine",
   );
   return Array.isArray(data.requests) ? data.requests : [];
-};
-
-export const resetEnrollmentRequestParentPassword = async (
-  requestId: string,
-): Promise<ParentResetPasswordResponse> => {
-  return apiClient<ParentResetPasswordResponse>(
-    `/api/enrollment/requests/${requestId}/reset-parent-password`,
-    { method: "POST" },
-  );
-};
-
-export const getEnrollmentRequestParentCredentials = async (
-  requestId: string,
-): Promise<ParentCredentialsResponse> => {
-  return apiClient<ParentCredentialsResponse>(
-    `/api/enrollment/requests/${requestId}/parent-credentials`,
-  );
 };
 
 export const getChildren = async (): Promise<Child[]> => {

@@ -3,11 +3,9 @@ import { authenticateToken } from "../../../shared/middleware/auth.middleware";
 import upload from "../../../shared/middleware/upload.middleware";
 import {
   deleteEnrollmentRequest,
-  getEnrollmentRequestParentCredentials,
   getEnrollmentCenters,
   getEnrollmentRequests,
   getMyEnrollmentRequests,
-  resetEnrollmentRequestParentPassword,
   reviewEnrollmentRequest,
   submitChildEnrollmentRequest,
 } from "../controllers/enrollment.controller";
@@ -31,7 +29,4 @@ router.post(
 
 router.patch("/requests/:id/review", reviewEnrollmentRequest);
 router.delete("/requests/:id", deleteEnrollmentRequest);
-router.get("/requests/:id/parent-credentials", getEnrollmentRequestParentCredentials);
-router.post("/requests/:id/reset-parent-password", resetEnrollmentRequestParentPassword);
-
 export default router;
