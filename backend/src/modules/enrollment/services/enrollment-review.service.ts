@@ -4,6 +4,7 @@ import { logger } from "../../../shared/lib/logger";
 import { createChildRecord } from "../../child/services";
 import { parentService } from "../../parents/services/parents.service";
 import { normalizeString } from "../../../shared/utils/string.utils";
+import { generateStudentId } from "../../../shared/utils/generate-child-id";
 import { enrollmentChildRepository, enrollmentRequestRepository, } from "../repositories/enrollment.repository";
 import NutritionRecord from "../../../models/NutritionRecord";
 import { authUserRepository } from "../../auth/repositories/auth.repository";
@@ -150,8 +151,11 @@ export const reviewEnrollmentRequest = async (
         bmi: childData.bmi ?? null,
         nutritionalStatus: childData.nutritionalStatus ?? null,
         status: "Active",
-        studentId: String((enrollmentRequest as any).child?.studentId || "").trim() ||
-          "",
+        studentId:
+          String((enrollmentRequest as any).child?.studentId || "").trim() ||
+          generateStudentId(
+            new Date(childData.enrollmentDate as Date).getFullYear(),
+          ),
         parent: parent._id,
         teacher: enrollmentRequest.requestedBy,
         daycareCenter: enrollmentRequest.daycareCenter || null,
