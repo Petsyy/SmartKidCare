@@ -22,6 +22,9 @@ export function EnrollmentTabSwitcher({
         <Pressable
           onPress={() => onChange("new")}
           className="flex-1 rounded-xl px-3 py-3"
+          accessibilityRole="tab"
+          accessibilityLabel="New enrollment request"
+          accessibilityState={{ selected: activeTab === "new" }}
           style={{
             backgroundColor: activeTab === "new" ? "#0D9488" : "transparent",
           }}
@@ -36,6 +39,9 @@ export function EnrollmentTabSwitcher({
         <Pressable
           onPress={() => onChange("submitted")}
           className="flex-1 rounded-xl px-3 py-3"
+          accessibilityRole="tab"
+          accessibilityLabel="Enrollment requests"
+          accessibilityState={{ selected: activeTab === "submitted" }}
           style={{
             backgroundColor:
               activeTab === "submitted" ? "#0D9488" : "transparent",
@@ -47,7 +53,7 @@ export function EnrollmentTabSwitcher({
               color: activeTab === "submitted" ? "#FFFFFF" : "#374151",
             }}
           >
-            Submitted
+            Requests
           </Text>
         </Pressable>
       </View>

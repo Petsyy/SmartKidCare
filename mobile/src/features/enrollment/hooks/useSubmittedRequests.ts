@@ -6,22 +6,24 @@ import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { useAuth } from "@/src/hooks/use-auth";
 
 export const useSubmittedRequests = () => {
-  const { isAuthenticated } = useAuth();
-  const [submittedStatusFilter, setSubmittedStatusFilter] = useState<"all" | "pending" | "rejected">("all");
+  const { isAuthenticated, role } = useAuth();
+  const [submittedStatusFilter, setSubmittedStatusFilter] = useState<
+    "all" | "pending" | "rejected"
+  >("all");
   const [submittedSearchQuery, setSubmittedSearchQuery] = useState("");
 
   const {
     data: submittedRequests = [],
     isLoading: loadingSubmitted,
+    isRefetching: refreshingSubmitted,
+    error: submittedError,
     refetch: refreshSubmitted,
   } = useQuery({
     queryKey: mobileQueryKeys.submittedRequests(),
-    queryFn: async () => {
-      const data = await getMyEnrollmentRequests();
-      // Filter out approved requests (once admin approval is done)
-      return data.filter((request) => request.status !== "approved");
-    },
-    enabled: isAuthenticated,
+    queryFn: getMyEnrollmentRequests,
+    select: (requests) =>
+      requests.filter((request) => request.status !== "approved"),
+    enabled: isAuthenticated && role === "teacher",
   });
 
   const submittedSummary = useMemo(() => {
@@ -42,7 +44,8 @@ export const useSubmittedRequests = () => {
   }, [submittedRequests, submittedStatusFilter, submittedSearchQuery]);
 
   return {
-    submittedRequests, loadingSubmitted, submittedStatusFilter,
+    submittedRequests, loadingSubmitted, refreshingSubmitted, submittedError,
+    submittedStatusFilter,
     setSubmittedStatusFilter, submittedSearchQuery, setSubmittedSearchQuery,
     refreshSubmitted, submittedSummary, filteredSubmittedRequests,
   };

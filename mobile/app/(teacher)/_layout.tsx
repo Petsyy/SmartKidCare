@@ -6,11 +6,15 @@ import { House, UserPlus, UserRound, Users } from "lucide-react-native";
 import { getTabBarScreenOptions, getTabBarStyle } from "@/src/config/tab-bar";
 import { TeacherUiProvider } from "@/src/context/teacher-ui-context";
 import { ScreenLoadingState } from "@/src/components/ui";
+import { useSubmittedRequests } from "@/src/features/enrollment/hooks/useSubmittedRequests";
 
 export default function TeacherLayout() {
   const { user, role, loading } = useAuth();
   const insets = useSafeAreaInsets();
   const bottomInset = Math.max(insets.bottom, 10);
+  const { submittedSummary } = useSubmittedRequests();
+  const enrollmentAttentionCount =
+    submittedSummary.pending + submittedSummary.rejected;
 
   if (!loading && (!user || role !== "teacher")) {
     return <Redirect href="/(auth)/login" />;
@@ -48,7 +52,18 @@ export default function TeacherLayout() {
         <Tabs.Screen
           name="enroll"
           options={({ route }: any) => ({
-            title: "Enroll",
+            title: "Enrollment",
+            tabBarAccessibilityLabel: "Enrollment",
+            tabBarBadge:
+              enrollmentAttentionCount > 0
+                ? enrollmentAttentionCount
+                : undefined,
+            tabBarBadgeStyle: {
+              backgroundColor: "#DC2626",
+              color: "#FFFFFF",
+              fontSize: 10,
+              fontWeight: "700",
+            },
             tabBarStyle: route.params?.hideTabBar
               ? { display: "none" as const }
               : getTabBarStyle(bottomInset),

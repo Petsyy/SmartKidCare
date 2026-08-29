@@ -62,7 +62,7 @@ export const useEnrollmentSubmit = (onSuccess?: () => void) => {
           : `Login Email: ${submittedEmail}\n\nParent account already exists. Use the current password.`;
 
         Alert.alert("Submitted", `Enrollment request submitted successfully.\n\n${credentialMessage}`, [
-          { text: "View Submitted Requests", onPress: () => { onSuccess?.(); } },
+          { text: "View Requests", onPress: () => { onSuccess?.(); } },
         ]);
       } catch (error: any) {
         Alert.alert("Submission Error", error?.message || "Failed to submit enrollment request.");

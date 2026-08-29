@@ -28,6 +28,9 @@ export function FilterChips<T extends string>({
           <Pressable
             key={item.key}
             onPress={() => onSelectFilter(item.key)}
+            accessibilityRole="button"
+            accessibilityLabel={`Filter by ${item.label}. ${item.count} requests.`}
+            accessibilityState={{ selected: active }}
             style={{
               flexDirection: "row",
               alignItems: "center",

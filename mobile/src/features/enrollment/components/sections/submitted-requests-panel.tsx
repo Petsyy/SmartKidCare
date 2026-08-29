@@ -1,4 +1,5 @@
 import {
+  AlertCircle,
   Clock3,
   FileText,
   Mail,
@@ -14,6 +15,7 @@ import {
   RefreshControl,
 } from "react-native";
 import React, { useEffect } from "react";
+import { ScreenLoadingState } from "@/src/components/ui";
 import {
   EnrollmentRequestBlockchainStatus,
   FilterChips,
@@ -41,6 +43,8 @@ export function SubmittedRequestsPanel({
     submittedSearchQuery,
     setSubmittedSearchQuery,
     loadingSubmitted,
+    refreshingSubmitted,
+    submittedError,
     submittedRequests,
     filteredSubmittedRequests,
     refreshSubmitted,
@@ -50,13 +54,23 @@ export function SubmittedRequestsPanel({
     refreshSubmitted();
   }, [refreshSubmitted]);
 
+  if (loadingSubmitted) {
+    return (
+      <ScreenLoadingState
+        title="Loading enrollment requests"
+        message="Getting your submitted requests and latest statuses ready."
+      />
+    );
+  }
+
   return (
     <ScrollView
       className="flex-1"
       refreshControl={
         <RefreshControl
-          refreshing={loadingSubmitted}
+          refreshing={refreshingSubmitted}
           onRefresh={() => void refreshSubmitted()}
+          colors={["#0D9488"]}
           tintColor="#0D9488"
         />
       }
@@ -124,7 +138,7 @@ export function SubmittedRequestsPanel({
               },
             ]}
             activeFilter={submittedStatusFilter}
-            onSelectFilter={setSubmittedStatusFilter as any}
+            onSelectFilter={setSubmittedStatusFilter}
           />
 
           {/* Search bar */}
@@ -136,11 +150,25 @@ export function SubmittedRequestsPanel({
         </View>
 
         {/* ── Content ─────────────────────────────────── */}
-        {loadingSubmitted ? (
-          <View className="rounded-3xl bg-white p-10 items-center shadow-sm">
-            <Text className="text-[16px] font-bold text-[#6B7280] mt-[16px]">
-              Loading requests...
+        {submittedError ? (
+          <View className="items-center rounded-3xl border border-rose-200 bg-rose-50 p-10 shadow-sm">
+            <View className="mb-4 h-20 w-20 items-center justify-center rounded-3xl bg-rose-100">
+              <AlertCircle size={40} color="#BE123C" />
+            </View>
+            <Text className="text-center text-2xl font-black text-rose-900">
+              Unable to Load Requests
             </Text>
+            <Text className="mt-2 max-w-[280px] text-center text-base font-semibold leading-6 text-rose-700">
+              Check your connection and try loading your enrollment requests again.
+            </Text>
+            <Pressable
+              onPress={() => void refreshSubmitted()}
+              className="mt-5 min-h-11 items-center justify-center rounded-2xl bg-rose-600 px-7 py-3"
+              accessibilityRole="button"
+              accessibilityLabel="Try loading enrollment requests again"
+            >
+              <Text className="text-base font-black text-white">Try Again</Text>
+            </Pressable>
           </View>
         ) : submittedRequests.length === 0 ? (
           <View className="rounded-3xl bg-white p-10 items-center shadow-md shadow-teal-600/20">
@@ -148,11 +176,11 @@ export function SubmittedRequestsPanel({
               <FileText size={44} color="#0D9488" />
             </View>
             <Text className="text-[24px] font-black text-[#111827] text-center">
-              No Requests Yet
+              No Active Requests
             </Text>
             <Text className="mt-[8px] max-w-[240px] text-center text-[16px] font-bold text-[#6B7280] leading-[24px]">
-              Switch to &quot;New Request&quot; to submit a child enrollment for
-              review.
+              Completed requests are removed from this list. Switch to
+              &quot;New Request&quot; to submit another child enrollment.
             </Text>
           </View>
         ) : filteredSubmittedRequests.length === 0 ? (
@@ -183,17 +211,12 @@ export function SubmittedRequestsPanel({
             {filteredSubmittedRequests.map((request) => {
               const status = getStatusColors(request.status);
               const isRejected = request.status === "rejected";
-              const isApproved = request.status === "approved";
               const statusAccentColor = isRejected
                 ? "#DC2626"
-                : isApproved
-                  ? "#059669"
-                  : "#D97706";
+                : "#D97706";
               const statusSoftBackground = isRejected
                 ? "#FFF1F2"
-                : isApproved
-                  ? "#ECFDF5"
-                  : "#FFFBEB";
+                : "#FFFBEB";
               const childFullName =
                 buildRequestChildName(request) || "Child not specified";
               const parentFullName = [
