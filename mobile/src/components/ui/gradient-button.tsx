@@ -32,6 +32,9 @@ export function GradientButton({
     <Pressable
       onPress={onPress}
       disabled={isButtonDisabled}
+      accessibilityRole="button"
+      accessibilityLabel={loading ? loadingLabel || label : label}
+      accessibilityState={{ disabled: isButtonDisabled, busy: loading }}
       className={`rounded-xl overflow-hidden ${className}`}
       style={({ pressed }) => [
         { opacity: isButtonDisabled ? 0.75 : pressed ? 0.88 : 1 },

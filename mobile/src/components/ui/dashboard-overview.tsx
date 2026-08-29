@@ -1,17 +1,50 @@
-import { View, Text } from "react-native";
+import { Text, View } from "react-native";
 
-export const StatRow = ({ color, label, value }: { color: string; label: string; value: string }) => (
-    <View className="flex-row items-center justify-between mt-3">
-        <View className="flex-row items-center">
-            <View style={{ backgroundColor: color }} className="w-3 h-3 rounded-full mr-2" />
-            <Text className="text-sm text-gray-700">{label}</Text>
-        </View>
-        <Text className="text-sm font-semibold text-gray-800">{value}</Text>
-    </View>
-);
+interface StatRowProps {
+  color: string;
+  label: string;
+  value: string;
+}
 
-export const ProgressBar = ({ percent }: { percent: number }) => (
-    <View className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
-        <View style={{ width: `${percent}%` }} className="h-full bg-teal-500" />
+interface ProgressBarProps {
+  percent: number;
+  accessibilityLabel: string;
+}
+
+export function StatRow({ color, label, value }: StatRowProps) {
+  return (
+    <View
+      className="mt-3 flex-row items-center justify-between"
+      accessible
+      accessibilityLabel={`${label}: ${value}`}
+    >
+      <View className="flex-row items-center pr-3">
+        <View
+          style={{ backgroundColor: color }}
+          className="mr-2 h-3 w-3 rounded-full"
+        />
+        <Text className="text-base text-gray-700">{label}</Text>
+      </View>
+      <Text className="text-base font-semibold text-gray-800">{value}</Text>
     </View>
-);
+  );
+}
+
+export function ProgressBar({ percent, accessibilityLabel }: ProgressBarProps) {
+  const clampedPercent = Math.min(100, Math.max(0, percent));
+
+  return (
+    <View
+      className="h-3 w-full overflow-hidden rounded-full bg-gray-200"
+      accessible
+      accessibilityRole="progressbar"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityValue={{ min: 0, max: 100, now: clampedPercent }}
+    >
+      <View
+        style={{ width: `${clampedPercent}%` }}
+        className="h-full bg-teal-500"
+      />
+    </View>
+  );
+}

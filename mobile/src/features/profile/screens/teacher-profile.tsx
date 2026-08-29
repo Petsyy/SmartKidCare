@@ -1,5 +1,5 @@
 import { getProfile } from "@/src/api/authentication.api";
-import ProfileScreen from "@/src/features/profile/screens/profile.screen";
+import ProfileScreen from "@/src/features/profile/screens/profile-screen";
 
 export default function TeacherProfileScreen() {
   return (

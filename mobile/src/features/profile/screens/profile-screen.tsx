@@ -16,7 +16,13 @@ import {
   type UserProfile,
   useProfileScreen,
 } from "@/src/features/profile/hooks/useProfileScreen";
-import { ScreenShell, ScreenHeader, PasswordInput } from "@/src/components/ui";
+import {
+  PasswordInput,
+  ScreenHeader,
+  ScreenLoadingState,
+  ScreenShell,
+} from "@/src/components/ui";
+import { LinearGradient } from "expo-linear-gradient";
 
 type Props = {
   role: ProfileRole;
@@ -70,22 +76,50 @@ export default function ProfileScreen({
   if (loading) {
     return (
       <ScreenShell withKeyboardAvoiding={false}>
-        <View className="flex-1 items-center justify-center">
-          <View className="w-8 h-8 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" />
-        </View>
+        <ScreenHeader
+          backgroundVariant={
+            role === "teacher"
+              ? "teacherGradient"
+              : role === "parent"
+                ? "brandGradient"
+                : "solid"
+          }
+          title="Profile"
+          subtitle="Manage your account settings"
+        />
+        <ScreenLoadingState
+          title="Loading profile"
+          message="Getting your account settings ready."
+        />
       </ScreenShell>
     );
   }
 
   return (
     <ScreenShell>
-      <ScreenHeader title="Profile" subtitle="Manage your account settings" />
+      <ScreenHeader
+        backgroundVariant={
+          role === "teacher"
+            ? "teacherGradient"
+            : role === "parent"
+              ? "brandGradient"
+              : "solid"
+        }
+        title="Profile"
+        subtitle="Manage your account settings"
+      />
 
       <ScrollView className="flex-1" contentContainerClassName="pb-8">
-        <View className="m-6 rounded-3xl bg-teal-600 p-8 shadow-lg">
+        <LinearGradient
+          colors={["#134E4A", "#0F766E", "#059669"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ borderRadius: 24 }}
+          className="m-6 overflow-hidden rounded-3xl p-8 shadow-lg"
+        >
           <View className="flex-row items-center">
             <View className="h-20 w-20 rounded-full bg-white items-center justify-center">
-              <Text className="text-3xl font-bold text-teal-600">
+              <Text className="text-3xl font-bold text-teal-700">
                 {profile?.firstName?.[0]}
                 {profile?.lastName?.[0]}
               </Text>
@@ -95,7 +129,7 @@ export default function ProfileScreen({
               <Text className="text-sm text-teal-100 mt-1">{roleLabel}</Text>
             </View>
           </View>
-        </View>
+        </LinearGradient>
 
         <View className="mx-6 mb-6 rounded-3xl bg-white p-6 shadow-sm">
           <View className="flex-row items-center mb-5">

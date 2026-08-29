@@ -7,6 +7,7 @@ type NoticeItemProps = {
   meta?: string;
   tone?: "emerald" | "blue" | "orange";
   onPress?: () => void;
+  accessibilityHint?: string;
 };
 
 export function NoticeItem({
@@ -15,6 +16,7 @@ export function NoticeItem({
   meta,
   tone = "emerald",
   onPress,
+  accessibilityHint,
 }: NoticeItemProps) {
   const bar =
     tone === "emerald"
@@ -26,17 +28,20 @@ export function NoticeItem({
   return (
     <Pressable
       onPress={onPress}
-      className="rounded-2xl bg-gray-50 p-4 active:opacity-90"
+      accessibilityRole={onPress ? "button" : undefined}
+      accessibilityLabel={[title, desc, meta].filter(Boolean).join(". ")}
+      accessibilityHint={accessibilityHint || (onPress ? "Opens notification" : undefined)}
+      className="rounded-2xl bg-gray-50 p-4 active:opacity-85"
     >
       <View className="flex-row">
-        <View className={`mr-4 w-1.5 rounded-full ${bar}`} />
+        <View className={`mr-3.5 w-2 rounded-full ${bar}`} />
         <View className="flex-1">
-          <Text className="text-base font-extrabold text-gray-900">
+          <Text className="text-lg font-extrabold text-gray-900">
             {title}
           </Text>
-          <Text className="mt-1 text-sm leading-5 text-gray-600">{desc}</Text>
+          <Text className="mt-1 text-base leading-6 text-gray-700">{desc}</Text>
           {meta ? (
-            <Text className="mt-2 text-xs font-semibold text-gray-500">
+            <Text className="mt-2 text-sm font-semibold text-gray-500">
               {meta}
             </Text>
           ) : null}

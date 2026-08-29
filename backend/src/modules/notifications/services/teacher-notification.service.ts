@@ -116,9 +116,9 @@ const buildTeacherNotificationDrafts = (params: {
         audience: "teacher",
       },
     });
-  } else if (includeTypeSet.has("attendance_incomplete") && expectedChildCount > 0) {
+  } else if (attendance && expectedChildCount > 0) {
     const coverage = getRecordCoverage(attendance?.records || [], activeChildIds);
-    if (coverage.markedCount < expectedChildCount) {
+    if (coverage.markedCount < expectedChildCount && includeTypeSet.has("attendance_incomplete")) {
       drafts.push({
         type: "attendance_incomplete",
         title: "Reminder",
@@ -132,6 +132,20 @@ const buildTeacherNotificationDrafts = (params: {
           markedCount: coverage.markedCount,
           expectedCount: expectedChildCount,
           missingCount: coverage.missingCount,
+          audience: "teacher",
+        },
+      });
+    } else if (coverage.markedCount >= expectedChildCount && includeTypeSet.has("attendance_submitted")) {
+      drafts.push({
+        type: "attendance_submitted",
+        title: "Morning Attendance",
+        body: "Attendance record has been submitted for today.",
+        timeLabel: ATTENDANCE_TIME_LABEL,
+        actionLabel: "Completed",
+        data: {
+          type: "teacher_attendance_submitted",
+          date: dateKey,
+          dateLabel,
           audience: "teacher",
         },
       });
@@ -152,9 +166,9 @@ const buildTeacherNotificationDrafts = (params: {
         audience: "teacher",
       },
     });
-  } else if (includeTypeSet.has("feeding_incomplete") && expectedChildCount > 0) {
+  } else if (feeding && expectedChildCount > 0) {
     const coverage = getRecordCoverage(feeding?.records || [], activeChildIds);
-    if (coverage.markedCount < expectedChildCount) {
+    if (coverage.markedCount < expectedChildCount && includeTypeSet.has("feeding_incomplete")) {
       drafts.push({
         type: "feeding_incomplete",
         title: "Reminder",
@@ -168,6 +182,20 @@ const buildTeacherNotificationDrafts = (params: {
           markedCount: coverage.markedCount,
           expectedCount: expectedChildCount,
           missingCount: coverage.missingCount,
+          audience: "teacher",
+        },
+      });
+    } else if (coverage.markedCount >= expectedChildCount && includeTypeSet.has("feeding_submitted")) {
+      drafts.push({
+        type: "feeding_submitted",
+        title: "Lunch Feeding",
+        body: "Feeding record has been submitted for today.",
+        timeLabel: FEEDING_TIME_LABEL,
+        actionLabel: "Completed",
+        data: {
+          type: "teacher_feeding_submitted",
+          date: dateKey,
+          dateLabel,
           audience: "teacher",
         },
       });
@@ -191,11 +219,13 @@ export async function dispatchTeacherNotificationsV1(
     includeTypes.length > 0
       ? new Set<TeacherNotificationType>(includeTypes)
       : new Set<TeacherNotificationType>([
-          "attendance_reminder",
-          "attendance_incomplete",
-          "feeding_reminder",
-          "feeding_incomplete",
-        ]);
+        "attendance_reminder",
+        "attendance_incomplete",
+        "attendance_submitted",
+        "feeding_reminder",
+        "feeding_incomplete",
+        "feeding_submitted",
+      ]);
 
   const teachers = await notificationsUserRepository.findTeachers(
     params.teacherIds?.length ? { _id: { $in: params.teacherIds } } : {},
@@ -350,11 +380,13 @@ export async function getTeacherNotificationsFeed(params: {
     includeTypes.length > 0
       ? new Set<TeacherNotificationType>(includeTypes)
       : new Set<TeacherNotificationType>([
-          "attendance_reminder",
-          "attendance_incomplete",
-          "feeding_reminder",
-          "feeding_incomplete",
-        ]);
+        "attendance_reminder",
+        "attendance_incomplete",
+        "attendance_submitted",
+        "feeding_reminder",
+        "feeding_incomplete",
+        "feeding_submitted",
+      ]);
 
   const teacher = await notificationsUserRepository.findTeacherById(params.teacherId);
 

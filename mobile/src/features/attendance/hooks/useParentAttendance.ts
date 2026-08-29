@@ -25,7 +25,7 @@ export const useParentAttendance = () => {
   const [children, setChildren] = useState<Child[]>([]);
   const [selectedChild, setSelectedChild] = useState<Child | null>(null);
   const [showChildDropdown, setShowChildDropdown] = useState(false);
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 1));
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [showDayModal, setShowDayModal] = useState(false);
 

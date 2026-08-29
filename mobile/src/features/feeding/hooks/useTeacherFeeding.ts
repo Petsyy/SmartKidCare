@@ -59,10 +59,13 @@ export const useTeacherFeeding = () => {
   const queryClient = useQueryClient();
 
   const [children, setChildren] = useState<Child[]>([]);
-  const [feedingStatus, setFeedingStatus] = useState<Record<string, boolean>>({});
+  const [feedingStatus, setFeedingStatus] = useState<Record<string, boolean>>(
+    {},
+  );
   const [feedingNotes, setFeedingNotes] = useState<Record<string, string>>({});
   const [foodServed, setFoodServed] = useState("");
   const [showMenuModal, setShowMenuModal] = useState(false);
+  const [showSuccessFeedback, setShowSuccessFeedback] = useState(false);
   const [isReadOnly, setIsReadOnly] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null);
@@ -150,7 +153,9 @@ export const useTeacherFeeding = () => {
       let childrenToShow: Child[] = [];
       if (presentChildrenIds.length > 0) {
         const presentIds = new Set(presentChildrenIds.map(String));
-        childrenToShow = childrenData.filter((child) => presentIds.has(child._id));
+        childrenToShow = childrenData.filter((child) =>
+          presentIds.has(child._id),
+        );
       } else {
         const todayAttendance = await getTodayAttendance();
         if (todayAttendance?.records) {
@@ -218,7 +223,8 @@ export const useTeacherFeeding = () => {
     if (!query) return children;
 
     return children.filter((child) => {
-      const fullName = `${child.lastName}, ${child.firstName} ${child.middleName || ""}`.toLowerCase();
+      const fullName =
+        `${child.lastName}, ${child.firstName} ${child.middleName || ""}`.toLowerCase();
       const studentId = String(child.studentId || "").toLowerCase();
       return fullName.includes(query) || studentId.includes(query);
     });
@@ -266,6 +272,14 @@ export const useTeacherFeeding = () => {
     setFeedingStatus(allFed);
   }, [children]);
 
+  const markAllAsMissed = useCallback(() => {
+    const allMissed: Record<string, boolean> = {};
+    children.forEach((child) => {
+      allMissed[child._id] = true;
+    });
+    setFeedingStatus(allMissed);
+  }, [children]);
+
   const submitFeedingRecord = useCallback(async () => {
     if (isSubmitting) return;
     if (isReadOnly) return;
@@ -300,6 +314,7 @@ export const useTeacherFeeding = () => {
       });
 
       setSavedSnapshot(snapshot);
+      setIsReadOnly(true);
     } finally {
       setIsSubmitting(false);
     }
@@ -323,11 +338,7 @@ export const useTeacherFeeding = () => {
 
     try {
       await submitFeedingRecord();
-      Alert.alert(
-        "Submitted",
-        "Feeding record submitted to the focal person.",
-        [{ text: "OK", onPress: () => router.push("/(teacher)") }],
-      );
+      setShowSuccessFeedback(true);
     } catch (error) {
       const message =
         error instanceof Error
@@ -364,6 +375,8 @@ export const useTeacherFeeding = () => {
     setSearchQuery,
     showMenuModal,
     setShowMenuModal,
+    showSuccessFeedback,
+    dismissSuccessFeedback: () => setShowSuccessFeedback(false),
     isReadOnly,
     isSubmitting,
     presentChildrenIds,
@@ -376,6 +389,7 @@ export const useTeacherFeeding = () => {
     toggleChildFeeding,
     setChildNote,
     markAllAsCompleted,
+    markAllAsMissed,
     handleSubmit,
     submitBeforeLeaving,
     foodMenuOptions,

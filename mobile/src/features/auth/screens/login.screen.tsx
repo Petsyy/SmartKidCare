@@ -30,10 +30,12 @@ const FormField = ({
   label,
   children,
   icon: Icon,
+  error,
 }: {
   label: string;
   children: ReactNode;
   icon?: ComponentType<{ size?: number; color?: string; style?: object }>;
+  error?: string;
 }) => (
   <View className="mb-5">
     <View className="flex-row items-center mb-2">
@@ -42,14 +44,27 @@ const FormField = ({
       <Text className="ml-1 text-red-500">*</Text>
     </View>
     {children}
+    {error ? (
+      <Text
+        className="mt-2 text-sm font-medium text-red-700"
+        accessibilityLiveRegion="polite"
+      >
+        {error}
+      </Text>
+    ) : null}
   </View>
 );
 
 export default function Login() {
   const router = useRouter();
   const { login } = useAuth();
-  const [focusedField, setFocusedField] = useState<"identifier" | "password" | null>(null);
+  const [focusedField, setFocusedField] = useState<
+    "identifier" | "password" | null
+  >(null);
   const [errorMessage, setErrorMessage] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<
+    Partial<Record<keyof LoginFormValues, string>>
+  >({});
 
   const { setValue, watch } = useForm<LoginFormValues>({
     defaultValues: {
@@ -66,11 +81,22 @@ export default function Login() {
 
   const handleLogin = async () => {
     const trimmedIdentifier = identifier.trim();
-    if (!trimmedIdentifier || !password) {
-      setErrorMessage("Please enter both login credential and password.");
+    const nextFieldErrors: Partial<Record<keyof LoginFormValues, string>> = {};
+
+    if (!trimmedIdentifier) {
+      nextFieldErrors.identifier = "Enter your registered email address.";
+    }
+    if (!password) {
+      nextFieldErrors.password = "Enter your password.";
+    }
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      setErrorMessage("");
       return;
     }
 
+    setFieldErrors({});
     setErrorMessage("");
 
     try {
@@ -151,49 +177,77 @@ export default function Login() {
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
             >
-              <View className="rounded-3xl overflow-hidden shadow-xl shadow-emerald-200">
+              <View className="mb-6 items-center px-4">
+                <View className="h-20 w-20 items-center justify-center rounded-3xl border border-emerald-100 bg-white shadow-lg shadow-emerald-200">
+                  <Image
+                    source={require("@/assets/images/smartkidcare.png")}
+                    className="h-16 w-16"
+                    style={{ opacity: 0.9 }}
+                    resizeMode="contain"
+                  />
+                </View>
+                <Text
+                  className="mt-4 text-center text-3xl font-extrabold tracking-tight text-emerald-900"
+                  accessibilityRole="header"
+                >
+                  SmartKidCare
+                </Text>
+                <Text className="mt-1 text-center text-base leading-6 text-emerald-800">
+                  Teacher and parent care portal
+                </Text>
+              </View>
+
+              <View className="overflow-hidden rounded-3xl border border-emerald-100 bg-white shadow-xl shadow-emerald-100">
                 <LinearGradient
                   colors={["#14b8a6", "#059669"]}
                   start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  className="pb-16 pt-8 px-6"
-                >
-                  <View className="items-center">
-                    <View className="w-24 h-24 items-center justify-center rounded-full bg-white/20 mb-5 border-2 border-white/30">
-                      <Image
-                        source={require("@/assets/images/smartkidcare.png")}
-                        className="w-20 h-20"
-                        style={{ opacity: 0.82 }}
-                        resizeMode="contain"
-                      />
-                    </View>
-                    <Text className="text-3xl font-extrabold text-white mb-2 text-center tracking-tight">
-                      SmartKidCare
+                  end={{ x: 1, y: 0 }}
+                  className="h-2 w-full"
+                />
+                <View className="p-6">
+                  <View className="mb-6">
+                    <Text
+                      className="text-2xl font-extrabold text-gray-900"
+                      accessibilityRole="header"
+                    >
+                      Sign in to your account
                     </Text>
-                    <Text className="text-white/95 text-center text-lg leading-6">
-                      Sign in to manage attendance and feeding records.
+                    <Text className="mt-1 text-base leading-6 text-gray-600">
+                      Enter your registered email and password to continue.
                     </Text>
                   </View>
-                </LinearGradient>
-              </View>
 
-              <View className="-mt-10 pb-4">
-                <View className="bg-white rounded-3xl p-6 shadow-xl shadow-emerald-100 border border-emerald-50">
-                  <FormField label="Email Address" icon={Mail}>
+                  <FormField
+                    label="Email Address"
+                    icon={Mail}
+                    error={fieldErrors.identifier}
+                  >
                     <TextInput
                       className={`px-4 py-3.5 rounded-xl text-lg text-gray-900 border ${
-                        focusedField === "identifier"
-                          ? "border-emerald-500 bg-white"
-                          : "border-gray-200 bg-gray-50"
+                        fieldErrors.identifier
+                          ? "border-red-500 bg-red-50"
+                          : focusedField === "identifier"
+                            ? "border-emerald-500 bg-white"
+                            : "border-gray-200 bg-gray-50"
                       }`}
                       placeholder="Enter your login email"
                       placeholderTextColor="#9CA3AF"
                       value={identifier}
                       onChangeText={(text) => {
                         if (errorMessage) setErrorMessage("");
+                        if (fieldErrors.identifier) {
+                          setFieldErrors((current) => ({
+                            ...current,
+                            identifier: undefined,
+                          }));
+                        }
                         setValue("identifier", text);
                       }}
-                      keyboardType="default"
+                      accessibilityLabel="Email address"
+                      accessibilityHint="Enter the email address registered to your account"
+                      keyboardType="email-address"
+                      autoComplete="email"
+                      textContentType="emailAddress"
                       autoCapitalize="none"
                       autoCorrect={false}
                       returnKeyType="next"
@@ -202,14 +256,31 @@ export default function Login() {
                     />
                   </FormField>
 
-                  <FormField label="Password" icon={Lock}>
+                  <FormField
+                    label="Password"
+                    icon={Lock}
+                    error={fieldErrors.password}
+                  >
                     <PasswordInput
                       placeholder="Enter your password"
                       value={password}
+                      inputClassName={
+                        fieldErrors.password ? "border-red-500 bg-red-50" : ""
+                      }
                       onChangeText={(text) => {
                         if (errorMessage) setErrorMessage("");
+                        if (fieldErrors.password) {
+                          setFieldErrors((current) => ({
+                            ...current,
+                            password: undefined,
+                          }));
+                        }
                         setValue("password", text);
                       }}
+                      accessibilityLabel="Password"
+                      accessibilityHint="Enter your account password"
+                      autoComplete="current-password"
+                      textContentType="password"
                       returnKeyType="go"
                       onSubmitEditing={handleLogin}
                       onFocus={() => setFocusedField("password")}
@@ -218,7 +289,11 @@ export default function Login() {
                   </FormField>
 
                   {errorMessage ? (
-                    <View className="mb-3 rounded-xl bg-red-50 border border-red-200 px-3 py-2.5">
+                    <View
+                      className="mb-3 rounded-xl bg-red-50 border border-red-200 px-3 py-2.5"
+                      accessibilityRole="alert"
+                      accessibilityLiveRegion="assertive"
+                    >
                       <Text className="text-base text-red-700">
                         {errorMessage}
                       </Text>
@@ -241,9 +316,9 @@ export default function Login() {
                     loadingLabel="Signing In..."
                   />
 
-                  <View className="mt-4 flex-row items-center justify-center">
-                    <ShieldCheck size={14} color="#047857" />
-                    <Text className="ml-2 text-sm text-emerald-800">
+                  <View className="mt-5 flex-row items-center justify-center rounded-2xl bg-emerald-50 px-3 py-3">
+                    <ShieldCheck size={16} color="#047857" />
+                    <Text className="ml-2 flex-1 text-sm leading-5 text-emerald-800">
                       Protected login with secure account verification.
                     </Text>
                   </View>

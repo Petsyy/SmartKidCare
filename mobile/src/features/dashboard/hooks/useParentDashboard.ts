@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/src/hooks/use-auth";
 import { getMyChildren, Child } from "@/src/api/parent.api";
 import {
@@ -13,6 +13,8 @@ import {
 } from "@/src/api/notifications.api";
 import { useQuery } from "@tanstack/react-query";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
+import { useFocusEffect } from "expo-router";
+import { loadNotificationArchiveState } from "@/src/utils/notification-archive-storage";
 
 export interface ChildStats {
   present: number;
@@ -40,8 +42,32 @@ export interface ParentDashboardData {
 }
 
 export function useParentDashboard(): ParentDashboardData {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
+
+  const [archivedIds, setArchivedIds] = useState<Set<string>>(new Set());
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
+
+  useFocusEffect(
+    useCallback(() => {
+      let isMounted = true;
+      const loadState = async () => {
+        if (!user?.id) return;
+        const state = await loadNotificationArchiveState({
+          audience: "parent",
+          userId: user.id,
+        });
+        if (!isMounted) return;
+        setArchivedIds(new Set(state.archivedItems.map((item) => item.id)));
+        setDeletedIds(new Set(state.deletedIds || []));
+      };
+      void loadState();
+      return () => {
+        isMounted = false;
+      };
+    }, [user?.id])
+  );
+
   const { data, isLoading, isRefetching, error, refetch } = useQuery({
     queryKey: mobileQueryKeys.parentDashboard(),
     enabled: isAuthenticated,
@@ -57,8 +83,7 @@ export function useParentDashboard(): ParentDashboardData {
         ]);
       return {
         children, attendanceRecords, feedingRecords, todayAttendanceRecord, todayFeedingRecord,
-        recentNotifications: parentNotifications?.notifications?.length
-          ? parentNotifications.notifications.slice(0, 2) : [],
+        recentNotifications: parentNotifications?.notifications || [],
       };
     },
   });
@@ -68,7 +93,13 @@ export function useParentDashboard(): ParentDashboardData {
   const feedingRecords = data?.feedingRecords ?? [];
   const todayAttendanceRecord = data?.todayAttendanceRecord ?? null;
   const todayFeedingRecord = data?.todayFeedingRecord ?? null;
-  const recentNotifications: ParentNotificationFeedItem[] = data?.recentNotifications ?? [];
+  const recentNotificationsRaw: ParentNotificationFeedItem[] = data?.recentNotifications ?? [];
+
+  const recentNotifications = useMemo(() => {
+    return recentNotificationsRaw
+      .filter((item) => !archivedIds.has(item.id) && !deletedIds.has(item.id))
+      .slice(0, 2);
+  }, [recentNotificationsRaw, archivedIds, deletedIds]);
 
   useEffect(() => {
     if (!selectedChildId && children.length > 0) {

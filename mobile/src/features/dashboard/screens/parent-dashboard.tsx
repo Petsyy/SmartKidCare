@@ -1,74 +1,119 @@
 import React, { useMemo } from "react";
 import { useRouter } from "expo-router";
-import {View,Text,ScrollView,Pressable,StatusBar,RefreshControl,ActivityIndicator,
+import {
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  View,
 } from "react-native";
-import {SafeAreaView,useSafeAreaInsets,} from "react-native-safe-area-context";
-import {Calendar,ChevronRight,ClipboardCheck,House,MessageCircle,UserCheck,
-UserX,
-  Users,
-  Utensils,
-  UtensilsCrossed,
-  Zap,
-} from "lucide-react-native";
-import { useParentDashboard } from "../hooks/useParentDashboard";
-import { StatCard, ActionCard } from "../components";
-import { StatRow, ProgressBar } from "@/src/components/ui/dashboard-overview";
-import { ScreenShell, ScreenHeader } from "@/src/components/ui";
-import { useSystemSettings } from "@/src/context/system-settings-context";
-
-const Icons = {
-  Users,
-  Calendar,
-  Home: House,
-  UserCheck,
-  UserX,
-  UtensilsCrossed,
-  Zap,
-  ClipboardCheck,
-  Utensils,
+import { LinearGradient } from "expo-linear-gradient";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  AlertCircle,
+  ArrowUpRight,
+  Bell,
+  CalendarDays,
+  CheckCircle2,
   ChevronRight,
+  ClipboardCheck,
+  Clock3,
   MessageCircle,
+  RefreshCw,
+  School,
+  Utensils,
+} from "lucide-react-native";
+import { useAuth } from "@/src/hooks/use-auth";
+import { useParentDashboard } from "../hooks/useParentDashboard";
+import { NoticeItem } from "../components";
+import {
+  BRAND_HEADER_GRADIENT,
+  ParentLoadingState,
+  ScreenShell,
+} from "@/src/components/ui";
+import { useSystemSettings } from "@/src/context/system-settings-context";
+import type { ParentNotificationFeedItem } from "@/src/api/notifications.api";
+
+const PARENT_NOTICE_TONE: Record<
+  ParentNotificationFeedItem["type"],
+  "emerald" | "blue" | "orange"
+> = {
+  attendance_submitted: "emerald",
+  absence_alert: "orange",
+  feeding_submitted: "blue",
+  missed_meal_alert: "orange",
 };
+
+function getChildRecordStatus(record: any, childId?: string): string | null {
+  if (!childId || !Array.isArray(record?.records)) return null;
+
+  const childRecord = record.records.find((item: any) => {
+    const recordChildId =
+      typeof item?.child === "object" ? item.child?._id : item?.child;
+    return String(recordChildId) === String(childId);
+  });
+
+  return typeof childRecord?.status === "string" ? childRecord.status : null;
+}
+
+function formatRecordTime(record: any): string | null {
+  const timestamp = record?.updatedAt || record?.createdAt;
+  if (!timestamp) return null;
+
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return null;
+
+  return new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "Asia/Manila",
+  }).format(date);
+}
 
 export default function ParentDashboardScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { user } = useAuth();
   const dashboardData = useParentDashboard();
 
   const {
     selectedChild,
     recentNotifications,
     stats,
-    presentToday,
-    absentToday,
-    feedingDoneToday,
+    todayAttendanceRecord,
+    todayFeedingRecord,
     loading,
     refreshing,
     error,
-    children,
     onRefresh,
   } = dashboardData;
 
   const { settings, loading: settingsLoading } = useSystemSettings();
-  const centerName = settingsLoading ? "Loading..." : settings?.schoolName || "Smart KidCare";
+  const centerName = settingsLoading
+    ? "Loading center..."
+    : settings?.schoolName || "Smart KidCare";
 
-  // Dynamic date
-  const currentDate = new Date();
-  const dateParts = new Intl.DateTimeFormat("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "Asia/Manila",
-  }).formatToParts(currentDate);
+  const parentFirstName = user?.firstName?.trim();
+  const greeting = parentFirstName
+    ? `Good day, ${parentFirstName}`
+    : "Good day, Parent";
 
-  const weekday =
-    dateParts.find((part) => part.type === "weekday")?.value ?? "";
-  const month = dateParts.find((part) => part.type === "month")?.value ?? "";
-  const day = dateParts.find((part) => part.type === "day")?.value ?? "";
-  const year = dateParts.find((part) => part.type === "year")?.value ?? "";
+  const dateLabel = useMemo(
+    () =>
+      new Intl.DateTimeFormat("en-US", {
+        weekday: "long",
+        month: "short",
+        day: "numeric",
+        timeZone: "Asia/Manila",
+      }).format(new Date()),
+    [],
+  );
 
-  const dateLabel = `${weekday} ${month}, ${day} ${year}`.trim();
+  const scrollBottomPadding = useMemo(
+    () => Math.max(32, insets.bottom + 24),
+    [insets.bottom],
+  );
 
   const childFullName = useMemo(() => {
     if (!selectedChild) return "";
@@ -80,347 +125,489 @@ export default function ParentDashboardScreen() {
       .trim();
   }, [selectedChild]);
 
-  const initials = useMemo(() => {
-    if (!selectedChild) return "";
-    const a = selectedChild.firstName.charAt(0) ?? "";
-    const b = selectedChild.lastName.charAt(0) ?? "";
-    return (a + b).toUpperCase() || "-";
-  }, [selectedChild]);
+  const childAgeLabel =
+    typeof selectedChild?.age === "number"
+      ? `${selectedChild.age} ${selectedChild.age === 1 ? "year" : "years"} old`
+      : "Age not available";
+  const childGenderLabel = selectedChild?.gender
+    ? `${String(selectedChild.gender).charAt(0).toUpperCase()}${String(
+        selectedChild.gender,
+      )
+        .slice(1)
+        .toLowerCase()}`
+    : null;
+  const childDetails = [childAgeLabel, childGenderLabel]
+    .filter(Boolean)
+    .join(" · ");
+  const childFirstName = selectedChild?.firstName || "your child";
 
-  const childAge = selectedChild?.age ?? "-";
-  const childGender = selectedChild?.gender ? selectedChild.gender : "-";
-  const enrolledText = selectedChild?.enrollmentDate
-    ? (() => {
-        const parts = new Intl.DateTimeFormat("en-US", {
-          month: "long",
-          day: "numeric",
-          year: "numeric",
-          timeZone: "Asia/Manila",
-        }).formatToParts(new Date(selectedChild.enrollmentDate));
+  const attendanceStatus = useMemo(
+    () => getChildRecordStatus(todayAttendanceRecord, selectedChild?._id),
+    [todayAttendanceRecord, selectedChild?._id],
+  );
+  const attendanceTime = useMemo(
+    () => formatRecordTime(todayAttendanceRecord),
+    [todayAttendanceRecord],
+  );
+  const attendanceSummary =
+    attendanceStatus === "present"
+      ? `Present — ${attendanceTime ? `Checked in at ${attendanceTime}` : "Checked in today"}`
+      : attendanceStatus === "absent"
+        ? `Absent — ${attendanceTime ? `Updated at ${attendanceTime}` : "Updated today"}`
+        : "Attendance update pending";
 
-        const month = parts.find((part) => part.type === "month")?.value ?? "";
-        const day = parts.find((part) => part.type === "day")?.value ?? "";
-        const year = parts.find((part) => part.type === "year")?.value ?? "";
+  const mealStatus = useMemo(
+    () => getChildRecordStatus(todayFeedingRecord, selectedChild?._id),
+    [todayFeedingRecord, selectedChild?._id],
+  );
+  const mealTime = useMemo(
+    () => formatRecordTime(todayFeedingRecord),
+    [todayFeedingRecord],
+  );
+  const mealSummary =
+    mealStatus === "completed"
+      ? `Meal completed${mealTime ? ` — ${mealTime}` : " today"}`
+      : mealStatus === "missed"
+        ? `Meal missed${mealTime ? ` — ${mealTime}` : " today"}`
+        : "Meal update pending";
 
-        return `${month}, ${day} ${year}`.trim();
-      })()
-    : "-";
+  const dailySummary =
+    attendanceStatus === "absent" && mealStatus === "missed"
+      ? "Attendance and meal updates need your attention"
+      : attendanceStatus === "absent"
+        ? "Attendance needs your attention today"
+        : mealStatus === "missed"
+          ? "A meal was missed today"
+          : !attendanceStatus || !mealStatus
+            ? "Some updates are still pending today"
+            : "No concerns reported today";
 
-  const totalChildren = useMemo(() => children.length, [children.length]);
+  const dashboardHero = (
+    <LinearGradient
+      colors={BRAND_HEADER_GRADIENT}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={{
+        paddingTop: insets.top + 14,
+        paddingHorizontal: 20,
+        paddingBottom: 20,
+      }}
+    >
+      {/* Top Greeting Row */}
+      <View className="flex-row items-start justify-between">
+        <View className="flex-1 pr-4">
+          <Text
+            className="text-3xl font-extrabold text-white"
+            accessibilityRole="header"
+            numberOfLines={2}
+          >
+            {greeting}
+          </Text>
+          <Text className="mt-1 text-base text-emerald-50" numberOfLines={2}>
+            Here&apos;s what&apos;s happening today.
+          </Text>
+        </View>
+
+        <Pressable
+          onPress={() => router.push("/(parent)/notifications")}
+          accessibilityRole="button"
+          accessibilityLabel="Open notifications"
+          accessibilityHint="Shows parent alerts and daily updates"
+          className="relative h-12 w-12 items-center justify-center rounded-2xl bg-white/20 active:bg-white/30"
+        >
+          <Bell size={26} color="#FFFFFF" />
+          {recentNotifications.length > 0 ? (
+            <View
+              className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full border-2 border-teal-700 bg-orange-300"
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+            />
+          ) : null}
+        </Pressable>
+      </View>
+
+      {/* Date & Center Info Pill */}
+      <View className="mt-4 flex-row items-center rounded-xl bg-white/15 px-3.5 py-2.5">
+        <CalendarDays size={18} color="#D1FAE5" />
+        <Text className="ml-2 text-sm font-semibold text-white">
+          {dateLabel}
+        </Text>
+        <View className="mx-2.5 h-4 w-px bg-white/30" />
+        <School size={18} color="#D1FAE5" />
+        <Text
+          className="ml-2 flex-1 text-sm font-medium text-emerald-50"
+          numberOfLines={1}
+        >
+          {centerName}
+        </Text>
+      </View>
+    </LinearGradient>
+  );
 
   if (loading) {
     return (
-      <ScreenShell>
-        <ScreenHeader title="Dashboard" subtitle="Loading your overview..." />
-
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#14B8A6" />
-          <Text className="mt-4 text-base text-gray-600 font-medium">
-            Loading dashboard...
-          </Text>
-        </View>
+      <ScreenShell withKeyboardAvoiding={false}>
+        {dashboardHero}
+        <ParentLoadingState
+          title="Loading dashboard"
+          message="Getting today's updates ready."
+        />
       </ScreenShell>
     );
   }
 
   if (error || !selectedChild) {
     return (
-      <ScreenShell>
-        <ScreenHeader title="Dashboard" subtitle="Parent Overview" />
-
-        <View className="flex-1 items-center justify-center px-6">
-          <Icons.Users size={64} color="#D1D5DB" />
-          <Text className="text-xl font-bold text-gray-800 mt-4 text-center">
-            {error || "No Children Linked"}
+      <ScreenShell withKeyboardAvoiding={false}>
+        {dashboardHero}
+        <View className="-mt-6 flex-1 items-center justify-center rounded-t-3xl bg-gray-50 px-6">
+          <View className="h-20 w-20 items-center justify-center rounded-3xl bg-red-50">
+            <AlertCircle size={40} color="#DC2626" />
+          </View>
+          <Text
+            className="mt-5 text-center text-2xl font-extrabold text-gray-900"
+            accessibilityRole="header"
+          >
+            {error ? "Couldn't load dashboard" : "No Children Linked"}
           </Text>
-          <Text className="text-gray-600 mt-2 text-center">
+          <Text className="mt-2 max-w-sm text-center text-base leading-6 text-gray-600">
             {error
-              ? "Please try again or contact support."
-              : "No children are linked to your account yet."}
+              ? `${error} Check your connection, then try again.`
+              : "No children are currently linked to your parent account."}
           </Text>
+          <Pressable
+            onPress={onRefresh}
+            disabled={refreshing}
+            accessibilityRole="button"
+            accessibilityLabel={
+              refreshing ? "Retrying dashboard" : "Retry loading dashboard"
+            }
+            accessibilityState={{ disabled: refreshing, busy: refreshing }}
+            className={`mt-6 min-h-12 flex-row items-center justify-center rounded-2xl px-6 py-3 ${
+              refreshing ? "bg-teal-400" : "bg-teal-700 active:opacity-90"
+            }`}
+          >
+            {refreshing ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <RefreshCw size={18} color="#FFFFFF" />
+            )}
+            <Text className="ml-2 text-base font-bold text-white">
+              {refreshing ? "Retrying..." : "Try Again"}
+            </Text>
+          </Pressable>
         </View>
       </ScreenShell>
     );
   }
 
   return (
-    <ScreenShell>
-      <ScreenHeader
-        title="Today's Overview"
-        subtitle="Here's your child's dashboard"
-      />
+    <ScreenShell withKeyboardAvoiding={false}>
+      {dashboardHero}
 
       <ScrollView
         className="flex-1"
         contentContainerStyle={{
           paddingHorizontal: 20,
           paddingTop: 20,
-          paddingBottom: 100,
+          paddingBottom: scrollBottomPadding,
         }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#14B8A6"
-            colors={["#14B8A6"]}
+            tintColor="#0F766E"
+            colors={["#0F766E"]}
           />
         }
       >
-        {/* Date & Center Card */}
-        <View className="mb-5 rounded-3xl bg-teal-600 p-5 shadow-md">
-          <View className="flex-row items-start">
-            <View className="h-12 w-12 items-center justify-center rounded-2xl bg-white">
-              <Icons.Calendar size={24} color="#14B8A6" />
-            </View>
+        <Pressable
+          onPress={() => router.push("/(parent)/children")}
+          accessibilityRole="button"
+          accessibilityLabel={`${childFullName}. ${childDetails}. ${attendanceSummary}. ${mealSummary}. ${dailySummary}. View full profile.`}
+          accessibilityHint="Opens your child's full profile"
+          className="mb-4 overflow-hidden rounded-3xl shadow-sm active:opacity-90"
+        >
+          <LinearGradient
+            colors={BRAND_HEADER_GRADIENT}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{ padding: 20 }}
+          >
+            <Text
+              className="text-2xl font-extrabold leading-8 text-white"
+              numberOfLines={2}
+            >
+              {childFullName}
+            </Text>
+            <Text className="mt-1 text-base font-medium text-emerald-50">
+              {childDetails}
+            </Text>
 
-            <View className="ml-4 flex-1">
-              <Text className="text-base font-bold text-white">
-                {dateLabel}
+            <View className="mt-5 flex-row items-start">
+              {attendanceStatus === "present" ? (
+                <CheckCircle2 size={20} color="#D1FAE5" />
+              ) : attendanceStatus === "absent" ? (
+                <AlertCircle size={20} color="#FED7AA" />
+              ) : (
+                <Clock3 size={20} color="#D1FAE5" />
+              )}
+              <Text className="ml-2.5 flex-1 text-base font-semibold leading-6 text-white">
+                {attendanceSummary}
               </Text>
-
-              <View className="mt-2 flex-row items-center">
-                <Icons.Home size={18} color="white" />
-                <Text className="ml-2 text-sm text-teal-50">{centerName}</Text>
-              </View>
             </View>
+
+            <View className="mt-3 flex-row items-start">
+              {mealStatus === "completed" ? (
+                <CheckCircle2 size={20} color="#D1FAE5" />
+              ) : mealStatus === "missed" ? (
+                <AlertCircle size={20} color="#FED7AA" />
+              ) : (
+                <Clock3 size={20} color="#D1FAE5" />
+              )}
+              <Text className="ml-2.5 flex-1 text-base font-semibold leading-6 text-white">
+                {mealSummary}
+              </Text>
+            </View>
+
+            <Text
+              className={`mt-4 text-base leading-6 ${
+                attendanceStatus === "absent" || mealStatus === "missed"
+                  ? "font-semibold text-orange-100"
+                  : "text-emerald-50"
+              }`}
+            >
+              {dailySummary}
+            </Text>
+
+            <View className="mt-4 flex-row items-center border-t border-white/20 pt-3">
+              <Text className="flex-1 text-base font-extrabold text-white">
+                View full profile
+              </Text>
+              <ChevronRight size={20} color="#FFFFFF" />
+            </View>
+          </LinearGradient>
+        </Pressable>
+
+        <Pressable
+          onPress={() => router.push("/(parent)/chat")}
+          accessibilityRole="button"
+          accessibilityLabel="Ask KidCare AI"
+          accessibilityHint="Opens AI assistant chat for parents"
+          className="mb-6 min-h-14 flex-row items-center rounded-2xl bg-teal-700 px-4 py-3 shadow-sm active:opacity-85"
+        >
+          <View className="h-10 w-10 items-center justify-center rounded-xl bg-white/15">
+            <MessageCircle size={21} color="#FFFFFF" />
+          </View>
+          <View className="ml-3 flex-1">
+            <Text className="text-base font-extrabold text-white">
+              Ask KidCare
+            </Text>
+            <Text className="mt-0.5 text-sm text-emerald-50">
+              Get help with attendance and meal records
+            </Text>
+          </View>
+          <ChevronRight size={20} color="#FFFFFF" />
+        </Pressable>
+
+        {/* Section 1: Records and History */}
+        <View className="mb-2.5 flex-row items-end justify-between">
+          <View>
+            <Text
+              className="text-2xl font-black text-gray-900"
+              accessibilityRole="header"
+            >
+              Records and history
+            </Text>
+            <Text className="mt-0.5 text-base text-gray-600">
+              Review past attendance and meal updates
+            </Text>
           </View>
         </View>
 
-        {/* Child Info Card */}
-        <View className="mb-6 rounded-3xl bg-teal-600 p-5 shadow-md">
-          <View className="flex-row items-center">
-            <View className="w-20 h-20 bg-white rounded-full items-center justify-center mr-4">
-              <Text className="text-teal-600 text-2xl font-bold">
-                {initials}
-              </Text>
+        <View className="mb-6 gap-3">
+          <Pressable
+            onPress={() =>
+              router.push("/(parent)/parent-view-record/attendance")
+            }
+            accessibilityRole="button"
+            accessibilityLabel={`See ${childFirstName}'s attendance records. ${attendanceStatus ? "Recorded today" : "No update today"}. ${stats.present} present and ${stats.absent} absent across all saved records.`}
+            accessibilityHint="Opens attendance history"
+            className="min-h-32 flex-row items-center rounded-3xl border border-sky-200 bg-sky-50 p-4 shadow-sm active:opacity-85"
+          >
+            <View className="h-14 w-14 items-center justify-center rounded-2xl bg-sky-600">
+              <ClipboardCheck size={27} color="#FFFFFF" />
             </View>
-
-            <View className="flex-1">
-              <Text className="text-xl font-bold text-white">
-                {childFullName}
+            <View className="ml-4 flex-1 py-0.5">
+              <Text className="text-xl font-extrabold text-gray-900">
+                Attendance
               </Text>
-              <Text className="text-base text-teal-100 mt-1">
-                {childAge} years old • {String(childGender).toLowerCase()}
-              </Text>
-
-              <View className="flex-row items-center mt-1">
-                <Icons.Calendar size={16} color="white" />
-                <Text className="text-sm text-teal-50 ml-2">
-                  Enrolled: {enrolledText}
+              <View className="mt-1.5 flex-row items-center">
+                {attendanceStatus === "present" ? (
+                  <CheckCircle2 size={17} color="#047857" />
+                ) : attendanceStatus === "absent" ? (
+                  <AlertCircle size={17} color="#BE123C" />
+                ) : (
+                  <Clock3 size={17} color="#0369A1" />
+                )}
+                <Text
+                  className={`ml-1.5 flex-1 text-sm font-bold leading-5 ${
+                    attendanceStatus === "present"
+                      ? "text-emerald-700"
+                      : attendanceStatus === "absent"
+                        ? "text-rose-700"
+                        : "text-sky-700"
+                  }`}
+                >
+                  {attendanceStatus ? "Recorded today" : "No update today"}
                 </Text>
               </View>
-            </View>
-          </View>
-        </View>
-
-        {/* Stats Cards */}
-        <View className="mb-6 flex-row gap-4">
-          <View className="flex-1">
-            <StatCard
-              title="Total Children"
-              value={totalChildren}
-              icon={<Icons.Users size={24} color="#0284C7" />}
-              variant="blue"
-            />
-          </View>
-          <View className="flex-1">
-            <StatCard
-              title="Present Today"
-              value={presentToday}
-              icon={<Icons.UserCheck size={24} color="#059669" />}
-              variant="green"
-            />
-          </View>
-        </View>
-
-        <View className="mb-7 flex-row gap-4">
-          <View className="flex-1">
-            <StatCard
-              title="Absent Today"
-              value={absentToday}
-              icon={<Icons.UserX size={24} color="#C2410C" />}
-              variant="amber"
-            />
-          </View>
-          <View className="flex-1">
-            <StatCard
-              title="Feeding Done"
-              value={feedingDoneToday}
-              icon={<Icons.UtensilsCrossed size={24} color="#059669" />}
-              variant="green"
-            />
-          </View>
-        </View>
-
-        {/* Quick Actions */}
-        <View className="mb-7 rounded-3xl bg-white p-5 shadow-sm">
-          <View className="mb-4 flex-row items-center">
-            <View className="h-10 w-10 items-center justify-center rounded-2xl bg-teal-50">
-              <Icons.Zap size={20} color="#14B8A6" />
-            </View>
-            <Text className="ml-3 text-xl font-bold text-gray-900">
-              Quick Actions
-            </Text>
-          </View>
-
-          <View className="flex-row gap-4">
-            <View className="flex-1">
-              <ActionCard
-                title="View Attendance"
-                subtitle=""
-                icon={<Icons.ClipboardCheck size={24} color="#14B8A6" />}
-                onPress={() => router.push("./parent-view-record/attendance")}
-              />
-            </View>
-
-            <View className="flex-1">
-              <ActionCard
-                title="View Feeding"
-                subtitle=""
-                icon={<Icons.Utensils size={24} color="#14B8A6" />}
-                onPress={() => router.push("./parent-view-record/feeding")}
-              />
-            </View>
-          </View>
-        </View>
-
-        {/* Attendance & Feeding Breakdown */}
-        <View className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
-          {/* Attendance Section */}
-          <View className="flex-row items-center mb-3">
-            <Icons.Calendar size={20} color="#10B981" />
-            <Text className="text-xl font-bold text-gray-900 ml-2">
-              Attendance Breakdown
-            </Text>
-          </View>
-          <StatRow
-            color="#22C55E"
-            label="Present"
-            value={`${stats.present} days`}
-          />
-          <StatRow
-            color="#9CA3AF"
-            label="Absent"
-            value={`${stats.absent} days`}
-          />
-
-          {/* Divider */}
-          <View className="my-5 h-px bg-gray-200" />
-
-          {/* Feeding Section */}
-          <View className="flex-row items-center mb-3">
-            <Icons.Utensils size={20} color="#10B981" />
-            <Text className="text-xl font-bold text-gray-900 ml-2">
-              Feeding Overview
-            </Text>
-          </View>
-          <StatRow
-            color="#22C55E"
-            label="Meals Completed"
-            value={`${stats.mealsCompleted} days`}
-          />
-          <StatRow
-            color="#9CA3AF"
-            label="Meals Missed"
-            value={`${stats.mealsMissed} days`}
-          />
-
-          <View className="mt-4">
-            <View className="flex-row items-center justify-between">
-              <Text className="text-sm text-gray-600">Completion Rate</Text>
-              <Text className="text-teal-600 font-semibold">
-                {stats.mealsCompleted + stats.mealsMissed > 0
-                  ? Math.round(
-                      (stats.mealsCompleted /
-                        (stats.mealsCompleted + stats.mealsMissed)) *
-                        100,
-                    )
-                  : 0}
-                %
+              <Text className="mt-2 text-base font-semibold leading-5 text-gray-700">
+                {stats.present} present · {stats.absent} absent
+              </Text>
+              <Text className="mt-0.5 text-sm leading-5 text-gray-500">
+                All saved records
               </Text>
             </View>
-            <View className="mt-2">
-              <ProgressBar
-                percent={
-                  stats.mealsCompleted + stats.mealsMissed > 0
-                    ? Math.round(
-                        (stats.mealsCompleted /
-                          (stats.mealsCompleted + stats.mealsMissed)) *
-                          100,
-                      )
-                    : 0
-                }
-              />
+            <View className="ml-3 h-11 w-11 items-center justify-center rounded-full bg-sky-600 shadow-sm">
+              <ArrowUpRight size={21} color="#FFFFFF" />
             </View>
-          </View>
+          </Pressable>
+
+          <Pressable
+            onPress={() => router.push("/(parent)/parent-view-record/feeding")}
+            accessibilityRole="button"
+            accessibilityLabel={`See ${childFirstName}'s meal records. ${mealStatus ? "Recorded today" : "No update today"}. ${stats.mealsCompleted} finished and ${stats.mealsMissed} missed across all saved records.`}
+            accessibilityHint="Opens meal history"
+            className="min-h-32 flex-row items-center rounded-3xl border border-orange-200 bg-orange-50 p-4 shadow-sm active:opacity-85"
+          >
+            <View className="h-14 w-14 items-center justify-center rounded-2xl bg-orange-500">
+              <Utensils size={27} color="#FFFFFF" />
+            </View>
+            <View className="ml-4 flex-1 py-0.5">
+              <Text className="text-xl font-extrabold text-gray-900">
+                Meals
+              </Text>
+              <View className="mt-1.5 flex-row items-center">
+                {mealStatus === "completed" ? (
+                  <CheckCircle2 size={17} color="#047857" />
+                ) : mealStatus === "missed" ? (
+                  <AlertCircle size={17} color="#C2410C" />
+                ) : (
+                  <Clock3 size={17} color="#C2410C" />
+                )}
+                <Text
+                  className={`ml-1.5 flex-1 text-sm font-bold leading-5 ${
+                    mealStatus === "completed"
+                      ? "text-emerald-700"
+                      : "text-orange-700"
+                  }`}
+                >
+                  {mealStatus ? "Recorded today" : "No update today"}
+                </Text>
+              </View>
+              <Text className="mt-2 text-base font-semibold leading-5 text-gray-700">
+                {stats.mealsCompleted} finished · {stats.mealsMissed} missed
+              </Text>
+              <Text className="mt-0.5 text-sm leading-5 text-gray-500">
+                All saved records
+              </Text>
+            </View>
+            <View className="ml-3 h-11 w-11 items-center justify-center rounded-full bg-orange-500 shadow-sm">
+              <ArrowUpRight size={21} color="#FFFFFF" />
+            </View>
+          </Pressable>
         </View>
 
-        {/* Recent Activity (Notifications) */}
-        <View className="rounded-3xl bg-white mt-6 p-5 shadow-sm">
-          <View className="mb-4 flex-row items-center justify-between">
-            <Text className="text-xl font-bold text-gray-900">
-              Recent Updates
-            </Text>
-
-            <Pressable
-              className="flex-row items-center"
-              onPress={() => router.push("/(parent)/notifications")}
+        {/* Section 2: Recent Updates (Notifications Feed) */}
+        <View className="mb-3 flex-row items-center justify-between">
+          <View>
+            <Text
+              className="text-2xl font-black text-gray-900"
+              accessibilityRole="header"
             >
-              <Text className="text-base font-semibold text-teal-600">
+              Recent updates
+            </Text>
+            <Text className="mt-0.5 text-base text-gray-600">
+              School updates about {childFirstName}
+            </Text>
+          </View>
+          {recentNotifications.length > 0 ? (
+            <Pressable
+              onPress={() => router.push("/(parent)/notifications")}
+              accessibilityRole="button"
+              accessibilityLabel="View all notifications"
+              className="min-h-11 flex-row items-center justify-center rounded-full border border-gray-100 bg-white px-4 shadow-sm active:opacity-75"
+            >
+              <Text className="text-sm font-extrabold text-emerald-800">
                 View all
               </Text>
-              <Icons.ChevronRight size={18} color="#14B8A6" />
             </Pressable>
-          </View>
-
-          {recentNotifications.length === 0 ? (
-            <View className="rounded-2xl bg-gray-50 p-4">
-              <Text className="text-sm text-gray-600">
-                No notifications yet for today.
-              </Text>
-            </View>
-          ) : (
-            recentNotifications.map((item, index) => (
-              <View
-                key={item.id}
-                className={`rounded-2xl bg-gray-50 p-4 ${index > 0 ? "mt-3" : ""}`}
-              >
-                <View className="flex-row">
-                  <View className="mr-4 w-1.5 rounded-full bg-emerald-600" />
-                  <View className="flex-1">
-                    <Text className="text-base font-extrabold text-gray-900">
-                      {item.title}
-                    </Text>
-                    <Text className="mt-1 text-sm leading-5 text-gray-600">
-                      {item.message}
-                    </Text>
-                    <Text className="mt-1 text-xs text-gray-400">
-                      {item.timeLabel}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            ))
-          )}
+          ) : null}
         </View>
-      </ScrollView>
 
-      {/* Floating AI Chat button */}
-      <Pressable
-        onPress={() => router.push("/(parent)/chat")}
-        className="absolute right-5 rounded-full bg-teal-600 p-4 active:opacity-90"
-        style={{
-          bottom: 24 + insets.bottom + 5,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.2,
-          shadowRadius: 6,
-          elevation: 6,
-        }}
-      >
-        <Icons.MessageCircle size={28} color="white" />
-      </Pressable>
+        {recentNotifications.length > 0 ? (
+          <View className="rounded-3xl border border-gray-100 bg-white p-3.5 shadow-sm">
+            {recentNotifications.slice(0, 3).map((item, index) => {
+              const tone = PARENT_NOTICE_TONE[item.type] || "emerald";
+
+              const handleNotificationPress = () => {
+                if (
+                  item.type === "attendance_submitted" ||
+                  item.type === "absence_alert"
+                ) {
+                  router.push("/(parent)/parent-view-record/attendance");
+                } else if (
+                  item.type === "feeding_submitted" ||
+                  item.type === "missed_meal_alert"
+                ) {
+                  router.push("/(parent)/parent-view-record/feeding");
+                } else {
+                  router.push("/(parent)/notifications");
+                }
+              };
+
+              const notificationHint =
+                item.type === "attendance_submitted" ||
+                item.type === "absence_alert"
+                  ? "Opens attendance record"
+                  : item.type === "feeding_submitted" ||
+                      item.type === "missed_meal_alert"
+                    ? "Opens feeding record"
+                    : "Opens all notifications";
+
+              return (
+                <React.Fragment key={item.id}>
+                  <NoticeItem
+                    title={item.title}
+                    desc={item.message}
+                    meta={item.timeLabel}
+                    tone={tone}
+                    onPress={handleNotificationPress}
+                    accessibilityHint={notificationHint}
+                  />
+                  {index < Math.min(recentNotifications.length, 3) - 1 ? (
+                    <View className="h-2.5" />
+                  ) : null}
+                </React.Fragment>
+              );
+            })}
+          </View>
+        ) : (
+          <View className="items-center rounded-3xl border border-gray-100 bg-white px-5 py-5 shadow-sm">
+            <View className="h-11 w-11 items-center justify-center rounded-2xl border border-emerald-100 bg-emerald-50">
+              <Bell size={22} color="#0F766E" />
+            </View>
+            <Text className="mt-2 text-lg font-extrabold text-gray-900">
+              Quiet for now
+            </Text>
+            <Text className="mt-0.5 text-center text-sm leading-5 text-gray-600">
+              New school updates for {childFirstName} will appear here.
+            </Text>
+          </View>
+        )}
+      </ScrollView>
     </ScreenShell>
   );
 }

@@ -1,10 +1,11 @@
 import { Tabs, Redirect } from "expo-router";
 import { useAuth } from "@/src/hooks/use-auth";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { House, UserPlus, UserRound, Users } from "lucide-react-native";
 import { getTabBarScreenOptions, getTabBarStyle } from "@/src/config/tab-bar";
 import { TeacherUiProvider } from "@/src/context/teacher-ui-context";
+import { ScreenLoadingState } from "@/src/components/ui";
 
 export default function TeacherLayout() {
   const { user, role, loading } = useAuth();
@@ -90,9 +91,12 @@ export default function TeacherLayout() {
         <View
           pointerEvents="auto"
           style={[StyleSheet.absoluteFillObject, { zIndex: 100 }]}
-          className="items-center justify-center bg-white"
+          className="bg-gray-50"
         >
-          <ActivityIndicator size="large" />
+          <ScreenLoadingState
+            title="Loading your account"
+            message="Getting your teacher experience ready."
+          />
         </View>
       ) : null}
     </TeacherUiProvider>

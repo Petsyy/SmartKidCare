@@ -30,6 +30,7 @@ export default function EnrollChildScreen() {
   return (
     <ScreenShell>
       <ScreenHeader
+        backgroundVariant="teacherGradient"
         title="Child Enrollment"
         subtitle="Submit and track enrollment requests"
         onBack={

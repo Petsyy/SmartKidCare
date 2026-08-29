@@ -5,8 +5,8 @@ import {
   FlatList,
   TextInput,
   TouchableOpacity,
-  ActivityIndicator,
 } from "react-native";
+import { ScreenLoadingState } from "@/src/components/ui";
 import {
   useMyClassNutrition,
   useEvaluateNutrition,
@@ -60,9 +60,10 @@ export const TeacherNutritionScreen = () => {
 
   if (isLoading)
     return (
-      <View style={{ padding: 20 }}>
-        <ActivityIndicator size="large" />
-      </View>
+      <ScreenLoadingState
+        title="Loading nutrition records"
+        message="Getting your class nutrition assessments ready."
+      />
     );
   if (isError)
     return (

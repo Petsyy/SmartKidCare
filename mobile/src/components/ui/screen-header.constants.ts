@@ -1,0 +1,3 @@
+export const BRAND_HEADER_GRADIENT = ["#134E4A", "#0F766E", "#059669"] as const;
+
+export const TEACHER_HEADER_GRADIENT = BRAND_HEADER_GRADIENT;

@@ -28,6 +28,7 @@ export const useNotificationsFeed = <T extends NotificationArchiveBaseItem>({
   const { isAuthenticated } = useAuth();
   const [readIds, setReadIds] = useState<Record<string, boolean>>({});
   const [archivedItems, setArchivedItems] = useState<ArchivedNotificationItem<T>[]>([]);
+  const [deletedIds, setDeletedIds] = useState<string[]>([]);
   const [storageReady, setStorageReady] = useState(false);
   const [activeFilter, setActiveFilter] = useState<NotificationFilter>("all");
   const todayDateKey = useMemo(() => toLocalDateKey(), []);
@@ -54,13 +55,14 @@ export const useNotificationsFeed = <T extends NotificationArchiveBaseItem>({
     let isMounted = true;
     const restoreArchiveState = async () => {
       if (!userId) {
-        if (isMounted) { setReadIds({}); setArchivedItems([]); setStorageReady(false); }
+        if (isMounted) { setReadIds({}); setArchivedItems([]); setDeletedIds([]); setStorageReady(false); }
         return;
       }
       const storedState = await loadNotificationArchiveState<T>({ audience, userId });
       if (!isMounted) return;
       setReadIds(storedState.readIds);
       setArchivedItems(storedState.archivedItems);
+      setDeletedIds(storedState.deletedIds);
       setStorageReady(true);
     };
     void restoreArchiveState();
@@ -69,11 +71,12 @@ export const useNotificationsFeed = <T extends NotificationArchiveBaseItem>({
 
   useEffect(() => {
     if (!storageReady || !userId) return;
-    void saveNotificationArchiveState<T>({ audience, userId, state: { readIds, archivedItems } });
-  }, [archivedItems, audience, readIds, storageReady, userId]);
+    void saveNotificationArchiveState<T>({ audience, userId, state: { readIds, archivedItems, deletedIds } });
+  }, [archivedItems, audience, deletedIds, readIds, storageReady, userId]);
 
   const archivedIdSet = useMemo(() => new Set(archivedItems.map((item) => item.id)), [archivedItems]);
-  const activeItems = useMemo(() => items.filter((item) => !archivedIdSet.has(item.id)), [archivedIdSet, items]);
+  const deletedIdSet = useMemo(() => new Set(deletedIds), [deletedIds]);
+  const activeItems = useMemo(() => items.filter((item) => !archivedIdSet.has(item.id) && !deletedIdSet.has(item.id)), [archivedIdSet, deletedIdSet, items]);
 
   const markAsRead = (id: string) => { setReadIds((current) => ({ ...current, [id]: true })); };
   const markAllAsRead = () => {
@@ -91,13 +94,21 @@ export const useNotificationsFeed = <T extends NotificationArchiveBaseItem>({
   };
 
   const restoreNotification = (id: string) => { setArchivedItems((current) => current.filter((item) => item.id !== id)); };
-  const deleteArchivedNotification = (id: string) => { setArchivedItems((current) => current.filter((item) => item.id !== id)); };
+  const deleteArchivedNotification = (id: string) => {
+    setArchivedItems((current) => current.filter((item) => item.id !== id));
+    setDeletedIds((current) => current.includes(id) ? current : [...current, id]);
+  };
   const deleteAllArchivedNotifications = () => {
-    const deletedIds = new Set(archivedItems.map((item) => item.id));
+    const idsToDelete = archivedItems.map((item) => item.id);
     setArchivedItems([]);
+    setDeletedIds((current) => {
+      const existing = new Set(current);
+      const newIds = idsToDelete.filter((id) => !existing.has(id));
+      return newIds.length > 0 ? [...current, ...newIds] : current;
+    });
     setReadIds((current) => {
       const next = { ...current };
-      Object.keys(next).forEach((id) => { if (deletedIds.has(id)) delete next[id]; });
+      idsToDelete.forEach((id) => { delete next[id]; });
       return next;
     });
   };

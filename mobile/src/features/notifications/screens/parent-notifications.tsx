@@ -48,12 +48,12 @@ export default function ParentNotificationsScreen() {
   const feed = useNotificationsFeed<ParentNotificationFeedItem>({
     audience: "parent",
     userId: user?.id,
-    fetchFeed: async (date) =>
-      getParentNotificationsFeed({ date }),
+    fetchFeed: async (date) => getParentNotificationsFeed({ date }),
   });
 
   return (
     <NotificationFeedScreen<ParentNotificationFeedItem>
+      headerBackgroundVariant="brandGradient"
       subtitle="Parent alerts and updates"
       date={feed.date}
       isLoading={feed.isLoading}

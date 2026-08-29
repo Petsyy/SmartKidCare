@@ -1,8 +1,9 @@
 import { Tabs, Redirect, useRootNavigationState } from "expo-router";
 import { useAuth } from "@/src/hooks/use-auth";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import ParentGate from "@/src/components/ui/parent-gate";
+import { ParentLoadingState } from "@/src/components/ui";
 import { Bell, House, UserRound, Users } from "lucide-react-native";
 import { getTabBarScreenOptions } from "@/src/config/tab-bar";
 
@@ -94,9 +95,12 @@ export default function ParentLayout() {
         <View
           pointerEvents="auto"
           style={[StyleSheet.absoluteFillObject, { zIndex: 100 }]}
-          className="items-center justify-center bg-white"
+          className="bg-gray-50"
         >
-          <ActivityIndicator size="large" />
+          <ParentLoadingState
+            title="Loading your account"
+            message="Getting your parent experience ready."
+          />
         </View>
       ) : null}
     </>

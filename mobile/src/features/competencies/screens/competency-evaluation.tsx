@@ -8,10 +8,17 @@ import {
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { ClipboardCheck, CheckCircle2, Lock } from "lucide-react-native";
-import { ScreenHeader, ScreenShell } from "../../../components/ui";
+import {
+  ScreenHeader,
+  ScreenLoadingState,
+  ScreenShell,
+} from "../../../components/ui";
 import { CompetencyItem } from "../components/competency-item";
 import { COMPETENCY_LEVELS } from "../constants";
-import { useCompetencyEvaluation, type EvaluationPeriod } from "../hooks/useCompetencyEvaluation";
+import {
+  useCompetencyEvaluation,
+  type EvaluationPeriod,
+} from "../hooks/useCompetencyEvaluation";
 import { useUnsavedChangesGuard } from "../../../hooks/use-unsaved-changes-guard";
 
 export default function CompetencyEvaluationScreen() {
@@ -35,6 +42,7 @@ export default function CompetencyEvaluationScreen() {
   return (
     <ScreenShell>
       <ScreenHeader
+        backgroundVariant="teacherGradient"
         title="Competency Evaluation"
         subtitle={
           child
@@ -44,10 +52,10 @@ export default function CompetencyEvaluationScreen() {
         onBack={() => router.back()}
       />
       {evaluation.isLoading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#0D9488" />
-          <Text className="mt-3 text-gray-500">Loading competencies...</Text>
-        </View>
+        <ScreenLoadingState
+          title="Loading competencies"
+          message="Getting this child’s skill checklist ready."
+        />
       ) : evaluation.error ? (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-center text-base text-red-600">
@@ -86,7 +94,11 @@ export default function CompetencyEvaluationScreen() {
                     accessibilityRole="tab"
                     accessibilityState={{ selected, disabled: state.isLocked }}
                     accessibilityLabel={`${period.label} evaluation${state.isLocked ? ", locked" : state.isSubmitted ? ", submitted" : ", available"}`}
-                    accessibilityHint={state.isLocked ? `Submit the ${state.prerequisiteLabel} evaluation first` : `Open the ${period.label} evaluation`}
+                    accessibilityHint={
+                      state.isLocked
+                        ? `Submit the ${state.prerequisiteLabel} evaluation first`
+                        : `Open the ${period.label} evaluation`
+                    }
                     onPress={() => evaluation.handlePeriodChange(period.value)}
                     className={`min-h-20 flex-1 items-center justify-center rounded-2xl border px-1 py-3 ${
                       selected
@@ -99,15 +111,23 @@ export default function CompetencyEvaluationScreen() {
                     }`}
                     style={selected ? periodTabSelectedStyle : undefined}
                   >
-                    <View className={`mb-1 h-7 w-7 items-center justify-center rounded-full ${
-                      state.isLocked ? "bg-gray-200" : state.isSubmitted ? "bg-emerald-100" : "bg-teal-100"
-                    }`}>
+                    <View
+                      className={`mb-1 h-7 w-7 items-center justify-center rounded-full ${
+                        state.isLocked
+                          ? "bg-gray-200"
+                          : state.isSubmitted
+                            ? "bg-emerald-100"
+                            : "bg-teal-100"
+                      }`}
+                    >
                       {state.isLocked ? (
                         <Lock size={14} color="#6B7280" />
                       ) : state.isSubmitted ? (
                         <CheckCircle2 size={16} color="#059669" />
                       ) : (
-                        <Text className="text-xs font-extrabold text-teal-700">{index + 1}</Text>
+                        <Text className="text-xs font-extrabold text-teal-700">
+                          {index + 1}
+                        </Text>
                       )}
                     </View>
                     <Text
@@ -124,8 +144,14 @@ export default function CompetencyEvaluationScreen() {
                     >
                       {period.label}
                     </Text>
-                    <Text className={`mt-0.5 text-[10px] font-medium ${state.isLocked ? "text-gray-400" : "text-gray-500"}`}>
-                      {state.isLocked ? "Locked" : state.isSubmitted ? "Submitted" : "Available"}
+                    <Text
+                      className={`mt-0.5 text-[10px] font-medium ${state.isLocked ? "text-gray-400" : "text-gray-500"}`}
+                    >
+                      {state.isLocked
+                        ? "Locked"
+                        : state.isSubmitted
+                          ? "Submitted"
+                          : "Available"}
                     </Text>
                   </Pressable>
                 );
@@ -139,30 +165,37 @@ export default function CompetencyEvaluationScreen() {
                 <Lock size={18} color="#B45309" />
               </View>
               <View className="flex-1">
-                <Text className="font-bold text-amber-900">Evaluation locked</Text>
+                <Text className="font-bold text-amber-900">
+                  Evaluation locked
+                </Text>
                 <Text className="mt-1 text-sm leading-5 text-amber-800">
-                  Submit the {evaluation.selectedPeriodState.prerequisiteLabel} evaluation to continue.
+                  Submit the {evaluation.selectedPeriodState.prerequisiteLabel}{" "}
+                  evaluation to continue.
                 </Text>
               </View>
             </View>
           )}
 
           <View className="mb-4 flex-row items-center justify-between rounded-2xl bg-teal-50 px-4 py-3 border border-teal-100">
-            <Text className="font-semibold text-teal-800">Checklist Progress</Text>
+            <Text className="font-semibold text-teal-800">
+              Checklist Progress
+            </Text>
             <View className="flex-row items-center gap-1.5">
               <Text className="font-bold text-teal-700">
                 {evaluation.progress.completed} of {evaluation.progress.total}
               </Text>
-              {evaluation.progress.isComplete && <CheckCircle2 size={16} color="#0F766E" />}
+              {evaluation.progress.isComplete && (
+                <CheckCircle2 size={16} color="#0F766E" />
+              )}
             </View>
           </View>
 
           {evaluation.isReadOnly && (
-             <View className="mb-4 rounded-xl bg-amber-50 p-3 border border-amber-200">
-               <Text className="text-center text-sm font-semibold text-amber-800">
-                 This evaluation has been submitted and is now read-only.
-               </Text>
-             </View>
+            <View className="mb-4 rounded-xl bg-amber-50 p-3 border border-amber-200">
+              <Text className="text-center text-sm font-semibold text-amber-800">
+                This evaluation has been submitted and is now read-only.
+              </Text>
+            </View>
           )}
 
           {evaluation.groupedDefinitions.map(([category, definitions]) => (
@@ -208,15 +241,26 @@ export default function CompetencyEvaluationScreen() {
           </View>
 
           <View className="mb-6 rounded-3xl border border-gray-200 bg-white p-4">
-             <Text className="mb-3 text-base font-bold text-gray-900">Automatic Summary</Text>
-             <View className="flex-row flex-wrap justify-between gap-y-2">
-               {COMPETENCY_LEVELS.map(level => (
-                 <View key={level.value} className="w-[48%] flex-row justify-between rounded-xl bg-gray-50 p-3 border border-gray-100">
-                    <Text className="text-sm font-medium text-gray-600">{level.label}</Text>
-                    <Text className="text-sm font-bold text-gray-900">{evaluation.summary[level.value as keyof typeof evaluation.summary] || 0}</Text>
-                 </View>
-               ))}
-             </View>
+            <Text className="mb-3 text-base font-bold text-gray-900">
+              Automatic Summary
+            </Text>
+            <View className="flex-row flex-wrap justify-between gap-y-2">
+              {COMPETENCY_LEVELS.map((level) => (
+                <View
+                  key={level.value}
+                  className="w-[48%] flex-row justify-between rounded-xl bg-gray-50 p-3 border border-gray-100"
+                >
+                  <Text className="text-sm font-medium text-gray-600">
+                    {level.label}
+                  </Text>
+                  <Text className="text-sm font-bold text-gray-900">
+                    {evaluation.summary[
+                      level.value as keyof typeof evaluation.summary
+                    ] || 0}
+                  </Text>
+                </View>
+              ))}
+            </View>
           </View>
 
           {!evaluation.isReadOnly && (
@@ -227,14 +271,18 @@ export default function CompetencyEvaluationScreen() {
                 onPress={evaluation.saveDraft}
                 className={`min-h-14 items-center justify-center rounded-2xl border-2 ${evaluation.isSubmitting ? "border-gray-300 bg-gray-100" : "border-teal-600 bg-white"}`}
               >
-                <Text className={`text-lg font-bold ${evaluation.isSubmitting ? "text-gray-400" : "text-teal-700"}`}>
+                <Text
+                  className={`text-lg font-bold ${evaluation.isSubmitting ? "text-gray-400" : "text-teal-700"}`}
+                >
                   Save Draft
                 </Text>
               </Pressable>
 
               <Pressable
                 accessibilityRole="button"
-                disabled={evaluation.isSubmitting || !evaluation.progress.isComplete}
+                disabled={
+                  evaluation.isSubmitting || !evaluation.progress.isComplete
+                }
                 onPress={evaluation.submitEvaluation}
                 className={`min-h-14 items-center justify-center rounded-2xl ${evaluation.isSubmitting || !evaluation.progress.isComplete ? "bg-gray-300" : "bg-teal-600"}`}
               >
@@ -248,7 +296,6 @@ export default function CompetencyEvaluationScreen() {
               </Pressable>
             </View>
           )}
-
         </ScrollView>
       )}
     </ScreenShell>
@@ -263,4 +310,3 @@ const periodTabSelectedStyle = {
   shadowOpacity: 0.08,
   shadowRadius: 2,
 } as const;
-

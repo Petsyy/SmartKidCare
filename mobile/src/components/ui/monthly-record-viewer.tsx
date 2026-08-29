@@ -1,14 +1,16 @@
 import type { ReactNode } from "react";
 import {
-  ActivityIndicator,
   Modal,
   Pressable,
   ScrollView,
   Text,
   View,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react-native";
 import type { Child } from "@/src/api/parent.api";
+import { BRAND_HEADER_GRADIENT } from "./screen-header.constants";
+import { ParentLoadingState } from "./parent-loading-state";
 
 type DayStatusStyles = {
   cellClass: string;
@@ -140,10 +142,37 @@ export function MonthlyRecordViewer<TDetails>({
     );
   };
 
+  const headerSection = (
+    <LinearGradient
+      colors={BRAND_HEADER_GRADIENT}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={{ paddingTop: insetsTop + 12 }}
+      className="px-5 pb-5"
+    >
+      <View className="flex-row items-center">
+        <Pressable
+          onPress={onBack}
+          className="h-10 w-10 items-center justify-center rounded-full bg-white/20 mr-3"
+        >
+          <ChevronLeft size={22} color="white" />
+        </Pressable>
+        <View className="flex-1">
+          <Text className="text-3xl font-extrabold text-white">{title}</Text>
+          <Text className="text-lg text-teal-100 mt-1">{subtitle}</Text>
+        </View>
+      </View>
+    </LinearGradient>
+  );
+
   if (loading) {
     return (
-      <View className="flex-1 bg-gray-50 items-center justify-center">
-        <ActivityIndicator size="large" color="#0d9488" />
+      <View className="flex-1 bg-gray-50">
+        {headerSection}
+        <ParentLoadingState
+          title={`Loading ${title.toLowerCase()}`}
+          message={`Getting ${title.toLowerCase()} records ready.`}
+        />
       </View>
     );
   }
@@ -153,20 +182,7 @@ export function MonthlyRecordViewer<TDetails>({
 
   return (
     <View className="flex-1 bg-gray-50">
-      <View style={{ paddingTop: insetsTop + 12 }} className="bg-teal-600 px-5 pb-5">
-        <View className="flex-row items-center">
-          <Pressable
-            onPress={onBack}
-            className="h-10 w-10 items-center justify-center rounded-full bg-white/20 mr-3"
-          >
-            <ChevronLeft size={22} color="white" />
-          </Pressable>
-          <View className="flex-1">
-            <Text className="text-3xl font-extrabold text-white">{title}</Text>
-            <Text className="text-lg text-teal-100 mt-1">{subtitle}</Text>
-          </View>
-        </View>
-      </View>
+      {headerSection}
 
       <ScrollView
         className="flex-1 px-6"

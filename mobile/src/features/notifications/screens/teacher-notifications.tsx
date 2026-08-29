@@ -1,4 +1,4 @@
-import { AlertCircle, Clock3, UtensilsCrossed } from "lucide-react-native";
+import { AlertCircle, Clock3, UtensilsCrossed, CheckCircle2 } from "lucide-react-native";
 import { useAuth } from "@/src/hooks/use-auth";
 import {
   getTeacherNotificationsFeed,
@@ -22,6 +22,13 @@ const TEACHER_TYPE_UI = {
     iconBg: "#FEF3C7",
     accent: "#0F766E",
   },
+  attendance_submitted: {
+    fallbackTitle: "Attendance Submitted",
+    icon: CheckCircle2,
+    iconColor: "#047857",
+    iconBg: "#D1FAE5",
+    accent: "#047857",
+  },
   feeding_reminder: {
     fallbackTitle: "Lunch Feeding",
     icon: Clock3,
@@ -36,6 +43,13 @@ const TEACHER_TYPE_UI = {
     iconBg: "#FEF3C7",
     accent: "#0F766E",
   },
+  feeding_submitted: {
+    fallbackTitle: "Feeding Submitted",
+    icon: CheckCircle2,
+    iconColor: "#047857",
+    iconBg: "#D1FAE5",
+    accent: "#047857",
+  },
 } as const;
 
 export default function TeacherNotificationsScreen() {
@@ -44,13 +58,13 @@ export default function TeacherNotificationsScreen() {
   const feed = useNotificationsFeed<TeacherNotificationFeedItem>({
     audience: "teacher",
     userId: user?.id,
-    fetchFeed: async (date) =>
-      getTeacherNotificationsFeed({ date }),
+    fetchFeed: async (date) => getTeacherNotificationsFeed({ date }),
   });
 
   return (
     <NotificationFeedScreen<TeacherNotificationFeedItem>
       subtitle="Teacher alerts and reminders"
+      headerBackgroundVariant="teacherGradient"
       date={feed.date}
       isLoading={feed.isLoading}
       isRefreshing={feed.isRefreshing}

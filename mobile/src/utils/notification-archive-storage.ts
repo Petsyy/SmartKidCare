@@ -22,6 +22,7 @@ export type ArchivedNotificationItem<T extends NotificationArchiveBaseItem> = T 
 export interface NotificationArchiveState<T extends NotificationArchiveBaseItem> {
   readIds: Record<string, boolean>;
   archivedItems: ArchivedNotificationItem<T>[];
+  deletedIds: string[];
 }
 
 interface StorageKeyInput {
@@ -114,9 +115,25 @@ const normalizeArchivedItems = <T extends NotificationArchiveBaseItem>(
   return normalized.slice(0, MAX_ARCHIVED_ITEMS);
 };
 
+const normalizeDeletedIds = (value: unknown): string[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  const seen = new Set<string>();
+  const result: string[] = [];
+  value.forEach((id) => {
+    if (typeof id === "string" && id.trim() && !seen.has(id)) {
+      seen.add(id);
+      result.push(id);
+    }
+  });
+  return result;
+};
+
 const emptyArchiveState = <T extends NotificationArchiveBaseItem>(): NotificationArchiveState<T> => ({
   readIds: {},
   archivedItems: [],
+  deletedIds: [],
 });
 
 export const loadNotificationArchiveState = async <
@@ -138,11 +155,13 @@ export const loadNotificationArchiveState = async <
     const parsed = JSON.parse(raw) as {
       readIds?: unknown;
       archivedItems?: unknown;
+      deletedIds?: unknown;
     };
 
     return {
       readIds: normalizeReadIds(parsed.readIds),
       archivedItems: normalizeArchivedItems<T>(parsed.archivedItems),
+      deletedIds: normalizeDeletedIds(parsed.deletedIds),
     };
   } catch {
     return emptyArchiveState<T>();
@@ -163,6 +182,7 @@ export const saveNotificationArchiveState = async <
   const payload: NotificationArchiveState<T> = {
     readIds: normalizeReadIds(state.readIds),
     archivedItems: normalizeArchivedItems<T>(state.archivedItems),
+    deletedIds: normalizeDeletedIds(state.deletedIds),
   };
 
   await AsyncStorage.setItem(

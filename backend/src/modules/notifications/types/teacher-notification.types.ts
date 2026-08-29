@@ -1,8 +1,10 @@
 export type TeacherNotificationType =
   | "attendance_reminder"
   | "attendance_incomplete"
+  | "attendance_submitted"
   | "feeding_reminder"
-  | "feeding_incomplete";
+  | "feeding_incomplete"
+  | "feeding_submitted";
 
 export interface TeacherDispatchDetail {
   teacherId: string;

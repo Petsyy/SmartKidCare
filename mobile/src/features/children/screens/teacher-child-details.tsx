@@ -1,14 +1,47 @@
 import { useMemo } from "react";
-import { Linking, Text, View, ActivityIndicator, ScrollView, StatusBar, Pressable, } from "react-native";
-import { SafeAreaView, useSafeAreaInsets} from "react-native-safe-area-context";
+import {
+  Linking,
+  Text,
+  View,
+  ScrollView,
+  StatusBar,
+  Pressable,
+} from "react-native";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { getChildById, type Child } from "@/src/api/parent.api";
 import { getTodayAttendance, getTodayFeeding } from "@/src/api/records.api";
 import { useAuth } from "@/src/hooks/use-auth";
-import { ChevronLeft, User, Mail, Phone,Calendar,BookOpen,Activity,ShieldCheck, MapPin, Scale, Ruler, Award } from "lucide-react-native";
-import { buildBlockchainTransactionUrl, getBlockchainStatusInfo, getBlockchainStatusPalette, shortenHash,} from "@/src/utils/blockchain-status";
+import {
+  ChevronLeft,
+  User,
+  Mail,
+  Phone,
+  Calendar,
+  BookOpen,
+  Activity,
+  ShieldCheck,
+  MapPin,
+  Scale,
+  Ruler,
+  Award,
+} from "lucide-react-native";
+import {
+  buildBlockchainTransactionUrl,
+  getBlockchainStatusInfo,
+  getBlockchainStatusPalette,
+  shortenHash,
+} from "@/src/utils/blockchain-status";
 import { useQuery } from "@tanstack/react-query";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
+import { LinearGradient } from "expo-linear-gradient";
+import {
+  ScreenLoadingState,
+  TEACHER_HEADER_GRADIENT,
+} from "@/src/components/ui";
 
 export default function TeacherChildDetailsScreen() {
   const insets = useSafeAreaInsets();
@@ -17,7 +50,11 @@ export default function TeacherChildDetailsScreen() {
   const { isAuthenticated } = useAuth();
   const childId = typeof id === "string" ? id : null;
 
-  const { data, isLoading: loading, error } = useQuery({
+  const {
+    data,
+    isLoading: loading,
+    error,
+  } = useQuery({
     queryKey: mobileQueryKeys.teacherChildDetails(childId),
     enabled: isAuthenticated && Boolean(childId),
     queryFn: async () => {
@@ -73,9 +110,12 @@ export default function TeacherChildDetailsScreen() {
           translucent
           backgroundColor="transparent"
         />
-        <View
+        <LinearGradient
+          colors={TEACHER_HEADER_GRADIENT}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
           style={{ paddingTop: insets.top + 12 }}
-          className="bg-teal-600 px-5 pb-6"
+          className="px-5 pb-6"
         >
           <View className="flex-row items-center">
             <Pressable
@@ -88,13 +128,11 @@ export default function TeacherChildDetailsScreen() {
               Child Details
             </Text>
           </View>
-        </View>
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#14B8A6" />
-          <Text className="mt-4 text-base font-medium text-gray-500">
-            Loading details...
-          </Text>
-        </View>
+        </LinearGradient>
+        <ScreenLoadingState
+          title="Loading child details"
+          message="Getting the child’s profile and today’s records ready."
+        />
       </SafeAreaView>
     );
   }
@@ -107,9 +145,12 @@ export default function TeacherChildDetailsScreen() {
           translucent
           backgroundColor="transparent"
         />
-        <View
+        <LinearGradient
+          colors={TEACHER_HEADER_GRADIENT}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
           style={{ paddingTop: insets.top + 12 }}
-          className="bg-teal-600 px-5 pb-6"
+          className="px-5 pb-6"
         >
           <View className="flex-row items-center">
             <Pressable
@@ -122,7 +163,7 @@ export default function TeacherChildDetailsScreen() {
               Child Details
             </Text>
           </View>
-        </View>
+        </LinearGradient>
         <View className="flex-1 items-center justify-center px-6">
           <View className="h-16 w-16 items-center justify-center rounded-2xl bg-red-50 mb-4">
             <User size={28} color="#EF4444" />
@@ -171,9 +212,12 @@ export default function TeacherChildDetailsScreen() {
       />
 
       {/* HEADER */}
-      <View
+      <LinearGradient
+        colors={TEACHER_HEADER_GRADIENT}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={{ paddingTop: insets.top + 12 }}
-        className="bg-teal-600 px-5 pb-6"
+        className="px-5 pb-6"
       >
         <View className="flex-row items-center">
           <Pressable
@@ -195,7 +239,7 @@ export default function TeacherChildDetailsScreen() {
             </Text>
           </View>
         </View>
-      </View>
+      </LinearGradient>
 
       <ScrollView
         className="flex-1"
@@ -316,8 +360,7 @@ export default function TeacherChildDetailsScreen() {
               accessibilityHint="Opens the competency evaluation checklist"
               onPress={() =>
                 router.push({
-                  pathname:
-                    "/(teacher)/child-details/competencies/[childId]",
+                  pathname: "/(teacher)/child-details/competencies/[childId]",
                   params: { childId: child._id },
                 })
               }

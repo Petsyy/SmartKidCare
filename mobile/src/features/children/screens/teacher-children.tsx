@@ -1,11 +1,5 @@
 import { useMemo } from "react";
-import {
-  Text,
-  View,
-  ActivityIndicator,
-  ScrollView,
-  Pressable,
-} from "react-native";
+import { Text, View, ScrollView, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { getChildren } from "@/src/api/teacher.api";
 import { getTodayAttendance, getTodayFeeding } from "@/src/api/records.api";
@@ -15,7 +9,12 @@ import { Search, Users, AlertCircle } from "lucide-react-native";
 import { useQuery } from "@tanstack/react-query";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { useTeacherUi } from "@/src/context/teacher-ui-context";
-import { ScreenShell, ScreenHeader, SearchBar } from "@/src/components/ui";
+import {
+  ScreenHeader,
+  ScreenLoadingState,
+  ScreenShell,
+  SearchBar,
+} from "@/src/components/ui";
 
 interface ChildStatus {
   attendance: "Present" | "Absent" | "Not Recorded";
@@ -107,12 +106,15 @@ export default function ChildScreen() {
   if (loading) {
     return (
       <ScreenShell withKeyboardAvoiding={false}>
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#14B8A6" />
-          <Text className="mt-4 text-lg text-gray-600 font-medium">
-            Loading children...
-          </Text>
-        </View>
+        <ScreenHeader
+          backgroundVariant="teacherGradient"
+          title="Children List"
+          subtitle="Enrolled children assigned to you"
+        />
+        <ScreenLoadingState
+          title="Loading children"
+          message="Getting your enrolled children ready."
+        />
       </ScreenShell>
     );
   }
@@ -153,6 +155,7 @@ export default function ChildScreen() {
   return (
     <ScreenShell>
       <ScreenHeader
+        backgroundVariant="teacherGradient"
         title="Children List"
         subtitle={`${children.length} Enrolled Children`}
       />

@@ -1,12 +1,14 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text, TextInput, Pressable, FlatList, ActivityIndicator, StatusBar } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import * as Icons from "lucide-react-native";
 import { useAuth } from "@/src/hooks/use-auth";
 import { sendAIChat } from "@/src/api/ai.api";
 import { getAttendanceHistory, getFeedingHistory } from "@/src/api/records.api";
 import { extractAIBulletText, extractAIRiskLevel, getAIRiskBadgeStyle, isAISectionLine, removeAIRiskLevelLine } from "@/src/components/ai/ai-chat";
+import { BRAND_HEADER_GRADIENT } from "@/src/components/ui";
 
 const SUGGESTIONS = [
   "Was my child present today?",
@@ -340,7 +342,7 @@ export default function ParentChatScreen() {
             Smart KidCare Assistant
           </Text>
           <Text className="mt-0.5 text-sm text-gray-500">
-            Ask about your child's attendance and feeding.
+            Ask about your child&apos;s attendance and feeding.
           </Text>
         </View>
         {contextLoading && <ActivityIndicator size="small" color="#14B8A6" />}
@@ -357,7 +359,7 @@ export default function ParentChatScreen() {
         How can I help?
       </Text>
       <Text className="mt-2 max-w-[260px] text-center text-sm text-gray-500">
-        Ask about your child's records or tap a suggestion below.
+        Ask about your child&apos;s records or tap a suggestion below.
       </Text>
       <View className="mt-6 w-full max-w-[320px] gap-3">
         {SUGGESTIONS.map((s) => (
@@ -394,7 +396,12 @@ export default function ParentChatScreen() {
       />
       <View className="flex-1">
         {/* Header */}
-        <View className="bg-teal-600 border-b border-teal-700/30">
+        <LinearGradient
+          colors={BRAND_HEADER_GRADIENT}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          className="border-b border-teal-700/30"
+        >
           <View className="flex-row items-center px-4 pt-4 pb-5">
             <Pressable
               onPress={() => router.back()}
@@ -408,11 +415,11 @@ export default function ParentChatScreen() {
                 AI Assistant
               </Text>
               <Text className="mt-0.5 text-[14px] text-teal-100">
-                Based on your child's attendance & feeding
+                Based on your child&apos;s attendance & feeding
               </Text>
             </View>
           </View>
-        </View>
+        </LinearGradient>
 
         <FlatList
           ref={listRef}

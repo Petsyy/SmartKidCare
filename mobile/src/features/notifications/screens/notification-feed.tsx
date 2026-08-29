@@ -1,10 +1,24 @@
 import type { ComponentType } from "react";
-import { AlertCircle } from "lucide-react-native";
-import {ActivityIndicator,Alert,Pressable,RefreshControl,ScrollView,Text,View,
+import { AlertCircle, Archive, Bell, CheckCircle2, RotateCcw, Trash2 } from "lucide-react-native";
+import {
+  Alert,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  View,
 } from "react-native";
 import type { NotificationFilter } from "@/src/features/notifications/types";
-import { formatArchivedAt, formatDateLabel } from "@/src/features/notifications/utils";
-import { ScreenShell, ScreenHeader } from "@/src/components/ui";
+import {
+  formatArchivedAt,
+  formatDateLabel,
+} from "@/src/features/notifications/utils";
+import {
+  ScreenHeader,
+  ScreenLoadingState,
+  ScreenShell,
+} from "@/src/components/ui";
+import type { ScreenHeaderBackgroundVariant } from "@/src/components/ui";
 
 type NotificationItemBase = {
   id: string;
@@ -30,6 +44,7 @@ type CardUI = {
 
 type Props<T extends NotificationItemBase> = {
   subtitle: string;
+  headerBackgroundVariant?: ScreenHeaderBackgroundVariant;
   date: string | null;
   isLoading: boolean;
   isRefreshing: boolean;
@@ -60,6 +75,7 @@ const defaultResolveTitle = <T extends NotificationItemBase>(
 
 export function NotificationFeedScreen<T extends NotificationItemBase>({
   subtitle,
+  headerBackgroundVariant = "solid",
   date,
   isLoading,
   isRefreshing,
@@ -82,7 +98,6 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
   cardUi,
   resolveTitle = defaultResolveTitle,
 }: Props<T>) {
-
   const fallbackUi: CardUI = {
     fallbackTitle: "Notification",
     icon: AlertCircle,
@@ -91,16 +106,37 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
     accent: "#0F766E",
   };
 
+  if (isLoading) {
+    return (
+      <ScreenShell withKeyboardAvoiding={false}>
+        <ScreenHeader
+          backgroundVariant={headerBackgroundVariant}
+          title="Notifications"
+          subtitle={subtitle}
+        />
+        <ScreenLoadingState
+          title="Loading notifications"
+          message="Getting your latest alerts and reminders ready."
+        />
+      </ScreenShell>
+    );
+  }
+
   return (
     <ScreenShell>
       <ScreenHeader
+        backgroundVariant={headerBackgroundVariant}
         title="Notifications"
         subtitle={subtitle}
       />
 
       <ScrollView
-        className="flex-1 px-6"
-        contentContainerStyle={{ paddingTop: 20, paddingBottom: 24, flexGrow: 1 }}
+        className="flex-1 px-5"
+        contentContainerStyle={{
+          paddingTop: 16,
+          paddingBottom: 32,
+          flexGrow: 1,
+        }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -111,246 +147,450 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
           />
         }
       >
-        <View className="rounded-3xl border border-teal-100 bg-white p-5">
-          <View className="flex-row items-start justify-between">
-            <View className="flex-1 pr-3">
-              <Text className="text-2xl font-bold text-gray-900">
-                {date ? `Today (${formatDateLabel(date)})` : "Today"}
-              </Text>
-              <Text className="mt-1 text-sm text-gray-500">Alerts and updates for today</Text>
-            </View>
-            <View className="rounded-full bg-teal-50 px-3 py-1.5">
-              <Text className="text-xs font-semibold text-teal-700">{activeItems.length} active</Text>
-            </View>
-          </View>
-
-          <Text className="mt-2 text-xs text-gray-500">{archivedItems.length} archived</Text>
-
-          <View className="mt-4 flex-row items-center justify-between">
-            <View className="flex-row rounded-full bg-gray-100 p-1">
-              <Pressable
-                onPress={() => setActiveFilter("all")}
-                className={`mr-1 rounded-full px-3 py-2 ${activeFilter === "all" ? "bg-teal-600" : "bg-transparent"}`}
-              >
-                <Text className={`text-sm font-semibold ${activeFilter === "all" ? "text-white" : "text-gray-600"}`}>
-                  All
+        {/* ── Summary strip ──────────────────────────────────────── */}
+        <View className="rounded-2xl bg-teal-50 px-4 py-3">
+          <View className="flex-row items-center justify-between">
+            <Text className="text-base font-bold text-gray-900">
+              {date ? formatDateLabel(date) : "Today"}
+            </Text>
+            <View className="flex-row items-center gap-2">
+              <View className="rounded-full bg-teal-100 px-3 py-1">
+                <Text className="text-xs font-bold text-teal-800">
+                  {activeItems.length} active
                 </Text>
-              </Pressable>
-
-              <Pressable
-                onPress={() => setActiveFilter("unread")}
-                className={`mr-1 rounded-full px-3 py-2 ${activeFilter === "unread" ? "bg-teal-600" : "bg-transparent"}`}
-              >
-                <Text className={`text-sm font-semibold ${activeFilter === "unread" ? "text-white" : "text-gray-600"}`}>
-                  Unread {unreadCount > 0 ? `(${unreadCount})` : ""}
-                </Text>
-              </Pressable>
-
-              <Pressable
-                onPress={() => setActiveFilter("archived")}
-                className={`rounded-full px-3 py-2 ${activeFilter === "archived" ? "bg-teal-600" : "bg-transparent"}`}
-              >
-                <Text className={`text-sm font-semibold ${activeFilter === "archived" ? "text-white" : "text-gray-600"}`}>
-                  Archived {archivedItems.length > 0 ? `(${archivedItems.length})` : ""}
-                </Text>
-              </Pressable>
-            </View>
-
-            <View className="flex-row items-center gap-3">
-              {activeFilter === "archived" && archivedItems.length > 0 ? (
-                <Pressable
-                  onPress={() => {
-                    Alert.alert(
-                      "Clear All Archived",
-                      "This will permanently delete all archived notifications. This action cannot be undone.",
-                      [
-                        { text: "Cancel", onPress: () => {}, style: "cancel" },
-                        {
-                          text: "Delete",
-                          onPress: () => deleteAllArchivedNotifications(),
-                          style: "destructive",
-                        },
-                      ]
-                    );
-                  }}
-                  className="rounded-full bg-rose-50 px-3 py-1.5"
-                >
-                  <Text className="text-xs font-semibold text-rose-700">Clear all</Text>
-                </Pressable>
-              ) : null}
-              {activeFilter !== "archived" && activeItems.length > 0 ? (
-                <Pressable onPress={markAllAsRead}>
-                  <Text className="text-sm font-semibold text-teal-700">Mark all read</Text>
-                </Pressable>
+              </View>
+              {archivedItems.length > 0 ? (
+                <View className="rounded-full bg-gray-200 px-3 py-1">
+                  <Text className="text-xs font-semibold text-gray-600">
+                    {archivedItems.length} archived
+                  </Text>
+                </View>
               ) : null}
             </View>
           </View>
+        </View>
 
-          {isLoading ? (
-            <View className="mt-4 flex-row items-center">
-              <ActivityIndicator size="small" color="#0D9488" />
-              <Text className="ml-2 text-base text-gray-600">Loading notifications...</Text>
-            </View>
-          ) : null}
-
-          {!isLoading && error ? (
-            <View className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3">
-              <Text className="text-sm font-semibold text-rose-700">ERROR</Text>
-              <Text className="mt-1 text-base text-rose-800">{error}</Text>
-            </View>
-          ) : null}
-
-          {showEmptyState ? (
-            <View className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-3">
-              <Text className="text-base text-gray-600">
-                {activeFilter === "unread"
-                  ? "No unread notifications."
-                  : activeFilter === "archived"
-                    ? "No archived notifications yet."
-                    : "No notifications for today."}
-              </Text>
-            </View>
-          ) : null}
-
-          {!isLoading && !error && activeFilter !== "archived" && visibleActiveItems.length > 0 ? (
-            <View className="mt-4">
-              {visibleActiveItems.map((item, index) => {
-                const ui = cardUi[item.type] ?? fallbackUi;
-                const Icon = ui.icon;
-                const isRead = Boolean(readIds[item.id]);
-                return (
-                  <Pressable
-                    key={item.id}
-                    onPress={() => markAsRead(item.id)}
-                    className={`mb-3 rounded-2xl border p-5 ${
-                      isRead ? "border-gray-200 bg-white" : "border-teal-200 bg-white"
-                    }`}
-                    style={{
-                      borderLeftWidth: 5,
-                      borderLeftColor: ui.accent,
+        {/* ── Filter bar ─────────────────────────────────────────── */}
+        <View className="mt-4">
+          <View className="flex-row rounded-2xl bg-gray-100 p-1">
+            <Pressable
+              onPress={() => setActiveFilter("all")}
+              className={`flex-1 items-center rounded-xl py-2.5 ${
+                activeFilter === "all" ? "bg-teal-600" : "bg-transparent"
+              }`}
+              style={
+                activeFilter === "all"
+                  ? {
                       shadowColor: "#0F766E",
-                      shadowOpacity: isRead ? 0.05 : 0.12,
-                      shadowRadius: 12,
-                      shadowOffset: { width: 0, height: 3 },
-                      elevation: isRead ? 1 : 3,
-                      opacity: isRead ? 0.82 : 1,
-                    }}
-                  >
-                    <View className="flex-row items-start">
-                      <View className="mr-4 h-14 w-14 items-center justify-center rounded-2xl flex-shrink-0" style={{ backgroundColor: ui.iconBg }}>
-                        <Icon size={24} color={ui.iconColor} strokeWidth={1.5} />
+                      shadowOpacity: 0.2,
+                      shadowRadius: 4,
+                      shadowOffset: { width: 0, height: 2 },
+                      elevation: 2,
+                    }
+                  : undefined
+              }
+            >
+              <Text
+                className={`text-sm font-bold ${
+                  activeFilter === "all" ? "text-white" : "text-gray-500"
+                }`}
+              >
+                All ({activeItems.length})
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => setActiveFilter("unread")}
+              className={`flex-1 items-center rounded-xl py-2.5 ${
+                activeFilter === "unread" ? "bg-teal-600" : "bg-transparent"
+              }`}
+              style={
+                activeFilter === "unread"
+                  ? {
+                      shadowColor: "#0F766E",
+                      shadowOpacity: 0.2,
+                      shadowRadius: 4,
+                      shadowOffset: { width: 0, height: 2 },
+                      elevation: 2,
+                    }
+                  : undefined
+              }
+            >
+              <Text
+                className={`text-sm font-bold ${
+                  activeFilter === "unread" ? "text-white" : "text-gray-500"
+                }`}
+              >
+                Unread{unreadCount > 0 ? ` (${unreadCount})` : ""}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => setActiveFilter("archived")}
+              className={`flex-1 items-center rounded-xl py-2.5 ${
+                activeFilter === "archived" ? "bg-teal-600" : "bg-transparent"
+              }`}
+              style={
+                activeFilter === "archived"
+                  ? {
+                      shadowColor: "#0F766E",
+                      shadowOpacity: 0.2,
+                      shadowRadius: 4,
+                      shadowOffset: { width: 0, height: 2 },
+                      elevation: 2,
+                    }
+                  : undefined
+              }
+            >
+              <Text
+                className={`text-sm font-bold ${
+                  activeFilter === "archived" ? "text-white" : "text-gray-500"
+                }`}
+              >
+                Archived
+                {archivedItems.length > 0
+                  ? ` (${archivedItems.length})`
+                  : ""}
+              </Text>
+            </Pressable>
+          </View>
+
+          {/* Bulk action row */}
+          <View className="mt-3 flex-row items-center justify-end">
+            {activeFilter === "archived" && archivedItems.length > 0 ? (
+              <Pressable
+                onPress={() => {
+                  Alert.alert(
+                    "Clear All Archived",
+                    "This will permanently delete all archived notifications. This action cannot be undone.",
+                    [
+                      { text: "Cancel", onPress: () => {}, style: "cancel" },
+                      {
+                        text: "Delete",
+                        onPress: () => deleteAllArchivedNotifications(),
+                        style: "destructive",
+                      },
+                    ],
+                  );
+                }}
+                className="flex-row items-center gap-1.5 rounded-full bg-rose-50 px-4 py-2"
+              >
+                <Trash2 size={14} color="#BE123C" strokeWidth={2} />
+                <Text className="text-xs font-bold text-rose-700">
+                  Clear all
+                </Text>
+              </Pressable>
+            ) : null}
+            {activeFilter !== "archived" && unreadCount > 0 ? (
+              <Pressable
+                onPress={markAllAsRead}
+                className="flex-row items-center gap-1.5 rounded-full bg-teal-50 px-4 py-2"
+              >
+                <CheckCircle2 size={14} color="#0F766E" strokeWidth={2} />
+                <Text className="text-xs font-bold text-teal-700">
+                  Mark all read
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
+        </View>
+
+        {/* ── Error state ────────────────────────────────────────── */}
+        {!isLoading && error ? (
+          <View className="mt-4 flex-row items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4">
+            <View className="mt-0.5 h-10 w-10 items-center justify-center rounded-xl bg-rose-100">
+              <AlertCircle size={20} color="#BE123C" strokeWidth={2} />
+            </View>
+            <View className="flex-1">
+              <Text className="text-sm font-bold text-rose-800">
+                Something went wrong
+              </Text>
+              <Text className="mt-1 text-sm leading-5 text-rose-700">
+                {error}
+              </Text>
+              <Pressable
+                onPress={onRefresh}
+                className="mt-3 self-start rounded-full bg-rose-600 px-4 py-2"
+              >
+                <Text className="text-xs font-bold text-white">Try again</Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : null}
+
+        {/* ── Empty state ────────────────────────────────────────── */}
+        {showEmptyState ? (
+          <View className="mt-6 items-center rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-6 py-10">
+            <View
+              className="mb-4 h-16 w-16 items-center justify-center rounded-full"
+              style={{
+                backgroundColor:
+                  activeFilter === "unread"
+                    ? "#D1FAE5"
+                    : activeFilter === "archived"
+                      ? "#F3F4F6"
+                      : "#CCFBF1",
+              }}
+            >
+              {activeFilter === "unread" ? (
+                <CheckCircle2 size={28} color="#059669" strokeWidth={1.5} />
+              ) : activeFilter === "archived" ? (
+                <Archive size={28} color="#6B7280" strokeWidth={1.5} />
+              ) : (
+                <Bell size={28} color="#0F766E" strokeWidth={1.5} />
+              )}
+            </View>
+            <Text className="text-center text-base font-bold text-gray-700">
+              {activeFilter === "unread"
+                ? "Everything's read"
+                : activeFilter === "archived"
+                  ? "No archived items"
+                  : "All caught up!"}
+            </Text>
+            <Text className="mt-1.5 text-center text-sm leading-5 text-gray-400">
+              {activeFilter === "unread"
+                ? "You've read all your notifications. Nice work!"
+                : activeFilter === "archived"
+                  ? "Notifications you archive will appear here for reference."
+                  : "No notifications for today. We'll let you know when something needs your attention."}
+            </Text>
+          </View>
+        ) : null}
+
+        {/* ── Active notification cards ──────────────────────────── */}
+        {!isLoading &&
+        !error &&
+        activeFilter !== "archived" &&
+        visibleActiveItems.length > 0 ? (
+          <View className="mt-4">
+            {visibleActiveItems.map((item) => {
+              const ui = cardUi[item.type] ?? fallbackUi;
+              const Icon = ui.icon;
+              const isRead = Boolean(readIds[item.id]);
+              return (
+                <Pressable
+                  key={item.id}
+                  onPress={() => markAsRead(item.id)}
+                  className={`mb-3 rounded-2xl border p-4 ${
+                    isRead
+                      ? "border-gray-100 bg-white"
+                      : "border-teal-200 bg-white"
+                  }`}
+                  style={{
+                    borderLeftWidth: 4,
+                    borderLeftColor: isRead ? "#D1D5DB" : ui.accent,
+                    shadowColor: "#0F766E",
+                    shadowOpacity: isRead ? 0.03 : 0.08,
+                    shadowRadius: 8,
+                    shadowOffset: { width: 0, height: 2 },
+                    elevation: isRead ? 1 : 2,
+                  }}
+                >
+                  <View className="flex-row items-start">
+                    {/* Icon */}
+                    <View
+                      className="mr-3 h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl"
+                      style={{ backgroundColor: ui.iconBg }}
+                    >
+                      <Icon
+                        size={22}
+                        color={ui.iconColor}
+                        strokeWidth={1.5}
+                      />
+                    </View>
+
+                    {/* Content */}
+                    <View className="flex-1">
+                      {/* Title row with unread dot */}
+                      <View className="flex-row items-center gap-2">
+                        {!isRead ? (
+                          <View className="h-2 w-2 rounded-full bg-teal-500" />
+                        ) : null}
+                        <Text
+                          className={`flex-1 text-base font-bold ${
+                            isRead ? "text-gray-600" : "text-gray-900"
+                          }`}
+                          numberOfLines={2}
+                        >
+                          {resolveTitle(item, ui.fallbackTitle)}
+                        </Text>
                       </View>
 
-                      <View className="flex-1">
-                        <View className="flex-row items-start justify-between gap-2">
-                          <View className="flex-1">
-                            <View className="flex-row items-center gap-2">
-                              <Text className="text-lg font-bold text-gray-900">
-                                {resolveTitle(item, ui.fallbackTitle)}
-                              </Text>
-                            </View>
-                          </View>
-                          <Text className="text-xs text-gray-400">{index + 1} of {visibleActiveItems.length}</Text>
+                      {/* Message */}
+                      <Text
+                        className={`mt-2 text-sm leading-5 ${
+                          isRead ? "text-gray-400" : "text-gray-600"
+                        }`}
+                        numberOfLines={3}
+                      >
+                        {item.message}
+                      </Text>
+
+                      {/* Footer: time + archive action */}
+                      <View className="mt-3 flex-row items-center justify-between">
+                        <View
+                          className="rounded-full px-3 py-1"
+                          style={{ backgroundColor: ui.iconBg }}
+                        >
+                          <Text
+                            className="text-xs font-semibold"
+                            style={{ color: ui.iconColor }}
+                          >
+                            {item.timeLabel}
+                          </Text>
                         </View>
 
-                        <Text className="mt-3 text-base leading-6 text-gray-700">{item.message}</Text>
+                        <Pressable
+                          onPress={() => archiveNotification(item)}
+                          className="flex-row items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-2"
+                          style={{ minHeight: 36 }}
+                        >
+                          <Archive
+                            size={14}
+                            color="#6B7280"
+                            strokeWidth={2}
+                          />
+                          <Text className="text-xs font-semibold text-gray-600">
+                            Archive
+                          </Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : null}
 
-                        <View className="mt-3 flex-row items-center justify-between">
-                          <View className="rounded-full px-3 py-1.5" style={{ backgroundColor: ui.iconBg }}>
-                            <Text className="text-xs font-semibold" style={{ color: ui.iconColor }}>
-                              {item.timeLabel}
+        {/* ── Archived notification cards ─────────────────────────── */}
+        {!isLoading &&
+        !error &&
+        activeFilter === "archived" &&
+        archivedItems.length > 0 ? (
+          <View className="mt-4">
+            {archivedItems.map((item) => {
+              const ui = cardUi[item.type] ?? fallbackUi;
+              const Icon = ui.icon;
+              return (
+                <View
+                  key={item.id}
+                  className="mb-3 rounded-2xl border border-gray-100 bg-white p-4"
+                  style={{
+                    borderLeftWidth: 4,
+                    borderLeftColor: "#D1D5DB",
+                    shadowColor: "#6B7280",
+                    shadowOpacity: 0.04,
+                    shadowRadius: 6,
+                    shadowOffset: { width: 0, height: 2 },
+                    elevation: 1,
+                  }}
+                >
+                  <View className="flex-row items-start">
+                    {/* Icon */}
+                    <View
+                      className="mr-3 h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl"
+                      style={{
+                        backgroundColor: ui.iconBg,
+                        opacity: 0.6,
+                      }}
+                    >
+                      <Icon
+                        size={22}
+                        color={ui.iconColor}
+                        strokeWidth={1.5}
+                      />
+                    </View>
+
+                    {/* Content */}
+                    <View className="flex-1">
+                      <Text
+                        className="text-base font-bold text-gray-600"
+                        numberOfLines={2}
+                      >
+                        {resolveTitle(item, ui.fallbackTitle)}
+                      </Text>
+
+                      <Text
+                        className="mt-2 text-sm leading-5 text-gray-400"
+                        numberOfLines={3}
+                      >
+                        {item.message}
+                      </Text>
+
+                      {/* Source date badge */}
+                      <View className="mt-3 flex-row items-center">
+                        <View className="rounded-full bg-gray-100 px-3 py-1">
+                          <Text className="text-xs font-semibold text-gray-500">
+                            {item.sourceDate
+                              ? formatDateLabel(item.sourceDate)
+                              : item.timeLabel}
+                          </Text>
+                        </View>
+                      </View>
+
+                      {/* Footer: archived timestamp + actions */}
+                      <View className="mt-3 flex-row items-center justify-between border-t border-gray-100 pt-3">
+                        <Text className="text-xs text-gray-400">
+                          {formatArchivedAt(item.archivedAt)}
+                        </Text>
+
+                        <View className="flex-row gap-2">
+                          <Pressable
+                            onPress={() => restoreNotification(item.id)}
+                            className="flex-row items-center gap-1.5 rounded-full border border-teal-200 bg-teal-50 px-3 py-2"
+                            style={{ minHeight: 36 }}
+                          >
+                            <RotateCcw
+                              size={13}
+                              color="#0F766E"
+                              strokeWidth={2}
+                            />
+                            <Text className="text-xs font-semibold text-teal-700">
+                              Restore
                             </Text>
-                          </View>
-
-                          <Pressable onPress={() => archiveNotification(item)} className="rounded-full border border-gray-200 px-3 py-1.5">
-                            <Text className="text-xs font-semibold text-gray-700">Archive</Text>
+                          </Pressable>
+                          <Pressable
+                            onPress={() => {
+                              Alert.alert(
+                                "Delete Notification",
+                                "Are you sure you want to permanently delete this archived notification? This action cannot be undone.",
+                                [
+                                  {
+                                    text: "Cancel",
+                                    onPress: () => {},
+                                    style: "cancel",
+                                  },
+                                  {
+                                    text: "Delete",
+                                    onPress: () =>
+                                      deleteArchivedNotification(item.id),
+                                    style: "destructive",
+                                  },
+                                ],
+                              );
+                            }}
+                            className="flex-row items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-3 py-2"
+                            style={{ minHeight: 36 }}
+                          >
+                            <Trash2
+                              size={13}
+                              color="#BE123C"
+                              strokeWidth={2}
+                            />
+                            <Text className="text-xs font-semibold text-rose-700">
+                              Delete
+                            </Text>
                           </Pressable>
                         </View>
                       </View>
                     </View>
-                  </Pressable>
-                );
-              })}
-            </View>
-          ) : null}
-
-          {!isLoading && !error && activeFilter === "archived" && archivedItems.length > 0 ? (
-            <View className="mt-4">
-              {archivedItems.map((item, index) => {
-                const ui = cardUi[item.type] ?? fallbackUi;
-                const Icon = ui.icon;
-                return (
-                  <View
-                    key={item.id}
-                    className="mb-3 rounded-2xl border border-gray-200 bg-white p-5"
-                    style={{
-                      borderLeftWidth: 5,
-                      borderLeftColor: ui.accent,
-                      shadowColor: "#0F766E",
-                      shadowOpacity: 0.05,
-                      shadowRadius: 10,
-                      shadowOffset: { width: 0, height: 3 },
-                      elevation: 1,
-                      opacity: 0.92,
-                    }}
-                  >
-                    <View className="flex-row items-start">
-                      <View className="mr-4 h-14 w-14 items-center justify-center rounded-2xl flex-shrink-0" style={{ backgroundColor: ui.iconBg }}>
-                        <Icon size={24} color={ui.iconColor} strokeWidth={1.5} />
-                      </View>
-
-                      <View className="flex-1">
-                        <View className="flex-row items-start justify-between gap-2">
-                          <Text className="flex-1 text-lg font-bold text-gray-900">
-                            {resolveTitle(item, ui.fallbackTitle)}
-                          </Text>
-                          <Text className="text-xs text-gray-400">{index + 1} of {archivedItems.length}</Text>
-                        </View>
-
-                        <Text className="mt-3 text-base leading-6 text-gray-700">{item.message}</Text>
-
-                        <View className="mt-3 flex-row items-center justify-between">
-                          <View className="rounded-full px-3 py-1.5" style={{ backgroundColor: ui.iconBg }}>
-                            <Text className="text-xs font-semibold" style={{ color: ui.iconColor }}>
-                              {item.sourceDate ? formatDateLabel(item.sourceDate) : item.timeLabel}
-                            </Text>
-                          </View>
-
-                          <View className="flex-row gap-2">
-                            <Pressable onPress={() => restoreNotification(item.id)} className="rounded-full border border-teal-200 px-3 py-1.5">
-                              <Text className="text-xs font-semibold text-teal-700">Restore</Text>
-                            </Pressable>
-                            <Pressable
-                              onPress={() => {
-                                Alert.alert(
-                                  "Delete Notification",
-                                  "Are you sure you want to permanently delete this archived notification? This action cannot be undone.",
-                                  [
-                                    { text: "Cancel", onPress: () => {}, style: "cancel" },
-                                    {
-                                      text: "Delete",
-                                      onPress: () => deleteArchivedNotification(item.id),
-                                      style: "destructive",
-                                    },
-                                  ]
-                                );
-                              }}
-                              className="rounded-full border border-rose-200 px-3 py-1.5"
-                            >
-                              <Text className="text-xs font-semibold text-rose-700">Delete</Text>
-                            </Pressable>
-                          </View>
-                        </View>
-
-                        <Text className="mt-2 text-xs text-gray-400">{formatArchivedAt(item.archivedAt)}</Text>
-                      </View>
-                    </View>
                   </View>
-                );
-              })}
-            </View>
-          ) : null}
-        </View>
+                </View>
+              );
+            })}
+          </View>
+        ) : null}
       </ScrollView>
     </ScreenShell>
   );
