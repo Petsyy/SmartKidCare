@@ -68,15 +68,12 @@ export class AdminChildRepository extends BaseRepository<any> {
     super(Child);
   }
 
-  async updateByTeacher(
-    teacherId: string,
-    data: Record<string, unknown>,
-  ): Promise<void> {
-    await this.model.updateMany({ teacher: teacherId }, { $set: data });
-  }
-
   async countByTeacher(teacherId: string): Promise<number> {
     return this.model.countDocuments({ teacher: teacherId });
+  }
+
+  async countActiveByTeacher(teacherId: string): Promise<number> {
+    return this.model.countDocuments({ teacher: teacherId, status: "Active" });
   }
 
   async countByParent(parentId: string): Promise<number> {

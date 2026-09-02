@@ -7,8 +7,13 @@ export const webQueryKeys = {
   enrollmentRequestsRoot: () => ["enrollmentRequests"] as const,
   reportAnalytics: (paramsKey: string) =>
     ["reportAnalytics", paramsKey] as const,
-  competencyAnalytics: (period: string, schoolYear: string) =>
-    ["competencyAnalytics", period, schoolYear] as const,
+  competencyAnalytics: (
+    period: string,
+    schoolYear: string,
+    centerId: string,
+  ) => ["competencyAnalytics", period, schoolYear, centerId] as const,
+  nutritionAnalytics: (schoolYear: string, centerId: string) =>
+    ["nutritionAnalytics", schoolYear, centerId] as const,
   children: () => ["children"] as const,
   adminDashboard: () => ["adminDashboard"] as const,
   feedingTracking: (paramsKey: string) => ["feedingTracking", paramsKey] as const,

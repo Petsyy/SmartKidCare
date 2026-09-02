@@ -23,6 +23,7 @@ import {
   recordServiceSupport,
 } from "../../../shared/services/record-service-support";
 import type { FeedingAuthUser, AuthUser, SubmitFeedingInput, FeedingResult, PaginatedResult, FeedingServiceDependencies } from "../types/feeding.types";
+import { assertTeacherCenter } from "../../../shared/services/child-access.service";
 
 const submitFeedingOperation = async (
   user: AuthUser,
@@ -30,6 +31,7 @@ const submitFeedingOperation = async (
   dependencies: FeedingServiceDependencies,
 ): Promise<FeedingResult> => {
   const { date, foodServed, records } = input;
+  const daycareCenterId = assertTeacherCenter(user as any);
 
   const normalizedRecords = (records as any[]).map((record: any) => ({
     ...record,
@@ -62,6 +64,7 @@ const submitFeedingOperation = async (
   const assignedIds = await dependencies.childRepository.findAssignedChildIds(
     childIds,
     user.id,
+    daycareCenterId,
   );
   const assignedChildIdSet = new Set(assignedIds);
   const hasUnauthorizedChild = childIds.some(
@@ -82,15 +85,16 @@ const submitFeedingOperation = async (
   }
 
   const feedingDate = dayRange.start;
-
   const existing = await dependencies.feedingRepository.findByTeacherAndDay(
     user.id,
     dayRange,
+    daycareCenterId,
   );
 
   if (existing) {
     existing.foodServed = String(foodServed);
     existing.records = normalizedRecords as any;
+    existing.daycareCenter = daycareCenterId as any;
     await existing.save();
 
     void dependencies
@@ -113,6 +117,7 @@ const submitFeedingOperation = async (
   const feeding = await dependencies.feedingRepository.create({
     date: feedingDate,
     teacher: user.id,
+    daycareCenter: daycareCenterId,
     foodServed: String(foodServed),
     records: normalizedRecords,
   });
@@ -140,15 +145,20 @@ const getFeedingHistoryOperation = async (
   dependencies: FeedingServiceDependencies,
 ): Promise<any[] | PaginatedResult<any>> => {
   const validUser = dependencies.support.assertAuthenticated(user);
-  const { startDate, endDate, datePreset, teacherId } = queryInput;
+  const { startDate, endDate, datePreset, teacherId, centerId } = queryInput;
   const query: Record<string, unknown> = {};
   let parentChildIds: string[] = [];
   const teacherFilter = dependencies.support.parseTeacherIdQuery(teacherId);
 
   if (validUser.role === "teacher") {
+    const daycareCenterId = assertTeacherCenter(validUser as any);
     query.teacher = validUser.id;
+    query.daycareCenter = daycareCenterId;
   } else if (validUser.role === "admin" && teacherFilter) {
     query.teacher = teacherFilter;
+    if (centerId) query.daycareCenter = String(centerId);
+  } else if (validUser.role === "admin" && centerId) {
+    query.daycareCenter = String(centerId);
   } else if (validUser.role === "parent") {
     parentChildIds = await dependencies.findChildIdsByParent(validUser.id);
     if (parentChildIds.length) {

@@ -4,6 +4,13 @@ import { CHILD_GENDERS, CHILD_PROGRAM_TYPES } from "../shared";
 
 const nonEmptyString = z.string().trim().min(1, "Field is required.");
 const emailSchema = z.string().trim().email("Invalid email address.");
+const objectIdSchema = z.string().trim().regex(/^[a-f\d]{24}$/i, "Invalid ID.");
+
+export const getChildrenQuerySchema = z.object({
+  centerId: objectIdSchema.optional(),
+  teacherId: objectIdSchema.optional(),
+  status: z.enum(["Active", "Inactive"]).optional(),
+});
 
 export const createChildSchema = z.object({
   firstName: nonEmptyString,
@@ -61,3 +68,4 @@ export const updateChildSchema = z.object({
 
 export const validateCreateChild = validate(createChildSchema);
 export const validateUpdateChild = validate(updateChildSchema);
+export const validateGetChildrenQuery = validate(getChildrenQuerySchema, "query");

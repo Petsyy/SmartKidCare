@@ -19,6 +19,12 @@ const NutritionRecordSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    daycareCenter: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ChildDevelopmentCenter",
+      default: null,
+      index: true,
+    },
     status: {
       type: String,
       enum: ["draft", "submitted"],
@@ -35,10 +41,18 @@ const NutritionRecordSchema = new mongoose.Schema(
     measurementDate: { type: Date, required: true },
     submittedAt: { type: Date, default: null },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // A child can only have one nutrition record per period per school year
-NutritionRecordSchema.index({ childId: 1, schoolYear: 1, period: 1 }, { unique: true });
+NutritionRecordSchema.index(
+  { childId: 1, schoolYear: 1, period: 1 },
+  { unique: true },
+);
+NutritionRecordSchema.index({
+  daycareCenter: 1,
+  childId: 1,
+  measurementDate: -1,
+});
 
 export default mongoose.model("NutritionRecord", NutritionRecordSchema);

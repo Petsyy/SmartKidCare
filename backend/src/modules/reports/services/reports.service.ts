@@ -5,6 +5,11 @@ import Child from "../../../models/Child";
 import { NotFoundError } from "../../../shared/errors/app-error";
 import type { ReportDateRange, AdminReportRange } from "../types/reports.types";
 import { getAdminAnalyticsReport } from "./admin/reports-admin-analytics.service";
+import type { AuthenticatedUser } from "../../../shared/types/auth.types";
+import {
+  assertCanAccessChild,
+  assertTeacherCenter,
+} from "../../../shared/services/child-access.service";
 export { buildReportDemographics, buildStudentList } from "../shared/reports-aggregation.helpers";
 
 export class ReportsService {
@@ -33,16 +38,24 @@ export class ReportsService {
     return getAdminAnalyticsReport(range);
   }
 
-  public async getChildReport(childId: string, range: ReportDateRange) {
+  public async getChildReport(
+    user: AuthenticatedUser,
+    childId: string,
+    range: ReportDateRange,
+  ) {
     const child = await Child.findById(childId).lean();
     if (!child) {
-      throw new NotFoundError("Child not found");
+      throw new NotFoundError("Child");
     }
+    assertCanAccessChild(user, child);
 
     const dateQuery = this.buildDateQuery(range);
     const baseQuery = {
       ...dateQuery,
       "records.child": childId,
+      ...(user.role === "teacher"
+        ? { teacher: user.id, daycareCenter: user.daycareCenterId }
+        : {}),
     };
 
     const [attendanceRecords, feedingRecords] = await Promise.all([
@@ -99,11 +112,16 @@ export class ReportsService {
     };
   }
 
-  public async getTeacherReport(teacherId: string, range: ReportDateRange) {
+  public async getTeacherReport(
+    user: AuthenticatedUser,
+    range: ReportDateRange,
+  ) {
+    const daycareCenterId = assertTeacherCenter(user);
     const dateQuery = this.buildDateQuery(range);
     const baseQuery = {
       ...dateQuery,
-      teacher: teacherId,
+      teacher: user.id,
+      daycareCenter: daycareCenterId,
     };
 
     const [attendanceRecords, feedingRecords] = await Promise.all([
@@ -132,7 +150,7 @@ export class ReportsService {
     });
 
     return {
-      teacherId,
+      teacherId: user.id,
       summary: {
         attendance: {
           present: presentDays,

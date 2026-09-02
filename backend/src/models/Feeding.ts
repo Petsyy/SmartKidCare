@@ -30,6 +30,12 @@ const FeedingSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    daycareCenter: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ChildDevelopmentCenter",
+      default: null,
+      index: true,
+    },
     foodServed: {
       type: String,
       required: true,
@@ -41,5 +47,6 @@ const FeedingSchema = new mongoose.Schema(
 
 // Ensure one feeding record per teacher per day
 FeedingSchema.index({ date: 1, teacher: 1 }, { unique: true });
+FeedingSchema.index({ daycareCenter: 1, date: -1, teacher: 1 });
 
 export default mongoose.model("Feeding", FeedingSchema);

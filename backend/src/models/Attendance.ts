@@ -24,11 +24,18 @@ const AttendanceSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    daycareCenter: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ChildDevelopmentCenter",
+      default: null,
+      index: true,
+    },
     records: [AttendanceRecordSchema],
   },
   { timestamps: true }
 );
 
 AttendanceSchema.index({ date: 1, teacher: 1 }, { unique: true });
+AttendanceSchema.index({ daycareCenter: 1, date: -1, teacher: 1 });
 
 export default mongoose.model("Attendance", AttendanceSchema);

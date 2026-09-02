@@ -51,6 +51,7 @@ const historyQuery = z.object({
 const analyticsQuery = z.object({
   period: z.enum(["initial", "midyear", "final"]).optional(),
   schoolYear: z.string().trim().min(1).max(20).optional(),
+  centerId: objectId.optional(),
 });
 
 export const validateEvaluation = validate(competencyEvaluationSchema);

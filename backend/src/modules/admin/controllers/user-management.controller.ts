@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { adminUserManagementService } from "../services/user-management.service";
+import { AppError } from "../../../shared/errors/app-error";
 
 export const createTeacher = async (req: Request, res: Response) => {
   try {
@@ -27,6 +28,9 @@ export const updateUserProfile = async (req: Request, res: Response) => {
     );
     res.json(user);
   } catch (error: any) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({ message: error.message });
+    }
     if (error.message === "Email already in use.") {
       return res.status(409).json({ message: error.message });
     }

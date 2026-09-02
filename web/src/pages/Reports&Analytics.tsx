@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { useReportAnalytics } from "@/features/reports/hooks/useReportAnalytics";
 import { ReportsFilters } from "@/features/reports/components/ReportsFilters";
-import { ReportsDailySummaryTable } from "@/features/reports/components/ReportsTables";
+import { ReportsOverview } from "@/features/reports/components/ReportsOverview";
 import { CompetencyAnalytics } from "@/features/reports/components/CompetencyAnalytics";
 import { NutritionAnalytics } from "@/features/reports/components/NutritionAnalytics";
 import { PrintableReportSection } from "@/features/reports/components/PrintableReportSection";
@@ -30,11 +30,19 @@ function TabLink({ to, children }: { to: string; children: React.ReactNode }) {
 export default function ReportAnalytics() {
   const navigate = useNavigate();
   const location = useLocation();
-  const isExportTab = location.pathname.includes("/export");
+  const isNutritionTab = location.pathname.includes("/nutrition");
+  const isAcademicsTab = location.pathname.includes("/academics");
+  const showDateRangeControls = !isNutritionTab && !isAcademicsTab;
+  const scopeDescription = isNutritionTab
+    ? "Nutrition progress is grouped by school year and the selected center."
+    : "Competency results are grouped by school year, period, and the selected center.";
 
   const {
     isLoading,
     error,
+    centers,
+    centerId,
+    setCenterId,
     datePreset,
     setDatePreset,
     customStartDate,
@@ -88,13 +96,17 @@ export default function ReportAnalytics() {
           onRefresh={() => void fetchReportData()}
           onExport={downloadCsv}
           onPrint={printReport}
+          centers={centers}
+          centerId={centerId}
+          setCenterId={setCenterId}
+          showDateRangeControls={showDateRangeControls}
+          scopeDescription={scopeDescription}
         />
 
         <div className="no-print flex space-x-2 border-b border-gray-200 pb-4 dark:border-slate-800 overflow-x-auto">
           <TabLink to="/reports/overview">Overview</TabLink>
           <TabLink to="/reports/nutrition">Health & Nutrition</TabLink>
           <TabLink to="/reports/academics">Academic Competency</TabLink>
-          <TabLink to="/reports/export">Export & Print</TabLink>
         </div>
 
         {error && <ErrorAlert message={error} />}
@@ -108,10 +120,29 @@ export default function ReportAnalytics() {
               <>
 
                 {isLoading ? (
-                  <Skeleton className="mt-4 h-56 w-full rounded-xl" />
+                  <div className="mt-4 space-y-4">
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                      {Array.from({ length: 6 }, (_, index) => (
+                        <Skeleton key={index} className="h-36 rounded-xl" />
+                      ))}
+                    </div>
+                    <Skeleton className="h-96 w-full rounded-xl" />
+                  </div>
                 ) : (
                   <div className="no-print mt-4">
-                    <ReportsDailySummaryTable recentDailyRows={recentDailyRows} />
+                    <ReportsOverview
+                      rangeLabel={activeRange.label}
+                      summary={summary}
+                      genderBreakdown={genderBreakdown}
+                      ageBreakdown={ageBreakdown}
+                      recentDailyRows={recentDailyRows}
+                      studentList={studentList}
+                      studentListPagination={studentListPagination}
+                      studentPage={studentPage}
+                      setStudentPage={setStudentPage}
+                      studentPageSize={studentPageSize}
+                      setStudentPageSize={setStudentPageSize}
+                    />
                   </div>
                 )}
               </>
@@ -122,7 +153,10 @@ export default function ReportAnalytics() {
             path="nutrition"
             element={
               <div className="no-print">
-                <NutritionAnalytics />
+                <NutritionAnalytics
+                  key={centerId || "all-centers"}
+                  centerId={centerId}
+                />
               </div>
             }
           />
@@ -131,15 +165,18 @@ export default function ReportAnalytics() {
             path="academics"
             element={
               <div className="no-print">
-                <CompetencyAnalytics />
+                <CompetencyAnalytics centerId={centerId} />
               </div>
             }
           />
 
-          <Route path="export" element={<div className="hidden" />} />
+          <Route
+            path="export"
+            element={<Navigate to="/reports/overview" replace />}
+          />
         </Routes>
 
-        <div className={isExportTab ? "" : "hidden print:block"}>
+        <div className="hidden print:block">
           {isLoading ? (
             <Skeleton className="h-56 w-full rounded-xl no-print" />
           ) : (

@@ -5,8 +5,7 @@ import { UnauthorizedError } from "../../../shared/errors/app-error";
 
 export const getMyClassNutrition = asyncHandler(
   async (req: Request, res: Response) => {
-    const teacherId = req.user?.id;
-    if (!teacherId) throw new UnauthorizedError();
+    if (!req.user?.id) throw new UnauthorizedError();
 
     const { schoolYear, period } = req.query as {
       schoolYear: string;
@@ -14,7 +13,7 @@ export const getMyClassNutrition = asyncHandler(
     };
 
     const data = await nutritionService.getMyClassNutrition(
-      teacherId,
+      req.user,
       schoolYear,
       period,
     );
@@ -24,20 +23,18 @@ export const getMyClassNutrition = asyncHandler(
 
 export const evaluateNutrition = asyncHandler(
   async (req: Request, res: Response) => {
-    const teacherId = req.user?.id;
-    if (!teacherId) throw new UnauthorizedError();
+    if (!req.user?.id) throw new UnauthorizedError();
 
-    const record = await nutritionService.evaluateNutrition({
-      ...req.body,
-      teacherId,
-    });
+    const record = await nutritionService.evaluateNutrition(req.user, req.body);
     res.json({ success: true, data: record });
   },
 );
 
 export const getChildNutritionHistory = asyncHandler(
   async (req: Request, res: Response) => {
+    if (!req.user?.id) throw new UnauthorizedError();
     const data = await nutritionService.getChildNutritionHistory(
+      req.user,
       req.params.id as string,
     );
     res.json({ success: true, data });
@@ -46,14 +43,12 @@ export const getChildNutritionHistory = asyncHandler(
 
 export const getNutritionAnalytics = asyncHandler(
   async (req: Request, res: Response) => {
-    const { schoolYear } = req.query as { schoolYear: string };
-    if (!schoolYear) {
-      return res
-        .status(400)
-        .json({ success: false, message: "schoolYear is required" });
-    }
+    const { schoolYear, centerId } = req.query as {
+      schoolYear?: string;
+      centerId?: string;
+    };
 
-    const data = await nutritionService.getNutritionAnalytics(schoolYear);
+    const data = await nutritionService.getNutritionAnalytics(schoolYear, centerId);
     res.json({ success: true, data });
   },
 );

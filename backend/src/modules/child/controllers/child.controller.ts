@@ -7,19 +7,18 @@ import { childRepository } from "../repositories/child.repository";
 import { childService } from "../services/child.service";
 import { childOnboardingService } from "../services/child-onboarding.service";
 import type { UploadedFiles } from "../types/child-onboarding.types";
+import { buildChildAccessFilter } from "../../../shared/services/child-access.service";
 
 export const getChildren = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user?.id) throw new UnauthorizedError();
 
-  const query: Record<string, unknown> = {};
+  const query = buildChildAccessFilter(req.user);
 
-  if (req.user.role === "teacher") {
-    query.teacher = req.user.id;
-  } else if (req.user.role === "parent") {
-    query.parent = req.user.id;
-  } else if (req.user.role !== "admin") {
-    throw new ForbiddenError();
+  if (req.user.role === "admin") {
+    if (req.query.centerId) query.daycareCenter = String(req.query.centerId);
+    if (req.query.teacherId) query.teacher = String(req.query.teacherId);
   }
+  if (req.query.status) query.status = String(req.query.status);
 
   const children = await childRepository.findChildrenWithDetails(query);
   res.json(children.map((child) => withDerivedDaycareCenter(child)));

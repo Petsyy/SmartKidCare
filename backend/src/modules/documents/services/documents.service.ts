@@ -1,7 +1,8 @@
 import mongoose from "mongoose";
 import { randomUUID } from "crypto";
 import { generateSecureUrl } from "../../../shared/utils/generate-secure-url";
-import { ensureCanAccessChild, resolveDocumentField } from "../../child/shared";
+import { resolveDocumentField } from "../../child/shared";
+import { canAccessChildIdentityDocument } from "../../../shared/services/child-access.service";
 import {
   documentsChildRepository,
   documentAccessTokenRepository,
@@ -95,9 +96,7 @@ export const createChildDocumentAccessToken = async (
     };
   }
 
-  const canAccess = ensureCanAccessChild(child, {
-    user,
-  } as any);
+  const canAccess = canAccessChildIdentityDocument(user as any, child);
 
   if (!canAccess) {
     return {

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { validate } from "../../../shared/middleware/validate.middleware";
 
 const dateKey = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must use YYYY-MM-DD.");
+const objectId = z.string().regex(/^[a-f\d]{24}$/i, "Invalid center ID.");
 
 export const reportQuerySchema = z.object({
   startDate: z.string().trim().optional(),
@@ -16,6 +17,7 @@ export const adminReportQuerySchema = z
     datePreset: z.enum(["7d", "30d", "90d", "all"]).default("30d"),
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).max(100).default(10),
+    centerId: objectId.optional(),
   })
   .superRefine((value, context) => {
     const hasStart = Boolean(value.startDate);

@@ -78,6 +78,11 @@ export class AIChildRepository extends BaseRepository<any> {
       .findById(childId, { firstName: 1, lastName: 1 })
       .lean<{ firstName?: string; lastName?: string } | null>();
   }
+
+  async belongsToParent(childId: string, parentId: string): Promise<boolean> {
+    if (!Types.ObjectId.isValid(childId) || !Types.ObjectId.isValid(parentId)) return false;
+    return Boolean(await this.model.exists({ _id: childId, parent: parentId }));
+  }
 }
 
 // ─── Singletons ───────────────────────────────────────────────────────────────

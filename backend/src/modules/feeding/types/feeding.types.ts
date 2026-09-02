@@ -1,7 +1,11 @@
 import type { RecordServiceSupport } from "../../../shared/services/record-service-support";
 import type { notifyFeedingSubmitted } from "../../notifications/services/record-event-notification.service";
 import type { childRepository, feedingRepository, findChildIdsByParent, findFeedingById, findFeedingHistory } from "../repositories/feeding.repository";
-export type FeedingAuthUser = { id: string; role: string };
+export type FeedingAuthUser = {
+  id: string;
+  role: string;
+  daycareCenterId?: string | null;
+};
 
 export type AuthUser = FeedingAuthUser;
 

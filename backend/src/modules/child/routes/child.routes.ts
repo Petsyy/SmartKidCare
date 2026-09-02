@@ -2,7 +2,7 @@ import express from "express";
 import {getChildren,getMyChildren,getChildById,createChild,deleteChild,
   updateChild,
 } from "../controllers";
-import {validateCreateChild,validateUpdateChild,} from "../validators/child.validator";
+import {validateCreateChild,validateUpdateChild,validateGetChildrenQuery,} from "../validators/child.validator";
 
 import { authenticateToken } from "../../../shared/middleware/auth.middleware";
 import upload from "../../../shared/middleware/upload.middleware";
@@ -11,7 +11,7 @@ const router = express.Router();
 
 router.use(authenticateToken);
 
-router.get("/", getChildren);
+router.get("/", validateGetChildrenQuery, getChildren);
 router.get("/my-children", getMyChildren);
 
 router.get("/:id", getChildById);

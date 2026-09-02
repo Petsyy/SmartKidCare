@@ -1,4 +1,4 @@
-import type { Model } from "mongoose";
+import { Types, type Model } from "mongoose";
 import CompetencyDefinition from "../../../models/CompetencyDefinition";
 import CompetencyEvaluation from "../../../models/CompetencyEvaluation";
 import { BaseRepository } from "../../../shared/repositories/base.repository";
@@ -122,10 +122,14 @@ export class CompetencyEvaluationRepository extends BaseRepository<any> {
   async aggregateLatestSubmitted(filters: {
     period?: string;
     schoolYear?: string;
+    centerId?: string;
   }): Promise<any[]> {
     const match: Record<string, unknown> = { status: "submitted" };
     if (filters.period) match.period = filters.period;
     if (filters.schoolYear) match.schoolYear = filters.schoolYear;
+    if (filters.centerId) {
+      match.daycareCenter = new Types.ObjectId(filters.centerId);
+    }
 
     return this.model.aggregate([
       { $match: match },
@@ -136,9 +140,10 @@ export class CompetencyEvaluationRepository extends BaseRepository<any> {
     ]);
   }
 
-  async findSubmittedSchoolYears(): Promise<string[]> {
+  async findSubmittedSchoolYears(centerId?: string): Promise<string[]> {
     const values = await this.model.distinct("schoolYear", {
       status: "submitted",
+      ...(centerId ? { daycareCenter: centerId } : {}),
     });
     return values
       .map((value: unknown) => String(value || "").trim())

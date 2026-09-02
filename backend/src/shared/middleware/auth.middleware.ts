@@ -64,15 +64,24 @@ export const authenticateToken = async (
       }
     }
 
+    const authenticatedUser = await User.findById(decoded.id)
+      .select("role daycareCenter isActive mustChangePassword")
+      .lean();
+
+    if (!authenticatedUser || authenticatedUser.isActive === false) {
+      res.status(401).json({ message: "Account is inactive or no longer exists." });
+      return;
+    }
+
     req.user = {
-      id: decoded.id,
-      role: decoded.role,
+      id: String(authenticatedUser._id),
+      role: authenticatedUser.role,
+      daycareCenterId: authenticatedUser.daycareCenter
+        ? String(authenticatedUser.daycareCenter)
+        : null,
     };
 
-    if (decoded.role === "parent") {
-      const parent = await User.findById(decoded.id)
-        .select("mustChangePassword")
-        .lean();
+    if (authenticatedUser.role === "parent") {
 
       const path = String(req.path || "");
       const isAllowedDuringForcedChange =
@@ -81,7 +90,7 @@ export const authenticateToken = async (
         path === "/me" ||
         path === "/csrf";
 
-      if (parent?.mustChangePassword && !isAllowedDuringForcedChange) {
+      if (authenticatedUser.mustChangePassword && !isAllowedDuringForcedChange) {
         res.status(403).json({
           requiresPasswordChange: true,
           message: "Password change required before accessing this resource.",

@@ -28,6 +28,9 @@ const CHILD_SELECT =
 export async function getAdminAnalyticsReport(range: AdminReportRange) {
   const dateMatch = getAdminDateMatch(range);
   const childEnrollmentMatch = getChildEnrollmentDateMatch(range);
+  const centerMatch = range.centerId ? { daycareCenter: range.centerId } : {};
+  const scopedChildMatch = { ...childEnrollmentMatch, ...centerMatch };
+  const scopedRecordMatch = { ...dateMatch, ...centerMatch };
   const { page, limit } = normalizePagination(range);
 
   const [
@@ -43,28 +46,32 @@ export async function getAdminAnalyticsReport(range: AdminReportRange) {
     attendanceDaily,
     feedingDaily,
   ] = await Promise.all([
-    ChildDevelopmentCenter.countDocuments({ isActive: { $ne: false } }),
+    ChildDevelopmentCenter.countDocuments({
+      isActive: { $ne: false },
+      ...(range.centerId ? { _id: range.centerId } : {}),
+    }),
     User.countDocuments({
       role: "teacher",
       isActive: { $ne: false },
       daycareCenter: { $ne: null },
+      ...(range.centerId ? { daycareCenter: range.centerId } : {}),
     }),
-    Child.countDocuments(childEnrollmentMatch),
-    Child.countDocuments({ ...childEnrollmentMatch, status: "Active" }),
-    Child.countDocuments({ ...childEnrollmentMatch, programType: "4Ps Beneficiary" }),
+    Child.countDocuments(scopedChildMatch),
+    Child.countDocuments({ ...scopedChildMatch, status: "Active" }),
+    Child.countDocuments({ ...scopedChildMatch, programType: "4Ps Beneficiary" }),
     Child.countDocuments({
-      ...childEnrollmentMatch,
+      ...scopedChildMatch,
       programType: "Regular Enrollee (Non-beneficiary)",
     }),
     Child.aggregate<GenderAggregateRow>([
-      { $match: childEnrollmentMatch },
+      { $match: scopedChildMatch },
       { $group: { _id: "$gender", count: { $sum: 1 } } },
     ]),
     Child.aggregate<AgeAggregateRow>([
-      { $match: childEnrollmentMatch },
+      { $match: scopedChildMatch },
       { $group: { _id: "$age", count: { $sum: 1 } } },
     ]),
-    Child.find(childEnrollmentMatch)
+    Child.find(scopedChildMatch)
       .select(CHILD_SELECT)
       .sort({ firstName: 1, lastName: 1, _id: 1 })
       .skip((page - 1) * limit)
@@ -73,7 +80,7 @@ export async function getAdminAnalyticsReport(range: AdminReportRange) {
       .populate("daycareCenter", "name")
       .lean<ChildReportRecord[]>(),
     Attendance.aggregate<AttendanceDailyAggregate>([
-      { $match: dateMatch },
+      { $match: scopedRecordMatch },
       { $unwind: "$records" },
       {
         $group: {
@@ -94,7 +101,7 @@ export async function getAdminAnalyticsReport(range: AdminReportRange) {
       },
     ]),
     Feeding.aggregate<FeedingDailyAggregate>([
-      { $match: dateMatch },
+      { $match: scopedRecordMatch },
       { $unwind: "$records" },
       {
         $group: {

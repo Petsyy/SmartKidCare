@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { Request } from "express";
 import User from "../../../models/Users";
 import { UploadResult } from "../../../shared/utils/upload-cloudinary";
+import { canAccessChild } from "../../../shared/services/child-access.service";
 
 export type ChildDocumentKey = "birthCertificate" | "parentId";
 
@@ -38,23 +39,7 @@ export const attachUploadedDocuments = (
 };
 
 export const ensureCanAccessChild = (child: any, req: Request): boolean => {
-  if (!req.user?.id) {
-    return false;
-  }
-
-  if (req.user.role === "admin") {
-    return true;
-  }
-
-  if (req.user.role === "teacher") {
-    return String(child?.teacher?._id || child?.teacher || "") === req.user.id;
-  }
-
-  if (req.user.role === "parent") {
-    return String(child?.parent?._id || child?.parent || "") === req.user.id;
-  }
-
-  return false;
+  return canAccessChild(req.user, child);
 };
 
 export const resolveDocumentField = (

@@ -1,7 +1,11 @@
 import type { RecordServiceSupport } from "../../../shared/services/record-service-support";
 import type { notifyAttendanceSubmitted } from "../../notifications/services/record-event-notification.service";
 import type { attendanceRepository, childRepository, findAttendanceHistory, findChildIdsByParent } from "../repositories/attendance.repository";
-export type AttendanceAuthUser = { id: string; role: string };
+export type AttendanceAuthUser = {
+  id: string;
+  role: string;
+  daycareCenterId?: string | null;
+};
 
 export type AuthUser = AttendanceAuthUser;
 

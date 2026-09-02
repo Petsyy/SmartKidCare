@@ -26,6 +26,7 @@ export type User = {
   firstName?: string;
   lastName?: string;
   middleName?: string;
+  daycareCenterId?: string | null;
 };
 
 type AuthContextType = {

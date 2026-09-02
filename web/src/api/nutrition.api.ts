@@ -17,6 +17,24 @@ export interface NutritionRecord {
   updatedAt: string;
 }
 
+export type NutritionAnalyticsData = {
+  filters: {
+    schoolYear: string;
+    centerId: string | null;
+  };
+  schoolYears: string[];
+  totalEvaluated: number;
+  initiallyMalnourished: number;
+  improvedToNormal: number;
+  remainedMalnourished: number;
+  improvementRate: number;
+};
+
+export type NutritionAnalyticsFilters = {
+  schoolYear?: string;
+  centerId?: string;
+};
+
 export const getChildNutritionHistory = async (
   childId: string,
 ): Promise<NutritionRecord[]> => {
@@ -27,10 +45,16 @@ export const getChildNutritionHistory = async (
   return response.data;
 };
 
-export const getNutritionAnalytics = async (schoolYear: string) => {
-  const params = new URLSearchParams({ schoolYear }).toString();
-  const response = await apiRequestOrThrow<{ data: any }>(
-    `/nutrition/analytics?${params}`,
+export const getNutritionAnalytics = async ({
+  schoolYear,
+  centerId,
+}: NutritionAnalyticsFilters): Promise<NutritionAnalyticsData> => {
+  const params = new URLSearchParams();
+  if (schoolYear) params.set("schoolYear", schoolYear);
+  if (centerId) params.set("centerId", centerId);
+  const suffix = params.size > 0 ? `?${params.toString()}` : "";
+  const response = await apiRequestOrThrow<{ data: NutritionAnalyticsData }>(
+    `/nutrition/analytics${suffix}`,
     "Failed to fetch analytics",
   );
   return response.data;

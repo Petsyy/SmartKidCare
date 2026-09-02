@@ -20,6 +20,7 @@ import {
   clearPendingFollowUp,
 } from "../../repositories/ai-state.repository";
 import type { AIResponseLanguage, AuthContext, AiChatRequestContext, AiChatResult, FollowUpChoice, PendingTimeframe, PendingFollowUpState } from "../../types/core-ai-chat.types";
+import { aiChildRepository } from "../../repositories/ai.repository";
 
 const FOLLOW_UP_STATE_TTL_MS = 10 * 60 * 1000;
 const TRAILING_PUNCTUATION_PATTERN = /[.!?]+$/g;
@@ -106,6 +107,9 @@ export const handleAiChatRequest = async (params: AiChatRequestContext): Promise
     if (!parsed.ok) return { status: parsed.status!, body: { message: parsed.message! } };
 
     const { role, requesterId, message: trimmedMessage, childId } = parsed.data!;
+    if (childId && !(await aiChildRepository.belongsToParent(childId, requesterId))) {
+      return { status: 404, body: { message: "Child not found." } };
+    }
     const language: AIResponseLanguage = "en";
     const conversationId = buildConversationId({ requesterId, role, childId, language });
     

@@ -6,9 +6,11 @@ import {parsePositiveInt,shouldPaginate,formatChildName,getDateRangeFromPreset,
 } from "../../../shared/utils/records.utils";
 import { RecordServiceSupport, recordServiceSupport } from "../../../shared/services/record-service-support";
 import type { AttendanceAuthUser, AuthUser, SubmitAttendanceInput, AttendanceResult, PaginatedResult, AttendanceServiceDependencies } from "../types/attendance.types";
+import { assertTeacherCenter } from "../../../shared/services/child-access.service";
 
 const submitAttendanceOperation = async (user: AuthUser, input: SubmitAttendanceInput, dependencies: AttendanceServiceDependencies): Promise<AttendanceResult> => {
   const { date, records } = input;
+  const daycareCenterId = assertTeacherCenter(user as any);
 
   const normalizedRecords = (records as any[]).map((record: any) => ({
     ...record,
@@ -25,7 +27,11 @@ const submitAttendanceOperation = async (user: AuthUser, input: SubmitAttendance
     throw new ForbiddenError("One or more children are not assigned to this teacher. Submission rejected.");
   }
 
-  const assignedIds = await dependencies.childRepository.findAssignedChildIds(childIds, user.id);
+  const assignedIds = await dependencies.childRepository.findAssignedChildIds(
+    childIds,
+    user.id,
+    daycareCenterId,
+  );
   const assignedChildIdSet = new Set(assignedIds);
   const hasUnauthorizedChild = childIds.some((childId) => !assignedChildIdSet.has(childId));
 
@@ -40,10 +46,15 @@ const submitAttendanceOperation = async (user: AuthUser, input: SubmitAttendance
 
   const attendanceDate = dayRange.start;
 
-  const existing = await dependencies.attendanceRepository.findByTeacherAndDay(user.id, dayRange);
+  const existing = await dependencies.attendanceRepository.findByTeacherAndDay(
+    user.id,
+    dayRange,
+    daycareCenterId,
+  );
 
   if (existing) {
     existing.records = normalizedRecords as any;
+    existing.daycareCenter = daycareCenterId as any;
     await existing.save();
 
     void dependencies.notifySubmitted({
@@ -57,6 +68,7 @@ const submitAttendanceOperation = async (user: AuthUser, input: SubmitAttendance
   const attendance = await dependencies.attendanceRepository.create({
     date: attendanceDate,
     teacher: user.id,
+    daycareCenter: daycareCenterId,
     records: normalizedRecords,
   });
 
@@ -74,15 +86,20 @@ const getAttendanceHistoryOperation = async (
   dependencies: AttendanceServiceDependencies,
 ): Promise<any[] | PaginatedResult<any>> => {
   const validUser = dependencies.support.assertAuthenticated(user);
-  const { startDate, endDate, datePreset, teacherId } = queryInput;
+  const { startDate, endDate, datePreset, teacherId, centerId } = queryInput;
   const query: Record<string, unknown> = {};
   let parentChildIds: string[] = [];
   const teacherFilter = dependencies.support.parseTeacherIdQuery(teacherId);
 
   if (validUser.role === "teacher") {
+    const daycareCenterId = assertTeacherCenter(validUser as any);
     query.teacher = validUser.id;
+    query.daycareCenter = daycareCenterId;
   } else if (validUser.role === "admin" && teacherFilter) {
     query.teacher = teacherFilter;
+    if (centerId) query.daycareCenter = String(centerId);
+  } else if (validUser.role === "admin" && centerId) {
+    query.daycareCenter = String(centerId);
   } else if (validUser.role === "parent") {
     parentChildIds = await dependencies.findChildIdsByParent(validUser.id);
     if (parentChildIds.length) {

@@ -11,6 +11,8 @@ export interface LoggedInUser {
   lastName?: string;
   mustChangePassword?: boolean;
   needsToConfirmLink?: boolean;
+  daycareCenterId?: string | null;
+  daycareCenter?: { _id: string; name: string } | string | null;
 }
 
 export interface AuthenticatedLoginResponse {

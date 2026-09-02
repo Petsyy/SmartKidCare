@@ -22,7 +22,7 @@ router.get(
 // Teacher and Admin can get their aggregated class report
 router.get(
   "/teacher",
-  requireRole("teacher", "admin"),
+  requireRole("teacher"),
   validateReportQuery,
   getTeacherReport
 );

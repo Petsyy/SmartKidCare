@@ -15,7 +15,7 @@ export class DocumentsChildRepository extends BaseRepository<any> {
       .findById(childId)
       .populate("parent", "_id")
       .populate("teacher", "_id")
-      .select("documents parent teacher")
+      .select("documents parent teacher daycareCenter")
       .lean();
   }
 }

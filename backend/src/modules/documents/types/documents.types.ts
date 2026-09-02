@@ -6,6 +6,7 @@ export type ChildServiceResponse = {
 export type AuthUser = {
   id: string;
   role: string;
+  daycareCenterId?: string | null;
 };
 
 export type ResolvedDocumentAccess = {

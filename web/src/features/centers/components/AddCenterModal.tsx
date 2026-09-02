@@ -14,9 +14,7 @@ import {
 const addCenterSchema = z.object({
   name: z.string().min(1, "Center name is required"),
   barangay: z.string().min(1, "Barangay is required"),
-  code: z.string().min(1, "Center code is required"),
   address: z.string().optional(),
-  isActive: z.boolean(),
 });
 
 type AddCenterFormData = z.infer<typeof addCenterSchema>;
@@ -42,9 +40,7 @@ export function AddCenterModal({
     defaultValues: {
       name: "",
       barangay: "",
-      code: "",
       address: "",
-      isActive: true,
     },
   });
 
@@ -130,39 +126,21 @@ export function AddCenterModal({
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">
-                    Barangay
-                  </label>
-                  <input
-                    type="text"
-                    {...register("barangay")}
-                    placeholder="e.g. Bonuan Boquig"
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none transition-colors focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-500/10 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-100 dark:focus:border-teal-500"
-                  />
-                  {errors.barangay && (
-                    <p className="mt-1.5 text-xs text-rose-500">
-                      {errors.barangay.message}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">
-                    Center Code
-                  </label>
-                  <input
-                    type="text"
-                    {...register("code")}
-                    placeholder="e.g. BB-01"
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none transition-colors focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-500/10 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-100 dark:focus:border-teal-500"
-                  />
-                  {errors.code && (
-                    <p className="mt-1.5 text-xs text-rose-500">
-                      {errors.code.message}
-                    </p>
-                  )}
-                </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">
+                  Barangay
+                </label>
+                <input
+                  type="text"
+                  {...register("barangay")}
+                  placeholder="e.g. Bonuan Boquig"
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none transition-colors focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-500/10 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-100 dark:focus:border-teal-500"
+                />
+                {errors.barangay && (
+                  <p className="mt-1.5 text-xs text-rose-500">
+                    {errors.barangay.message}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -177,20 +155,7 @@ export function AddCenterModal({
                 />
               </div>
 
-              <div className="flex items-center gap-2 pt-2">
-                <input
-                  type="checkbox"
-                  id="isActive"
-                  {...register("isActive")}
-                  className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 dark:border-slate-600 dark:bg-slate-800"
-                />
-                <label
-                  htmlFor="isActive"
-                  className="text-sm font-medium text-gray-700 dark:text-slate-300"
-                >
-                  Center is Active
-                </label>
-              </div>
+
             </div>
 
             <div className="mt-8 flex items-center justify-end gap-3">

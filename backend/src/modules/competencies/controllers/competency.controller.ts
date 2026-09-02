@@ -43,7 +43,11 @@ export const competencyAnalytics = asyncHandler(
     res.json(
       await competencyService.getAnalytics(
         req.user,
-        req.query as { period?: string; schoolYear?: string },
+        req.query as {
+          period?: string;
+          schoolYear?: string;
+          centerId?: string;
+        },
       ),
     );
   },

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { validate } from "../../../shared/middleware/validate.middleware";
 
 const nonEmptyString = z.string().trim().min(1, "Field is required.");
+const objectId = z.string().trim().regex(/^[a-f\d]{24}$/i, "Invalid ID.");
 
 const attendanceRecordItemSchema = z.object({
   child: nonEmptyString,
@@ -23,7 +24,10 @@ const attendanceHistoryQuerySchema = z.object({
   date: z.string().trim().optional(),
   startDate: z.string().trim().optional(),
   endDate: z.string().trim().optional(),
-  teacherId: z.string().trim().optional(),
+  teacherId: objectId.optional(),
+  centerId: objectId.optional(),
+  search: z.string().trim().max(100).optional(),
+  status: z.enum(["present", "absent"]).optional(),
   limit: z.coerce.number().optional(),
   page: z.coerce.number().optional(),
 });

@@ -19,6 +19,7 @@ import type {
   CompetencyDefinitionRepositoryContract,
   CompetencyEvaluationRepositoryContract,
 } from "../types/competency.types";
+import { canAccessChild } from "../../../shared/services/child-access.service";
 
 export class CompetencyService {
   constructor(
@@ -169,7 +170,7 @@ export class CompetencyService {
 
   async getAnalytics(
     user: CompetencyAuthUser | undefined,
-    filters: { period?: string; schoolYear?: string },
+    filters: { period?: string; schoolYear?: string; centerId?: string },
   ) {
     const validUser = this.assertReader(user);
     if (validUser.role !== "admin")
@@ -178,7 +179,7 @@ export class CompetencyService {
     const [definitions, evaluations, schoolYears] = await Promise.all([
       this.definitionRepository.findActive(),
       this.evaluationRepository.aggregateLatestSubmitted(filters),
-      this.evaluationRepository.findSubmittedSchoolYears(),
+      this.evaluationRepository.findSubmittedSchoolYears(filters.centerId),
     ]);
 
     const levels = [
@@ -231,6 +232,7 @@ export class CompetencyService {
       filters: {
         period: filters.period || "all",
         schoolYear: filters.schoolYear || "all",
+        centerId: filters.centerId || null,
       },
       totalStudents: evaluations.length,
       schoolYears,
@@ -253,10 +255,7 @@ export class CompetencyService {
   ): Promise<any> {
     const child = await this.childRepository.findByIdWithDetails(childId);
     if (!child) throw new NotFoundError("Child");
-    if (
-      user.role === "teacher" &&
-      String(child.teacher?._id || child.teacher || "") !== user.id
-    ) {
+    if (!canAccessChild(user as any, child)) {
       throw new ForbiddenError("This child is not assigned to you.");
     }
     return child;

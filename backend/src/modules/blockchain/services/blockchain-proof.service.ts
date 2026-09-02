@@ -5,7 +5,7 @@ import {
   buildChildIdHash,
   buildDocumentsHash,
 } from "../utils/ethers";
-import { ensureCanAccessChild } from "../../child/shared";
+import { canAccessChild } from "../../../shared/services/child-access.service";
 import { normalizeString } from "../../../shared/utils/string.utils";
 import type { ChildServiceResponse, AuthUser } from "../types/blockchain-proof.types";
 
@@ -33,7 +33,7 @@ export const getChildBlockchainProofData = async (
   const child = await Child.findById(childId)
     .populate("parent", "_id")
     .populate("teacher", "_id")
-    .select("studentId documents documentIntegrity parent teacher")
+    .select("studentId documents documentIntegrity parent teacher daycareCenter")
     .lean();
 
   if (!child) {
@@ -43,7 +43,7 @@ export const getChildBlockchainProofData = async (
     };
   }
 
-  const canAccess = ensureCanAccessChild(child, { user } as any);
+  const canAccess = canAccessChild(user as any, child);
   if (!canAccess) {
     return {
       status: 403,

@@ -21,22 +21,31 @@ export type CompetencyAnalyticsItem = {
 };
 
 export type CompetencyAnalyticsPayload = {
-  filters: { period: CompetencyPeriod; schoolYear: string };
+  filters: {
+    period: CompetencyPeriod;
+    schoolYear: string;
+    centerId: string | null;
+  };
   totalStudents: number;
   schoolYears: string[];
   competencies: CompetencyAnalyticsItem[];
 };
 
-export function useCompetencyAnalytics() {
+export function useCompetencyAnalytics(centerId = "") {
   const [period, setPeriod] = useState<CompetencyPeriod>("all");
   const [schoolYear, setSchoolYear] = useState("all");
 
   const query = useQuery({
-    queryKey: webQueryKeys.competencyAnalytics(period, schoolYear),
+    queryKey: webQueryKeys.competencyAnalytics(
+      period,
+      schoolYear,
+      centerId || "all-centers",
+    ),
     queryFn: async () => {
       const params = new URLSearchParams();
       if (period !== "all") params.set("period", period);
       if (schoolYear !== "all") params.set("schoolYear", schoolYear);
+      if (centerId) params.set("centerId", centerId);
       const suffix = params.size ? `?${params.toString()}` : "";
       const response = await fetch(
         `${API_BASE}/competencies/analytics${suffix}`,

@@ -12,6 +12,7 @@ import {
   sendTeacherCredentialsEmail,
 } from "../../notifications/services/teacher-credentials.service";
 import { generateTempPassword } from "../../../shared/utils/generate-temp-password";
+import { ConflictError } from "../../../shared/errors/app-error";
 
 export class AdminUserManagementService {
   async createTeacher(data: {
@@ -23,6 +24,7 @@ export class AdminUserManagementService {
     daycareCenterId: string;
   }) {
     const { firstName, middleName, lastName, email, phone, daycareCenterId } = data;
+
     const normalizedEmail = String(email).toLowerCase().trim();
 
     const existing = await adminUserRepository.findByEmail(normalizedEmail);
@@ -104,6 +106,14 @@ export class AdminUserManagementService {
     daycareCenterId?: string;
   }) {
     const { firstName, middleName, lastName, email, phone, daycareCenterId } = data;
+
+    const existingUser = await adminUserRepository.findByIdSelect(
+      userId,
+      "role daycareCenter",
+    );
+    if (!existingUser) {
+      throw new Error("User not found.");
+    }
     
     let normalizedEmail: string | undefined;
     if (email) {
@@ -123,6 +133,20 @@ export class AdminUserManagementService {
       nextDaycareCenterId = daycareCenter._id as mongoose.Types.ObjectId;
     }
 
+    const isTeacherCenterTransfer =
+      nextDaycareCenterId !== undefined &&
+      existingUser.role === "teacher" &&
+      String(existingUser.daycareCenter || "") !== String(nextDaycareCenterId);
+
+    if (isTeacherCenterTransfer) {
+      const activeChildren = await adminChildRepository.countActiveByTeacher(userId);
+      if (activeChildren > 0) {
+        throw new ConflictError(
+          `Reassign ${activeChildren} active child${activeChildren === 1 ? "" : "ren"} before transferring this teacher to another center.`,
+        );
+      }
+    }
+
     const user = await adminUserRepository.updateUserWithPopulate(userId, {
       firstName,
       middleName,
@@ -134,12 +158,6 @@ export class AdminUserManagementService {
 
     if (!user) {
       throw new Error("User not found.");
-    }
-
-    if (nextDaycareCenterId !== undefined && (user as any).role === "teacher") {
-      await adminChildRepository.updateByTeacher(String(user._id), {
-        daycareCenter: nextDaycareCenterId,
-      });
     }
 
     return user;

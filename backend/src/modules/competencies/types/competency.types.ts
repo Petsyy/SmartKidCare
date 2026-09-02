@@ -1,4 +1,8 @@
-export type CompetencyAuthUser = { id?: string; role?: string };
+export type CompetencyAuthUser = {
+  id?: string;
+  role?: string;
+  daycareCenterId?: string | null;
+};
 
 export type CompetencyEvaluationInput = {
   childId: string;
@@ -42,7 +46,8 @@ export interface CompetencyEvaluationRepositoryContract {
   aggregateLatestSubmitted(filters: {
     period?: string;
     schoolYear?: string;
+    centerId?: string;
   }): Promise<any[]>;
-  findSubmittedSchoolYears(): Promise<string[]>;
+  findSubmittedSchoolYears(centerId?: string): Promise<string[]>;
 }
 

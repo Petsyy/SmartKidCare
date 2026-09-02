@@ -9,9 +9,17 @@ export class ChildRepository extends BaseRepository<any> {
     super(Child);
   }
 
-  async findAssignedChildIds(childIds: string[], teacherId: string): Promise<string[]> {
+  async findAssignedChildIds(
+    childIds: string[],
+    teacherId: string,
+    daycareCenterId?: string | null,
+  ): Promise<string[]> {
     const children = await this.model
-      .find({ _id: { $in: childIds }, teacher: teacherId })
+      .find({
+        _id: { $in: childIds },
+        teacher: teacherId,
+        ...(daycareCenterId ? { daycareCenter: daycareCenterId } : {}),
+      })
       .select("_id")
       .lean();
     return children.map((c: any) => String(c._id));
@@ -31,9 +39,14 @@ export class AttendanceRepository extends BaseRepository<any> {
     super(Attendance);
   }
 
-  async findByTeacherAndDay(teacherId: string, range: DateRange) {
+  async findByTeacherAndDay(
+    teacherId: string,
+    range: DateRange,
+    daycareCenterId?: string | null,
+  ) {
     return this.model.findOne({
       teacher: teacherId,
+      ...(daycareCenterId ? { daycareCenter: daycareCenterId } : {}),
       date: { $gte: range.start, $lte: range.end },
     });
   }
@@ -53,6 +66,6 @@ export const attendanceRepository = new AttendanceRepository();
 export const findAssignedChildIds = (ids: string[], teacher: string) => childRepository.findAssignedChildIds(ids, teacher);
 export const findChildIdsByParent = (parent: string) => childRepository.findChildIdsByParent(parent);
 
-export const findAttendanceByTeacherAndDay = (teacher: string, range: DateRange) => attendanceRepository.findByTeacherAndDay(teacher, range);
+export const findAttendanceByTeacherAndDay = (teacher: string, range: DateRange, center?: string | null) => attendanceRepository.findByTeacherAndDay(teacher, range, center);
 export const createAttendance = (data: any) => attendanceRepository.create({ date: data.date, teacher: data.teacherId, records: data.records });
 export const findAttendanceHistory = (query: any) => attendanceRepository.findHistory(query);
