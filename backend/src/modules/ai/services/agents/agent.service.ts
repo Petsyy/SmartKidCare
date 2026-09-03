@@ -151,6 +151,15 @@ export async function tryHandleAgentQuery(params: {
   suppressFollowUp?: boolean;
 }): Promise<string | null> {
   const childId = String(params.childId ?? "").trim();
+  const hasAgentIntent = AgentFactory.create(params.question, {
+    childId: childId || "tmp",
+    role: params.role,
+    language: params.language || "en",
+    requesterId: params.requesterId,
+    conversationId: params.conversationId,
+    suppressFollowUp: params.suppressFollowUp,
+  });
+  if (!hasAgentIntent) return null;
   if (!childId) return "Please specify which child you want to check.";
 
   const context: AgentContext = {
@@ -163,9 +172,7 @@ export async function tryHandleAgentQuery(params: {
   };
 
   const agent = AgentFactory.create(params.question, context);
-  if (!agent) return null;
-
-  return agent.handle();
+  return agent?.handle() ?? null;
 }
 
 export type { AgentContext } from "../../types/agents-agent.types";

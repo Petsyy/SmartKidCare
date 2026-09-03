@@ -1,12 +1,12 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import { View, Text, TextInput, Pressable, FlatList, ActivityIndicator, StatusBar } from "react-native";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { View, Text, TextInput, Pressable, FlatList, ActivityIndicator, StatusBar, ScrollView } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import * as Icons from "lucide-react-native";
 import { useAuth } from "@/src/hooks/use-auth";
 import { sendAIChat } from "@/src/api/ai.api";
-import { getAttendanceHistory, getFeedingHistory } from "@/src/api/records.api";
+import { getMyChildren, type Child } from "@/src/api/parent.api";
 import { extractAIBulletText, extractAIRiskLevel, getAIRiskBadgeStyle, isAISectionLine, removeAIRiskLevelLine } from "@/src/components/ai/ai-chat";
 import { BRAND_HEADER_GRADIENT } from "@/src/components/ui";
 
@@ -23,6 +23,14 @@ type Message = {
   content: string;
 };
 
+function getChildFullName(child: Child): string {
+  return [child.firstName, child.middleName, child.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export default function ParentChatScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -31,8 +39,24 @@ export default function ParentChatScreen() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [contextLoading, setContextLoading] = useState(true);
-  const [childId, setChildId] = useState<string | null>(null);
+  const [contextError, setContextError] = useState<string | null>(null);
+  const [children, setChildren] = useState<Child[]>([]);
+  const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
   const listRef = useRef<FlatList>(null);
+
+  const selectedChild = useMemo(() => {
+    if (!children.length) return null;
+    if (!selectedChildId) return children[0];
+    return children.find((child) => child._id === selectedChildId) ?? children[0];
+  }, [children, selectedChildId]);
+
+  const selectedChildName = selectedChild ? getChildFullName(selectedChild) : "";
+  const canSend =
+    Boolean(input.trim()) &&
+    Boolean(selectedChild?._id) &&
+    isAuthenticated &&
+    !loading &&
+    !contextLoading;
 
   const scrollToEnd = useCallback(() => {
     setTimeout(() => {
@@ -44,47 +68,40 @@ export default function ParentChatScreen() {
     scrollToEnd();
   }, [messages, scrollToEnd]);
 
-  useEffect(() => {
+  const loadChildren = useCallback(() => {
     let cancelled = false;
 
     const run = async () => {
       if (!isAuthenticated) {
+        setChildren([]);
+        setSelectedChildId(null);
         setContextLoading(false);
         return;
       }
       setContextLoading(true);
+      setContextError(null);
       try {
-        const [attList, feedList] = await Promise.all([
-          getAttendanceHistory(),
-          getFeedingHistory(),
-        ]);
+        const linkedChildren = await getMyChildren();
 
         if (cancelled) return;
 
-        const deriveChildId = (): string | null => {
-          const firstAttChild =
-            attList
-              .flatMap((entry: any) => entry.records ?? [])
-              .map((r: any) =>
-                typeof r.child === "object" ? r.child?._id : r.child,
-              )
-              .find(Boolean) ?? null;
-          if (firstAttChild) return String(firstAttChild);
-
-          const firstFeedChild =
-            feedList
-              .flatMap((entry: any) => entry.records ?? [])
-              .map((r: any) =>
-                typeof r.child === "object" ? r.child?._id : r.child,
-              )
-              .find(Boolean) ?? null;
-          return firstFeedChild ? String(firstFeedChild) : null;
-        };
-
-        setChildId(deriveChildId());
-      } catch {
+        setChildren(linkedChildren);
+        setSelectedChildId((currentId) => {
+          if (
+            currentId &&
+            linkedChildren.some((child) => child._id === currentId)
+          ) {
+            return currentId;
+          }
+          return linkedChildren[0]?._id ?? null;
+        });
+      } catch (error: any) {
         if (!cancelled) {
-          setChildId(null);
+          setChildren([]);
+          setSelectedChildId(null);
+          setContextError(
+            error?.message ?? "Unable to load your linked children.",
+          );
         }
       } finally {
         if (!cancelled) setContextLoading(false);
@@ -97,9 +114,14 @@ export default function ParentChatScreen() {
     };
   }, [isAuthenticated]);
 
+  useEffect(() => loadChildren(), [loadChildren]);
+
   const sendMessage = useCallback(async () => {
     const text = input.trim();
-    if (!text || !isAuthenticated || loading || !childId) return;
+    const childId = selectedChild?._id;
+    if (!text || !isAuthenticated || loading || contextLoading || !childId) {
+      return;
+    }
 
     setInput("");
     const userMsg: Message = {
@@ -141,7 +163,7 @@ export default function ParentChatScreen() {
     } finally {
       setLoading(false);
     }
-  }, [input, loading, isAuthenticated, childId]);
+  }, [input, loading, contextLoading, isAuthenticated, selectedChild?._id]);
 
   const onSuggestionPress = (text: string) => {
     setInput(text);
@@ -353,19 +375,52 @@ export default function ParentChatScreen() {
   const listEmpty = (
     <View className="flex-1 items-center px-2 pt-8">
       <View className="h-20 w-20 items-center justify-center rounded-full bg-gray-100">
-        <Icons.MessageCircle size={40} color="#9CA3AF" />
+        {contextError || (!contextLoading && !selectedChild) ? (
+          <Icons.AlertCircle size={40} color="#F97316" />
+        ) : (
+          <Icons.MessageCircle size={40} color="#9CA3AF" />
+        )}
       </View>
       <Text className="mt-5 text-center text-base font-semibold text-gray-700">
-        How can I help?
+        {contextError
+          ? "Couldn't load child context"
+          : !contextLoading && !selectedChild
+            ? "No child linked yet"
+            : "How can I help?"}
       </Text>
       <Text className="mt-2 max-w-[260px] text-center text-sm text-gray-500">
-        Ask about your child&apos;s records or tap a suggestion below.
+        {contextError
+          ? "Please try again so I can answer using the right child records."
+          : !contextLoading && !selectedChild
+            ? "Link a child to your parent account before using the AI assistant."
+            : `Ask about ${selectedChildName || "your child"}'s records or tap a suggestion below.`}
       </Text>
+      {contextError ? (
+        <Pressable
+          onPress={loadChildren}
+          disabled={contextLoading}
+          accessibilityRole="button"
+          accessibilityLabel="Try loading linked children again"
+          className="mt-5 flex-row items-center rounded-2xl bg-teal-600 px-4 py-3 active:opacity-85 disabled:opacity-50"
+        >
+          {contextLoading ? (
+            <ActivityIndicator size="small" color="white" />
+          ) : (
+            <Icons.RefreshCw size={18} color="white" />
+          )}
+          <Text className="ml-2 text-sm font-bold text-white">
+            {contextLoading ? "Loading..." : "Try Again"}
+          </Text>
+        </Pressable>
+      ) : null}
       <View className="mt-6 w-full max-w-[320px] gap-3">
         {SUGGESTIONS.map((s) => (
           <Pressable
             key={s}
             onPress={() => onSuggestionPress(s)}
+            disabled={contextLoading || !selectedChild}
+            accessibilityRole="button"
+            accessibilityLabel={`Use suggested question: ${s}`}
             className="rounded-2xl border border-gray-200 bg-white px-4 py-3.5 active:opacity-80"
             style={{
               shadowColor: "#000",
@@ -421,6 +476,46 @@ export default function ParentChatScreen() {
           </View>
         </LinearGradient>
 
+        {children.length > 1 ? (
+          <View className="border-b border-gray-200 bg-white px-4 py-3">
+            <Text className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">
+              Replying about
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 10 }}
+            >
+              {children.map((child) => {
+                const isSelected = child._id === selectedChild?._id;
+                const childName = getChildFullName(child);
+
+                return (
+                  <Pressable
+                    key={child._id}
+                    onPress={() => setSelectedChildId(child._id)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Use AI chat for ${childName}`}
+                    className={`rounded-full border px-4 py-2 ${
+                      isSelected
+                        ? "border-teal-600 bg-teal-50"
+                        : "border-gray-200 bg-gray-50"
+                    }`}
+                  >
+                    <Text
+                      className={`text-sm font-semibold ${
+                        isSelected ? "text-teal-700" : "text-gray-600"
+                      }`}
+                    >
+                      {childName}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+        ) : null}
+
         <FlatList
           ref={listRef}
           data={messages}
@@ -451,17 +546,25 @@ export default function ParentChatScreen() {
           <TextInput
             value={input}
             onChangeText={setInput}
-            placeholder="Ask about your child's attendance or feeding…"
+            placeholder={
+              contextLoading
+                ? "Loading your child records..."
+                : selectedChild
+                  ? `Ask about ${selectedChild.firstName}'s attendance or feeding...`
+                  : "Link a child before chatting..."
+            }
             placeholderTextColor="#9CA3AF"
             className="flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3.5 text-[15px] text-gray-800 min-h-[48px] max-h-28"
             multiline
-            editable={!loading}
+            editable={!loading && !contextLoading && Boolean(selectedChild)}
             onSubmitEditing={sendMessage}
             returnKeyType="send"
           />
           <Pressable
             onPress={sendMessage}
-            disabled={loading || !input.trim()}
+            disabled={!canSend}
+            accessibilityRole="button"
+            accessibilityLabel="Send message to AI assistant"
             className="h-12 w-12 items-center justify-center rounded-full bg-teal-600 active:opacity-90 disabled:opacity-50"
             style={{
               shadowColor: "#0D9488",

@@ -8,13 +8,32 @@ const router = express.Router();
 
 router.use(authenticateToken);
 
+router.get(
+  "/my-class",
+  requireRole("teacher"),
+  validator.validateGetMyClass,
+  nutritionController.getMyClassNutrition,
+);
 
-router.get("/my-class", requireRole("teacher"), validator.validateGetMyClass, nutritionController.getMyClassNutrition);
+router.post(
+  "/evaluate",
+  requireRole("teacher"),
+  validator.validateEvaluateNutrition,
+  nutritionController.evaluateNutrition,
+);
 
-router.post("/evaluate", requireRole("teacher"), validator.validateEvaluateNutrition, nutritionController.evaluateNutrition);
+router.get(
+  "/child/:id",
+  requireRole("admin", "teacher", "parent"),
+  validator.validateChildNutritionParams,
+  nutritionController.getChildNutritionHistory,
+);
 
-router.get("/child/:id", requireRole("admin", "teacher", "parent"), validator.validateChildNutritionParams, nutritionController.getChildNutritionHistory);
-
-router.get("/analytics", requireRole("admin"), validator.validateNutritionAnalytics, nutritionController.getNutritionAnalytics);
+router.get(
+  "/analytics",
+  requireRole("admin"),
+  validator.validateNutritionAnalytics,
+  nutritionController.getNutritionAnalytics,
+);
 
 export default router;

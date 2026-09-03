@@ -1,13 +1,16 @@
 import { z } from "zod";
-import { 
-  AI_INPUT_LIMITS, 
-  inputIsGibberish, 
-  sanitizeAIChildId, 
-  sanitizeAIMessageInput 
+import {
+  AI_INPUT_LIMITS,
+  inputIsGibberish,
+  sanitizeAIChildId,
+  sanitizeAIMessageInput,
 } from "../../../../shared/utils/ai-input-sanitizer";
 import { AIServiceError } from "./gemini.service";
 import { shouldUseAIAgent, tryHandleAgentQuery } from "../agents/agent.service";
-import { buildConversationId, writeConversationClosure } from "../generators/ai-writer.service";
+import {
+  buildConversationId,
+  writeConversationClosure,
+} from "../generators/ai-writer.service";
 import {
   GREETING_PATTERN,
   ACKNOWLEDGEMENT_PATTERN,
@@ -19,24 +22,37 @@ import {
   getPendingFollowUp,
   clearPendingFollowUp,
 } from "../../repositories/ai-state.repository";
-import type { AIResponseLanguage, AuthContext, AiChatRequestContext, AiChatResult, FollowUpChoice, PendingTimeframe, PendingFollowUpState } from "../../types/core-ai-chat.types";
+import type {
+  AIResponseLanguage,
+  AuthContext,
+  AiChatRequestContext,
+  AiChatResult,
+  FollowUpChoice,
+  PendingTimeframe,
+  PendingFollowUpState,
+} from "../../types/core-ai-chat.types";
 import { aiChildRepository } from "../../repositories/ai.repository";
 
 const FOLLOW_UP_STATE_TTL_MS = 10 * 60 * 1000;
 const TRAILING_PUNCTUATION_PATTERN = /[.!?]+$/g;
 
-
-const normalize = (text: string) => text.trim().toLowerCase().replace(/\s+/g, " ");
+const normalize = (text: string) =>
+  text.trim().toLowerCase().replace(/\s+/g, " ");
 
 const isGreeting = (text: string) => GREETING_PATTERN.test(normalize(text));
-const isAcknowledgement = (text: string) => ACKNOWLEDGEMENT_PATTERN.test(normalize(text));
-const isConversationClosure = (text: string) => CONVERSATION_CLOSURE_PATTERN.test(normalize(text));
-const isAffirmative = (text: string) => AFFIRMATIVES.has(normalize(text).replace(TRAILING_PUNCTUATION_PATTERN, ""));
+const isAcknowledgement = (text: string) =>
+  ACKNOWLEDGEMENT_PATTERN.test(normalize(text));
+const isConversationClosure = (text: string) =>
+  CONVERSATION_CLOSURE_PATTERN.test(normalize(text));
+const isAffirmative = (text: string) =>
+  AFFIRMATIVES.has(normalize(text).replace(TRAILING_PUNCTUATION_PATTERN, ""));
 
-const inferFollowUpChoice = (message: string): FollowUpChoice | null => {
+export const inferFollowUpChoice = (message: string): FollowUpChoice | null => {
   const lower = message.toLowerCase();
   const hasAttendance = /\b(attendance|present|absent)\b/.test(lower);
-  const hasFeeding = /\b(feeding|feed|food|meal|meals|eat|ate|eaten)\b/.test(lower);
+  const hasFeeding = /\b(feeding|feed|food|meal|meals|eat|ate|eaten)\b/.test(
+    lower,
+  );
   const asksBoth = /\b(both|all)\b/.test(lower);
 
   if (asksBoth || (hasAttendance && hasFeeding)) return "both";
@@ -45,13 +61,13 @@ const inferFollowUpChoice = (message: string): FollowUpChoice | null => {
   return null;
 };
 
-const buildGreetingReply = (role: string) => 
+const buildGreetingReply = (role: string) =>
   "Hello! I can help with your child's attendance and feeding records. What would you like to know?";
 
-const buildAcknowledgementReply = () => 
+const buildAcknowledgementReply = () =>
   "You're welcome. Ask anytime about your child's attendance or feeding.";
 
-const buildQuotaFallbackReply = (retry?: number) => 
+const buildQuotaFallbackReply = (retry?: number) =>
   `AI is temporarily rate-limited.${retry ? ` Please try again in about ${retry} seconds.` : " Please try again shortly."} You can still ask about your child's attendance or feeding once the limit resets.`;
 
 const timeframeLabel = (tf: PendingTimeframe) => {
@@ -65,14 +81,26 @@ const timeframeLabel = (tf: PendingTimeframe) => {
 const buildScope = (role: string, tf: PendingTimeframe, possessive = false) => {
   const isParent = role.toLowerCase() === "parent";
   const subject = possessive ? "your child's" : "your child";
-  if (tf === "recent") return isParent ? " from your child's recent records" : " from the recent records";
-  return isParent ? ` for ${subject} ${timeframeLabel(tf)}` : ` for ${timeframeLabel(tf)}`;
+  if (tf === "recent")
+    return isParent
+      ? " from your child's recent records"
+      : " from the recent records";
+  return isParent
+    ? ` for ${subject} ${timeframeLabel(tf)}`
+    : ` for ${timeframeLabel(tf)}`;
 };
 
-const buildDomainSelectionPrompt = (role: string, tf: PendingTimeframe) => 
+export const buildDomainSelectionPrompt = (
+  role: string,
+  tf: PendingTimeframe,
+) =>
   `Sure. Do you want attendance details, feeding details, or both${buildScope(role, tf)}?`;
 
-const buildScopedFollowUpQuestion = (role: string, choice: FollowUpChoice, tf: PendingTimeframe) => {
+export const buildScopedFollowUpQuestion = (
+  role: string,
+  choice: FollowUpChoice,
+  tf: PendingTimeframe,
+) => {
   const scope = buildScope(role, tf, false);
   if (choice === "attendance") return `Show attendance details${scope}.`;
   if (choice === "feeding") return `Show feeding details${scope}.`;
@@ -85,34 +113,80 @@ const aiChatRequestSchema = z.object({
   childId: z.string().optional(),
 });
 
-const parseRequest = (body: unknown, auth: AuthContext) => {
-  const parsed = aiChatRequestSchema.safeParse(body ?? {});
-  if (!parsed.success) return { ok: false, status: 400, message: parsed.error.issues[0]?.message || "Invalid request." };
+export const buildUnsupportedParentChatReply = () =>
+  "I can help with your child's attendance and feeding records. Try asking if your child was present today, how many absences they had, or what meals were served.";
 
-  const role = String(auth.role ?? parsed.data.role ?? "").trim().toLowerCase();
+export const sanitizeAiChatFallbackMessage = (message: unknown): string =>
+  sanitizeAIMessageInput(message, AI_INPUT_LIMITS.messageMaxLength);
+
+export const parseAiChatRequest = (body: unknown, auth: AuthContext) => {
+  const parsed = aiChatRequestSchema.safeParse(body ?? {});
+  if (!parsed.success)
+    return {
+      ok: false,
+      status: 400,
+      message: parsed.error.issues[0]?.message || "Invalid request.",
+    };
+
+  const role = String(auth.role ?? parsed.data.role ?? "")
+    .trim()
+    .toLowerCase();
   const requesterId = String(auth.id ?? "");
-  const message = sanitizeAIMessageInput(parsed.data.message, AI_INPUT_LIMITS.messageMaxLength);
+  const message = sanitizeAIMessageInput(
+    parsed.data.message,
+    AI_INPUT_LIMITS.messageMaxLength,
+  );
   const childId = sanitizeAIChildId(parsed.data.childId);
+  const rawChildId =
+    typeof parsed.data.childId === "string" ? parsed.data.childId.trim() : "";
 
   if (!message) return { ok: false, status: 400, message: "Message is empty." };
-  if (inputIsGibberish(message)) return { ok: false, status: 400, message: "I couldn't understand that. Please ask about records." };
-  if (role !== "parent") return { ok: false, status: 403, message: "AI chat is for parents only." };
+  if (inputIsGibberish(message))
+    return {
+      ok: false,
+      status: 400,
+      message: "I couldn't understand that. Please ask about records.",
+    };
+  if (rawChildId && !childId)
+    return { ok: false, status: 400, message: "Invalid childId." };
+  if (role !== "parent")
+    return {
+      ok: false,
+      status: 403,
+      message: "AI chat is for parent accounts only.",
+    };
 
   return { ok: true, data: { role, requesterId, message, childId } };
 };
 
-export const handleAiChatRequest = async (params: AiChatRequestContext): Promise<AiChatResult> => {
+export const handleAiChatRequest = async (
+  params: AiChatRequestContext,
+): Promise<AiChatResult> => {
   try {
-    const parsed = parseRequest(params.body, params.user ?? {});
-    if (!parsed.ok) return { status: parsed.status!, body: { message: parsed.message! } };
+    const parsed = parseAiChatRequest(params.body, params.user ?? {});
+    if (!parsed.ok)
+      return { status: parsed.status!, body: { message: parsed.message! } };
 
-    const { role, requesterId, message: trimmedMessage, childId } = parsed.data!;
-    if (childId && !(await aiChildRepository.belongsToParent(childId, requesterId))) {
+    const {
+      role,
+      requesterId,
+      message: trimmedMessage,
+      childId,
+    } = parsed.data!;
+    if (
+      childId &&
+      !(await aiChildRepository.belongsToParent(childId, requesterId))
+    ) {
       return { status: 404, body: { message: "Child not found." } };
     }
     const language: AIResponseLanguage = "en";
-    const conversationId = buildConversationId({ requesterId, role, childId, language });
-    
+    const conversationId = buildConversationId({
+      requesterId,
+      role,
+      childId,
+      language,
+    });
+
     const hasAgentIntent = shouldUseAIAgent(trimmedMessage);
     const pendingFollowUp = getPendingFollowUp(conversationId);
 
@@ -129,42 +203,98 @@ export const handleAiChatRequest = async (params: AiChatRequestContext): Promise
 
     if (!hasAgentIntent && isConversationClosure(trimmedMessage)) {
       clearPendingFollowUp(conversationId);
-      const reply = await writeConversationClosure({ role, language, message: trimmedMessage, conversationId });
+      const reply = await writeConversationClosure({
+        role,
+        language,
+        message: trimmedMessage,
+        conversationId,
+      });
       return { status: 200, body: { reply } };
     }
 
     // 2. Follow-up Logic
     if (pendingFollowUp && !hasAgentIntent) {
-      const selectedChoice = isAffirmative(trimmedMessage) ? pendingFollowUp.domain : inferFollowUpChoice(trimmedMessage);
+      const selectedChoice = isAffirmative(trimmedMessage)
+        ? pendingFollowUp.domain
+        : inferFollowUpChoice(trimmedMessage);
       if (selectedChoice) {
         clearPendingFollowUp(conversationId);
-        const followUpQuestion = buildScopedFollowUpQuestion(role, selectedChoice, pendingFollowUp.timeframe);
-        const reply = await tryHandleAgentQuery({ role, question: followUpQuestion, childId, requesterId, language, conversationId, suppressFollowUp: true });
+        const followUpQuestion = buildScopedFollowUpQuestion(
+          role,
+          selectedChoice,
+          pendingFollowUp.timeframe,
+        );
+        const reply = await tryHandleAgentQuery({
+          role,
+          question: followUpQuestion,
+          childId,
+          requesterId,
+          language,
+          conversationId,
+          suppressFollowUp: true,
+        });
         if (reply) return { status: 200, body: { reply } };
       }
       if (trimmedMessage.length <= 30) {
-        return { status: 200, body: { reply: buildDomainSelectionPrompt(role, pendingFollowUp.timeframe) } };
+        return {
+          status: 200,
+          body: {
+            reply: buildDomainSelectionPrompt(role, pendingFollowUp.timeframe),
+          },
+        };
       }
     }
 
     if (isAffirmative(trimmedMessage)) {
-      setPendingFollowUp(conversationId, { kind: "domain_selection", timeframe: "recent", domain: "both" });
-      return { status: 200, body: { reply: "Sure. Do you want attendance details, feeding details, or both for your child?" } };
+      setPendingFollowUp(conversationId, {
+        kind: "domain_selection",
+        timeframe: "recent",
+        domain: "both",
+      });
+      return {
+        status: 200,
+        body: {
+          reply:
+            "Sure. Do you want attendance details, feeding details, or both for your child?",
+        },
+      };
     }
 
     // 3. Agent Delegation
-    const agentReply = await tryHandleAgentQuery({ role, question: trimmedMessage, childId, requesterId, language, conversationId });
+    const agentReply = await tryHandleAgentQuery({
+      role,
+      question: trimmedMessage,
+      childId,
+      requesterId,
+      language,
+      conversationId,
+    });
     if (agentReply) return { status: 200, body: { reply: agentReply } };
 
-    return { status: 200, body: { reply: "I couldn't process that. Please ask about attendance or feeding." } };
-
+    return { status: 200, body: { reply: buildUnsupportedParentChatReply() } };
   } catch (error) {
     if (error instanceof AIServiceError && error.code === "quota_exceeded") {
-      return { status: 200, body: { reply: buildQuotaFallbackReply(error.retryAfterSeconds) } };
+      return {
+        status: 200,
+        body: { reply: buildQuotaFallbackReply(error.retryAfterSeconds) },
+      };
     }
     console.error("AI chat error:", error);
-    return { status: error instanceof AIServiceError ? error.status : 500, body: { message: error instanceof Error ? (error as Error).message : "AI chat failed" } };
+    return {
+      status: error instanceof AIServiceError ? error.status : 500,
+      body: {
+        message:
+          error instanceof Error ? (error as Error).message : "AI chat failed",
+      },
+    };
   }
 };
 
-export type { AIResponseLanguage, AiChatRequestContext, AiChatResult, FollowUpChoice, PendingTimeframe, PendingFollowUpState } from "../../types/core-ai-chat.types";
+export type {
+  AIResponseLanguage,
+  AiChatRequestContext,
+  AiChatResult,
+  FollowUpChoice,
+  PendingTimeframe,
+  PendingFollowUpState,
+} from "../../types/core-ai-chat.types";
