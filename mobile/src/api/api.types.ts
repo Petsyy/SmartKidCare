@@ -42,6 +42,18 @@ export interface ChildDocumentIntegrity {
   anchoredAt?: string | null;
 }
 
+export interface Guardian {
+  _id?: string;
+  firstName: string;
+  lastName: string;
+  relationship: "Mother" | "Father" | "Guardian" | "Grandparent" | "Other";
+  customRelationship?: string | null;
+  phone: string;
+  photoUrl?: string | null;
+  photoPublicId?: string | null;
+  isActive?: boolean;
+}
+
 export interface Child {
   programType: string;
   _id: string;
@@ -80,6 +92,8 @@ export interface Child {
     email: string;
     phone?: string;
   };
+  
+  authorizedPickupPersons?: Guardian[];
 }
 
 export interface ChildEnrollmentRequestPayload {
@@ -307,11 +321,69 @@ export interface ParentNotificationFeedItem {
     | "attendance_submitted"
     | "absence_alert"
     | "feeding_submitted"
-    | "missed_meal_alert";
+    | "missed_meal_alert"
+    | "pickup_code_generated"
+    | "child_released";
   title: string;
   message: string;
   timeLabel: string;
   actionLabel: string;
+}
+
+export interface PickupEligibleChild {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  studentId: string;
+  parent?: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    email: string;
+  };
+  authorizedPickupPersons?: Guardian[];
+}
+
+export interface RequestPickupCodeResponse {
+  expiresAt: string;
+  childId: string;
+  code: string;
+}
+
+export interface PickupRecordResponse {
+  _id: string;
+  child: string | Partial<Child>;
+  daycareCenter: string;
+  pickedUpBy: {
+    type: "parent" | "guardian";
+    userId?: string;
+    guardianIndex?: number;
+    name: string;
+    phone: string;
+    relationship: string;
+  };
+  verificationMethod: "pickup_code" | "manual_override";
+  verifiedByTeacher: string | { _id: string; firstName: string; lastName: string };
+  pickedUpAt: string;
+  notes?: string;
+}
+
+export interface PickupStatusResponse {
+  status: "pending" | "released";
+  pickup?: PickupRecordResponse;
+}
+
+export interface PaginatedPickupHistory {
+  data: PickupRecordResponse[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
 }
 
 export interface ParentNotificationFeedResponse {

@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StyleSheet, View } from "react-native";
 import ParentGate from "@/src/components/ui/parent-gate";
 import { ParentLoadingState } from "@/src/components/ui";
-import { Bell, House, UserRound, Users } from "lucide-react-native";
+import { Bell, House, UserRound, Users, ShieldCheck } from "lucide-react-native";
 import { getTabBarScreenOptions } from "@/src/config/tab-bar";
 
 export default function ParentLayout() {
@@ -23,8 +23,7 @@ export default function ParentLayout() {
 
   return (
     <>
-      <ParentGate>
-        <Tabs screenOptions={getTabBarScreenOptions(bottomInset)}>
+      <Tabs screenOptions={getTabBarScreenOptions(bottomInset)}>
           <Tabs.Screen
             name="index"
             options={{
@@ -65,6 +64,19 @@ export default function ParentLayout() {
             }}
           />
           <Tabs.Screen
+            name="pickup"
+            options={{
+              title: "Pickup",
+              tabBarIcon: ({ color, focused }) => (
+                <ShieldCheck
+                  color={color}
+                  size={focused ? 22 : 20}
+                  strokeWidth={focused ? 2.4 : 2}
+                />
+              ),
+            }}
+          />
+          <Tabs.Screen
             name="profile"
             options={{
               title: "Profile",
@@ -90,7 +102,6 @@ export default function ParentLayout() {
             options={{ href: null, tabBarStyle: { display: "none" } }}
           />
         </Tabs>
-      </ParentGate>
       {loading ? (
         <View
           pointerEvents="auto"

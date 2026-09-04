@@ -2,7 +2,9 @@ export type ParentNotificationType =
   | "attendance_submitted"
   | "absence_alert"
   | "feeding_submitted"
-  | "missed_meal_alert";
+  | "missed_meal_alert"
+  | "pickup_code_generated"
+  | "child_released";
 
 export interface ParentFeedItem {
   id: string;

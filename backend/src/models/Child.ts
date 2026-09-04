@@ -56,6 +56,23 @@ const ChildSchema = new mongoose.Schema(
       default: null,
     },
 
+    authorizedPickupPersons: [
+      {
+        firstName: { type: String, required: true, trim: true },
+        lastName: { type: String, required: true, trim: true },
+        relationship: {
+          type: String,
+          enum: ["Mother", "Father", "Guardian", "Grandparent", "Other"],
+          required: true,
+        },
+        customRelationship: { type: String, trim: true, default: null },
+        phone: { type: String, required: true, trim: true },
+        photoUrl: { type: String, default: null },
+        photoPublicId: { type: String, default: null },
+        isActive: { type: Boolean, default: true },
+      },
+    ],
+
     documents: {
       birthCertificate: {
         publicId: String,

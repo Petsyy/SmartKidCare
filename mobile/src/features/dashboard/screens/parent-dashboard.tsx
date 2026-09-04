@@ -43,6 +43,8 @@ const PARENT_NOTICE_TONE: Record<
   absence_alert: "orange",
   feeding_submitted: "blue",
   missed_meal_alert: "orange",
+  pickup_code_generated: "blue",
+  child_released: "emerald",
 };
 
 function getChildRecordStatus(record: any, childId?: string): string | null {

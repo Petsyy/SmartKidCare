@@ -17,6 +17,7 @@ import { getTodayAttendance, getTodayFeeding } from "@/src/api/records.api";
 import { useAuth } from "@/src/hooks/use-auth";
 import {
   ChevronLeft,
+  ChevronRight,
   User,
   Mail,
   Phone,
@@ -29,12 +30,6 @@ import {
   Ruler,
   Award,
 } from "lucide-react-native";
-import {
-  buildBlockchainTransactionUrl,
-  getBlockchainStatusInfo,
-  getBlockchainStatusPalette,
-  shortenHash,
-} from "@/src/utils/blockchain-status";
 import { useQuery } from "@tanstack/react-query";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { LinearGradient } from "expo-linear-gradient";
@@ -42,6 +37,7 @@ import {
   ScreenLoadingState,
   TEACHER_HEADER_GRADIENT,
 } from "@/src/components/ui";
+import { GuardianList } from "../components/GuardianList";
 
 export default function TeacherChildDetailsScreen() {
   const insets = useSafeAreaInsets();
@@ -190,18 +186,6 @@ export default function TeacherChildDetailsScreen() {
   }
 
   const fullName = `${child.firstName} ${child.middleName ? child.middleName + " " : ""}${child.lastName}`;
-  const blockchainStatus = getBlockchainStatusInfo(child.documentIntegrity);
-  const blockchainPalette = getBlockchainStatusPalette(blockchainStatus.key);
-  const transactionUrl = buildBlockchainTransactionUrl(blockchainStatus.txHash);
-
-  const openTransaction = async () => {
-    if (!transactionUrl) return;
-    try {
-      await Linking.openURL(transactionUrl);
-    } catch (error) {
-      console.warn("Failed to open transaction URL:", error);
-    }
-  };
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
@@ -463,9 +447,13 @@ export default function TeacherChildDetailsScreen() {
           </View>
         </View>
 
-        {/* Blockchain Card */}
-        <View
-          className="rounded-3xl bg-white p-5 mb-4"
+        {/* Authorized Guardians Button */}
+        <Pressable
+          onPress={() => router.push({
+            pathname: "/(teacher)/child-details/guardians/[childId]",
+            params: { childId: child._id },
+          })}
+          className="rounded-3xl bg-white p-5 mb-4 flex-row items-center active:bg-gray-50"
           style={{
             shadowColor: "#000",
             shadowOffset: { width: 0, height: 2 },
@@ -474,84 +462,19 @@ export default function TeacherChildDetailsScreen() {
             elevation: 3,
           }}
         >
-          <View className="flex-row items-center mb-4 gap-3">
-            <View className="h-10 w-10 items-center justify-center rounded-2xl bg-teal-50">
-              <ShieldCheck size={20} color="#0D9488" />
-            </View>
-            <Text className="text-xl font-bold text-gray-900">
-              Blockchain Integrity
+          <View className="h-12 w-12 items-center justify-center rounded-2xl bg-teal-50 border border-teal-100">
+            <ShieldCheck size={24} color="#0D9488" />
+          </View>
+          <View className="ml-4 flex-1">
+            <Text className="text-lg font-bold text-gray-900">
+              Authorized Guardians
+            </Text>
+            <Text className="text-sm text-gray-500 mt-0.5">
+              View approved pickup contacts
             </Text>
           </View>
-
-          <View
-            className="rounded-2xl border p-4"
-            style={{
-              borderColor: blockchainPalette.borderColor,
-              backgroundColor: blockchainPalette.backgroundColor,
-            }}
-          >
-            <View className="flex-row items-center">
-              <View
-                className="h-2.5 w-2.5 rounded-full"
-                style={{ backgroundColor: blockchainPalette.dotColor }}
-              />
-              <Text
-                className="ml-2 text-base font-semibold"
-                style={{ color: blockchainPalette.textColor }}
-              >
-                {blockchainStatus.label}
-              </Text>
-            </View>
-
-            <Text className="mt-2 text-sm leading-6 text-gray-700">
-              {blockchainStatus.detail}
-            </Text>
-
-            <View className="mt-4">
-              <InfoRow
-                icon={<ShieldCheck size={18} color="#0D9488" />}
-                label="Transaction Hash"
-                value={shortenHash(blockchainStatus.txHash)}
-              />
-
-              <InfoRow
-                icon={<Calendar size={18} color="#0D9488" />}
-                label="Anchored At"
-                value={
-                  blockchainStatus.anchoredAt
-                    ? new Date(blockchainStatus.anchoredAt).toLocaleDateString(
-                        "en-PH",
-                        {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                          timeZone: "Asia/Manila",
-                        },
-                      )
-                    : "Pending"
-                }
-              />
-            </View>
-
-            {transactionUrl ? (
-              <Pressable
-                onPress={openTransaction}
-                className="mt-4 rounded-xl bg-teal-600 px-4 py-3 active:scale-95"
-                style={{
-                  shadowColor: "#0D9488",
-                  shadowOffset: { width: 0, height: 3 },
-                  shadowOpacity: 0.2,
-                  shadowRadius: 6,
-                  elevation: 3,
-                }}
-              >
-                <Text className="text-center text-sm font-bold text-white">
-                  View on Sepolia
-                </Text>
-              </Pressable>
-            ) : null}
-          </View>
-        </View>
+          <ChevronRight size={24} color="#9CA3AF" />
+        </Pressable>
 
         {/* Parent Information Card */}
         {child.parent ? (
@@ -625,6 +548,7 @@ export default function TeacherChildDetailsScreen() {
             </View>
           </View>
         )}
+
       </ScrollView>
     </SafeAreaView>
   );

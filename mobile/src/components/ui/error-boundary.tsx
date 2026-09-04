@@ -8,24 +8,23 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
+  componentStack: string | null;
 }
 
 export class ErrorBoundary extends React.Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
+  state: State = { hasError: false, error: null, componentStack: null };
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Partial<State> {
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error("[ErrorBoundary]", error, info.componentStack);
+    this.setState({ componentStack: info.componentStack || null });
   }
 
   private handleReset = () => {
-    this.setState({ hasError: false, error: null });
+    this.setState({ hasError: false, error: null, componentStack: null });
   };
 
   render() {
@@ -37,6 +36,11 @@ export class ErrorBoundary extends React.Component<Props, State> {
           <Text style={styles.message}>
             {this.state.error?.message || "An unexpected error occurred."}
           </Text>
+          {this.state.componentStack ? (
+            <Text style={{ fontSize: 10, color: "#EF4444", padding: 12, maxHeight: 150, backgroundColor: "#FEE2E2", borderRadius: 8, marginVertical: 8, fontFamily: "monospace" }}>
+              {this.state.componentStack}
+            </Text>
+          ) : null}
           <TouchableOpacity
             style={styles.button}
             onPress={this.handleReset}

@@ -9,3 +9,4 @@ export * from "./mini-stat-card";
 export * from "./screen-loading-state";
 export * from "./parent-loading-state";
 export * from "./collapsible-section";
+export * from "./copyable-code";

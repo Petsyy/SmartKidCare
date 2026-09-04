@@ -2,7 +2,7 @@ import { Tabs, Redirect } from "expo-router";
 import { useAuth } from "@/src/hooks/use-auth";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StyleSheet, View } from "react-native";
-import { House, UserPlus, UserRound, Users } from "lucide-react-native";
+import { House, UserPlus, UserRound, Users, ShieldCheck } from "lucide-react-native";
 import { getTabBarScreenOptions, getTabBarStyle } from "@/src/config/tab-bar";
 import { TeacherUiProvider } from "@/src/context/teacher-ui-context";
 import { ScreenLoadingState } from "@/src/components/ui";
@@ -75,6 +75,19 @@ export default function TeacherLayout() {
               />
             ),
           })}
+        />
+        <Tabs.Screen
+          name="pickup"
+          options={{
+            title: "Pickup",
+            tabBarIcon: ({ color, focused }) => (
+              <ShieldCheck
+                color={color}
+                size={focused ? 22 : 20}
+                strokeWidth={focused ? 2.4 : 2}
+              />
+            ),
+          }}
         />
         <Tabs.Screen
           name="profile"

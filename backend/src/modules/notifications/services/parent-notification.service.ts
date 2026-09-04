@@ -4,6 +4,8 @@ import {
   notificationsAttendanceRepository,
   notificationsFeedingRepository,
 } from "../repositories/notifications.repository";
+import PickupCode from "../../../models/PickupCode";
+import PickupRecord from "../../../models/PickupRecord";
 import { extractUserPushTokens } from "./push-notification.service";
 import type { ParentNotificationType, ParentFeedItem, ParentFeedResult } from "../types/parent-notification.types";
 
@@ -125,9 +127,11 @@ export async function getParentNotificationsFeed(params: {
     };
   }
 
-  const [attendanceEntries, feedingEntries] = await Promise.all([
+  const [attendanceEntries, feedingEntries, pickupCodes, pickupRecords] = await Promise.all([
     notificationsAttendanceRepository.findByChildIdsAndDate(Array.from(childIds), targetDate),
     notificationsFeedingRepository.findByChildIdsAndDate(Array.from(childIds), targetDate),
+    PickupCode.find({ child: { $in: Array.from(childIds) }, createdAt: { $gte: targetDate } }).lean(),
+    PickupRecord.find({ child: { $in: Array.from(childIds) }, pickedUpAt: { $gte: targetDate } }).lean(),
   ]);
 
   const attendanceStatuses: Array<"present" | "absent"> = [];
@@ -282,6 +286,33 @@ export async function getParentNotificationsFeed(params: {
       });
     }
   }
+
+  // Add Pickup Codes to feed
+  pickupCodes.forEach((code: any) => {
+    const childName = childNameById.get(String(code.child)) || "Child";
+    notifications.push({
+      id: `${dateKey}-pickup-code-${code._id}`,
+      type: "pickup_code_generated",
+      title: "Pickup Code Generated",
+      message: `Pickup code generated for ${childName}.`,
+      timeLabel: formatTimeFromDate(code.createdAt),
+      actionLabel: "View",
+    });
+  });
+
+  // Add Pickup Records to feed
+  pickupRecords.forEach((record: any) => {
+    const childName = childNameById.get(String(record.child)) || "Child";
+    const pickerName = record.pickedUpBy?.name || "Guardian";
+    notifications.push({
+      id: `${dateKey}-pickup-record-${record._id}`,
+      type: "child_released",
+      title: "Child Released",
+      message: `${childName} was released to ${pickerName}.`,
+      timeLabel: formatTimeFromDate(record.pickedUpAt),
+      actionLabel: "View",
+    });
+  });
 
   return {
     date: dateKey,

@@ -196,6 +196,8 @@ export const useTeacherFeeding = () => {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["teacherFeedingSetup"] });
       void queryClient.invalidateQueries({ queryKey: ["teacherDashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["teacherChildrenOverview"] });
+      void queryClient.invalidateQueries({ queryKey: ["teacherChildDetails"] });
     },
   });
 
