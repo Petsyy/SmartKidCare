@@ -95,7 +95,7 @@ class PickupService {
 
     const code = generatePickupCode();
     const codeHash = await bcrypt.hash(code, 10);
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 60 minutes
 
     await pickupCodeRepository.invalidatePreviousCodes(child.id);
 
@@ -115,7 +115,7 @@ class PickupService {
         await sendExpoPushNotifications({
           tokens,
           title: "Pickup Code Generated",
-          body: `Your pickup code for ${child.firstName} is ${code}. Valid for 15 minutes.`,
+          body: `Your pickup code for ${child.firstName} is ${code}. Valid for 60 minutes.`,
           data: { type: "pickup_code_generated", childId: child.id },
         }).catch(console.error);
       }
@@ -125,7 +125,7 @@ class PickupService {
         await sendEmail({
           to: parentUser.email,
           subject: `Pickup Code for ${child.firstName}`,
-          text: `Your pickup code for ${child.firstName} is ${code}. It is valid for 15 minutes. Please share this code with ${intendedGuardianName}.`,
+          text: `Your pickup code for ${child.firstName} is ${code}. It is valid for 60 minutes. Please share this code with ${intendedGuardianName}.`,
         }).catch(console.error);
       }
     }

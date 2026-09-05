@@ -16,7 +16,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { getMyChildren, type Child } from "@/src/api/parent.api";
 import { usePickupParent } from "../hooks/usePickupParent";
-import { useGuardians } from "@/src/features/children/hooks/use-guardians";
+import { useGuardians } from "@/src/features/children/hooks/useGuardian";
 import { GuardianList } from "@/src/features/children/components/guardian-list";
 import {
   PickupActiveCode,
@@ -242,7 +242,7 @@ function PickupManager({ childId }: { childId: string }) {
           </View>
           <Text className="text-gray-600 text-base leading-6 mb-6 ml-2">
             Create a secure 6-digit PIN for today's pickup. The code will expire
-            in 15 minutes.
+            in 60 minutes.
           </Text>
 
           <PickupPersonSelector

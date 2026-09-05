@@ -244,7 +244,7 @@ export class CompetencyService {
     user?: CompetencyAuthUser,
   ): Required<CompetencyAuthUser> {
     if (!user?.id) throw new UnauthorizedError();
-    if (user.role !== "teacher" && user.role !== "admin")
+    if (user.role !== "teacher" && user.role !== "admin" && user.role !== "parent")
       throw new ForbiddenError();
     return user as Required<CompetencyAuthUser>;
   }

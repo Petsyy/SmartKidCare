@@ -13,7 +13,10 @@ import type { CompetencyDefinition, CompetencyLevel } from "../types";
 
 export type EvaluationPeriod = "initial" | "midyear" | "final";
 
-export function useCompetencyEvaluation(childId: string | null) {
+export function useCompetencyEvaluation(
+  childId: string | null,
+  options: { isParentView?: boolean } = {}
+) {
   const queryClient = useQueryClient();
   const [selectedPeriod, setSelectedPeriod] = useState<EvaluationPeriod>("initial");
   const [levels, setLevels] = useState<Record<string, CompetencyLevel>>({});
@@ -114,7 +117,7 @@ export function useCompetencyEvaluation(childId: string | null) {
   }, [query.data?.evaluations]);
 
   const selectedPeriodState = periodStates[selectedPeriod];
-  const isReadOnly = selectedEvaluation?.status === "submitted";
+  const isReadOnly = options.isParentView || selectedEvaluation?.status === "submitted";
   const hasUnsavedChanges = Boolean(
     query.data &&
     !isReadOnly &&

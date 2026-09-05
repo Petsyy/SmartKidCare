@@ -10,6 +10,7 @@ import {
   AlertCircle,
   CheckCircle2,
   CircleCheck,
+  ClipboardCheck,
   Clock3,
   HeartPulse,
   School,
@@ -246,9 +247,11 @@ function StatusPill({
   );
 }
 
-/* ───────────────── Main Screen ───────────────── */
+// MAIN SCREEN
+import { useRouter } from "expo-router";
 
 export default function ParentChildrenScreen() {
+  const router = useRouter();
   const {
     children,
     selectedChild,
@@ -320,7 +323,6 @@ export default function ParentChildrenScreen() {
     );
   }
 
-  /* ─── Error ─── */
   if (error) {
     return (
       <ScreenShell withKeyboardAvoiding={false}>
@@ -600,6 +602,28 @@ export default function ParentChildrenScreen() {
                 />
               </ProfileSection>
             )}
+
+            {/* ── Section 5: ECCD Assessment ── */}
+            <ProfileSection
+              icon={<ClipboardCheck size={22} color="#0284C7" />}
+              title="ECCD Assessment"
+              tone="sky"
+            >
+              <View className="pt-2 pb-1">
+                <Text className="mb-4 text-base leading-6 text-gray-600">
+                  Track your child's developmental progress across 6 domains (Gross Motor, Fine Motor, Cognitive, Language, Socio-Emotional, Self-Help).
+                </Text>
+                <Pressable
+                  onPress={() => router.push(`/(parent)/competencies/${selectedChild._id}?isParentView=true`)}
+                  className="min-h-12 flex-row items-center justify-center rounded-2xl bg-sky-600 px-4 active:bg-sky-700"
+                  accessibilityRole="button"
+                  accessibilityLabel="View competency evaluation checklist"
+                >
+                  <ClipboardCheck size={20} color="#FFFFFF" />
+                  <Text className="ml-2 text-base font-bold text-white">View Evaluation</Text>
+                </Pressable>
+              </View>
+            </ProfileSection>
           </>
         ) : null}
       </ScrollView>

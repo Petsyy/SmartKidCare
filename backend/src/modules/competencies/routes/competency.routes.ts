@@ -18,7 +18,11 @@ import {
 
 const router = express.Router();
 router.use(authenticateToken);
-router.get("/definitions", requireRole("admin", "teacher"), listDefinitions);
+router.get(
+  "/definitions",
+  requireRole("admin", "teacher", "parent"),
+  listDefinitions,
+);
 router.get(
   "/analytics",
   requireRole("admin"),
@@ -33,13 +37,13 @@ router.post(
 );
 router.get(
   "/children/:childId/evaluations/:period",
-  requireRole("admin", "teacher"),
+  requireRole("admin", "teacher", "parent"),
   validateChildAndPeriodParams,
   evaluationByPeriod,
 );
 router.get(
   "/children/:childId/evaluations",
-  requireRole("admin", "teacher"),
+  requireRole("admin", "teacher", "parent"),
   validateChildParams,
   validateHistoryQuery,
   validateAnalyticsQuery,

@@ -1,7 +1,24 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Pressable, ActivityIndicator, Alert, ScrollView } from "react-native";
-import { UserPlus, Edit2, Trash2, X, Check, ShieldCheck, Phone, UserCheck } from "lucide-react-native";
-import { useGuardians } from "../hooks/use-guardians";
+import {
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+} from "react-native";
+import {
+  UserPlus,
+  Edit2,
+  Trash2,
+  X,
+  Check,
+  ShieldCheck,
+  Phone,
+  UserCheck,
+} from "lucide-react-native";
+import { useGuardians } from "../hooks/useGuardian";
 import type { Guardian } from "@/src/api/api.types";
 
 interface GuardianListProps {
@@ -31,17 +48,30 @@ export function GuardianList({ childId, readOnly = false }: GuardianListProps) {
     phone: "",
   });
 
-  const activeGuardians = guardians.filter(g => g.isActive !== false);
+  const activeGuardians = guardians.filter((g) => g.isActive !== false);
 
   const handleSave = async () => {
     try {
-      if (!formData.firstName?.trim() || !formData.lastName?.trim() || !formData.phone?.trim()) {
-        Alert.alert("Required Fields", "Please provide a first name, last name, and contact phone number.");
+      if (
+        !formData.firstName?.trim() ||
+        !formData.lastName?.trim() ||
+        !formData.phone?.trim()
+      ) {
+        Alert.alert(
+          "Required Fields",
+          "Please provide a first name, last name, and contact phone number.",
+        );
         return;
       }
 
-      if (formData.relationship === "Other" && !formData.customRelationship?.trim()) {
-        Alert.alert("Required Field", "Please specify the relationship when selecting 'Other'.");
+      if (
+        formData.relationship === "Other" &&
+        !formData.customRelationship?.trim()
+      ) {
+        Alert.alert(
+          "Required Field",
+          "Please specify the relationship when selecting 'Other'.",
+        );
         return;
       }
 
@@ -67,14 +97,20 @@ export function GuardianList({ childId, readOnly = false }: GuardianListProps) {
           style: "destructive",
           onPress: () => removeGuardian(index),
         },
-      ]
+      ],
     );
   };
 
   const resetForm = () => {
     setIsAdding(false);
     setEditingIndex(null);
-    setFormData({ firstName: "", lastName: "", relationship: "Guardian", customRelationship: null, phone: "" });
+    setFormData({
+      firstName: "",
+      lastName: "",
+      relationship: "Guardian",
+      customRelationship: null,
+      phone: "",
+    });
   };
 
   const startEdit = (guardian: Guardian, index: number) => {
@@ -87,7 +123,9 @@ export function GuardianList({ childId, readOnly = false }: GuardianListProps) {
     return (
       <View className="py-6 items-center justify-center">
         <ActivityIndicator size="small" color="#0D9488" />
-        <Text className="text-gray-400 text-xs mt-2">Loading authorized persons...</Text>
+        <Text className="text-gray-400 text-xs mt-2">
+          Loading authorized persons...
+        </Text>
       </View>
     );
   }
@@ -112,7 +150,9 @@ export function GuardianList({ childId, readOnly = false }: GuardianListProps) {
               accessibilityLabel="Add new guardian"
             >
               <UserPlus size={18} color="#0D9488" />
-              <Text className="ml-2 text-teal-800 font-extrabold text-sm">Add Guardian</Text>
+              <Text className="ml-2 text-teal-800 font-extrabold text-sm">
+                Add Guardian
+              </Text>
             </Pressable>
           )}
         </View>
@@ -138,7 +178,9 @@ export function GuardianList({ childId, readOnly = false }: GuardianListProps) {
             </Pressable>
           </View>
 
-          <Text className="text-sm font-extrabold text-gray-700 mb-2 ml-2">First Name *</Text>
+          <Text className="text-sm font-extrabold text-gray-700 mb-2 ml-2">
+            First Name *
+          </Text>
           <TextInput
             value={formData.firstName}
             onChangeText={(t) => setFormData({ ...formData, firstName: t })}
@@ -147,7 +189,9 @@ export function GuardianList({ childId, readOnly = false }: GuardianListProps) {
             className="bg-white border border-gray-200 rounded-2xl px-5 py-4 mb-4 text-base text-gray-900 font-semibold"
           />
 
-          <Text className="text-sm font-extrabold text-gray-700 mb-2 ml-2">Last Name *</Text>
+          <Text className="text-sm font-extrabold text-gray-700 mb-2 ml-2">
+            Last Name *
+          </Text>
           <TextInput
             value={formData.lastName}
             onChangeText={(t) => setFormData({ ...formData, lastName: t })}
@@ -156,42 +200,57 @@ export function GuardianList({ childId, readOnly = false }: GuardianListProps) {
             className="bg-white border border-gray-200 rounded-2xl px-5 py-4 mb-4 text-base text-gray-900 font-semibold"
           />
 
-          <Text className="text-sm font-extrabold text-gray-700 mb-3 ml-2">Relationship to Child</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
-            {["Mother", "Father", "Guardian", "Grandparent", "Other"].map((rel) => {
-              const isSelected = formData.relationship === rel;
-              return (
-                <Pressable
-                  key={rel}
-                  onPress={() => setFormData({
-                    ...formData,
-                    relationship: rel as any,
-                    customRelationship: rel === "Other" ? formData.customRelationship : null,
-                  })}
-                  className={`mr-3 px-5 py-3 rounded-xl border active:opacity-85 ${
-                    isSelected
-                      ? "bg-teal-600 border-teal-600 shadow-sm"
-                      : "bg-white border-gray-300"
-                  }`}
-                >
-                  <Text
-                    className={`font-black text-sm ${
-                      isSelected ? "text-white" : "text-gray-800"
+          <Text className="text-sm font-extrabold text-gray-700 mb-3 ml-2">
+            Relationship to Child
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="mb-4"
+          >
+            {["Mother", "Father", "Guardian", "Grandparent", "Other"].map(
+              (rel) => {
+                const isSelected = formData.relationship === rel;
+                return (
+                  <Pressable
+                    key={rel}
+                    onPress={() =>
+                      setFormData({
+                        ...formData,
+                        relationship: rel as any,
+                        customRelationship:
+                          rel === "Other" ? formData.customRelationship : null,
+                      })
+                    }
+                    className={`mr-3 px-5 py-3 rounded-xl border active:opacity-85 ${
+                      isSelected
+                        ? "bg-teal-600 border-teal-600 shadow-sm"
+                        : "bg-white border-gray-300"
                     }`}
                   >
-                    {rel}
-                  </Text>
-                </Pressable>
-              );
-            })}
+                    <Text
+                      className={`font-black text-sm ${
+                        isSelected ? "text-white" : "text-gray-800"
+                      }`}
+                    >
+                      {rel}
+                    </Text>
+                  </Pressable>
+                );
+              },
+            )}
           </ScrollView>
 
           {formData.relationship === "Other" && (
             <>
-              <Text className="text-sm font-extrabold text-gray-700 mb-2 ml-2">Specify Relationship *</Text>
+              <Text className="text-sm font-extrabold text-gray-700 mb-2 ml-2">
+                Specify Relationship *
+              </Text>
               <TextInput
                 value={formData.customRelationship || ""}
-                onChangeText={(t) => setFormData({ ...formData, customRelationship: t })}
+                onChangeText={(t) =>
+                  setFormData({ ...formData, customRelationship: t })
+                }
                 placeholder="e.g. Uncle, Nanny, Family Friend"
                 placeholderTextColor="#9CA3AF"
                 maxLength={50}
@@ -200,7 +259,9 @@ export function GuardianList({ childId, readOnly = false }: GuardianListProps) {
             </>
           )}
 
-          <Text className="text-sm font-extrabold text-gray-700 mb-2 ml-2">Contact Phone Number *</Text>
+          <Text className="text-sm font-extrabold text-gray-700 mb-2 ml-2">
+            Contact Phone Number *
+          </Text>
           <TextInput
             value={formData.phone}
             onChangeText={(t) => setFormData({ ...formData, phone: t })}
@@ -227,7 +288,9 @@ export function GuardianList({ childId, readOnly = false }: GuardianListProps) {
               {isMutating ? (
                 <ActivityIndicator size="small" color="white" />
               ) : (
-                <Text className="text-white font-black text-base">Save Guardian</Text>
+                <Text className="text-white font-black text-base">
+                  Save Guardian
+                </Text>
               )}
             </Pressable>
           </View>
@@ -240,11 +303,13 @@ export function GuardianList({ childId, readOnly = false }: GuardianListProps) {
           <View className="h-12 w-12 rounded-full bg-gray-100 items-center justify-center mb-2">
             <ShieldCheck size={24} color="#9CA3AF" />
           </View>
-          <Text className="text-gray-700 font-bold text-sm">No Guardians Configured</Text>
+          <Text className="text-gray-700 font-bold text-sm">
+            No Guardians Configured
+          </Text>
           <Text className="text-gray-400 text-xs text-center mt-1">
-            {readOnly 
-              ? "No guardians have been authorized by the parent for pickup." 
-              : "Tap \"Add Guardian\" above to authorize family members or guardians for pickup."}
+            {readOnly
+              ? "No guardians have been authorized by the parent for pickup."
+              : 'Tap "Add Guardian" above to authorize family members or guardians for pickup.'}
           </Text>
         </View>
       )}
@@ -253,7 +318,8 @@ export function GuardianList({ childId, readOnly = false }: GuardianListProps) {
       {!isFormOpen &&
         activeGuardians.map((guardian, idx) => {
           const originalIndex = guardians.findIndex((g) => g === guardian);
-          const initials = `${guardian.firstName?.[0] || ""}${guardian.lastName?.[0] || ""}`.toUpperCase();
+          const initials =
+            `${guardian.firstName?.[0] || ""}${guardian.lastName?.[0] || ""}`.toUpperCase();
 
           return (
             <View
@@ -261,7 +327,9 @@ export function GuardianList({ childId, readOnly = false }: GuardianListProps) {
               className="flex-row items-center justify-between bg-white border border-gray-200/80 p-4 rounded-2xl mb-3 shadow-sm"
             >
               <View className="h-12 w-12 rounded-2xl bg-teal-50 items-center justify-center mr-4 border border-teal-100">
-                <Text className="text-teal-800 font-black text-base">{initials || "G"}</Text>
+                <Text className="text-teal-800 font-black text-base">
+                  {initials || "G"}
+                </Text>
               </View>
 
               <View className="flex-1 mr-2">
@@ -271,7 +339,8 @@ export function GuardianList({ childId, readOnly = false }: GuardianListProps) {
                 <View className="flex-row items-center mt-2">
                   <View className="bg-teal-50 px-3 py-1 rounded-lg mr-3 border border-teal-100">
                     <Text className="text-teal-800 font-bold text-xs">
-                      {guardian.relationship === "Other" && guardian.customRelationship
+                      {guardian.relationship === "Other" &&
+                      guardian.customRelationship
                         ? guardian.customRelationship
                         : guardian.relationship}
                     </Text>
@@ -297,7 +366,10 @@ export function GuardianList({ childId, readOnly = false }: GuardianListProps) {
                   </Pressable>
                   <Pressable
                     onPress={() =>
-                      handleRemove(originalIndex, `${guardian.firstName} ${guardian.lastName}`)
+                      handleRemove(
+                        originalIndex,
+                        `${guardian.firstName} ${guardian.lastName}`,
+                      )
                     }
                     className="p-2.5 bg-red-50 rounded-xl active:opacity-85"
                     accessibilityRole="button"
@@ -313,4 +385,3 @@ export function GuardianList({ childId, readOnly = false }: GuardianListProps) {
     </View>
   );
 }
-

@@ -22,9 +22,10 @@ import {
 import { useUnsavedChangesGuard } from "../../../hooks/use-unsaved-changes-guard";
 
 export default function CompetencyEvaluationScreen() {
-  const params = useLocalSearchParams<{ childId?: string }>();
+  const params = useLocalSearchParams<{ childId?: string; isParentView?: string }>();
   const childId = typeof params.childId === "string" ? params.childId : null;
-  const evaluation = useCompetencyEvaluation(childId);
+  const isParentView = params.isParentView === "true";
+  const evaluation = useCompetencyEvaluation(childId, { isParentView });
   const child = evaluation.data?.child;
 
   useUnsavedChangesGuard({
@@ -193,7 +194,9 @@ export default function CompetencyEvaluationScreen() {
           {evaluation.isReadOnly && (
             <View className="mb-4 rounded-xl bg-amber-50 p-3 border border-amber-200">
               <Text className="text-center text-sm font-semibold text-amber-800">
-                This evaluation has been submitted and is now read-only.
+                {isParentView 
+                  ? "This is a read-only view of your child's competency evaluation." 
+                  : "This evaluation has been submitted and is now read-only."}
               </Text>
             </View>
           )}
