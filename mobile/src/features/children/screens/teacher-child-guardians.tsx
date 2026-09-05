@@ -59,7 +59,7 @@ export default function TeacherChildGuardiansScreen() {
               Authorized Guardians
             </Text>
             <Text className="text-base text-teal-100 mt-0.5">
-              Pickup verification
+              Add from paper form
             </Text>
           </View>
         </View>
@@ -82,7 +82,7 @@ export default function TeacherChildGuardiansScreen() {
         </View>
 
         <View className="flex-1">
-          <GuardianList childId={childId} readOnly={true} />
+          <GuardianList childId={childId} readOnly={false} />
         </View>
       </View>
     </SafeAreaView>

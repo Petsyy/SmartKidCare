@@ -23,14 +23,38 @@ router.use(authenticateToken);
 
 // Teacher endpoints
 router.get("/children", requireRole("teacher"), getPickupEligibleChildren);
-router.post("/verify", requireRole("teacher"), validate(validateVerifyCode), verifyPickupCode);
-router.post("/manual-release", requireRole("teacher"), validate(validateManualRelease), manualRelease);
+router.post(
+  "/verify",
+  requireRole("teacher"),
+  validate(validateVerifyCode),
+  verifyPickupCode,
+);
+router.post(
+  "/manual-release",
+  requireRole("teacher"),
+  validate(validateManualRelease),
+  manualRelease,
+);
 
 // Parent endpoints
-router.post("/request-code", requireRole("parent"), validate(validateRequestCode), requestPickupCode);
+router.post(
+  "/request-code",
+  requireRole("parent"),
+  validate(validateRequestCode),
+  requestPickupCode,
+);
 
 // Mixed roles
-router.get("/status/:childId", requireRole("teacher", "parent"), getPickupStatus);
-router.get("/history", requireRole("admin", "teacher", "parent"), validate(validatePickupHistoryQuery, "query"), getPickupHistory);
+router.get(
+  "/status/:childId",
+  requireRole("teacher", "parent"),
+  getPickupStatus,
+);
+router.get(
+  "/history",
+  requireRole("admin", "teacher", "parent"),
+  validate(validatePickupHistoryQuery, "query"),
+  getPickupHistory,
+);
 
 export default router;

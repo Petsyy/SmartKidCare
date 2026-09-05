@@ -13,7 +13,7 @@ import {
   ScreenShell,
   ScreenLoadingState,
 } from "@/src/components/ui";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getMyChildren, type Child } from "@/src/api/parent.api";
 import { usePickupParent } from "../hooks/usePickupParent";
 import { useGuardians } from "@/src/features/children/hooks/useGuardian";
@@ -149,7 +149,7 @@ export function ParentPickupScreen() {
                         </Text>
                       </View>
                     </View>
-                    <GuardianList childId={selectedChildId} readOnly={false} />
+                    <GuardianList childId={selectedChildId} readOnly={true} />
                   </View>
                 </View>
               </>
@@ -161,20 +161,28 @@ export function ParentPickupScreen() {
   );
 }
 
-// ---------------------------------------------------------------------------
-// PickupManager — handles code generation state for a single child
-// ---------------------------------------------------------------------------
-
 function PickupManager({ childId }: { childId: string }) {
+  const queryClient = useQueryClient();
   const { statusData, isLoading, requestCode, isRequesting } =
     usePickupParent(childId);
   const { guardians } = useGuardians(childId);
+
   const [selectedGuardianIndex, setSelectedGuardianIndex] = useState<
     number | null
   >(null);
-  const [generatedCode, setGeneratedCode] = useState<string | null>(null);
-  const [expiresAt, setExpiresAt] = useState<Date | null>(null);
   const [timeLeft, setTimeLeft] = useState<string>("");
+
+  const { data: activeCodeSession } = useQuery<{
+    code: string;
+    expiresAt: Date;
+  } | null>({
+    queryKey: ["activePickupCode", childId],
+    queryFn: () => null,
+    staleTime: Infinity,
+  });
+
+  const generatedCode = activeCodeSession?.code || null;
+  const expiresAt = activeCodeSession?.expiresAt || null;
 
   useEffect(() => {
     if (!expiresAt) return;
@@ -184,7 +192,7 @@ function PickupManager({ childId }: { childId: string }) {
       if (distance < 0) {
         clearInterval(interval);
         setTimeLeft("Expired");
-        setGeneratedCode(null);
+        queryClient.setQueryData(["activePickupCode", childId], null);
       } else {
         const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((distance % (1000 * 60)) / 1000);
@@ -197,8 +205,10 @@ function PickupManager({ childId }: { childId: string }) {
   const handleGenerateCode = async () => {
     try {
       const res = await requestCode(selectedGuardianIndex);
-      setGeneratedCode(res.code);
-      setExpiresAt(new Date(res.expiresAt));
+      queryClient.setQueryData(["activePickupCode", childId], {
+        code: res.code,
+        expiresAt: new Date(res.expiresAt),
+      });
     } catch (e: any) {
       Alert.alert("Error", e.message || "Failed to generate pickup code.");
     }
