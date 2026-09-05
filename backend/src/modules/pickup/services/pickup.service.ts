@@ -78,6 +78,31 @@ class PickupService {
 
     this.assertParentCanAccessChild(user, child);
 
+    const dayRange = this.getTodayRange();
+    const pickupStatus = await pickupRecordRepository.findPickupStatus(
+      child.id,
+      dayRange.start,
+    );
+    if (pickupStatus) {
+      throw new ValidationError("Child has already been released today.");
+    }
+
+    const activeCodes = await pickupCodeRepository.findActiveCodes(child.id);
+    if (activeCodes.length > 0) {
+      const mostRecentCode = activeCodes.reduce((latest, current) =>
+        new Date(latest.createdAt) > new Date(current.createdAt)
+          ? latest
+          : current,
+      );
+      const timeSinceLastCode =
+        Date.now() - new Date(mostRecentCode.createdAt).getTime();
+      if (timeSinceLastCode < 60000) {
+        throw new ValidationError(
+          "Please wait a minute before requesting a new code.",
+        );
+      }
+    }
+
     let intendedGuardianName = `${user.firstName} ${user.lastName}`;
     if (
       input.intendedGuardianIndex !== null &&
@@ -145,6 +170,15 @@ class PickupService {
     if (!child) throw new NotFoundError("Child");
 
     this.assertTeacherCanAccessChild(user, child);
+
+    const dayRange = this.getTodayRange();
+    const pickupStatus = await pickupRecordRepository.findPickupStatus(
+      child.id,
+      dayRange.start,
+    );
+    if (pickupStatus) {
+      throw new ValidationError("Child has already been released today.");
+    }
 
     // We have to check all active codes for this child since we don't know the hash
     const activeCodes = await pickupCodeRepository.findActiveCodes(child.id);
@@ -233,6 +267,15 @@ class PickupService {
     if (!child) throw new NotFoundError("Child");
 
     this.assertTeacherCanAccessChild(user, child);
+
+    const dayRange = this.getTodayRange();
+    const pickupStatus = await pickupRecordRepository.findPickupStatus(
+      child.id,
+      dayRange.start,
+    );
+    if (pickupStatus) {
+      throw new ValidationError("Child has already been released today.");
+    }
 
     let name = "";
     let phone = "";

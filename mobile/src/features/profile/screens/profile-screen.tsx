@@ -96,7 +96,7 @@ export default function ProfileScreen({
   }
 
   return (
-    <ScreenShell>
+    <ScreenShell edges={[]}>
       <ScreenHeader
         backgroundVariant={
           role === "teacher"

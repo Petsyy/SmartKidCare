@@ -56,7 +56,7 @@ export function ParentPickupScreen() {
   }
 
   return (
-    <ScreenShell withKeyboardAvoiding={false}>
+    <ScreenShell edges={[]} withKeyboardAvoiding={false}>
       <ScreenHeader
         backgroundVariant="brandGradient"
         title="Safe Pickup"

@@ -28,14 +28,14 @@ export default function EnrollChildScreen() {
   }
 
   return (
-    <ScreenShell>
+    <ScreenShell edges={hasStarted ? ["bottom"] : []}>
       <ScreenHeader
         backgroundVariant="teacherGradient"
         title="Child Enrollment"
         subtitle="Submit and track enrollment requests"
         onBack={
           hasStarted
-            ? undefined // Handled inside NewEnrollmentForm (or we can just let NewEnrollmentForm handle its own back)
+            ? undefined
             : undefined
         }
       />
