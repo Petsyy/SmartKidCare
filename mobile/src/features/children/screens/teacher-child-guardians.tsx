@@ -1,10 +1,13 @@
 import { View, Text, StatusBar, Pressable } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { ChevronLeft, ShieldCheck } from "lucide-react-native";
 import { TEACHER_HEADER_GRADIENT } from "@/src/components/ui";
-import { GuardianList } from "@/src/features/children/components/GuardianList";
+import { GuardianList } from "@/src/features/children/components/guardian-list";
 
 export default function TeacherChildGuardiansScreen() {
   const insets = useSafeAreaInsets();
@@ -15,7 +18,10 @@ export default function TeacherChildGuardiansScreen() {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 items-center justify-center">
         <Text>Child ID is missing</Text>
-        <Pressable onPress={() => router.back()} className="mt-4 bg-teal-600 px-6 py-3 rounded-2xl">
+        <Pressable
+          onPress={() => router.back()}
+          className="mt-4 bg-teal-600 px-6 py-3 rounded-2xl"
+        >
           <Text className="text-white font-bold">Go Back</Text>
         </Pressable>
       </SafeAreaView>
@@ -24,7 +30,11 @@ export default function TeacherChildGuardiansScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      <StatusBar
+        barStyle="light-content"
+        translucent
+        backgroundColor="transparent"
+      />
 
       {/* HEADER */}
       <LinearGradient
@@ -42,7 +52,10 @@ export default function TeacherChildGuardiansScreen() {
             <ChevronLeft size={22} color="white" />
           </Pressable>
           <View className="flex-1">
-            <Text className="text-2xl font-extrabold text-white" numberOfLines={1}>
+            <Text
+              className="text-2xl font-extrabold text-white"
+              numberOfLines={1}
+            >
               Authorized Guardians
             </Text>
             <Text className="text-base text-teal-100 mt-0.5">
@@ -62,7 +75,8 @@ export default function TeacherChildGuardiansScreen() {
               Approved Contacts
             </Text>
             <Text className="text-sm text-gray-500 mt-0.5 leading-5">
-              Only these individuals are authorized by the parent to pick up the child.
+              Only these individuals are authorized by the parent to pick up the
+              child.
             </Text>
           </View>
         </View>

@@ -37,7 +37,7 @@ import {
   ScreenLoadingState,
   TEACHER_HEADER_GRADIENT,
 } from "@/src/components/ui";
-import { GuardianList } from "../components/GuardianList";
+import { GuardianList } from "../components/guardian-list";
 
 export default function TeacherChildDetailsScreen() {
   const insets = useSafeAreaInsets();
@@ -449,10 +449,12 @@ export default function TeacherChildDetailsScreen() {
 
         {/* Authorized Guardians Button */}
         <Pressable
-          onPress={() => router.push({
-            pathname: "/(teacher)/child-details/guardians/[childId]",
-            params: { childId: child._id },
-          })}
+          onPress={() =>
+            router.push({
+              pathname: "/(teacher)/child-details/guardians/[childId]",
+              params: { childId: child._id },
+            })
+          }
           className="rounded-3xl bg-white p-5 mb-4 flex-row items-center active:bg-gray-50"
           style={{
             shadowColor: "#000",
@@ -548,7 +550,6 @@ export default function TeacherChildDetailsScreen() {
             </View>
           </View>
         )}
-
       </ScrollView>
     </SafeAreaView>
   );

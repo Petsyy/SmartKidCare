@@ -15,9 +15,9 @@ import {
 } from "@/src/components/ui";
 import { useQuery } from "@tanstack/react-query";
 import { getMyChildren, type Child } from "@/src/api/parent.api";
-import { usePickupParent } from "../hooks/use-pickup-parent";
+import { usePickupParent } from "../hooks/usePickupParent";
 import { useGuardians } from "@/src/features/children/hooks/use-guardians";
-import { GuardianList } from "@/src/features/children/components/GuardianList";
+import { GuardianList } from "@/src/features/children/components/guardian-list";
 import {
   PickupActiveCode,
   PickupReleasedBanner,
@@ -100,7 +100,9 @@ export function ParentPickupScreen() {
                     }`}
                     accessibilityRole="button"
                     accessibilityLabel={`Select ${child.firstName}`}
-                    accessibilityState={{ selected: selectedChildId === child._id }}
+                    accessibilityState={{
+                      selected: selectedChildId === child._id,
+                    }}
                   >
                     <View
                       className={`h-2 w-2 rounded-full mr-2 ${

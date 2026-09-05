@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text } from "react-native";
-import { PickupPersonCard } from "./PickupPersonCard";
+import { PickupPersonCard } from "./pickup-person-card";
 import type { Guardian } from "@/src/api/api.types";
 
 interface ParentInfo {

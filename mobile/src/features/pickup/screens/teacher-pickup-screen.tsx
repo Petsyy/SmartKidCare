@@ -15,7 +15,7 @@ import {
   ScreenShell,
   SearchBar,
 } from "@/src/components/ui";
-import { usePickupTeacher } from "../hooks/use-pickup-teacher";
+import { usePickupTeacher } from "../hooks/usePickupTeacher";
 import type { PickupEligibleChild } from "@/src/api/api.types";
 import {
   PickupEligibleChildCard,

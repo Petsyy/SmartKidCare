@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, Pressable, ActivityIndicator } from "react-native";
 import { ShieldCheck, QrCode, AlertCircle } from "lucide-react-native";
-import { PickupPersonSelector } from "./PickupPersonSelector";
+import { PickupPersonSelector } from "./pickup-person-selector";
 import type { Guardian } from "@/src/api/api.types";
 
 interface ParentInfo {
