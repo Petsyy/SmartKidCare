@@ -153,7 +153,7 @@ export default function ChildScreen() {
   }
 
   return (
-    <ScreenShell>
+    <ScreenShell edges={[]}>
       <ScreenHeader
         backgroundVariant="teacherGradient"
         title="Children List"

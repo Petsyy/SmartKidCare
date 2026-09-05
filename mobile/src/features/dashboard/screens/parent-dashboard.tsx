@@ -305,7 +305,7 @@ export default function ParentDashboardScreen() {
   }
 
   return (
-    <ScreenShell withKeyboardAvoiding={false}>
+    <ScreenShell edges={[]} withKeyboardAvoiding={false}>
       {dashboardHero}
 
       <ScrollView

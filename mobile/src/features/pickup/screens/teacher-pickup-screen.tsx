@@ -122,7 +122,7 @@ export function TeacherPickupScreen() {
   }
 
   return (
-    <ScreenShell>
+    <ScreenShell edges={[]}>
       <ScreenHeader
         backgroundVariant="teacherGradient"
         title="Verify Pickup"

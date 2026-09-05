@@ -273,7 +273,7 @@ export default function TeacherDashboardScreen() {
   }
 
   return (
-    <ScreenShell withKeyboardAvoiding={false}>
+    <ScreenShell edges={[]} withKeyboardAvoiding={false}>
       {dashboardHero}
 
       <ScrollView

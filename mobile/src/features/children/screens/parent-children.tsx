@@ -360,7 +360,7 @@ export default function ParentChildrenScreen() {
 
   /* ─── Main Content ─── */
   return (
-    <ScreenShell>
+    <ScreenShell edges={[]}>
       <ScreenHeader
         backgroundVariant="brandGradient"
         title={screenTitle}
