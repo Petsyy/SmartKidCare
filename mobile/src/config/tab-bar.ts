@@ -13,6 +13,9 @@ export function getTabBarScreenOptions(
     tabBarInactiveTintColor: colors.textMuted,
     tabBarHideOnKeyboard: true,
     tabBarActiveBackgroundColor: colors.primaryLight,
+    sceneStyle: {
+      backgroundColor: colors.background,
+    },
     tabBarStyle: {
       backgroundColor: colors.background,
       borderTopWidth: 1,
