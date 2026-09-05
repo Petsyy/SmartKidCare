@@ -10,9 +10,9 @@ class GuardianService {
     const child = await Child.findById(childId);
     if (!child) throw new NotFoundError("Child");
 
-    if (user.role === "parent" && String(child.parent) !== String(user.id)) {
+    if (user.role === "parent") {
       throw new ForbiddenError(
-        "Not authorized to manage guardians for this child",
+        "Parents are not authorized to add guardians directly",
       );
     }
 
@@ -45,9 +45,9 @@ class GuardianService {
     const child = await Child.findById(childId);
     if (!child) throw new NotFoundError("Child");
 
-    if (user.role === "parent" && String(child.parent) !== String(user.id)) {
+    if (user.role === "parent") {
       throw new ForbiddenError(
-        "Not authorized to manage guardians for this child",
+        "Parents are not authorized to modify guardians directly",
       );
     }
 
@@ -84,9 +84,9 @@ class GuardianService {
     const child = await Child.findById(childId);
     if (!child) throw new NotFoundError("Child");
 
-    if (user.role === "parent" && String(child.parent) !== String(user.id)) {
+    if (user.role === "parent") {
       throw new ForbiddenError(
-        "Not authorized to manage guardians for this child",
+        "Parents are not authorized to remove guardians directly",
       );
     }
 

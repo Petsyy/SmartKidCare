@@ -47,19 +47,19 @@ router.delete("/:id", deleteChild);
 
 router.post(
   "/:id/guardians",
-  requireRole("teacher", "admin", "parent"),
+  requireRole("teacher", "admin"),
   validate(validateGuardian),
   addGuardianHandler,
 );
 router.put(
   "/:id/guardians/:guardianIndex",
-  requireRole("teacher", "admin", "parent"),
+  requireRole("teacher", "admin"),
   validate(validateGuardian),
   updateGuardianHandler,
 );
 router.delete(
   "/:id/guardians/:guardianIndex",
-  requireRole("teacher", "admin", "parent"),
+  requireRole("teacher", "admin"),
   removeGuardianHandler,
 );
 router.get(

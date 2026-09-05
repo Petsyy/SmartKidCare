@@ -179,6 +179,7 @@ function PickupManager({ childId }: { childId: string }) {
     queryKey: ["activePickupCode", childId],
     queryFn: () => null,
     staleTime: Infinity,
+    gcTime: 60 * 60 * 1000,
   });
 
   const generatedCode = activeCodeSession?.code || null;
