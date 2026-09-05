@@ -8,6 +8,7 @@ import {
   RefreshControl,
 } from "react-native";
 import { useFocusEffect } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ShieldCheck, Search } from "lucide-react-native";
 import {
   ScreenHeader,
@@ -35,6 +36,8 @@ export function TeacherPickupScreen() {
     manualRelease,
     isReleasing,
   } = usePickupTeacher();
+  
+  const insets = useSafeAreaInsets();
 
   const [selectedChild, setSelectedChild] =
     useState<PickupEligibleChild | null>(null);
@@ -200,21 +203,23 @@ export function TeacherPickupScreen() {
       <Modal
         visible={!!selectedChild}
         animationType="slide"
-        presentationStyle="pageSheet"
+        transparent={true}
         onRequestClose={handleClose}
       >
-        <View className="flex-1 bg-gray-50">
-          {/* Modal Header */}
-          <View
-            className="bg-white px-5 pt-6 pb-4 border-b border-gray-100 flex-row justify-between items-center"
-            style={{
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.04,
-              shadowRadius: 6,
-              elevation: 2,
-            }}
-          >
+        <View className="flex-1 justify-end bg-black/40">
+          <Pressable className="absolute inset-0" onPress={handleClose} />
+          <View className="bg-gray-50 rounded-t-3xl overflow-hidden flex-1 mt-20">
+            {/* Modal Header */}
+            <View
+              className="bg-white px-5 pt-6 pb-4 border-b border-gray-100 flex-row justify-between items-center"
+              style={{
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.04,
+                shadowRadius: 6,
+                elevation: 2,
+              }}
+            >
             <Text className="text-2xl font-black text-gray-900">
               Release Authorization
             </Text>
@@ -256,6 +261,7 @@ export function TeacherPickupScreen() {
               )}
             </ScrollView>
           )}
+        </View>
         </View>
       </Modal>
     </ScreenShell>

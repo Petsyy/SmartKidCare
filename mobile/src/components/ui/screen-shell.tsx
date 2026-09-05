@@ -12,7 +12,7 @@ interface ScreenShellProps extends ViewProps {
 
 export function ScreenShell({
   children,
-  edges = ["bottom"],
+  edges = [],
   statusBarStyle = "light-content",
   withKeyboardAvoiding = true,
   keyboardAvoidingBehavior = Platform.OS === "ios" ? "padding" : undefined,
