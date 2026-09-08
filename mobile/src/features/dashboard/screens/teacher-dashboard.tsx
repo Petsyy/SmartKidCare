@@ -18,6 +18,7 @@ import {
   CheckCircle2,
   ClipboardCheck,
   Clock3,
+  KeyRound,
   RefreshCw,
   School,
   UserCheck,
@@ -32,6 +33,7 @@ import {
   TEACHER_HEADER_GRADIENT,
 } from "@/src/components/ui";
 import { useSystemSettings } from "@/src/context/system-settings-context";
+import { getDaycareCenterDisplay } from "@/src/utils/daycare-center-format";
 import { NoticeItem, TeacherOverviewStatCard } from "../components";
 import { useTeacherDashboard } from "../hooks/useTeacherDashboard";
 
@@ -81,16 +83,21 @@ export default function TeacherDashboardScreen() {
     absentToday,
     feedingDone,
     feedingMissed,
+    pendingPickups,
     attendanceData,
     feedingData,
     recentNotifications,
+    daycareCenter,
     onRefresh,
   } = useTeacherDashboard();
   const { settings, loading: settingsLoading } = useSystemSettings();
 
+  const centerDisplay = getDaycareCenterDisplay(daycareCenter);
   const centerName = settingsLoading
     ? "Loading center..."
-    : settings?.schoolName || "Smart KidCare";
+    : centerDisplay.primary !== "No center assigned"
+      ? centerDisplay.primary
+      : settings?.schoolName || "Smart KidCare";
   const dateLabel = useMemo(
     () =>
       new Intl.DateTimeFormat("en-US", {
@@ -381,28 +388,28 @@ export default function TeacherDashboardScreen() {
             />
 
             <TeacherOverviewStatCard
-              icon={Utensils}
-              value={mealsCompletedValue}
-              label="Meals completed"
-              caption={mealsCompletedCaption}
+              icon={KeyRound}
+              value={!hasChildren ? "--" : pendingPickups}
+              label="Pending pickups"
+              caption={
+                !hasChildren
+                  ? "No children assigned"
+                  : `${pendingPickups} children waiting`
+              }
               tone="orange"
-              muted={!feedingSubmitted && !feedingNotRequired}
+              muted={!hasChildren || pendingPickups === 0}
               onPress={
-                feedingSubmitted
-                  ? () => router.push("/(teacher)/teacher-record-data/feeding")
+                hasChildren
+                  ? () => router.push("/(teacher)/pickup")
                   : undefined
               }
               accessibilityHint={
-                feedingSubmitted ? "Opens today's feeding record" : undefined
+                hasChildren ? "Opens the safe pickup scanner" : undefined
               }
               accessibilityLabel={
                 !hasChildren
-                  ? "Meals completed is unavailable because no children are assigned"
-                  : feedingSubmitted
-                    ? `${feedingDone} meals completed and ${feedingMissed} missed today`
-                    : feedingNotRequired
-                      ? "Meal record is not needed today"
-                      : "Meals completed is awaiting the meal record"
+                  ? "Pending pickups is unavailable because no children are assigned"
+                  : `${pendingPickups} children are waiting for pickup`
               }
             />
           </View>

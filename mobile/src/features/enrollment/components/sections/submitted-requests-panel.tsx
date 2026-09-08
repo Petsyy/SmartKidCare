@@ -2,8 +2,6 @@ import {
   AlertCircle,
   Clock3,
   FileText,
-  Mail,
-  Phone,
   Search,
   XCircle,
 } from "lucide-react-native";
@@ -17,7 +15,6 @@ import {
 import React, { useEffect } from "react";
 import { ScreenLoadingState } from "@/src/components/ui";
 import {
-  EnrollmentRequestBlockchainStatus,
   FilterChips,
   SearchBar,
 } from "@/src/features/enrollment/components/ui";
@@ -211,24 +208,10 @@ export function SubmittedRequestsPanel({
             {filteredSubmittedRequests.map((request) => {
               const status = getStatusColors(request.status);
               const isRejected = request.status === "rejected";
-              const statusAccentColor = isRejected
-                ? "#DC2626"
-                : "#D97706";
-              const statusSoftBackground = isRejected
-                ? "#FFF1F2"
-                : "#FFFBEB";
+              const statusAccentColor = isRejected ? "#DC2626" : "#D97706";
+              const statusSoftBackground = isRejected ? "#FFF1F2" : "#FFFBEB";
               const childFullName =
                 buildRequestChildName(request) || "Child not specified";
-              const parentFullName = [
-                request.parent.firstName,
-                request.parent.lastName,
-              ]
-                .filter((value) => String(value || "").trim().length > 0)
-                .join(" ");
-              const programLabel =
-                request.child.programType === "4Ps Beneficiary"
-                  ? "4Ps Beneficiary"
-                  : "Regular Enrollee";
 
               return (
                 <View
@@ -241,7 +224,7 @@ export function SubmittedRequestsPanel({
                     style={{ backgroundColor: statusAccentColor }}
                   />
                   <View className="p-[18px]">
-                    <View className="flex-row items-flex-start justify-between">
+                    <View className="flex-row items-start justify-between">
                       <View className="flex-1 pr-[12px]">
                         <View className="flex-row items-center">
                           <View
@@ -262,11 +245,11 @@ export function SubmittedRequestsPanel({
                       </View>
 
                       <View
-                        className="rounded-[12px] px-[12px] py-[8px]"
+                        className="self-start rounded-full px-[10px] py-[4px]"
                         style={{ backgroundColor: status.badgeBackgroundColor }}
                       >
                         <Text
-                          className="text-[12px] font-black uppercase tracking-[0.8px]"
+                          className="text-[11px] font-black uppercase tracking-[0.8px]"
                           style={{ color: status.textColor }}
                         >
                           {status.label}
@@ -274,90 +257,26 @@ export function SubmittedRequestsPanel({
                       </View>
                     </View>
 
-                    <View className="mt-[14px] rounded-[16px] border-[1px] border-[#E2E8F0] bg-[#FFFFFF] p-[13px]">
-                      <Text className="text-[12px] font-black uppercase tracking-[0.7px] text-[#334155]">
-                        Enrollment Details
+                    <View className="mt-[12px] flex-row items-center">
+                      <Clock3 size={13} color="#64748B" />
+                      <Text className="ml-[6px] text-[13px] font-bold text-[#64748B]">
+                        {formatRequestDate(request.createdAt)}
                       </Text>
-                      <View className="mt-[10px] gap-[9px]">
-                        <View className="flex-row gap-[10px]">
-                          <View className="flex-1 rounded-[12px] border-[1px] border-[#E2E8F0] bg-[#F8FAFC] px-[10px] py-[9px]">
-                            <Text className="text-[11px] font-black uppercase tracking-[0.65px] text-[#334155]">
-                              Parent Name
-                            </Text>
-                            <Text
-                              numberOfLines={1}
-                              className="mt-[4px] text-[14px] font-extrabold text-[#1F2937]"
-                            >
-                              {parentFullName || "Parent not specified"}
-                            </Text>
-                          </View>
-                          <View className="flex-1 rounded-[12px] border-[1px] border-[#E2E8F0] bg-[#F8FAFC] px-[10px] py-[9px]">
-                            <Text className="text-[11px] font-black uppercase tracking-[0.65px] text-[#334155]">
-                              Program Type
-                            </Text>
-                            <Text
-                              numberOfLines={1}
-                              className="mt-[4px] text-[14px] font-extrabold text-[#1F2937]"
-                            >
-                              {programLabel}
-                            </Text>
-                          </View>
-                        </View>
-                        <View className="rounded-[12px] border-[1px] border-[#E2E8F0] bg-[#F8FAFC] px-[10px] py-[9px]">
-                          <Text className="text-[11px] font-black uppercase tracking-[0.65px] text-[#334155]">
-                            Submitted Date
-                          </Text>
-                          <View className="mt-[4px] flex-row items-center">
-                            <Clock3 size={13} color="#64748B" />
-                            <Text className="ml-[6px] text-[14px] font-extrabold text-[#1F2937]">
-                              {formatRequestDate(request.createdAt)}
-                            </Text>
-                          </View>
-                        </View>
-                      </View>
-                    </View>
-
-                    <View className="mt-[14px] rounded-[16px] border-[1px] border-[#E2E8F0] bg-[#F8FAFC] p-[13px]">
-                      <Text className="text-[12px] font-black uppercase tracking-[0.7px] text-[#334155]">
-                        Parent Contact
-                      </Text>
-                      <View className="mt-[8px] gap-[8px]">
-                        <View className="flex-row items-center">
-                          <Mail size={14} color="#475569" />
-                          <Text
-                            numberOfLines={1}
-                            className="flex-1 ml-[8px] text-[13px] font-bold text-[#334155]"
-                          >
-                            {request.parent.email || "No email provided"}
-                          </Text>
-                        </View>
-                        <View className="flex-row items-center">
-                          <Phone size={14} color="#475569" />
-                          <Text className="ml-[8px] text-[13px] font-bold text-[#334155]">
-                            {request.parent.phone || "No phone provided"}
-                          </Text>
-                        </View>
-                      </View>
                     </View>
 
                     {isRejected && request.review?.reason ? (
-                      <View className="mt-[14px] rounded-[16px] bg-[#FFF1F2] border-[1px] border-[#FECDD3] p-[14px]">
-                        <View className="flex-row items-center gap-[8px] mb-[6px]">
+                      <View className="mt-[12px] rounded-[14px] bg-[#FFF1F2] border-[1px] border-[#FECDD3] p-[12px]">
+                        <View className="flex-row items-center gap-[8px] mb-[4px]">
                           <XCircle size={14} color="#B91C1C" />
-                          <Text className="text-[12px] font-black uppercase tracking-[0.8px] text-[#B91C1C]">
+                          <Text className="text-[11px] font-black uppercase tracking-[0.8px] text-[#B91C1C]">
                             Rejection Reason
                           </Text>
                         </View>
-                        <Text className="text-[14px] font-bold text-[#991B1B] leading-[20px]">
+                        <Text className="text-[13px] font-bold text-[#991B1B] leading-[20px]">
                           {request.review.reason}
                         </Text>
                       </View>
                     ) : null}
-
-                    <View className="mt-[2px]">
-                      <EnrollmentRequestBlockchainStatus request={request} />
-                    </View>
-
                   </View>
                 </View>
               );

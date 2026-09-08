@@ -20,6 +20,7 @@ import {
   ChevronRight,
   ClipboardCheck,
   Clock3,
+  KeyRound,
   MessageCircle,
   RefreshCw,
   School,
@@ -34,6 +35,7 @@ import {
   ScreenShell,
 } from "@/src/components/ui";
 import { useSystemSettings } from "@/src/context/system-settings-context";
+import { getDaycareCenterDisplay } from "@/src/utils/daycare-center-format";
 import type { ParentNotificationFeedItem } from "@/src/api/notifications.api";
 
 const PARENT_NOTICE_TONE: Record<
@@ -93,9 +95,14 @@ export default function ParentDashboardScreen() {
   } = dashboardData;
 
   const { settings, loading: settingsLoading } = useSystemSettings();
+  const centerDisplay = getDaycareCenterDisplay(
+    user?.daycareCenterId || (selectedChild as any)?.daycareCenter,
+  );
   const centerName = settingsLoading
     ? "Loading center..."
-    : settings?.schoolName || "Smart KidCare";
+    : centerDisplay.primary !== "No center assigned"
+      ? centerDisplay.primary
+      : settings?.schoolName || "Smart KidCare";
 
   const parentFirstName = user?.firstName?.trim();
   const greeting = parentFirstName
@@ -437,9 +444,9 @@ export default function ParentDashboardScreen() {
             accessibilityRole="button"
             accessibilityLabel={`See ${childFirstName}'s attendance records. ${attendanceStatus ? "Recorded today" : "No update today"}. ${stats.present} present and ${stats.absent} absent across all saved records.`}
             accessibilityHint="Opens attendance history"
-            className="min-h-32 flex-row items-center rounded-3xl border border-blue-100 bg-blue-50 p-4 shadow-sm active:opacity-85"
+            className="min-h-32 flex-row items-center rounded-3xl border border-sky-200 bg-sky-50 p-4 shadow-sm active:opacity-85"
           >
-            <View className="h-14 w-14 items-center justify-center rounded-2xl bg-blue-400">
+            <View className="h-14 w-14 items-center justify-center rounded-2xl bg-sky-600">
               <ClipboardCheck size={27} color="#FFFFFF" />
             </View>
             <View className="ml-4 flex-1 py-0.5">
@@ -457,10 +464,10 @@ export default function ParentDashboardScreen() {
                 <Text
                   className={`ml-1.5 flex-1 text-sm font-bold leading-5 ${
                     attendanceStatus === "present"
-                      ? "text-emerald-600"
+                      ? "text-emerald-700"
                       : attendanceStatus === "absent"
                         ? "text-rose-600"
-                        : "text-blue-600"
+                        : "text-sky-700"
                   }`}
                 >
                   {attendanceStatus ? "Recorded today" : "No update today"}
@@ -473,7 +480,7 @@ export default function ParentDashboardScreen() {
                 All saved records
               </Text>
             </View>
-            <View className="ml-3 h-11 w-11 items-center justify-center rounded-full bg-blue-400 shadow-sm">
+            <View className="ml-3 h-11 w-11 items-center justify-center rounded-full bg-sky-600 shadow-sm">
               <ArrowUpRight size={21} color="#FFFFFF" />
             </View>
           </Pressable>
@@ -483,9 +490,9 @@ export default function ParentDashboardScreen() {
             accessibilityRole="button"
             accessibilityLabel={`See ${childFirstName}'s meal records. ${mealStatus ? "Recorded today" : "No update today"}. ${stats.mealsCompleted} finished and ${stats.mealsMissed} missed across all saved records.`}
             accessibilityHint="Opens meal history"
-            className="min-h-32 flex-row items-center rounded-3xl border border-rose-100 bg-rose-50 p-4 shadow-sm active:opacity-85"
+            className="min-h-32 flex-row items-center rounded-3xl border border-orange-200 bg-orange-50 p-4 shadow-sm active:opacity-85"
           >
-            <View className="h-14 w-14 items-center justify-center rounded-2xl bg-rose-400">
+            <View className="h-14 w-14 items-center justify-center rounded-2xl bg-orange-500">
               <Utensils size={27} color="#FFFFFF" />
             </View>
             <View className="ml-4 flex-1 py-0.5">
@@ -503,8 +510,8 @@ export default function ParentDashboardScreen() {
                 <Text
                   className={`ml-1.5 flex-1 text-sm font-bold leading-5 ${
                     mealStatus === "completed"
-                      ? "text-emerald-600"
-                      : "text-rose-600"
+                      ? "text-emerald-700"
+                      : "text-orange-700"
                   }`}
                 >
                   {mealStatus ? "Recorded today" : "No update today"}
@@ -517,7 +524,7 @@ export default function ParentDashboardScreen() {
                 All saved records
               </Text>
             </View>
-            <View className="ml-3 h-11 w-11 items-center justify-center rounded-full bg-rose-400 shadow-sm">
+            <View className="ml-3 h-11 w-11 items-center justify-center rounded-full bg-orange-500 shadow-sm">
               <ArrowUpRight size={21} color="#FFFFFF" />
             </View>
           </Pressable>
@@ -531,9 +538,9 @@ export default function ParentDashboardScreen() {
             accessibilityRole="button"
             accessibilityLabel={`See ${childFirstName}'s ECCD Assessment records.`}
             accessibilityHint="Opens developmental progress evaluation"
-            className="min-h-32 flex-row items-center rounded-3xl border border-violet-100 bg-violet-50 p-4 shadow-sm active:opacity-85"
+            className="min-h-32 flex-row items-center rounded-3xl border border-violet-200 bg-violet-50 p-4 shadow-sm active:opacity-85"
           >
-            <View className="h-14 w-14 items-center justify-center rounded-2xl bg-violet-400">
+            <View className="h-14 w-14 items-center justify-center rounded-2xl bg-violet-600">
               <Award size={27} color="#FFFFFF" />
             </View>
             <View className="ml-4 flex-1 py-0.5">
@@ -541,7 +548,7 @@ export default function ParentDashboardScreen() {
                 Competency Evaluation
               </Text>
               <View className="mt-1.5 flex-row items-center">
-                <Text className="text-sm font-bold leading-5 text-violet-600">
+                <Text className="text-sm font-bold leading-5 text-violet-700">
                   ECCD Checklist
                 </Text>
               </View>
@@ -552,7 +559,7 @@ export default function ParentDashboardScreen() {
                 Initial evaluation records
               </Text>
             </View>
-            <View className="ml-3 h-11 w-11 items-center justify-center rounded-full bg-violet-400 shadow-sm">
+            <View className="ml-3 h-11 w-11 items-center justify-center rounded-full bg-violet-600 shadow-sm">
               <ArrowUpRight size={21} color="#FFFFFF" />
             </View>
           </Pressable>
