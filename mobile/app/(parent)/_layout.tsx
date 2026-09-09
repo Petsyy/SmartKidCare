@@ -5,7 +5,6 @@ import { StyleSheet, View } from "react-native";
 import ParentGate from "@/src/components/ui/parent-gate";
 import { ParentLoadingState } from "@/src/components/ui";
 import {
-  Bell,
   House,
   UserRound,
   Users,
@@ -57,30 +56,21 @@ export default function ParentLayout() {
           }}
         />
         <Tabs.Screen
-          name="notifications"
-          options={{
-            title: "Notifications",
-            tabBarIcon: ({ color, focused }) => (
-              <Bell
-                color={color}
-                size={focused ? 22 : 20}
-                strokeWidth={focused ? 2.4 : 2}
-              />
-            ),
-          }}
-        />
-        <Tabs.Screen
           name="pickup"
           options={{
             title: "Pickup",
             tabBarIcon: ({ color, focused }) => (
               <ShieldCheck
-                color={color}
-                size={focused ? 22 : 20}
-                strokeWidth={focused ? 2.4 : 2}
+              color={color}
+              size={focused ? 22 : 20}
+              strokeWidth={focused ? 2.4 : 2}
               />
             ),
           }}
+        />
+        <Tabs.Screen
+          name="notifications"
+          options={{ href: null, tabBarStyle: { display: "none" } }}
         />
         <Tabs.Screen
           name="profile"

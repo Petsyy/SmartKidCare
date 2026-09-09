@@ -1,4 +1,5 @@
 import type { ComponentType } from "react";
+import { useRouter } from "expo-router";
 import { AlertCircle, Archive, Bell, CheckCircle2, RotateCcw, Trash2 } from "lucide-react-native";
 import {
   Alert,
@@ -98,6 +99,7 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
   cardUi,
   resolveTitle = defaultResolveTitle,
 }: Props<T>) {
+  const router = useRouter();
   const fallbackUi: CardUI = {
     fallbackTitle: "Notification",
     icon: AlertCircle,
@@ -113,6 +115,7 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
           backgroundVariant={headerBackgroundVariant}
           title="Notifications"
           subtitle={subtitle}
+          onBack={() => router.back()}
         />
         <ScreenLoadingState
           title="Loading notifications"
@@ -128,6 +131,7 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
         backgroundVariant={headerBackgroundVariant}
         title="Notifications"
         subtitle={subtitle}
+        onBack={() => router.back()}
       />
 
       <ScrollView
