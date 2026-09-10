@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -6,7 +6,6 @@ import { updateChild } from "@/api/child.api";
 import { getUsers, type User } from "@/api/authentication.api";
 import { showErrorModal } from "@/utils/sweet-alert-modal";
 import { editChildSchema, type EditChildFormValues } from "@/utils/form-validation";
-import { formatConfidentialName, maskNamePart } from "@/utils/name-privacy";
 import type { ChildForEdit } from "../components/EditChildModal";
 
 type UseEditChildFormProps = {
@@ -47,8 +46,6 @@ const getInitialForm = (child: ChildForEdit): EditChildFormValues => ({
 
 export const useEditChildForm = ({ child, onClose, onUpdated }: UseEditChildFormProps) => {
   const queryClient = useQueryClient();
-  const [revealChildName, setRevealChildName] = useState(false);
-
   const form = useForm<EditChildFormValues>({
     resolver: zodResolver(editChildSchema),
     defaultValues: getInitialForm(child),
@@ -56,11 +53,10 @@ export const useEditChildForm = ({ child, onClose, onUpdated }: UseEditChildForm
     reValidateMode: "onChange",
   });
 
-  const { reset, watch } = form;
+  const { reset } = form;
 
   useEffect(() => {
     reset(getInitialForm(child));
-    setRevealChildName(false);
   }, [child, reset]);
 
   const { data: teachers = [], isLoading: loadingTeachers } = useQuery<User[]>({
@@ -98,16 +94,6 @@ export const useEditChildForm = ({ child, onClose, onUpdated }: UseEditChildForm
     },
   });
 
-  // Masking helpers
-  const firstName = watch("firstName");
-  const middleName = watch("middleName");
-  const lastName = watch("lastName");
-
-  const maskedChildName = formatConfidentialName({ firstName, middleName, lastName }) || "N/A";
-  const firstNameInputValue = revealChildName ? firstName : maskNamePart(firstName);
-  const middleNameInputValue = revealChildName ? middleName : maskNamePart(middleName);
-  const lastNameInputValue = revealChildName ? lastName : maskNamePart(lastName);
-
   // Age calculations for date picker min/max
   const today = new Date();
   const minAgeDate = new Date(today.getFullYear() - 6, today.getMonth(), today.getDate() + 1)
@@ -123,14 +109,6 @@ export const useEditChildForm = ({ child, onClose, onUpdated }: UseEditChildForm
     loadingTeachers,
     isSubmitting: mutation.isPending,
     onSubmit: form.handleSubmit((data) => mutation.mutate(data)),
-
-    // Privacy state
-    revealChildName,
-    setRevealChildName,
-    maskedChildName,
-    firstNameInputValue,
-    middleNameInputValue,
-    lastNameInputValue,
 
     // Date limits
     minAgeDate,
