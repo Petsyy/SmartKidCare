@@ -65,7 +65,11 @@ export const useEnrollmentSubmit = (onSuccess?: () => void) => {
           { text: "View Requests", onPress: () => { onSuccess?.(); } },
         ]);
       } catch (error: any) {
-        Alert.alert("Submission Error", error?.message || "Failed to submit enrollment request.");
+        Alert.alert(
+          "Submission Error",
+          error?.message ||
+            "The request could not be submitted because the connection was lost. Check your connection and select Try Again.",
+        );
       }
     },
     [submitEnrollmentMutation, queryClient, onSuccess],

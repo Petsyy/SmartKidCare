@@ -29,9 +29,11 @@ import { ENROLL_COLORS } from "@/src/features/enrollment/constants";
 export function SubmittedRequestsPanel({
   contentPadding,
   contentMaxWidth,
+  onCreateNewRequest,
 }: {
   contentPadding?: number;
   contentMaxWidth?: number;
+  onCreateNewRequest: () => void;
 }) {
   const {
     submittedSummary,
@@ -275,8 +277,40 @@ export function SubmittedRequestsPanel({
                         <Text className="text-[13px] font-bold text-[#991B1B] leading-[20px]">
                           {request.review.reason}
                         </Text>
+                        <Pressable
+                          onPress={onCreateNewRequest}
+                          className="mt-3 min-h-11 items-center justify-center rounded-xl bg-[#DC2626] px-4 py-2"
+                          accessibilityRole="button"
+                          accessibilityLabel="Create a new enrollment request"
+                        >
+                          <Text className="text-sm font-black text-white">
+                            Create New Request
+                          </Text>
+                        </Pressable>
                       </View>
-                    ) : null}
+                    ) : isRejected ? (
+                      <View className="mt-[12px] rounded-[14px] border-[1px] border-[#FECDD3] bg-[#FFF1F2] p-[12px]">
+                        <Text className="text-[13px] font-bold leading-[20px] text-[#991B1B]">
+                          Review the submitted information and create a new request with the missing details.
+                        </Text>
+                        <Pressable
+                          onPress={onCreateNewRequest}
+                          className="mt-3 min-h-11 items-center justify-center rounded-xl bg-[#DC2626] px-4 py-2"
+                          accessibilityRole="button"
+                          accessibilityLabel="Create a new enrollment request"
+                        >
+                          <Text className="text-sm font-black text-white">
+                            Create New Request
+                          </Text>
+                        </Pressable>
+                      </View>
+                    ) : (
+                      <View className="mt-[12px] rounded-[14px] border border-amber-200 bg-amber-50 p-[12px]">
+                        <Text className="text-[13px] font-bold leading-[20px] text-amber-800">
+                          An administrator is reviewing this request. You will be notified after a decision.
+                        </Text>
+                      </View>
+                    )}
                   </View>
                 </View>
               );

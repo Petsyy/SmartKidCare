@@ -51,6 +51,8 @@ export function useEnrollmentRequests() {
   const {
     data: requests = [],
     isLoading: loading,
+    error,
+    refetch,
   } = useQuery({
     queryKey: webQueryKeys.enrollmentRequests(statusFilter),
     queryFn: () => getEnrollmentRequests(statusFilter),
@@ -123,7 +125,10 @@ export function useEnrollmentRequests() {
         });
       }
     } catch (error: any) {
-      showErrorModal(error?.message || "Failed to approve request");
+      showErrorModal(
+        error?.message ||
+          "The request could not be approved because the connection was lost. Check your connection and select Try Again.",
+      );
     } finally {
       setProcessingId(null);
     }
@@ -161,7 +166,10 @@ export function useEnrollmentRequests() {
         confirmButtonColor: "#0D9488",
       });
     } catch (error: any) {
-      showErrorModal(error?.message || "Failed to reject request");
+      showErrorModal(
+        error?.message ||
+          "The request could not be rejected because the connection was lost. Check your connection and select Try Again.",
+      );
     } finally {
       setProcessingId(null);
     }
@@ -182,6 +190,8 @@ export function useEnrollmentRequests() {
   return {
     requests,
     loading,
+    error,
+    refetch,
     stats,
     processingId,
     selectedRequest,

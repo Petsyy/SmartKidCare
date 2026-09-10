@@ -57,6 +57,10 @@ export default function EnrollChildScreen() {
         <SubmittedRequestsPanel
           contentPadding={contentPadding}
           contentMaxWidth={contentMaxWidth}
+          onCreateNewRequest={() => {
+            setActiveTab("new");
+            setHasStarted(false);
+          }}
         />
       )}
     </ScreenShell>

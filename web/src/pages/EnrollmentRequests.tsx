@@ -17,6 +17,8 @@ export default function EnrollmentRequests() {
   const {
     requests,
     loading,
+    error,
+    refetch,
     stats,
     processingId,
     selectedRequest,
@@ -59,6 +61,24 @@ export default function EnrollmentRequests() {
           title="Enrollment Requests"
           subtitle="Manage parent requests to link their accounts with student profiles"
         />
+
+        {error ? (
+          <div className="flex flex-col items-center gap-3 rounded-xl border border-rose-200 bg-rose-50 px-6 py-8 text-center dark:border-rose-900/50 dark:bg-rose-950/20">
+            <h2 className="text-lg font-semibold text-rose-900 dark:text-rose-200">
+              Unable to load enrollment requests
+            </h2>
+            <p className="max-w-xl text-sm text-rose-700 dark:text-rose-300">
+              The request list could not be loaded because the connection was lost. Check your connection and try again.
+            </p>
+            <button
+              type="button"
+              onClick={() => void refetch()}
+              className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500/40"
+            >
+              Try Again
+            </button>
+          </div>
+        ) : null}
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {loading ? (
