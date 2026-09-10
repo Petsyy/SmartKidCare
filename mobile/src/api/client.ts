@@ -19,6 +19,31 @@ interface RequestOptions {
   authenticated?: boolean;
 }
 
+const getApiErrorMessage = (
+  data: unknown,
+  raw: string,
+  fallback: string,
+): string => {
+  if (typeof data === "object" && data !== null) {
+    const errorData = data as {
+      message?: unknown;
+      error?: unknown;
+    };
+
+    if (typeof errorData.message === "string") return errorData.message;
+    if (typeof errorData.error === "string") return errorData.error;
+    if (
+      typeof errorData.error === "object" &&
+      errorData.error !== null &&
+      typeof (errorData.error as { message?: unknown }).message === "string"
+    ) {
+      return (errorData.error as { message: string }).message;
+    }
+  }
+
+  return raw && !raw.trim().startsWith("{") ? raw : fallback;
+};
+
 export async function apiClient<T>(
   path: string,
   {
@@ -58,9 +83,7 @@ export async function apiClient<T>(
 
   if (!response.ok) {
     throw new Error(
-      (data as { message?: string }).message ||
-        raw ||
-        `Request failed: ${method} ${path}`,
+      getApiErrorMessage(data, raw, `Request failed: ${method} ${path}`),
     );
   }
 
@@ -94,11 +117,7 @@ export async function apiFormDataClient<T>(
   }
 
   if (!response.ok) {
-    throw new Error(
-      (data as { message?: string }).message ||
-        raw ||
-        `Upload failed: ${path}`,
-    );
+    throw new Error(getApiErrorMessage(data, raw, `Upload failed: ${path}`));
   }
 
   return data as T;
