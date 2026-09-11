@@ -1,4 +1,4 @@
-import { apiClient } from "../../../api/client";
+import { apiClient } from "./client";
 
 export interface NutritionRecord {
   _id: string;
@@ -17,7 +17,7 @@ export interface NutritionRecord {
 
 export const getMyClassNutrition = async (schoolYear: string, period: "initial" | "final") => {
   const query = new URLSearchParams({ schoolYear, period }).toString();
-  const data = await apiClient<{ data: any }>(`/nutrition/my-class?${query}`);
+  const data = await apiClient<{ data: any }>(`/api/nutrition/my-class?${query}`);
   return data.data;
 };
 
@@ -29,7 +29,7 @@ export const evaluateNutrition = async (payload: {
   height: number;
   action: "draft" | "submit";
 }) => {
-  const data = await apiClient<{ data: NutritionRecord }>(`/nutrition/evaluate`, {
+  const data = await apiClient<{ data: NutritionRecord }>(`/api/nutrition/evaluate`, {
     method: "POST",
     body: payload,
   });
@@ -37,6 +37,6 @@ export const evaluateNutrition = async (payload: {
 };
 
 export const getChildNutritionHistory = async (childId: string) => {
-  const data = await apiClient<{ data: NutritionRecord[] }>(`/nutrition/child/${childId}`);
+  const data = await apiClient<{ data: NutritionRecord[] }>(`/api/nutrition/child/${childId}`);
   return data.data;
 };

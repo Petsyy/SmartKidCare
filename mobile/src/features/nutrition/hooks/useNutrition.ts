@@ -3,7 +3,7 @@ import {
   getMyClassNutrition,
   evaluateNutrition,
   getChildNutritionHistory,
-} from "../api/nutrition.api";
+} from "../../../api/nutrition.api";
 
 export const useMyClassNutrition = (
   schoolYear: string,

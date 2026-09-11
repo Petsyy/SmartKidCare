@@ -5,6 +5,7 @@ import {
   ScrollView,
   Text,
   View,
+  ActivityIndicator,
 } from "react-native";
 import {
   AlertCircle,
@@ -16,14 +17,18 @@ import {
   School,
   User,
   Users,
+  Award,
+  ArrowUpRight,
 } from "lucide-react-native";
 import type { Child } from "@/src/api/parent.api";
 import {
   ScreenHeader,
   ScreenLoadingState,
   ScreenShell,
+  EmptyStateCard,
 } from "@/src/components/ui";
 import { useParentChildrenData } from "@/src/features/children/hooks";
+import { useChildNutritionHistory } from "@/src/features/nutrition/hooks/useNutrition";
 
 const NOT_PROVIDED = "Not provided";
 
@@ -247,6 +252,127 @@ function StatusPill({
   );
 }
 
+function ParentNutritionSection({
+  childId,
+  schoolYear,
+}: {
+  childId: string;
+  schoolYear?: string;
+}) {
+  const { data: history, isLoading } = useChildNutritionHistory(childId);
+
+  if (isLoading) {
+    return (
+      <ProfileSection
+        icon={<HeartPulse size={22} color="#047857" />}
+        title="Health Information"
+        tone="emerald"
+      >
+        <View className="items-center py-6">
+          <ActivityIndicator color="#047857" />
+        </View>
+      </ProfileSection>
+    );
+  }
+
+  const records = history || [];
+  const currentRecords = schoolYear
+    ? records.filter(
+        (r: any) => r.schoolYear === schoolYear && r.status === "submitted",
+      )
+    : records.filter((r: any) => r.status === "submitted");
+
+  const initialRecord = currentRecords.find((r: any) => r.period === "initial");
+  const finalRecord = currentRecords.find((r: any) => r.period === "final");
+
+  const RecordCard = ({ title, record }: { title: string; record: any }) => (
+    <View className="mb-4 rounded-2xl border border-gray-100 bg-gray-50 p-4">
+      <Text className="mb-3 text-base font-bold text-gray-900">{title}</Text>
+
+      <View className="mb-2 flex-row">
+        <Text className="flex-1 text-sm font-semibold text-gray-500">
+          Weight
+        </Text>
+        <Text className="flex-1 text-right text-sm font-bold text-gray-900">
+          {record.weight} kg
+        </Text>
+      </View>
+
+      <View className="mb-2 flex-row">
+        <Text className="flex-1 text-sm font-semibold text-gray-500">
+          Height
+        </Text>
+        <Text className="flex-1 text-right text-sm font-bold text-gray-900">
+          {record.height} cm
+        </Text>
+      </View>
+
+      <View className="mb-2 flex-row">
+        <Text className="flex-1 text-sm font-semibold text-gray-500">BMI</Text>
+        <Text className="flex-1 text-right text-sm font-bold text-gray-900">
+          {record.bmi.toFixed(2)}
+        </Text>
+      </View>
+
+      <View className="flex-row items-center mt-1">
+        <Text className="flex-1 text-sm font-semibold text-gray-500">
+          Status
+        </Text>
+        <View
+          className={`rounded-full px-3 py-1 ${
+            record.nutritionalStatus === "Normal"
+              ? "bg-emerald-100"
+              : record.nutritionalStatus === "Overweight"
+                ? "bg-orange-100"
+                : "bg-red-100"
+          }`}
+        >
+          <Text
+            className={`text-sm font-extrabold ${
+              record.nutritionalStatus === "Normal"
+                ? "text-emerald-700"
+                : record.nutritionalStatus === "Overweight"
+                  ? "text-orange-700"
+                  : "text-red-700"
+            }`}
+          >
+            {record.nutritionalStatus}
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+
+  return (
+    <ProfileSection
+      icon={<HeartPulse size={22} color="#047857" />}
+      title="Health Information"
+      tone="emerald"
+    >
+      <View className="px-1 pt-2 pb-1">
+        {!initialRecord && !finalRecord ? (
+          <View className="py-2">
+            <EmptyStateCard
+              icon={HeartPulse}
+              title="No Assessments Yet"
+              description="No nutritional assessments recorded yet for the current school year."
+            />
+          </View>
+        ) : (
+          <>
+            {initialRecord && (
+              <RecordCard title="Initial Assessment" record={initialRecord} />
+            )}
+            {finalRecord && (
+              <RecordCard title="Final Assessment" record={finalRecord} />
+            )}
+          </>
+        )}
+      </View>
+    </ProfileSection>
+  );
+}
+
 // MAIN SCREEN
 import { useRouter } from "expo-router";
 
@@ -276,13 +402,6 @@ export default function ParentChildrenScreen() {
     ? getEnrollmentStatus(selectedChild.status)
     : null;
 
-  const nutritionStatus = selectedChild?.nutritionalStatus || NOT_PROVIDED;
-  const nutritionTone =
-    nutritionStatus.toLowerCase() === "normal"
-      ? "success"
-      : nutritionStatus === NOT_PROVIDED
-        ? "default"
-        : "warning";
   const childInformationRows = selectedChild
     ? [
         ...(selectedChild.dateOfBirth
@@ -442,42 +561,62 @@ export default function ParentChildrenScreen() {
 
             {/* ── Profile Card (always visible) ── */}
             <View className="mb-4 overflow-hidden rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
-              <View
-                accessible
-                accessibilityLabel={`${getFullName(selectedChild)}. ${getChildDetails(selectedChild)}. ${enrollmentStatus?.label}`}
-              >
-                <Text
-                  className="text-2xl font-black leading-8 text-gray-900"
-                  numberOfLines={2}
-                  accessibilityRole="header"
+              <View className="flex-row items-start justify-between">
+                <View
+                  accessible
+                  accessibilityLabel={`${getFullName(selectedChild)}. ${getChildDetails(selectedChild)}. ${enrollmentStatus?.label}`}
+                  className="flex-1 pr-3"
                 >
-                  {getFullName(selectedChild)}
-                </Text>
-                <View className="mt-2 flex-row flex-wrap items-center gap-2">
-                  <Text className="text-base font-semibold text-gray-500">
-                    {getChildDetails(selectedChild)}
-                  </Text>
-                  <View
-                    className={`flex-row items-center rounded-full px-3 py-1 ${
-                      enrollmentStatus?.isActive
-                        ? "bg-emerald-50"
-                        : "bg-gray-100"
-                    }`}
+                  <Text
+                    className="text-2xl font-black leading-8 text-gray-900"
+                    numberOfLines={2}
+                    accessibilityRole="header"
                   >
-                    {enrollmentStatus?.isActive ? (
-                      <CircleCheck size={16} color="#047857" />
-                    ) : null}
-                    <Text
-                      className={`text-base font-extrabold ${
+                    {getFullName(selectedChild)}
+                  </Text>
+                  <View className="mt-2 flex-row flex-wrap items-center gap-2">
+                    <Text className="text-base font-semibold text-gray-500">
+                      {getChildDetails(selectedChild)}
+                    </Text>
+                    <View
+                      className={`flex-row items-center rounded-full px-3 py-1 ${
                         enrollmentStatus?.isActive
-                          ? "ml-1 text-emerald-700"
-                          : "text-gray-600"
+                          ? "bg-emerald-50"
+                          : "bg-gray-100"
                       }`}
                     >
-                      {enrollmentStatus?.label}
-                    </Text>
+                      {enrollmentStatus?.isActive ? (
+                        <CircleCheck size={16} color="#047857" />
+                      ) : null}
+                      <Text
+                        className={`text-base font-extrabold ${
+                          enrollmentStatus?.isActive
+                            ? "ml-1 text-emerald-700"
+                            : "text-gray-600"
+                        }`}
+                      >
+                        {enrollmentStatus?.label}
+                      </Text>
+                    </View>
                   </View>
                 </View>
+
+                <Pressable
+                  onPress={() =>
+                    router.push(
+                      `/(parent)/competencies/${selectedChild._id}?isParentView=true`,
+                    )
+                  }
+                  accessibilityRole="button"
+                  accessibilityLabel={`See ${getFullName(selectedChild)}'s ECCD Assessment records.`}
+                  accessibilityHint="Opens developmental progress evaluation"
+                  className="h-10 flex-row items-center justify-center rounded-full border border-teal-100 bg-teal-50 px-3 shadow-sm active:bg-teal-100 mt-1"
+                >
+                  <Award size={18} color="#0D9488" />
+                  <Text className="ml-1.5 text-xs font-extrabold uppercase tracking-wide text-teal-800">
+                    ECCD Eval
+                  </Text>
+                </Pressable>
               </View>
 
               <View className="mt-4 border-t border-gray-100 pt-4">
@@ -514,42 +653,10 @@ export default function ParentChildrenScreen() {
             </ProfileSection>
 
             {/* ── Section 2: Health Information ── */}
-            <ProfileSection
-              icon={<HeartPulse size={22} color="#047857" />}
-              title="Health Information"
-              tone="emerald"
-            >
-              <ProfileInfoRow
-                label="Weight"
-                value={
-                  selectedChild.weight
-                    ? `${selectedChild.weight} kg`
-                    : NOT_PROVIDED
-                }
-              />
-              <ProfileInfoRow
-                label="Height"
-                value={
-                  selectedChild.height
-                    ? `${selectedChild.height} cm`
-                    : NOT_PROVIDED
-                }
-              />
-              <ProfileInfoRow
-                label="BMI"
-                value={
-                  selectedChild.bmi
-                    ? selectedChild.bmi.toString()
-                    : NOT_PROVIDED
-                }
-              />
-              <ProfileInfoRow
-                label="Nutritional Status"
-                value={nutritionStatus}
-                valueTone={nutritionTone}
-                showDivider={false}
-              />
-            </ProfileSection>
+            <ParentNutritionSection
+              childId={selectedChild._id}
+              schoolYear={selectedChild.schoolYear}
+            />
 
             {/* ── Section 3: Child Information ── */}
             <ProfileSection

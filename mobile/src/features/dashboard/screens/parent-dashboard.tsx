@@ -529,40 +529,6 @@ export default function ParentDashboardScreen() {
             </View>
           </Pressable>
 
-          <Pressable
-            onPress={() =>
-              router.push(
-                `/(parent)/competencies/${selectedChild?._id}?isParentView=true`,
-              )
-            }
-            accessibilityRole="button"
-            accessibilityLabel={`See ${childFirstName}'s ECCD Assessment records.`}
-            accessibilityHint="Opens developmental progress evaluation"
-            className="min-h-32 flex-row items-center rounded-3xl border border-violet-200 bg-violet-50 p-4 shadow-sm active:opacity-85"
-          >
-            <View className="h-14 w-14 items-center justify-center rounded-2xl bg-violet-600">
-              <Award size={27} color="#FFFFFF" />
-            </View>
-            <View className="ml-4 flex-1 py-0.5">
-              <Text className="text-xl font-extrabold text-gray-900">
-                Competency Evaluation
-              </Text>
-              <View className="mt-1.5 flex-row items-center">
-                <Text className="text-sm font-bold leading-5 text-violet-700">
-                  ECCD Checklist
-                </Text>
-              </View>
-              <Text className="mt-2 text-base font-semibold leading-5 text-gray-700">
-                Track developmental progress
-              </Text>
-              <Text className="mt-0.5 text-sm leading-5 text-gray-500">
-                Initial evaluation records
-              </Text>
-            </View>
-            <View className="ml-3 h-11 w-11 items-center justify-center rounded-full bg-violet-600 shadow-sm">
-              <ArrowUpRight size={21} color="#FFFFFF" />
-            </View>
-          </Pressable>
         </View>
 
         {/* Section 2: Recent Updates (Notifications Feed) */}

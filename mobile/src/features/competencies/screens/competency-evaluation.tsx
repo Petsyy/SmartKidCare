@@ -50,7 +50,13 @@ export default function CompetencyEvaluationScreen() {
             ? `${child.firstName} ${child.lastName}`
             : "Individual skill checklist"
         }
-        onBack={() => router.back()}
+        onBack={() => {
+          if (isParentView) {
+            router.navigate("/(parent)/children");
+          } else {
+            router.back();
+          }
+        }}
       />
       {evaluation.isLoading ? (
         <ScreenLoadingState

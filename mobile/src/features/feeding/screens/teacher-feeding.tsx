@@ -13,6 +13,7 @@ import {
   XCircle,
 } from "lucide-react-native";
 import { useCallback } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTeacherFeeding } from "@/src/features/feeding/hooks";
 import type { Child } from "@/src/api/parent.api";
 import { useUnsavedChangesGuard } from "@/src/hooks/use-unsaved-changes-guard";
@@ -24,6 +25,7 @@ import {
 } from "@/src/components/ui";
 
 export default function RecordFeeding() {
+  const insets = useSafeAreaInsets();
   const {
     router,
     children,
@@ -437,7 +439,8 @@ export default function RecordFeeding() {
             accessibilityRole="button"
             accessibilityLabel="Done"
             accessibilityHint="Returns to the submitted feeding record"
-            className="mb-8 min-h-14 w-full items-center justify-center rounded-2xl bg-emerald-600 px-5 py-4 shadow-md active:opacity-90"
+            className="min-h-14 w-full items-center justify-center rounded-2xl bg-emerald-600 px-5 py-4 shadow-md active:opacity-90"
+            style={{ marginBottom: Math.max(insets.bottom + 32, 32) }}
           >
             <Text className="text-xl font-bold text-white">Done</Text>
           </Pressable>

@@ -7,6 +7,7 @@ import {
   Modal,
 } from "react-native";
 import { CheckCircle2, XCircle, Users } from "lucide-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTeacherAttendance } from "@/src/features/attendance/hooks";
 import {
   ScreenHeader,
@@ -16,6 +17,7 @@ import {
 } from "@/src/components/ui";
 
 export default function RecordAttendance() {
+  const insets = useSafeAreaInsets();
   const {
     router,
     children,
@@ -338,7 +340,8 @@ export default function RecordAttendance() {
             accessibilityRole="button"
             accessibilityLabel="Done"
             accessibilityHint="Returns to the submitted attendance list"
-            className="mb-8 min-h-14 w-full items-center justify-center rounded-2xl bg-emerald-600 px-5 py-4 shadow-md active:opacity-90"
+            className="min-h-14 w-full items-center justify-center rounded-2xl bg-emerald-600 px-5 py-4 shadow-md active:opacity-90"
+            style={{ marginBottom: Math.max(insets.bottom + 32, 32) }}
           >
             <Text className="text-xl font-bold text-white">Done</Text>
           </Pressable>
