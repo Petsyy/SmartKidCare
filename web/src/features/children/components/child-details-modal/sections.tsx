@@ -341,7 +341,7 @@ export function HealthSection({
                   </div>
                 </>
               ) : (
-                <div className="flex h-[116px] items-center justify-center rounded-lg border border-dashed border-gray-300 text-sm text-gray-500 dark:border-slate-700 dark:text-slate-400">
+                <div className="flex h-29 items-center justify-center rounded-lg border border-dashed border-gray-300 text-sm text-gray-500 dark:border-slate-700 dark:text-slate-400">
                   Pending final measurement
                 </div>
               )}

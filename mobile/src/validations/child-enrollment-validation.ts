@@ -91,14 +91,42 @@ export const childEnrollmentStepOneSchema = z
       }, { message: "Height must be between 60 and 150 cm." }),
   })
   .superRefine((data, ctx) => {
-    const age = computeAgeFromDateOfBirth(data.dateOfBirth);
+    const birthDate = parseYmd(data.dateOfBirth);
+    if (!birthDate) return;
 
-    if (age < 3 || age > 5) {
+    // Rule 1: Child must be at least 3 years old at enrollment
+    const age = computeAgeFromDateOfBirth(data.dateOfBirth);
+    if (age < 3) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["dateOfBirth"],
-        message: "Child age must be between 3 and 5 years old only.",
+        message: "Child must be at least 3 years old at enrollment.",
       });
+      return;
+    }
+
+    // Rule 2: Child must NOT turn 5 during the school year (June–March)
+    // School year format: "2026-2027" → ends March 31 of the end year
+    const schoolYearMatch = /(\d{4})\s*[-–]\s*(\d{4})/.exec(data.schoolYear);
+    if (schoolYearMatch) {
+      const endYear = Number(schoolYearMatch[2]);
+      const schoolYearEnd = new Date(endYear, 2, 31); // March 31
+
+      const fifthBirthday = new Date(
+        birthDate.getFullYear() + 5,
+        birthDate.getMonth(),
+        birthDate.getDate(),
+      );
+
+      if (fifthBirthday <= schoolYearEnd) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["dateOfBirth"],
+          message:
+            "Child must not turn 5 years old during the school year (June–March). " +
+            "Only children who will remain 4 or younger throughout the entire school year are accepted.",
+        });
+      }
     }
   });
 

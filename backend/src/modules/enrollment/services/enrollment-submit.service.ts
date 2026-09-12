@@ -94,8 +94,28 @@ export const submitChildEnrollmentRequest = async (
   }
 
   const computedAge = computeAgeFromDate(dateOfBirth);
-  if (computedAge < 3 || computedAge > 5) {
-    throw new ValidationError("Child age must be between 3 and 5 years old only.");
+  if (computedAge < 3) {
+    throw new ValidationError("Child must be at least 3 years old at enrollment.");
+  }
+
+  // Child must NOT turn 5 during the school year (June–March)
+  // School year format: "2026-2027" → ends March 31 of the end year
+  const schoolYearMatch = /(\d{4})\s*[-–]\s*(\d{4})/.exec(schoolYear);
+  if (schoolYearMatch) {
+    const endYear = Number(schoolYearMatch[2]);
+    const schoolYearEnd = new Date(endYear, 2, 31); // March 31
+
+    const fifthBirthday = new Date(
+      dateOfBirth.getFullYear() + 5,
+      dateOfBirth.getMonth(),
+      dateOfBirth.getDate(),
+    );
+
+    if (fifthBirthday <= schoolYearEnd) {
+      throw new ValidationError(
+        "Child must not turn 5 years old during the school year (June–March)."
+      );
+    }
   }
 
   if (Math.abs(inputAge - computedAge) > 1) {
