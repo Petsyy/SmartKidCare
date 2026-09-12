@@ -4,8 +4,6 @@ import { AlertCircle, Archive, Bell, CheckCircle2, RotateCcw, Trash2 } from "luc
 import {
   Alert,
   Pressable,
-  RefreshControl,
-  ScrollView,
   Text,
   View,
 } from "react-native";
@@ -18,6 +16,7 @@ import {
   ScreenHeader,
   ScreenLoadingState,
   ScreenShell,
+  RefreshableScrollView,
 } from "@/src/components/ui";
 import type { ScreenHeaderBackgroundVariant } from "@/src/components/ui";
 
@@ -134,7 +133,7 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
         onBack={() => router.back()}
       />
 
-      <ScrollView
+      <RefreshableScrollView
         className="flex-1 px-5"
         contentContainerStyle={{
           paddingTop: 16,
@@ -142,14 +141,9 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
           flexGrow: 1,
         }}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={onRefresh}
-            colors={["#0D9488"]}
-            tintColor="#0D9488"
-          />
-        }
+        refreshing={isRefreshing}
+        onRefresh={onRefresh}
+        refreshColor="#0D9488"
       >
         {/* ── Summary strip ──────────────────────────────────────── */}
         <View className="rounded-2xl bg-teal-50 px-4 py-3">
@@ -595,7 +589,7 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
             })}
           </View>
         ) : null}
-      </ScrollView>
+      </RefreshableScrollView>
     </ScreenShell>
   );
 }

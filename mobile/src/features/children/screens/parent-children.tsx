@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import {
   Pressable,
-  RefreshControl,
   ScrollView,
   Text,
   View,
@@ -26,6 +25,7 @@ import {
   ScreenLoadingState,
   ScreenShell,
   EmptyStateCard,
+  RefreshableScrollView,
 } from "@/src/components/ui";
 import { useParentChildrenData } from "@/src/features/children/hooks";
 import { useChildNutritionHistory } from "@/src/features/nutrition/hooks/useNutrition";
@@ -486,7 +486,7 @@ export default function ParentChildrenScreen() {
         subtitle={screenSubtitle}
       />
 
-      <ScrollView
+      <RefreshableScrollView
         className="flex-1"
         contentContainerStyle={{
           paddingHorizontal: 20,
@@ -494,14 +494,9 @@ export default function ParentChildrenScreen() {
           paddingBottom: scrollBottomPadding + 24,
         }}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor="#14B8A6"
-            colors={["#14B8A6"]}
-          />
-        }
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        refreshColor="#14B8A6"
       >
         {/* ── Empty State ── */}
         {children.length === 0 ? (
@@ -711,7 +706,7 @@ export default function ParentChildrenScreen() {
             )}
           </>
         ) : null}
-      </ScrollView>
+      </RefreshableScrollView>
     </ScreenShell>
   );
 }

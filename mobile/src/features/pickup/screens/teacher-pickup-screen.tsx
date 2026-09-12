@@ -2,10 +2,10 @@ import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
-  ScrollView,
   Alert,
   Modal,
-  RefreshControl,
+  ScrollView,
+  Pressable,
 } from "react-native";
 import { useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -15,6 +15,7 @@ import {
   ScreenLoadingState,
   ScreenShell,
   SearchBar,
+  RefreshableScrollView,
 } from "@/src/components/ui";
 import { usePickupTeacher } from "../hooks/usePickupTeacher";
 import type { PickupEligibleChild } from "@/src/api/api.types";
@@ -24,8 +25,6 @@ import {
   PickupCodeVerifier,
   PickupManualOverridePanel,
 } from "../components";
-import { Pressable } from "react-native";
-
 export function TeacherPickupScreen() {
   const {
     eligibleChildren,
@@ -138,17 +137,13 @@ export function TeacherPickupScreen() {
         iconColor="#9CA3AF"
       />
 
-      <ScrollView
+      <RefreshableScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 24 }}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={isLoading}
-            onRefresh={refetch}
-            tintColor="#0D9488"
-          />
-        }
+        refreshing={isLoading}
+        onRefresh={refetch}
+        refreshColor="#0D9488"
       >
         <View className="px-5 pt-2">
           {filteredChildren.length === 0 ? (
@@ -197,7 +192,7 @@ export function TeacherPickupScreen() {
             </View>
           )}
         </View>
-      </ScrollView>
+      </RefreshableScrollView>
 
       {/* Verification Modal */}
       <Modal

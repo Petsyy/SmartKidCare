@@ -3,8 +3,6 @@ import { useRouter } from "expo-router";
 import {
   ActivityIndicator,
   Pressable,
-  RefreshControl,
-  ScrollView,
   Text,
   View,
 } from "react-native";
@@ -33,6 +31,7 @@ import {
   BRAND_HEADER_GRADIENT,
   ParentLoadingState,
   ScreenShell,
+  RefreshableScrollView,
 } from "@/src/components/ui";
 import { useSystemSettings } from "@/src/context/system-settings-context";
 import { getDaycareCenterDisplay } from "@/src/utils/daycare-center-format";
@@ -315,7 +314,7 @@ export default function ParentDashboardScreen() {
     <ScreenShell edges={[]} withKeyboardAvoiding={false}>
       {dashboardHero}
 
-      <ScrollView
+      <RefreshableScrollView
         className="flex-1"
         contentContainerStyle={{
           paddingHorizontal: 20,
@@ -323,14 +322,9 @@ export default function ParentDashboardScreen() {
           paddingBottom: scrollBottomPadding,
         }}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor="#0F766E"
-            colors={["#0F766E"]}
-          />
-        }
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        refreshColor="#0F766E"
       >
         <Pressable
           onPress={() => router.push("/(parent)/children")}
@@ -618,7 +612,7 @@ export default function ParentDashboardScreen() {
             </Text>
           </View>
         )}
-      </ScrollView>
+      </RefreshableScrollView>
     </ScreenShell>
   );
 }

@@ -3,8 +3,6 @@ import { useRouter } from "expo-router";
 import {
   ActivityIndicator,
   Pressable,
-  RefreshControl,
-  ScrollView,
   Text,
   View,
 } from "react-native";
@@ -32,6 +30,7 @@ import {
   ScreenLoadingState,
   ScreenShell,
   TEACHER_HEADER_GRADIENT,
+  RefreshableScrollView,
 } from "@/src/components/ui";
 import { useSystemSettings } from "@/src/context/system-settings-context";
 import { getDaycareCenterDisplay } from "@/src/utils/daycare-center-format";
@@ -284,7 +283,7 @@ export default function TeacherDashboardScreen() {
     <ScreenShell edges={[]} withKeyboardAvoiding={false}>
       {dashboardHero}
 
-      <ScrollView
+      <RefreshableScrollView
         className="flex-1"
         contentContainerStyle={{
           paddingHorizontal: 20,
@@ -292,14 +291,9 @@ export default function TeacherDashboardScreen() {
           paddingBottom: scrollBottomPadding,
         }}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor="#0F766E"
-            colors={["#0F766E"]}
-          />
-        }
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        refreshColor="#0F766E"
       >
         <View className="mb-5">
           <Text
@@ -733,7 +727,7 @@ export default function TeacherDashboardScreen() {
             </Text>
           </View>
         )}
-      </ScrollView>
+      </RefreshableScrollView>
     </ScreenShell>
   );
 }

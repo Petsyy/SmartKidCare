@@ -9,11 +9,12 @@ import {
   Pressable,
   Text,
   View,
-  ScrollView,
-  RefreshControl,
 } from "react-native";
 import React, { useEffect } from "react";
-import { ScreenLoadingState } from "@/src/components/ui";
+import {
+  RefreshableScrollView,
+  ScreenLoadingState,
+} from "@/src/components/ui";
 import {
   FilterChips,
   SearchBar,
@@ -63,16 +64,11 @@ export function SubmittedRequestsPanel({
   }
 
   return (
-    <ScrollView
+    <RefreshableScrollView
+      refreshing={refreshingSubmitted}
+      onRefresh={() => refreshSubmitted()}
+      refreshColor="#0D9488"
       className="flex-1"
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshingSubmitted}
-          onRefresh={() => void refreshSubmitted()}
-          colors={["#0D9488"]}
-          tintColor="#0D9488"
-        />
-      }
       contentContainerStyle={{
         paddingHorizontal: contentPadding,
         paddingTop: 16,
@@ -318,6 +314,6 @@ export function SubmittedRequestsPanel({
           </View>
         )}
       </View>
-    </ScrollView>
+    </RefreshableScrollView>
   );
 }
