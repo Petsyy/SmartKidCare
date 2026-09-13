@@ -21,6 +21,7 @@ import {
   shouldPaginate,
 } from "../../../shared/utils/records.utils";
 import { recordServiceSupport } from "../../../shared/services/record-service-support";
+import { refreshGuardianMediaUrls } from "../../../shared/utils/generate-secure-url";
 import type {
   RequestPickupCodeInput,
   VerifyPickupCodeInput,
@@ -406,7 +407,12 @@ class PickupService {
       .populate("parent", "firstName lastName phone email")
       .lean();
 
-    return children;
+    return children.map((child: any) => ({
+      ...child,
+      authorizedPickupPersons: (child.authorizedPickupPersons || []).map(
+        refreshGuardianMediaUrls,
+      ),
+    }));
   }
 
   public async getPickupStatus(user: PickupAuthUser, childId: string) {

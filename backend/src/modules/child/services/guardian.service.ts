@@ -5,7 +5,10 @@ import {
   ValidationError,
 } from "../../../shared/errors/app-error";
 import { storageService } from "../../../shared/services/storage.service";
-import { generateSecureUrl } from "../../../shared/utils/generate-secure-url";
+import {
+  generateSecureUrl,
+  refreshGuardianMediaUrls,
+} from "../../../shared/utils/generate-secure-url";
 
 const attachGuardianUploads = async (
   guardianData: any,
@@ -182,7 +185,7 @@ class GuardianService {
       );
     }
 
-    return child.authorizedPickupPersons || [];
+    return (child.authorizedPickupPersons || []).map(refreshGuardianMediaUrls);
   }
 }
 

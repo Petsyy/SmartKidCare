@@ -23,7 +23,11 @@ import { validate } from "../../../shared/middleware/validate.middleware";
 import { authenticateToken } from "../../../shared/middleware/auth.middleware";
 import upload from "../../../shared/middleware/upload.middleware";
 
-const ensureMultipartBody = (req: express.Request, _res: express.Response, next: express.NextFunction) => {
+const ensureMultipartBody = (
+  req: express.Request,
+  _res: express.Response,
+  next: express.NextFunction,
+) => {
   req.body = req.body || {};
   next();
 };
