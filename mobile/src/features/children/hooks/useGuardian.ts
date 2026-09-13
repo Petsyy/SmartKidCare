@@ -26,7 +26,13 @@ export const useGuardians = (childId: string | undefined) => {
   );
 
   const addMutation = useMutation({
-    mutationFn: (data: Guardian) => addGuardian(childId!, data),
+    mutationFn: ({
+      data,
+      files,
+    }: {
+      data: Partial<Guardian>;
+      files?: { guardianPhoto?: any; guardianId?: any };
+    }) => addGuardian(childId!, data, files),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
       setIsAdding(false);
@@ -34,8 +40,15 @@ export const useGuardians = (childId: string | undefined) => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ index, data }: { index: number; data: Partial<Guardian> }) =>
-      updateGuardian(childId!, index, data),
+    mutationFn: ({
+      index,
+      data,
+      files,
+    }: {
+      index: number;
+      data: Partial<Guardian>;
+      files?: { guardianPhoto?: any; guardianId?: any };
+    }) => updateGuardian(childId!, index, data, files),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
       setEditingIndex(null);

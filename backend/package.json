@@ -18,6 +18,8 @@
     "seed:mock-data": "npm run seed:centers && ts-node scripts/seedMockRecords.ts",
     "migrate:models": "ts-node scripts/migrate-models.ts",
     "migrate:models:apply": "ts-node scripts/migrate-models.ts --apply",
+    "cleanup:nutrition-final": "ts-node scripts/remove-final-nutrition-records.ts",
+    "cleanup:nutrition-final:apply": "ts-node scripts/remove-final-nutrition-records.ts --apply",
     "check-balance": "ts-node scripts/check-sepolia-balance.ts",
     "import-dataset": "ts-node scripts/importDataset.ts",
     "sanitize-input": "ts-node scripts/sanitizeInput.ts",

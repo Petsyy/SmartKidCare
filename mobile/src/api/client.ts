@@ -94,6 +94,7 @@ export async function apiClient<T>(
 export async function apiFormDataClient<T>(
   path: string,
   formData: FormData,
+  method: "POST" | "PUT" = "POST",
 ): Promise<T> {
   const token = getAuthToken();
   if (!token) {
@@ -101,7 +102,7 @@ export async function apiFormDataClient<T>(
   }
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
-    method: "POST",
+    method,
     headers: {
       Authorization: `Bearer ${token}`,
     },

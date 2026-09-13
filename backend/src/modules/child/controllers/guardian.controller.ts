@@ -8,6 +8,7 @@ export const addGuardianHandler = asyncHandler(
       req.user as any,
       req.params.id as string,
       req.body,
+      req.files as Record<string, Express.Multer.File[] | undefined>,
     );
     res.status(201).json({ success: true, data: result });
   },
@@ -20,6 +21,7 @@ export const updateGuardianHandler = asyncHandler(
       req.params.id as string,
       Number(req.params.guardianIndex),
       req.body,
+      req.files as Record<string, Express.Multer.File[] | undefined>,
     );
     res.status(200).json({ success: true, data: result });
   },

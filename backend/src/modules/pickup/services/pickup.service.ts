@@ -33,6 +33,30 @@ const generatePickupCode = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
+export const validateManualReleaseGuardianVerification = (
+  guardian: { photoUrl?: string | null; idUrl?: string | null; isActive?: boolean },
+  isVisuallyVerified: boolean,
+) => {
+  if (!guardian || guardian.isActive === false) {
+    throw new ValidationError("Guardian not found or inactive");
+  }
+
+  const hasPhoto = Boolean(guardian.photoUrl?.trim());
+  const hasValidId = Boolean(guardian.idUrl?.trim());
+
+  if (!hasPhoto || !hasValidId) {
+    throw new ValidationError(
+      "Guardian must have a stored photo and valid ID on file before manual release.",
+    );
+  }
+
+  if (!isVisuallyVerified) {
+    throw new ValidationError(
+      "Manual release requires a visual verification match against the guardian photo and ID.",
+    );
+  }
+};
+
 class PickupService {
   private getTeacherCenterId(user: PickupAuthUser) {
     if (!user.daycareCenterId) {
@@ -290,12 +314,15 @@ class PickupService {
         );
       }
       const guardian = child.authorizedPickupPersons?.[input.guardianIndex];
-      if (!guardian || !guardian.isActive) {
-        throw new ValidationError("Guardian not found or inactive");
-      }
+      validateManualReleaseGuardianVerification(
+        guardian,
+        Boolean(input.isVisuallyVerified),
+      );
       name = `${guardian.firstName} ${guardian.lastName}`;
       phone = guardian.phone;
       relationship = guardian.relationship;
+      guardian.verificationStatus = "verified";
+      await child.save();
     } else {
       if (parentUser) {
         userId = parentUser._id;

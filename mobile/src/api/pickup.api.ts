@@ -1,4 +1,4 @@
-import { apiClient } from "./client";
+import { apiClient, apiFormDataClient } from "./client";
 import type {
   Guardian,
   PickupEligibleChild,
@@ -8,10 +8,50 @@ import type {
   PaginatedPickupHistory,
 } from "./api.types";
 
+const appendGuardianMultipartData = (
+  formData: FormData,
+  data: Partial<Guardian>,
+  files?: { guardianPhoto?: any; guardianId?: any },
+) => {
+  Object.entries(data).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      formData.append(key, String(value));
+    }
+  });
+
+  if (files?.guardianPhoto) {
+    formData.append("guardianPhoto", {
+      uri: files.guardianPhoto.uri,
+      name: files.guardianPhoto.name || "guardian-photo.jpg",
+      type: files.guardianPhoto.mimeType || "image/jpeg",
+    } as any);
+  }
+
+  if (files?.guardianId) {
+    formData.append("guardianId", {
+      uri: files.guardianId.uri,
+      name: files.guardianId.name || "guardian-id.jpg",
+      type: files.guardianId.mimeType || "image/jpeg",
+    } as any);
+  }
+};
+
 export const addGuardian = async (
   childId: string,
-  data: Guardian,
+  data: Partial<Guardian>,
+  files?: { guardianPhoto?: any; guardianId?: any },
 ): Promise<Guardian[]> => {
+  if (files?.guardianPhoto || files?.guardianId) {
+    const formData = new FormData();
+    appendGuardianMultipartData(formData, data, files);
+    const res = await apiFormDataClient<{ success: boolean; data: Guardian[] }>(
+      `/api/children/${childId}/guardians`,
+      formData,
+      "POST",
+    );
+    return res.data || [];
+  }
+
   const res = await apiClient<{ success: boolean; data: Guardian[] }>(
     `/api/children/${childId}/guardians`,
     {
@@ -26,7 +66,19 @@ export const updateGuardian = async (
   childId: string,
   index: number,
   data: Partial<Guardian>,
+  files?: { guardianPhoto?: any; guardianId?: any },
 ): Promise<Guardian[]> => {
+  if (files?.guardianPhoto || files?.guardianId) {
+    const formData = new FormData();
+    appendGuardianMultipartData(formData, data, files);
+    const res = await apiFormDataClient<{ success: boolean; data: Guardian[] }>(
+      `/api/children/${childId}/guardians/${index}`,
+      formData,
+      "PUT",
+    );
+    return res.data || [];
+  }
+
   const res = await apiClient<{ success: boolean; data: Guardian[] }>(
     `/api/children/${childId}/guardians/${index}`,
     {
@@ -97,12 +149,13 @@ export const manualRelease = async (
   pickedUpByType: "parent" | "guardian",
   guardianIndex: number | null,
   notes: string,
+  isVisuallyVerified = false,
 ): Promise<PickupRecordResponse> => {
   const res = await apiClient<{ success: boolean; data: PickupRecordResponse }>(
     "/api/pickup/manual-release",
     {
       method: "POST",
-      body: { childId, pickedUpByType, guardianIndex, notes },
+      body: { childId, pickedUpByType, guardianIndex, notes, isVisuallyVerified },
     },
   );
   return res.data;

@@ -20,6 +20,7 @@ import {
 } from "lucide-react-native";
 import { useGuardians } from "../hooks/useGuardian";
 import type { Guardian } from "@/src/api/api.types";
+import { useDocumentPicker } from "@/src/features/enrollment/hooks/useDocumentPicker";
 
 interface GuardianListProps {
   childId: string;
@@ -39,6 +40,7 @@ export function GuardianList({ childId, readOnly = false }: GuardianListProps) {
     removeGuardian,
     isMutating,
   } = useGuardians(childId);
+  const { pickDocument } = useDocumentPicker();
 
   const [formData, setFormData] = useState<Partial<Guardian>>({
     firstName: "",
@@ -46,7 +48,12 @@ export function GuardianList({ childId, readOnly = false }: GuardianListProps) {
     relationship: "Guardian",
     customRelationship: null,
     phone: "",
+    photoUrl: null,
+    idUrl: null,
+    verificationStatus: "pending",
   });
+  const [guardianPhotoFile, setGuardianPhotoFile] = useState<any>(null);
+  const [guardianIdFile, setGuardianIdFile] = useState<any>(null);
 
   const activeGuardians = guardians.filter((g) => g.isActive !== false);
 
@@ -75,10 +82,30 @@ export function GuardianList({ childId, readOnly = false }: GuardianListProps) {
         return;
       }
 
+      const payload: Partial<Guardian> = {
+        ...(formData as Guardian),
+        photoUrl: formData.photoUrl || null,
+        idUrl: formData.idUrl || null,
+        verificationStatus: "pending" as const,
+      };
+
       if (editingIndex !== null) {
-        await updateGuardian({ index: editingIndex, data: formData });
+        await updateGuardian({
+          index: editingIndex,
+          data: payload,
+          files: {
+            guardianPhoto: guardianPhotoFile,
+            guardianId: guardianIdFile,
+          },
+        });
       } else {
-        await addGuardian(formData as Guardian);
+        await addGuardian({
+          data: payload,
+          files: {
+            guardianPhoto: guardianPhotoFile,
+            guardianId: guardianIdFile,
+          },
+        });
       }
       resetForm();
     } catch (e: any) {
@@ -104,13 +131,28 @@ export function GuardianList({ childId, readOnly = false }: GuardianListProps) {
   const resetForm = () => {
     setIsAdding(false);
     setEditingIndex(null);
+    setGuardianPhotoFile(null);
+    setGuardianIdFile(null);
     setFormData({
       firstName: "",
       lastName: "",
       relationship: "Guardian",
       customRelationship: null,
       phone: "",
+      photoUrl: null,
+      idUrl: null,
+      verificationStatus: "pending",
     });
+  };
+
+  const handlePickGuardianPhoto = async () => {
+    const file = await pickDocument("parentId", "image");
+    if (file) setGuardianPhotoFile(file);
+  };
+
+  const handlePickGuardianId = async () => {
+    const file = await pickDocument("parentId", "image");
+    if (file) setGuardianIdFile(file);
   };
 
   const startEdit = (guardian: Guardian, index: number) => {
@@ -270,6 +312,30 @@ export function GuardianList({ childId, readOnly = false }: GuardianListProps) {
             keyboardType="phone-pad"
             className="bg-white border border-gray-200 rounded-2xl px-5 py-4 mb-5 text-base text-gray-900 font-semibold"
           />
+
+          <Text className="text-sm font-extrabold text-gray-700 mb-2 ml-2">
+            Guardian Photo
+          </Text>
+          <Pressable
+            onPress={handlePickGuardianPhoto}
+            className="bg-white border border-gray-200 rounded-2xl px-5 py-4 mb-4 items-center justify-center"
+          >
+            <Text className="text-base font-bold text-gray-800">
+              {guardianPhotoFile ? "Photo selected" : "Upload guardian photo"}
+            </Text>
+          </Pressable>
+
+          <Text className="text-sm font-extrabold text-gray-700 mb-2 ml-2">
+            Valid ID
+          </Text>
+          <Pressable
+            onPress={handlePickGuardianId}
+            className="bg-white border border-gray-200 rounded-2xl px-5 py-4 mb-5 items-center justify-center"
+          >
+            <Text className="text-base font-bold text-gray-800">
+              {guardianIdFile ? "ID selected" : "Upload valid ID"}
+            </Text>
+          </Pressable>
 
           <View className="flex-row gap-3">
             <Pressable

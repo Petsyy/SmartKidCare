@@ -18,6 +18,7 @@ export const validateManualRelease = z.object({
   }),
   guardianIndex: z.number().int().nonnegative().nullable().optional(),
   notes: z.string().min(1, "Notes are required for manual release").max(500, "Notes cannot exceed 500 characters"),
+  isVisuallyVerified: z.boolean().optional(),
 });
 
 export const validatePickupHistoryQuery = z.object({
@@ -40,6 +41,9 @@ export const validateGuardian = z.object({
   phone: z.string().min(1, "Phone number is required"),
   photoUrl: z.string().nullable().optional(),
   photoPublicId: z.string().nullable().optional(),
+  idUrl: z.string().nullable().optional(),
+  idPublicId: z.string().nullable().optional(),
+  verificationStatus: z.enum(["pending", "verified"]).optional(),
   isActive: z.boolean().optional(),
 });
 

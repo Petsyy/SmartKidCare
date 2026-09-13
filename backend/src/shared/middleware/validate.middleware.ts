@@ -6,7 +6,8 @@ export type RequestPart = "body" | "query" | "params";
 export const validate =
   (schema: ZodTypeAny, part: RequestPart = "body") =>
   (req: Request, res: Response, next: NextFunction) => {
-    const parsed = schema.safeParse(req[part]);
+    const payload = req[part] ?? {};
+    const parsed = schema.safeParse(payload);
 
     if (!parsed.success) {
       const firstIssue = parsed.error.issues[0];

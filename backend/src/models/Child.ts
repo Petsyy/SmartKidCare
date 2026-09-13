@@ -69,6 +69,13 @@ const ChildSchema = new mongoose.Schema(
         phone: { type: String, required: true, trim: true },
         photoUrl: { type: String, default: null },
         photoPublicId: { type: String, default: null },
+        idUrl: { type: String, default: null },
+        idPublicId: { type: String, default: null },
+        verificationStatus: {
+          type: String,
+          enum: ["pending", "verified"],
+          default: "pending",
+        },
         isActive: { type: Boolean, default: true },
       },
     ],

@@ -51,6 +51,9 @@ export interface Guardian {
   phone: string;
   photoUrl?: string | null;
   photoPublicId?: string | null;
+  idUrl?: string | null;
+  idPublicId?: string | null;
+  verificationStatus?: "pending" | "verified";
   isActive?: boolean;
 }
 

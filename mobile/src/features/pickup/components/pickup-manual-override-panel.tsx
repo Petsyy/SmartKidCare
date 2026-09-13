@@ -1,6 +1,6 @@
-import React from "react";
-import { View, Text, Pressable, ActivityIndicator } from "react-native";
-import { ShieldCheck, QrCode, AlertCircle } from "lucide-react-native";
+import React, { useMemo } from "react";
+import { View, Text, Pressable, ActivityIndicator, Image } from "react-native";
+import { ShieldCheck, QrCode, AlertCircle, CheckCircle2, XCircle } from "lucide-react-native";
 import { PickupPersonSelector } from "./pickup-person-selector";
 import type { Guardian } from "@/src/api/api.types";
 
@@ -17,6 +17,8 @@ interface Props {
   onConfirm: () => void;
   isReleasing: boolean;
   onBack: () => void;
+  isVisuallyVerified: boolean;
+  onToggleVisualVerification: (value: boolean) => void;
 }
 
 export function PickupManualOverridePanel({
@@ -27,9 +29,20 @@ export function PickupManualOverridePanel({
   onConfirm,
   isReleasing,
   onBack,
+  isVisuallyVerified,
+  onToggleVisualVerification,
 }: Props) {
+  const selectedGuardian = useMemo(() => {
+    if (selectedGuardianIndex === null || selectedGuardianIndex === undefined) return null;
+    return guardians[selectedGuardianIndex] ?? null;
+  }, [guardians, selectedGuardianIndex]);
+
   const confirmDisabled =
-    isReleasing || (selectedGuardianIndex === null && !parent);
+    isReleasing ||
+    (selectedGuardianIndex === null && !parent) ||
+    !isVisuallyVerified ||
+    !selectedGuardian?.photoUrl ||
+    !selectedGuardian?.idUrl;
 
   return (
     <View
@@ -75,6 +88,60 @@ export function PickupManualOverridePanel({
         selectedGuardianIndex={selectedGuardianIndex}
         onSelect={onSelectGuardian}
       />
+
+      {selectedGuardian && (
+        <View className="mt-5 border border-gray-200 rounded-2xl p-4 bg-gray-50">
+          <Text className="text-sm font-black text-gray-800 mb-3">
+            Guardian Verification Documents
+          </Text>
+          <View className="flex-row gap-3">
+            {selectedGuardian.photoUrl ? (
+              <View className="flex-1">
+                <Text className="text-xs font-bold text-gray-500 mb-2">Photo</Text>
+                <Image
+                  source={{ uri: selectedGuardian.photoUrl }}
+                  className="h-28 w-full rounded-2xl"
+                  resizeMode="cover"
+                />
+              </View>
+            ) : null}
+            {selectedGuardian.idUrl ? (
+              <View className="flex-1">
+                <Text className="text-xs font-bold text-gray-500 mb-2">Valid ID</Text>
+                <Image
+                  source={{ uri: selectedGuardian.idUrl }}
+                  className="h-28 w-full rounded-2xl"
+                  resizeMode="cover"
+                />
+              </View>
+            ) : null}
+          </View>
+
+          <Pressable
+            onPress={() => onToggleVisualVerification(!isVisuallyVerified)}
+            className={`mt-4 flex-row items-center justify-center rounded-2xl border px-4 py-3 ${
+              isVisuallyVerified
+                ? "bg-emerald-50 border-emerald-200"
+                : "bg-white border-gray-200"
+            }`}
+            accessibilityRole="button"
+            accessibilityLabel="Confirm visual verification against guardian photo and ID"
+          >
+            {isVisuallyVerified ? (
+              <CheckCircle2 size={18} color="#059669" />
+            ) : (
+              <XCircle size={18} color="#6B7280" />
+            )}
+            <Text
+              className={`ml-2 font-black text-sm ${
+                isVisuallyVerified ? "text-emerald-700" : "text-gray-700"
+              }`}
+            >
+              {isVisuallyVerified ? "Visual Match Confirmed" : "Confirm Visual Match"}
+            </Text>
+          </Pressable>
+        </View>
+      )}
 
       {/* Confirm Button */}
       <Pressable

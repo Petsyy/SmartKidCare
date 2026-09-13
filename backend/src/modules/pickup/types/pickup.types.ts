@@ -25,6 +25,7 @@ export interface ManualReleaseInput {
   pickedUpByType: "parent" | "guardian";
   guardianIndex?: number | null;
   notes: string;
+  isVisuallyVerified?: boolean;
 }
 
 export interface GuardianInput {
@@ -34,6 +35,9 @@ export interface GuardianInput {
   phone: string;
   photoUrl?: string | null;
   photoPublicId?: string | null;
+  idUrl?: string | null;
+  idPublicId?: string | null;
+  verificationStatus?: "pending" | "verified";
   isActive?: boolean;
 }
 

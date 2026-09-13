@@ -45,6 +45,7 @@ export function TeacherPickupScreen() {
   const [selectedGuardianIndex, setSelectedGuardianIndex] = useState<
     number | null
   >(null);
+  const [isVisuallyVerified, setIsVisuallyVerified] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   useFocusEffect(
@@ -86,6 +87,7 @@ export function TeacherPickupScreen() {
         pickedUpByType: type,
         guardianIndex: selectedGuardianIndex,
         notes: "Teacher override",
+        isVisuallyVerified,
       });
       Alert.alert("Success", "Child successfully released manually.");
       handleClose();
@@ -102,6 +104,7 @@ export function TeacherPickupScreen() {
     setCode("");
     setIsManualRelease(false);
     setSelectedGuardianIndex(null);
+    setIsVisuallyVerified(false);
   };
 
   if (isLoading) {
@@ -248,10 +251,17 @@ export function TeacherPickupScreen() {
                   parent={selectedChild.parent}
                   guardians={selectedChild.authorizedPickupPersons || []}
                   selectedGuardianIndex={selectedGuardianIndex}
-                  onSelectGuardian={setSelectedGuardianIndex}
+                  onSelectGuardian={(index) => {
+                    setSelectedGuardianIndex(index);
+                    if (index !== null) {
+                      setIsVisuallyVerified(false);
+                    }
+                  }}
                   onConfirm={handleManualRelease}
                   isReleasing={isReleasing}
                   onBack={() => setIsManualRelease(false)}
+                  isVisuallyVerified={isVisuallyVerified}
+                  onToggleVisualVerification={setIsVisuallyVerified}
                 />
               )}
             </ScrollView>

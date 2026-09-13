@@ -23,6 +23,11 @@ import { validate } from "../../../shared/middleware/validate.middleware";
 import { authenticateToken } from "../../../shared/middleware/auth.middleware";
 import upload from "../../../shared/middleware/upload.middleware";
 
+const ensureMultipartBody = (req: express.Request, _res: express.Response, next: express.NextFunction) => {
+  req.body = req.body || {};
+  next();
+};
+
 const router = express.Router();
 
 router.use(authenticateToken);
@@ -48,12 +53,22 @@ router.delete("/:id", deleteChild);
 router.post(
   "/:id/guardians",
   requireRole("teacher", "admin"),
+  upload.fields([
+    { name: "guardianPhoto", maxCount: 1 },
+    { name: "guardianId", maxCount: 1 },
+  ]),
+  ensureMultipartBody,
   validate(validateGuardian),
   addGuardianHandler,
 );
 router.put(
   "/:id/guardians/:guardianIndex",
   requireRole("teacher", "admin"),
+  upload.fields([
+    { name: "guardianPhoto", maxCount: 1 },
+    { name: "guardianId", maxCount: 1 },
+  ]),
+  ensureMultipartBody,
   validate(validateGuardian),
   updateGuardianHandler,
 );

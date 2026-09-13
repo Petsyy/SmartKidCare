@@ -39,12 +39,21 @@ export const usePickupTeacher = () => {
       pickedUpByType,
       guardianIndex,
       notes,
+      isVisuallyVerified,
     }: {
       childId: string;
       pickedUpByType: "parent" | "guardian";
       guardianIndex: number | null;
       notes: string;
-    }) => manualRelease(childId, pickedUpByType, guardianIndex, notes),
+      isVisuallyVerified?: boolean;
+    }) =>
+      manualRelease(
+        childId,
+        pickedUpByType,
+        guardianIndex,
+        notes,
+        isVisuallyVerified ?? false,
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pickupEligibleChildren"] });
     },

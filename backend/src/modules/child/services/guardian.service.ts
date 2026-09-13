@@ -4,9 +4,59 @@ import {
   ForbiddenError,
   ValidationError,
 } from "../../../shared/errors/app-error";
+import { storageService } from "../../../shared/services/storage.service";
+import { generateSecureUrl } from "../../../shared/utils/generate-secure-url";
+
+const attachGuardianUploads = async (
+  guardianData: any,
+  files?: Record<string, Express.Multer.File[] | undefined>,
+) => {
+  const nextGuardianData = { ...guardianData };
+
+  if (files?.guardianPhoto?.[0]) {
+    const file = files.guardianPhoto[0];
+    const upload = await storageService.uploadFile(
+      file.buffer,
+      "child-guardians/photos",
+      file.mimetype,
+      file.originalname,
+    );
+
+    nextGuardianData.photoUrl = generateSecureUrl(
+      upload.publicId,
+      upload.resourceType,
+      upload.format,
+    );
+    nextGuardianData.photoPublicId = upload.publicId;
+  }
+
+  if (files?.guardianId?.[0]) {
+    const file = files.guardianId[0];
+    const upload = await storageService.uploadFile(
+      file.buffer,
+      "child-guardians/ids",
+      file.mimetype,
+      file.originalname,
+    );
+
+    nextGuardianData.idUrl = generateSecureUrl(
+      upload.publicId,
+      upload.resourceType,
+      upload.format,
+    );
+    nextGuardianData.idPublicId = upload.publicId;
+  }
+
+  return nextGuardianData;
+};
 
 class GuardianService {
-  public async addGuardian(user: any, childId: string, guardianData: any) {
+  public async addGuardian(
+    user: any,
+    childId: string,
+    guardianData: any,
+    files?: Record<string, Express.Multer.File[] | undefined>,
+  ) {
     const child = await Child.findById(childId);
     if (!child) throw new NotFoundError("Child");
 
@@ -30,7 +80,8 @@ class GuardianService {
     }
 
     child.authorizedPickupPersons = child.authorizedPickupPersons || [];
-    child.authorizedPickupPersons.push(guardianData);
+    const normalizedGuardian = await attachGuardianUploads(guardianData, files);
+    child.authorizedPickupPersons.push(normalizedGuardian);
     await child.save();
 
     return child.authorizedPickupPersons;
@@ -41,6 +92,7 @@ class GuardianService {
     childId: string,
     guardianIndex: number,
     guardianData: any,
+    files?: Record<string, Express.Multer.File[] | undefined>,
   ) {
     const child = await Child.findById(childId);
     if (!child) throw new NotFoundError("Child");
@@ -67,9 +119,10 @@ class GuardianService {
       throw new NotFoundError("Guardian");
     }
 
+    const normalizedGuardian = await attachGuardianUploads(guardianData, files);
     child.authorizedPickupPersons[guardianIndex] = {
       ...child.authorizedPickupPersons[guardianIndex],
-      ...guardianData,
+      ...normalizedGuardian,
     };
     await child.save();
 
