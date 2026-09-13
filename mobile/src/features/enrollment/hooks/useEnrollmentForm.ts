@@ -16,7 +16,7 @@ import {
   computeAgeFromDateOfBirth,
   childEnrollmentStepOneSchema,
   childEnrollmentStepTwoSchema,
-} from "@/src/validations/child-enrollment-validation";
+} from "@/src/features/enrollment/validations/child-enrollment-validation";
 import DocumentPicker from "expo-document-picker";
 
 const enrollmentSchema = z.intersection(

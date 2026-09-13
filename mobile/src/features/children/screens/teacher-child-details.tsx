@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   Linking,
   Text,
@@ -37,7 +37,9 @@ import {
   ScreenLoadingState,
   TEACHER_HEADER_GRADIENT,
 } from "@/src/components/ui";
-import { GuardianList } from "../components/guardian-list";
+import { ViewGuardiansBottomSheet } from "../components/view-guardians-bottom-sheet";
+import { AddGuardianBottomSheet } from "../components/add-guardian-bottom-sheet";
+import type { Guardian } from "@/src/api/api.types";
 
 export default function TeacherChildDetailsScreen() {
   const insets = useSafeAreaInsets();
@@ -45,6 +47,24 @@ export default function TeacherChildDetailsScreen() {
   const { id } = useLocalSearchParams();
   const { isAuthenticated } = useAuth();
   const childId = typeof id === "string" ? id : null;
+  const [isGuardiansSheetOpen, setIsGuardiansSheetOpen] = useState(false);
+  const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
+  const [editGuardian, setEditGuardian] = useState<Guardian | null>(null);
+  const [editIndex, setEditIndex] = useState<number | null>(null);
+
+  const handleEditGuardian = (guardian: Guardian, index: number) => {
+    setEditGuardian(guardian);
+    setEditIndex(index);
+    setIsGuardiansSheetOpen(false);
+    setTimeout(() => setIsEditSheetOpen(true), 300);
+  };
+
+  const handleEditClose = () => {
+    setIsEditSheetOpen(false);
+    setEditGuardian(null);
+    setEditIndex(null);
+    setTimeout(() => setIsGuardiansSheetOpen(true), 300);
+  };
 
   const {
     data,
@@ -447,15 +467,10 @@ export default function TeacherChildDetailsScreen() {
           </View>
         </View>
 
-        {/* Authorized Guardians Button */}
+        {/* Authorized Guardians Summary Card */}
         <Pressable
-          onPress={() =>
-            router.push({
-              pathname: "/(teacher)/child-details/guardians/[childId]",
-              params: { childId: child._id },
-            })
-          }
-          className="rounded-3xl bg-white p-5 mb-4 flex-row items-center active:bg-gray-50"
+          onPress={() => setIsGuardiansSheetOpen(true)}
+          className="rounded-3xl bg-white p-5 mb-4 active:bg-gray-50"
           style={{
             shadowColor: "#000",
             shadowOffset: { width: 0, height: 2 },
@@ -464,18 +479,37 @@ export default function TeacherChildDetailsScreen() {
             elevation: 3,
           }}
         >
-          <View className="h-12 w-12 items-center justify-center rounded-2xl bg-teal-50 border border-teal-100">
-            <ShieldCheck size={24} color="#0D9488" />
+          <View className="flex-row items-center mb-3 gap-3">
+            <View className="h-10 w-10 items-center justify-center rounded-2xl bg-teal-50">
+              <ShieldCheck size={20} color="#0D9488" />
+            </View>
+            <View className="flex-1">
+              <Text className="text-xl font-bold text-gray-900">
+                Authorized Guardians
+              </Text>
+              <Text className="text-sm text-gray-500 font-medium">
+                {child.authorizedPickupPersons?.filter((g) => g.isActive !== false).length || 0}/5 Configured
+              </Text>
+            </View>
+            <ChevronRight size={24} color="#9CA3AF" />
           </View>
-          <View className="ml-4 flex-1">
-            <Text className="text-lg font-bold text-gray-900">
-              Authorized Guardians
-            </Text>
-            <Text className="text-sm text-gray-500 mt-0.5">
-              View approved pickup contacts
-            </Text>
-          </View>
-          <ChevronRight size={24} color="#9CA3AF" />
+          
+          {child.authorizedPickupPersons && child.authorizedPickupPersons.filter((g) => g.isActive !== false).length > 0 ? (
+            <View className="bg-gray-50 rounded-2xl p-3 border border-gray-100">
+              <Text className="text-sm font-semibold text-gray-700 leading-5" numberOfLines={2}>
+                {child.authorizedPickupPersons
+                  .filter((g) => g.isActive !== false)
+                  .map((g) => `${g.firstName} ${g.lastName}`)
+                  .join(" • ")}
+              </Text>
+            </View>
+          ) : (
+            <View className="bg-amber-50 rounded-2xl p-3 border border-amber-100">
+              <Text className="text-sm font-medium text-amber-700">
+                No authorized guardians added yet.
+              </Text>
+            </View>
+          )}
         </Pressable>
 
         {/* Parent Information Card */}
@@ -551,6 +585,22 @@ export default function TeacherChildDetailsScreen() {
           </View>
         )}
       </ScrollView>
+      
+      <ViewGuardiansBottomSheet
+        childId={childId}
+        childName={fullName}
+        visible={isGuardiansSheetOpen}
+        onClose={() => setIsGuardiansSheetOpen(false)}
+        onEditGuardian={handleEditGuardian}
+      />
+      <AddGuardianBottomSheet
+        childId={childId}
+        childName={fullName}
+        visible={isEditSheetOpen}
+        onClose={handleEditClose}
+        editGuardian={editGuardian}
+        editIndex={editIndex}
+      />
     </SafeAreaView>
   );
 }

@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Text, View } from "react-native";
-import { getPasswordStrengthFeedback } from "@/src/validations/password-validation";
+import { getPasswordStrengthFeedback } from "@/src/features/auth/validations/password-validation";
 
 type PasswordStrengthFeedbackProps = {
   password: string;

@@ -81,8 +81,6 @@ export default function TeacherDashboardScreen() {
     totalChildren,
     presentToday,
     absentToday,
-    feedingDone,
-    feedingMissed,
     pendingPickups,
     attendanceData,
     feedingData,
@@ -118,23 +116,7 @@ export default function TeacherDashboardScreen() {
   const attendanceAvailable = hasChildren && attendanceSubmitted;
   const feedingSubmitted = Boolean(feedingData);
   const feedingNotRequired = attendanceSubmitted && presentToday === 0;
-  const feedingActionEnabled =
-    hasChildren &&
-    (feedingSubmitted || (attendanceSubmitted && !feedingNotRequired));
-  const mealsCompletedValue = !hasChildren
-    ? "--"
-    : feedingSubmitted
-      ? feedingDone
-      : feedingNotRequired
-        ? "N/A"
-        : "--";
-  const mealsCompletedCaption = !hasChildren
-    ? "No children assigned"
-    : feedingSubmitted
-      ? `${feedingMissed} missed`
-      : feedingNotRequired
-        ? "Not needed today"
-        : "Awaiting meal record";
+  const feedingActionEnabled = hasChildren;
 
   const allDailyTasksDone =
     attendanceSubmitted && (feedingSubmitted || feedingNotRequired);
@@ -512,9 +494,7 @@ export default function TeacherDashboardScreen() {
                   ? "Feeding unavailable because no children are assigned"
                   : feedingNotRequired
                     ? "Feeding is not needed because no children are present"
-                    : attendanceSubmitted
-                      ? "Record today's feeding"
-                      : "Complete attendance before recording feeding"
+                    : "Open feeding records and select a date"
             }
             accessibilityState={{ disabled: !feedingActionEnabled }}
             className={`min-h-32 flex-row items-center rounded-3xl border p-4 shadow-sm active:opacity-85 ${
@@ -555,9 +535,7 @@ export default function TeacherDashboardScreen() {
                     ? "Completed today"
                     : feedingNotRequired
                       ? "Skipped today"
-                      : feedingActionEnabled
-                        ? "Ready to record"
-                        : "Finish attendance first"}
+                      : "Ready to record"}
                 </Text>
               </View>
               <Text className="mt-1.5 text-sm leading-5 text-gray-600">
@@ -565,9 +543,7 @@ export default function TeacherDashboardScreen() {
                   ? "Review today's submitted record."
                   : feedingNotRequired
                     ? "No present children today."
-                    : attendanceSubmitted
-                      ? "Track today's meal completion."
-                      : "Locked until attendance is done."}
+                    : "Select today or a past date to log a meal."}
               </Text>
             </View>
             {(feedingActionEnabled || feedingSubmitted || feedingNotRequired) ? (

@@ -94,7 +94,6 @@ export const childEnrollmentStepOneSchema = z
     const birthDate = parseYmd(data.dateOfBirth);
     if (!birthDate) return;
 
-    // Rule 1: Child must be at least 3 years old at enrollment
     const age = computeAgeFromDateOfBirth(data.dateOfBirth);
     if (age < 3) {
       ctx.addIssue({
@@ -105,12 +104,10 @@ export const childEnrollmentStepOneSchema = z
       return;
     }
 
-    // Rule 2: Child must NOT turn 5 during the school year (June–March)
-    // School year format: "2026-2027" → ends March 31 of the end year
-    const schoolYearMatch = /(\d{4})\s*[-–]\s*(\d{4})/.exec(data.schoolYear);
+    const schoolYearMatch = /([0-9]{4})\s*[-–]\s*([0-9]{4})/.exec(data.schoolYear);
     if (schoolYearMatch) {
       const endYear = Number(schoolYearMatch[2]);
-      const schoolYearEnd = new Date(endYear, 2, 31); // March 31
+      const schoolYearEnd = new Date(endYear, 2, 31);
 
       const fifthBirthday = new Date(
         birthDate.getFullYear() + 5,

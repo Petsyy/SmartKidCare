@@ -5,7 +5,7 @@ import { changePassword } from "@/src/api/authentication.api";
 import {
   getPasswordStrengthFeedback,
   validatePasswordRules,
-} from "@/src/validations/password-validation";
+} from "@/src/features/auth/validations/password-validation";
 
 export function useChangePassword(onDismissModal: () => void) {
   const [currentPassword, setCurrentPassword] = useState("");

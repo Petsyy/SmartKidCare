@@ -15,6 +15,7 @@ import {
 import { useCallback } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTeacherFeeding } from "@/src/features/feeding/hooks";
+import { FeedingDatePicker } from "@/src/features/feeding/components/feeding-date-picker";
 import type { Child } from "@/src/api/parent.api";
 import { useUnsavedChangesGuard } from "@/src/hooks/use-unsaved-changes-guard";
 import {
@@ -41,6 +42,8 @@ export default function RecordFeeding() {
     dismissSuccessFeedback,
     isReadOnly,
     isSubmitting,
+    attendanceDateKey,
+    setAttendanceDateKey,
     attendanceDateLabel,
     interactionDisabled,
     filteredChildren,
@@ -146,6 +149,12 @@ export default function RecordFeeding() {
 
   const headerSection = (
     <>
+      <FeedingDatePicker
+        dateKey={attendanceDateKey}
+        dateLabel={attendanceDateLabel}
+        onDateChange={setAttendanceDateKey}
+      />
+
       <View className="px-6 pb-5 pt-4">
         <View className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
           <View className="flex-row items-start justify-between">

@@ -5,7 +5,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 import { Lock } from "lucide-react-native";
 import { resetForgotPassword } from "@/src/api/authentication.api";
-import { getPasswordStrengthFeedback } from "@/src/validations/password-validation";
+import { getPasswordStrengthFeedback } from "@/src/features/auth/validations/password-validation";
 import { PasswordStrengthFeedback } from "@/src/features/auth/components";
 import { AuthLayout, PasswordInput, GradientButton } from "@/src/components/ui";
 

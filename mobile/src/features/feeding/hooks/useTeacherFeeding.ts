@@ -6,8 +6,8 @@ import { useAuth } from "@/src/hooks/use-auth";
 import { getChildren } from "@/src/api/teacher.api";
 import {
   submitFeeding,
-  getTodayFeeding,
-  getTodayAttendance,
+  getAttendanceForDate,
+  getFeedingForDate,
   type FeedingRecord,
 } from "@/src/api/records.api";
 import type { Child } from "@/src/api/api.types";
@@ -89,10 +89,20 @@ export const useTeacherFeeding = () => {
     [presentChildrenIds],
   );
 
-  const attendanceDateKey = useMemo(() => {
+  const initialAttendanceDateKey = useMemo(() => {
     const rawDateKey = String(params.attendanceDateKey || "").trim();
     return isValidManilaDateKey(rawDateKey) ? rawDateKey : getManilaDateKey();
   }, [params.attendanceDateKey]);
+  const [attendanceDateKey, setAttendanceDateKey] = useState(
+    initialAttendanceDateKey,
+  );
+
+  useEffect(() => {
+    setAttendanceDateKey(initialAttendanceDateKey);
+  }, [initialAttendanceDateKey]);
+
+  const todayDateKey = useMemo(() => getManilaDateKey(), []);
+  const isHistoricalDate = attendanceDateKey !== todayDateKey;
 
   const attendanceDateLabel = useMemo(() => {
     const explicitLabel = String(params.attendanceDateLabel || "").trim();
@@ -118,14 +128,14 @@ export const useTeacherFeeding = () => {
     ),
     enabled: isAuthenticated,
     queryFn: async () => {
-      const [childrenData, todayRecord] = await Promise.all([
+      const [childrenData, feedingRecord] = await Promise.all([
         getChildren(),
-        getTodayFeeding(),
+        getFeedingForDate(attendanceDateKey),
       ]);
 
-      if (todayRecord) {
+      if (feedingRecord) {
         const recordedChildIds = new Set(
-          todayRecord.records.map((record: any) =>
+          feedingRecord.records.map((record: any) =>
             String(record.child?._id || record.child),
           ),
         );
@@ -135,7 +145,7 @@ export const useTeacherFeeding = () => {
         const existingStatus: Record<string, boolean> = {};
         const existingNotes: Record<string, string> = {};
 
-        todayRecord.records.forEach((record: any) => {
+        feedingRecord.records.forEach((record: any) => {
           const childId = String(record.child?._id || record.child);
           existingStatus[childId] = record.status !== "completed";
           existingNotes[childId] = String(record.notes || "");
@@ -143,30 +153,32 @@ export const useTeacherFeeding = () => {
 
         return {
           childrenToShow,
-          isReadOnly: true,
-          foodServed: String(todayRecord.foodServed || ""),
+          isReadOnly: !isHistoricalDate,
+          foodServed: String(feedingRecord.foodServed || ""),
           feedingStatus: existingStatus,
           feedingNotes: existingNotes,
         };
       }
 
       let childrenToShow: Child[] = [];
-      if (presentChildrenIds.length > 0) {
+      if (!isHistoricalDate && presentChildrenIds.length > 0) {
         const presentIds = new Set(presentChildrenIds.map(String));
         childrenToShow = childrenData.filter((child) =>
           presentIds.has(child._id),
         );
       } else {
-        const todayAttendance = await getTodayAttendance();
-        if (todayAttendance?.records) {
+        const attendanceRecord = await getAttendanceForDate(attendanceDateKey);
+        if (attendanceRecord?.records) {
           const presentIds = new Set(
-            todayAttendance.records
+            attendanceRecord.records
               .filter((record: any) => record.status === "present")
               .map((record: any) => String(record.child?._id || record.child)),
           );
           childrenToShow = childrenData.filter((child) =>
             presentIds.has(child._id),
           );
+        } else if (isHistoricalDate) {
+          childrenToShow = childrenData;
         }
       }
 
@@ -384,6 +396,8 @@ export const useTeacherFeeding = () => {
     presentChildrenIds,
     attendanceDateKey,
     attendanceDateLabel,
+    isHistoricalDate,
+    setAttendanceDateKey,
     interactionDisabled,
     filteredChildren,
     stats,

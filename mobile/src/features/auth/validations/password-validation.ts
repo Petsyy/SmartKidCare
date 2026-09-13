@@ -1,5 +1,3 @@
-
-
 export const PASSWORD_MIN_LENGTH = 8;
 
 const startsWithUppercaseRegex = /^[A-Z]/;
@@ -80,7 +78,8 @@ export const getPasswordStrengthFeedback = (
 ): PasswordStrengthFeedback => {
   const rules = getPasswordRuleStatus(password);
   const ruleScore = rules.filter((rule) => rule.isMet).length;
-  const bonusScore = Number(hasNumberRegex.test(password)) + Number(password.length >= 10);
+  const bonusScore =
+    Number(hasNumberRegex.test(password)) + Number(password.length >= 10);
   const maxScore = 5;
   const score = Math.min(ruleScore + bonusScore, maxScore);
   const percent = password ? Math.round((score / maxScore) * 100) : 0;

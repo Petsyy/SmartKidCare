@@ -1,12 +1,13 @@
-import { useMemo } from "react";
-import { Text, View, ScrollView, Pressable } from "react-native";
+import { useMemo, useState, useRef } from "react";
+import { Text, View, ScrollView, Pressable, Animated } from "react-native";
 import { useRouter } from "expo-router";
 import { getChildren } from "@/src/api/teacher.api";
 import { getTodayAttendance, getTodayFeeding } from "@/src/api/records.api";
 import { useAuth } from "@/src/hooks/use-auth";
 import ChildCard from "@/src/components/ui/child-card";
-import { Search, Users, AlertCircle } from "lucide-react-native";
+import { Search, Users, AlertCircle, ShieldPlus } from "lucide-react-native";
 import { useQuery } from "@tanstack/react-query";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { useTeacherUi } from "@/src/context/teacher-ui-context";
 import {
@@ -15,6 +16,8 @@ import {
   ScreenShell,
   SearchBar,
 } from "@/src/components/ui";
+import { SwipeableChildCard } from "@/src/components/ui/swipeable-child-card";
+import { AddGuardianBottomSheet } from "../components/add-guardian-bottom-sheet";
 
 interface ChildStatus {
   attendance: "Present" | "Absent" | "Not Recorded";
@@ -25,6 +28,8 @@ interface ChildStatus {
 export default function ChildScreen() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
+  
+  const [selectedChildForGuardian, setSelectedChildForGuardian] = useState<{ id: string; name: string } | null>(null);
 
   const {
     childrenSearchQuery: searchQuery,
@@ -153,7 +158,8 @@ export default function ChildScreen() {
   }
 
   return (
-    <ScreenShell edges={[]}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ScreenShell edges={[]}>
       <ScreenHeader
         backgroundVariant="teacherGradient"
         title="Children List"
@@ -209,33 +215,39 @@ export default function ChildScreen() {
             <View className="flex flex-col">
               {filteredChildren.map((child, index) => {
                 const status = getChildStatus(child._id);
+                const activeGuardians = (child.authorizedPickupPersons || []).filter(g => g.isActive !== false).length;
+                const childName = `${child.firstName} ${child.middleName ? child.middleName + " " : ""}${child.lastName}`;
+                
                 return (
-                  <View
+                  <SwipeableChildCard
                     key={child._id}
-                    className={
-                      index < filteredChildren.length - 1 ? "mb-3" : ""
+                    index={index}
+                    name={childName}
+                    age={child.age}
+                    gender={child.gender}
+                    attendance={status.attendance}
+                    feeding={status.feeding}
+                    lastUpdated={status.lastUpdated}
+                    guardianCount={activeGuardians}
+                    onAddGuardian={() => setSelectedChildForGuardian({ id: child._id, name: childName })}
+                    onPress={() =>
+                      router.push(`/(teacher)/child-details/${child._id}`)
                     }
-                  >
-                    <ChildCard
-                      name={`${child.firstName} ${
-                        child.middleName ? child.middleName + " " : ""
-                      }${child.lastName}`}
-                      age={child.age}
-                      gender={child.gender}
-                      attendance={status.attendance}
-                      feeding={status.feeding}
-                      lastUpdated={status.lastUpdated}
-                      onPress={() =>
-                        router.push(`/(teacher)/child-details/${child._id}`)
-                      }
-                    />
-                  </View>
+                  />
                 );
               })}
             </View>
           )}
         </View>
       </ScrollView>
+      
+      <AddGuardianBottomSheet
+        childId={selectedChildForGuardian?.id || null}
+        childName={selectedChildForGuardian?.name || ""}
+        visible={!!selectedChildForGuardian}
+        onClose={() => setSelectedChildForGuardian(null)}
+      />
     </ScreenShell>
+    </GestureHandlerRootView>
   );
 }
