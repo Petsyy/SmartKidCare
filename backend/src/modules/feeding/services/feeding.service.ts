@@ -61,6 +61,30 @@ const submitFeedingOperation = async (
     );
   }
 
+  const dayRange = dependencies.support.parseDayRange(date);
+  if (!dayRange) {
+    throw new ValidationError(
+      "Invalid date format. Use ISO date or YYYY-MM-DD.",
+    );
+  }
+
+  const manilaNow = new Date(Date.now() + 8 * 60 * 60 * 1000);
+  const todayStartMs =
+    Date.UTC(
+      manilaNow.getUTCFullYear(),
+      manilaNow.getUTCMonth(),
+      manilaNow.getUTCDate(),
+    ) -
+    8 * 60 * 60 * 1000;
+  const earliestAllowedStart = new Date(
+    todayStartMs - 6 * 24 * 60 * 60 * 1000,
+  );
+  if (dayRange.start < earliestAllowedStart || dayRange.start > new Date(todayStartMs + 24 * 60 * 60 * 1000 - 1)) {
+    throw new ValidationError(
+      "Feeding records can only be submitted within the last 7 days.",
+    );
+  }
+
   const assignedIds = await dependencies.childRepository.findAssignedChildIds(
     childIds,
     user.id,
@@ -74,13 +98,6 @@ const submitFeedingOperation = async (
   if (hasUnauthorizedChild) {
     throw new ForbiddenError(
       "One or more children are not assigned to this teacher. Submission rejected.",
-    );
-  }
-
-  const dayRange = dependencies.support.parseDayRange(date);
-  if (!dayRange) {
-    throw new ValidationError(
-      "Invalid date format. Use ISO date or YYYY-MM-DD.",
     );
   }
 

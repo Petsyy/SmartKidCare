@@ -123,10 +123,10 @@ class GuardianService {
     }
 
     const normalizedGuardian = await attachGuardianUploads(guardianData, files);
-    child.authorizedPickupPersons[guardianIndex] = {
-      ...child.authorizedPickupPersons[guardianIndex],
-      ...normalizedGuardian,
-    };
+    
+    // Mongoose doesn't track direct index assignment
+    Object.assign(child.authorizedPickupPersons[guardianIndex], normalizedGuardian);
+    child.markModified("authorizedPickupPersons");
     await child.save();
 
     return child.authorizedPickupPersons;
@@ -163,6 +163,7 @@ class GuardianService {
     }
 
     child.authorizedPickupPersons[guardianIndex].isActive = false;
+    child.markModified("authorizedPickupPersons");
     await child.save();
   }
 
@@ -185,7 +186,11 @@ class GuardianService {
       );
     }
 
-    return (child.authorizedPickupPersons || []).map(refreshGuardianMediaUrls);
+    const allGuardians = child.authorizedPickupPersons || [];
+    const activeGuardians = allGuardians.filter(
+      (g: any) => g.isActive !== false,
+    );
+    return activeGuardians.map((g: any) => refreshGuardianMediaUrls(g.toJSON ? g.toJSON() : g));
   }
 }
 

@@ -3,6 +3,7 @@ import { useFocusEffect } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getGuardians, addGuardian, updateGuardian, removeGuardian } from "@/src/api/pickup.api";
 import type { Guardian } from "@/src/api/api.types";
+import { mobileQueryKeys } from "@/src/lib/query-keys";
 
 export const useGuardians = (childId: string | undefined) => {
   const queryClient = useQueryClient();
@@ -51,6 +52,10 @@ export const useGuardians = (childId: string | undefined) => {
     }) => updateGuardian(childId!, index, data, files),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
+      if (childId) {
+        queryClient.invalidateQueries({ queryKey: mobileQueryKeys.teacherChildDetails(childId) });
+        queryClient.invalidateQueries({ queryKey: mobileQueryKeys.teacherChildrenOverview() });
+      }
       setEditingIndex(null);
     },
   });
@@ -59,6 +64,10 @@ export const useGuardians = (childId: string | undefined) => {
     mutationFn: (index: number) => removeGuardian(childId!, index),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
+      if (childId) {
+        queryClient.invalidateQueries({ queryKey: mobileQueryKeys.teacherChildDetails(childId) });
+        queryClient.invalidateQueries({ queryKey: mobileQueryKeys.teacherChildrenOverview() });
+      }
     },
   });
 

@@ -4,6 +4,11 @@ import {
   getManilaIsoRangeForDateKey,
   toManilaDateKey,
 } from "@/src/utils/manila-date";
+import type {
+  SubmitResponse,
+  SubmitAttendanceData,
+  SubmitFeedingData,
+} from "./api.types";
 
 export type {
   AttendanceRecord,
@@ -11,12 +16,6 @@ export type {
   BlockchainResult,
   BlockchainConfirmation,
   OnChainData,
-  SubmitResponse,
-  SubmitAttendanceData,
-  SubmitFeedingData,
-} from "./api.types";
-
-import type {
   SubmitResponse,
   SubmitAttendanceData,
   SubmitFeedingData,
@@ -68,36 +67,37 @@ export const getFeedingHistory = async (
 
 // Get today's attendance record
 export const getTodayAttendance = async (): Promise<any | null> => {
-  const todayDateKey = getManilaDateKey();
-  const todayRange = getManilaIsoRangeForDateKey(todayDateKey);
-  if (!todayRange) return null;
-
-  const records = await getAttendanceHistory(
-    todayRange.startIso,
-    todayRange.endIso,
-  );
-
-  return (
-    records.find((record) => toManilaDateKey(record?.date) === todayDateKey) ||
-    records[0] ||
-    null
-  );
+  return getAttendanceForDate(getManilaDateKey());
 };
 
-// Get today's feeding record
 export const getTodayFeeding = async (): Promise<any | null> => {
-  const todayDateKey = getManilaDateKey();
-  const todayRange = getManilaIsoRangeForDateKey(todayDateKey);
-  if (!todayRange) return null;
+  return getFeedingForDate(getManilaDateKey());
+};
+
+export const getAttendanceForDate = async (
+  dateKey: string,
+): Promise<any | null> => {
+  const dateRange = getManilaIsoRangeForDateKey(dateKey);
+  if (!dateRange) return null;
+
+  const records = await getAttendanceHistory(
+    dateRange.startIso,
+    dateRange.endIso,
+  );
+
+  return records.find((record) => toManilaDateKey(record?.date) === dateKey) || null;
+};
+
+export const getFeedingForDate = async (
+  dateKey: string,
+): Promise<any | null> => {
+  const dateRange = getManilaIsoRangeForDateKey(dateKey);
+  if (!dateRange) return null;
 
   const records = await getFeedingHistory(
-    todayRange.startIso,
-    todayRange.endIso,
+    dateRange.startIso,
+    dateRange.endIso,
   );
 
-  return (
-    records.find((record) => toManilaDateKey(record?.date) === todayDateKey) ||
-    records[0] ||
-    null
-  );
+  return records.find((record) => toManilaDateKey(record?.date) === dateKey) || null;
 };

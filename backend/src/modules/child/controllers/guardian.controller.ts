@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { asyncHandler } from "../../../shared/utils/async-handler";
-import {  guardianService  } from "../services/guardian.service";
+import { guardianService } from "../services/guardian.service";
 
 export const addGuardianHandler = asyncHandler(
   async (req: Request, res: Response) => {
@@ -40,7 +40,10 @@ export const removeGuardianHandler = asyncHandler(
 
 export const getGuardiansHandler = asyncHandler(
   async (req: Request, res: Response) => {
-    const result = await guardianService.getGuardians(req.user as any, req.params.id as string);
+    const result = await guardianService.getGuardians(
+      req.user as any,
+      req.params.id as string,
+    );
     res.status(200).json({ success: true, data: result });
   },
 );

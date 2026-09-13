@@ -1,5 +1,5 @@
 import { Text, View, Pressable } from "react-native";
-import { User, ChevronRight, CheckCircle2, XCircle } from "lucide-react-native";
+import { User, ChevronRight, CheckCircle2, XCircle, Shield, Plus } from "lucide-react-native";
 
 type Props = {
   name: string;
@@ -8,6 +8,8 @@ type Props = {
   attendance?: "Present" | "Absent" | "Not Recorded";
   feeding?: "Finished" | "Missed" | "Not Recorded";
   lastUpdated?: string;
+  guardianCount?: number;
+  onAddGuardian?: () => void;
   onPress?: () => void;
 };
 
@@ -18,6 +20,8 @@ export default function ChildCard({
   attendance = "Not Recorded",
   feeding = "Not Recorded",
   lastUpdated = "No data",
+  guardianCount,
+  onAddGuardian,
   onPress,
 }: Props) {
   const isDone = attendance === "Present" && feeding === "Finished";
@@ -31,14 +35,7 @@ export default function ChildCard({
   return (
     <Pressable
       onPress={onPress}
-      className="overflow-hidden rounded-3xl bg-white active:scale-[0.98]"
-      style={{
-        shadowColor: "#0F172A",
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.08,
-        shadowRadius: 10,
-        elevation: 4,
-      }}
+      className="overflow-hidden rounded-3xl bg-white border border-gray-100 active:scale-[0.98]"
     >
       <View style={{ flexDirection: "row" }}>
         {/* Accent bar */}
@@ -52,7 +49,7 @@ export default function ChildCard({
                 <User size={28} color="#10B981" />
               </View>
 
-              <View className="flex-1">
+              <View className="flex-1 pr-2">
                 <Text className="text-xl font-black text-gray-900" numberOfLines={1}>
                   {name}
                 </Text>
@@ -66,7 +63,7 @@ export default function ChildCard({
           </View>
 
           {/* Status Chips */}
-          <View className="flex-row items-center gap-2 mt-3">
+          <View className="flex-row flex-wrap items-center gap-2 mt-3">
             <View
               className={`px-3 py-1.5 rounded-full ${
                 attendance === "Present" ? "bg-emerald-50" : attendance === "Absent" ? "bg-red-50" : "bg-gray-100"
@@ -94,19 +91,38 @@ export default function ChildCard({
                 Feeding: {feeding}
               </Text>
             </View>
+
+            {/* Guardian Count Badge */}
+            {typeof guardianCount === "number" && (
+              <View
+                className={`flex-row items-center px-2 py-1.5 rounded-full ${
+                  guardianCount > 0 ? "bg-teal-50" : "bg-amber-50"
+                }`}
+              >
+                <Shield size={14} color={guardianCount > 0 ? "#0D9488" : "#D97706"} />
+                <Text
+                  className={`text-xs font-black ml-1 ${
+                    guardianCount > 0 ? "text-teal-700" : "text-amber-700"
+                  }`}
+                >
+                  {guardianCount}/5
+                </Text>
+              </View>
+            )}
           </View>
 
           {/* Footer */}
           <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-gray-100">
-            <Text className="text-sm font-bold text-gray-400">
-              Last updated: {lastUpdated}
-            </Text>
-
-            {isDone ? (
-              <CheckCircle2 size={20} color="#10B981" />
-            ) : (
-              <XCircle size={20} color="#D1D5DB" />
-            )}
+            <View className="flex-1 flex-row items-center justify-between mr-2">
+              <Text className="text-sm font-bold text-gray-400">
+                Last updated: {lastUpdated}
+              </Text>
+              {isDone ? (
+                <CheckCircle2 size={20} color="#10B981" />
+              ) : (
+                <XCircle size={20} color="#D1D5DB" />
+              )}
+            </View>
           </View>
         </View>
       </View>

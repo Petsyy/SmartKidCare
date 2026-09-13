@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Alert,
   ScrollView,
+  Image,
 } from "react-native";
 import {
   UserPlus,
@@ -25,9 +26,10 @@ import { useDocumentPicker } from "@/src/features/enrollment/hooks/useDocumentPi
 interface GuardianListProps {
   childId: string;
   readOnly?: boolean;
+  hideAddButton?: boolean;
 }
 
-export function GuardianList({ childId, readOnly = false }: GuardianListProps) {
+export function GuardianList({ childId, readOnly = false, hideAddButton = false }: GuardianListProps) {
   const {
     guardians,
     isLoading,
@@ -184,7 +186,7 @@ export function GuardianList({ childId, readOnly = false }: GuardianListProps) {
               {activeGuardians.length}/5 Guardians Configured
             </Text>
           </View>
-          {!readOnly && activeGuardians.length < 5 && (
+          {!readOnly && !hideAddButton && activeGuardians.length < 5 && (
             <Pressable
               onPress={() => setIsAdding(true)}
               className="flex-row items-center bg-teal-50 px-4 py-2 rounded-full border border-teal-200 active:opacity-85"
@@ -392,11 +394,19 @@ export function GuardianList({ childId, readOnly = false }: GuardianListProps) {
               key={idx}
               className="flex-row items-center justify-between bg-white border border-gray-200/80 p-4 rounded-2xl mb-3 shadow-sm"
             >
-              <View className="h-12 w-12 rounded-2xl bg-teal-50 items-center justify-center mr-4 border border-teal-100">
-                <Text className="text-teal-800 font-black text-base">
-                  {initials || "G"}
-                </Text>
-              </View>
+              {guardian.photoUrl ? (
+                <Image
+                  source={{ uri: guardian.photoUrl }}
+                  className="h-12 w-12 rounded-2xl mr-4 border border-teal-100 bg-gray-100"
+                  resizeMode="cover"
+                />
+              ) : (
+                <View className="h-12 w-12 rounded-2xl bg-teal-50 items-center justify-center mr-4 border border-teal-100">
+                  <Text className="text-teal-800 font-black text-base">
+                    {initials || "G"}
+                  </Text>
+                </View>
+              )}
 
               <View className="flex-1 mr-2">
                 <Text className="text-lg font-black text-gray-900">
