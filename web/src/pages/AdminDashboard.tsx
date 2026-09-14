@@ -37,8 +37,8 @@ export default function AdminDashboard() {
               <StatCardSkeleton color="blue" />
             </div>
             <div className="grid gap-4 lg:grid-cols-2 mt-6">
-              <Skeleton className="h-[400px] w-full" />
-              <Skeleton className="h-[400px] w-full" />
+              <Skeleton className="h-100 w-full" />
+              <Skeleton className="h-100 w-full" />
             </div>
           </>
         ) : (

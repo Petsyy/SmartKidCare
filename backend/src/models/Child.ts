@@ -27,11 +27,11 @@ const ChildSchema = new mongoose.Schema(
     weight: { type: Number, default: null },
     height: { type: Number, default: null },
     bmi: { type: Number, default: null },
-    nutritionalStatus: {
-      type: String,
-      enum: ["Normal", "Underweight", "Severely Underweight", "Overweight", null],
-      default: null,
-    },
+      nutritionalStatus: {
+        type: String,
+        enum: ["Normal", "Underweight", "Severely Underweight", "Overweight", "Obese", null],
+        default: null,
+      },
     status: {
       type: String,
       enum: ["Active", "Inactive"],

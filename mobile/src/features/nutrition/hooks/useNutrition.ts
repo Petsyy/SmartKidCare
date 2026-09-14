@@ -4,10 +4,11 @@ import {
   evaluateNutrition,
   getChildNutritionHistory,
 } from "../../../api/nutrition.api";
+import type { NutritionPeriod } from "../../../api/nutrition.api";
 
 export const useMyClassNutrition = (
   schoolYear: string,
-  period: "initial" | "final",
+  period?: NutritionPeriod,
 ) => {
   return useQuery({
     queryKey: ["my-class-nutrition", schoolYear, period],
@@ -30,6 +31,8 @@ export const useEvaluateNutrition = () => {
       queryClient.invalidateQueries({
         queryKey: ["child-nutrition", variables.childId],
       });
+      queryClient.invalidateQueries({ queryKey: ["teacherDashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["teacherChildrenOverview"] });
     },
   });
 };

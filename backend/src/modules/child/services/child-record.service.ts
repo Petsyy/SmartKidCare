@@ -3,6 +3,11 @@ import { storeChildDocumentHashes } from "../../blockchain/services/blockchain.s
 import type { UploadResult } from "../../../shared/utils/upload-cloudinary";
 import { extractUploadedDocument } from "../shared";
 import { childRepository } from "../repositories/child.repository";
+import {
+  calculateAgeInMonths,
+  calculateBmi,
+  classifyNutritionalStatus,
+} from "../../../shared/utils/nutrition.utils";
 import type { ChildDocumentUploads, CreateChildRecordPayload, ChildAnchorResult, ChildRecordCreationResult } from "../types/child-record.types";
 
 const buildDocumentsPayload = (uploads: ChildDocumentUploads) => {
@@ -30,16 +35,27 @@ export const createChildRecord = async (
   uploads: ChildDocumentUploads = {},
 ): Promise<ChildRecordCreationResult> => {
   const documents = buildDocumentsPayload(uploads);
+  const weight = payload.weight ?? null;
+  const height = payload.height ?? null;
+  const bmi = weight && height ? calculateBmi(weight, height) : null;
+  const nutritionalStatus =
+    bmi && payload.gender
+      ? classifyNutritionalStatus(
+          bmi,
+          calculateAgeInMonths(new Date(payload.dateOfBirth)),
+          payload.gender as "male" | "female",
+        )
+      : null;
   const child = await childRepository.create({
     ...payload,
     middleName: payload.middleName || undefined,
     parent: payload.parent || undefined,
     teacher: payload.teacher || undefined,
     daycareCenter: payload.daycareCenter || undefined,
-    weight: payload.weight ?? null,
-    height: payload.height ?? null,
-    bmi: payload.bmi ?? null,
-    nutritionalStatus: payload.nutritionalStatus ?? null,
+    weight,
+    height,
+    bmi,
+    nutritionalStatus,
     ...(documents ? { documents } : {}),
   });
 

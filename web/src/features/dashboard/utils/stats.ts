@@ -31,6 +31,25 @@ export function computeStats(
     (c: any) => c?.programType === "Regular Enrollee (Non-beneficiary)"
   ).length;
 
+  const activeHealthChildren = childrenArray.filter(
+    (child: any) => child.status === "Active" && child.nutritionalStatus,
+  );
+  const underweightCount = activeHealthChildren.filter(
+    (child: any) => child.nutritionalStatus === "Underweight",
+  ).length;
+  const severelyUnderweightCount = activeHealthChildren.filter(
+    (child: any) => child.nutritionalStatus === "Severely Underweight",
+  ).length;
+  const normalCount = activeHealthChildren.filter(
+    (child: any) => child.nutritionalStatus === "Normal",
+  ).length;
+  const overweightCount = activeHealthChildren.filter(
+    (child: any) => child.nutritionalStatus === "Overweight",
+  ).length;
+  const obeseCount = activeHealthChildren.filter(
+    (child: any) => child.nutritionalStatus === "Obese",
+  ).length;
+
   let allAttTotal = 0;
   let allAttPresent = 0;
   attendanceArray.forEach((entry: any) => {
@@ -70,5 +89,10 @@ export function computeStats(
     todayAttendanceRate,
     todayFeedingRate,
     todayExceptions,
+    underweightCount,
+    severelyUnderweightCount,
+    normalCount,
+    overweightCount,
+    obeseCount,
   };
 }

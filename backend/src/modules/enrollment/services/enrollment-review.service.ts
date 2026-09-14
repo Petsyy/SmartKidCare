@@ -9,6 +9,7 @@ import { enrollmentChildRepository, enrollmentRequestRepository, } from "../repo
 import NutritionRecord from "../../../models/NutritionRecord";
 import { authUserRepository } from "../../auth/repositories/auth.repository";
 import type { AuthUser } from "../types/enrollment-review.types";
+import { calculateAgeInMonths } from "../../../shared/utils/nutrition.utils";
 
 const getRequestById = async (requestId: string) => {
   if (!mongoose.Types.ObjectId.isValid(requestId)) {
@@ -191,10 +192,15 @@ export const reviewEnrollmentRequest = async (
         period: "initial",
         recordedBy: new mongoose.Types.ObjectId(user.id),
         status: "submitted",
-        weight: childData.weight,
-        height: childData.height,
-        bmi: childData.bmi,
-        nutritionalStatus: childData.nutritionalStatus,
+        weight: created.child.weight,
+        height: created.child.height,
+        ageInMonths: calculateAgeInMonths(
+          new Date(childData.dateOfBirth as Date),
+          new Date(),
+        ),
+        sex: String(childData.gender || "male") as "male" | "female",
+        bmi: created.child.bmi,
+        nutritionalStatus: created.child.nutritionalStatus,
         measurementDate: new Date(),
         submittedAt: new Date(),
       });

@@ -8,7 +8,11 @@ import {buildFullName,extractUploadedDocument,isChildGender,isChildProgramType,s
 import {normalizeOptionalString,normalizeString} from "../../../shared/utils/string.utils";
 import {computeAgeFromDate,parseDate,} from "../../../shared/utils/date.utils";
 import { createChildRecord } from "../../child/services";
-import { calculateBmi, classifyNutritionalStatus } from "../../../shared/utils/nutrition.utils";
+import {
+  calculateAgeInMonths,
+  calculateBmi,
+  classifyNutritionalStatus,
+} from "../../../shared/utils/nutrition.utils";
 import { parentService } from "../../parents/services/parents.service";
 import {enrollmentChildRepository,enrollmentRequestRepository,enrollmentCenterRepository,enrollmentUserRepository} from "../repositories/enrollment.repository";
 import { authUserRepository } from "../../auth/repositories/auth.repository";
@@ -250,7 +254,11 @@ export const submitChildEnrollmentRequest = async (
         weight,
         height,
         bmi: calculateBmi(weight, height),
-        nutritionalStatus: classifyNutritionalStatus(calculateBmi(weight, height), computedAge),
+        nutritionalStatus: classifyNutritionalStatus(
+          calculateBmi(weight, height),
+          calculateAgeInMonths(dateOfBirth, enrollmentDate),
+          gender as "male" | "female",
+        ),
       },
       parent: {
         firstName: parentFirstName,

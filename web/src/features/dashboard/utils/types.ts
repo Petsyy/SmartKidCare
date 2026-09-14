@@ -10,6 +10,11 @@ export type DashboardStats = {
   todayAttendanceRate: number;
   todayFeedingRate: number;
   todayExceptions: number;
+  underweightCount: number;
+  severelyUnderweightCount: number;
+  normalCount: number;
+  overweightCount: number;
+  obeseCount: number;
 };
 
 export type ChartDataPoint = {
@@ -43,6 +48,11 @@ export const DEFAULT_STATS: DashboardStats = {
   todayAttendanceRate: 0,
   todayFeedingRate: 0,
   todayExceptions: 0,
+  underweightCount: 0,
+  severelyUnderweightCount: 0,
+  normalCount: 0,
+  overweightCount: 0,
+  obeseCount: 0,
 };
 
 export const DEFAULT_DATE_META: DashboardDateMeta = {

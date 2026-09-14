@@ -12,7 +12,7 @@ const NutritionRecordSchema = new mongoose.Schema(
     period: {
       type: String,
       enum: ["initial", "final"],
-      required: true,
+      default: undefined,
     },
     recordedBy: {
       type: mongoose.Schema.Types.ObjectId,
@@ -35,20 +35,18 @@ const NutritionRecordSchema = new mongoose.Schema(
     bmi: { type: Number, required: true },
     nutritionalStatus: {
       type: String,
-      enum: ["Normal", "Underweight", "Severely Underweight", "Overweight"],
+      enum: ["Normal", "Underweight", "Severely Underweight", "Overweight", "Obese"],
       required: true,
     },
+    ageInMonths: { type: Number, required: true, min: 0 },
+    sex: { type: String, enum: ["male", "female"], required: true },
     measurementDate: { type: Date, required: true },
     submittedAt: { type: Date, default: null },
   },
   { timestamps: true },
 );
 
-// A child can only have one nutrition record per period per school year
-NutritionRecordSchema.index(
-  { childId: 1, schoolYear: 1, period: 1 },
-  { unique: true },
-);
+NutritionRecordSchema.index({ childId: 1, measurementDate: 1 }, { unique: true });
 NutritionRecordSchema.index({
   daycareCenter: 1,
   childId: 1,

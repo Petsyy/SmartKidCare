@@ -31,6 +31,11 @@ export interface TeacherDashboardData {
   absentToday: number;
   feedingDone: number;
   feedingMissed: number;
+  underweightCount: number;
+  severelyUnderweightCount: number;
+  normalCount: number;
+  overweightCount: number;
+  obeseCount: number;
   pendingPickups: number;
   onRefresh: () => void;
 }
@@ -99,11 +104,13 @@ export function useTeacherDashboard(): TeacherDashboardData {
     },
   });
 
-  const children: Child[] = data?.children ?? [];
+  const children = useMemo<Child[]>(() => data?.children ?? [], [data?.children]);
   const attendanceData = data?.attendanceData ?? null;
   const feedingData = data?.feedingData ?? null;
-  const recentNotificationsRaw: TeacherNotificationFeedItem[] =
-    data?.recentNotifications ?? [];
+  const recentNotificationsRaw = useMemo<TeacherNotificationFeedItem[]>(
+    () => data?.recentNotifications ?? [],
+    [data?.recentNotifications],
+  );
   const teacherName = data?.teacherName || "Teacher";
   const daycareCenter = data?.daycareCenter;
   const pendingPickups = data?.pendingPickups || 0;
@@ -139,6 +146,37 @@ export function useTeacherDashboard(): TeacherDashboardData {
       (record: any) => record.status === "missed",
     ).length;
   }, [feedingData]);
+  const nutritionCounts = useMemo(() => {
+    return children.reduce(
+      (counts, child) => {
+        switch (child.nutritionalStatus) {
+          case "Underweight":
+            counts.underweightCount += 1;
+            break;
+          case "Severely Underweight":
+            counts.severelyUnderweightCount += 1;
+            break;
+          case "Normal":
+            counts.normalCount += 1;
+            break;
+          case "Overweight":
+            counts.overweightCount += 1;
+            break;
+          case "Obese":
+            counts.obeseCount += 1;
+            break;
+        }
+        return counts;
+      },
+      {
+        underweightCount: 0,
+        severelyUnderweightCount: 0,
+        normalCount: 0,
+        overweightCount: 0,
+        obeseCount: 0,
+      },
+    );
+  }, [children]);
 
   const error =
     !data && queryError
@@ -166,6 +204,7 @@ export function useTeacherDashboard(): TeacherDashboardData {
     absentToday,
     feedingDone,
     feedingMissed,
+    ...nutritionCounts,
     pendingPickups,
     onRefresh,
   };

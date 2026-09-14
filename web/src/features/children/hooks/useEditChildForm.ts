@@ -87,6 +87,7 @@ export const useEditChildForm = ({ child, onClose, onUpdated }: UseEditChildForm
       onUpdated(updated as unknown as ChildForEdit);
       onClose();
       void queryClient.invalidateQueries({ queryKey: ["children"] });
+      void queryClient.invalidateQueries({ queryKey: ["adminDashboard"] });
     },
     onError: (error: unknown) => {
       const message = error instanceof Error ? error.message : "Failed to update child";

@@ -1,4 +1,4 @@
-import { Home, Users, UserCircle, Heart, Smile } from "lucide-react";
+import { Home, Users, UserCircle, Heart, Smile, Activity } from "lucide-react";
 import { StatCard } from "@/components/ui/StatCard";
 import type { DashboardStats } from "../hooks/useAdminDashboard";
 
@@ -15,6 +15,20 @@ export function StatsGrid({ stats }: StatsGridProps) {
         subtitle="Active centers"
         icon={Home}
         color="blue"
+      />
+      <StatCard
+        title="Underweight Children"
+        value={String(stats.underweightCount + stats.severelyUnderweightCount)}
+        subtitle="Latest submitted metrics"
+        icon={Activity}
+        color="rose"
+      />
+      <StatCard
+        title="Overweight / Obese"
+        value={String(stats.overweightCount + stats.obeseCount)}
+        subtitle="Latest submitted metrics"
+        icon={Activity}
+        color="rose"
       />
       <StatCard
         title="Child Development Workers"

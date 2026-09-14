@@ -2,7 +2,11 @@ import mongoose from "mongoose";
 import NutritionRecord from "../../../models/NutritionRecord";
 import Child from "../../../models/Child";
 import { NotFoundError, ValidationError } from "../../../shared/errors/app-error";
-import { calculateBmi, classifyNutritionalStatus } from "../../../shared/utils/nutrition.utils";
+import {
+  calculateAgeInMonths,
+  calculateBmi,
+  classifyNutritionalStatus,
+} from "../../../shared/utils/nutrition.utils";
 import type { AuthenticatedUser } from "../../../shared/types/auth.types";
 import {
   assertCanAccessChild,
@@ -70,11 +74,58 @@ export const summarizeNutritionAnalytics = (
   };
 };
 
+export const summarizeLatestNutritionStatuses = (
+  records: Array<{ childId: unknown; nutritionalStatus: string; measurementDate?: Date }>,
+) => {
+  const latestByChild = new Map<string, (typeof records)[number]>();
+  records.forEach((record) => {
+    const key = String(record.childId);
+    const current = latestByChild.get(key);
+    if (
+      !current ||
+      new Date(record.measurementDate || 0).getTime() >
+        new Date(current.measurementDate || 0).getTime()
+    ) {
+      latestByChild.set(key, record);
+    }
+  });
+
+  return Array.from(latestByChild.values()).reduce(
+    (counts, record) => {
+      switch (record.nutritionalStatus) {
+        case "Underweight":
+          counts.underweightCount += 1;
+          break;
+        case "Severely Underweight":
+          counts.severelyUnderweightCount += 1;
+          break;
+        case "Normal":
+          counts.normalCount += 1;
+          break;
+        case "Overweight":
+          counts.overweightCount += 1;
+          break;
+        case "Obese":
+          counts.obeseCount += 1;
+          break;
+      }
+      return counts;
+    },
+    {
+      underweightCount: 0,
+      severelyUnderweightCount: 0,
+      normalCount: 0,
+      overweightCount: 0,
+      obeseCount: 0,
+    },
+  );
+};
+
 export class NutritionService {
   public async getMyClassNutrition(
     user: AuthenticatedUser,
     schoolYear: string,
-    period: "initial" | "final",
+    period?: "initial" | "final",
   ) {
     const daycareCenterId = assertTeacherCenter(user);
     const children = await Child.find({
@@ -92,8 +143,11 @@ export class NutritionService {
     const records = await NutritionRecord.find({
       childId: { $in: childIds },
       schoolYear,
-      period,
-    }).lean();
+      ...(period ? { period } : {}),
+      status: { $in: ["draft", "submitted"] },
+    })
+      .sort({ measurementDate: -1 })
+      .lean();
 
     let initialRecords: any[] = [];
     if (period === "final") {
@@ -123,24 +177,39 @@ export class NutritionService {
   public async evaluateNutrition(user: AuthenticatedUser, payload: {
     childId: string;
     schoolYear: string;
-    period: "initial" | "final";
+    period?: "initial" | "final";
+    measurementDate?: string;
     weight: number;
     height: number;
     action: "draft" | "submit";
   }) {
-    const { childId, schoolYear, period, weight, height, action } =
-      payload;
+    const { childId, schoolYear, period, measurementDate, weight, height, action } = payload;
     const daycareCenterId = assertTeacherCenter(user);
 
     const child = await Child.findById(childId);
     if (!child) throw new NotFoundError("Child not found");
     assertCanAccessChild(user, child);
 
-    const existingRecord = await NutritionRecord.findOne({
-      childId,
-      schoolYear,
-      period,
-    });
+    const normalizedMeasurementDate = measurementDate
+      ? new Date(measurementDate)
+      : new Date();
+    if (Number.isNaN(normalizedMeasurementDate.getTime())) {
+      throw new ValidationError("Measurement date is invalid.");
+    }
+    const measurementDayStart = new Date(normalizedMeasurementDate);
+    measurementDayStart.setHours(0, 0, 0, 0);
+    const measurementDayEnd = new Date(measurementDayStart);
+    measurementDayEnd.setDate(measurementDayEnd.getDate() + 1);
+
+    const existingRecord = period
+      ? await NutritionRecord.findOne({ childId, schoolYear, period })
+      : await NutritionRecord.findOne({
+          childId,
+          measurementDate: {
+            $gte: measurementDayStart,
+            $lt: measurementDayEnd,
+          },
+        });
 
     if (existingRecord?.status === "submitted") {
       throw new ValidationError(
@@ -149,10 +218,13 @@ export class NutritionService {
     }
 
     const bmi = calculateBmi(weight, height);
+    const ageInMonths = calculateAgeInMonths(
+      new Date(child.dateOfBirth),
+      normalizedMeasurementDate,
+    );
     const nutritionalStatus =
-      classifyNutritionalStatus(bmi, child.age) || "Normal";
+      classifyNutritionalStatus(bmi, ageInMonths, child.gender) || "Normal";
     const status = action === "submit" ? "submitted" : "draft";
-    const measurementDate = new Date();
     const submittedAt = action === "submit" ? new Date() : null;
 
     if (existingRecord) {
@@ -160,6 +232,8 @@ export class NutritionService {
       existingRecord.height = height;
       existingRecord.bmi = bmi;
       existingRecord.nutritionalStatus = nutritionalStatus;
+      existingRecord.ageInMonths = ageInMonths;
+      existingRecord.sex = child.gender;
       existingRecord.status = status;
       existingRecord.recordedBy = new mongoose.Types.ObjectId(
         user.id,
@@ -167,10 +241,17 @@ export class NutritionService {
       existingRecord.daycareCenter = new mongoose.Types.ObjectId(
         daycareCenterId,
       ) as never;
-      existingRecord.measurementDate = measurementDate;
+      existingRecord.measurementDate = normalizedMeasurementDate;
       if (submittedAt) existingRecord.submittedAt = submittedAt;
 
       await existingRecord.save();
+      if (status === "submitted") {
+        child.weight = weight;
+        child.height = height;
+        child.bmi = bmi;
+        child.nutritionalStatus = nutritionalStatus;
+        await child.save();
+      }
       return existingRecord;
     }
 
@@ -185,9 +266,19 @@ export class NutritionService {
       height,
       bmi,
       nutritionalStatus,
-      measurementDate,
+      ageInMonths,
+      sex: child.gender,
+      measurementDate: normalizedMeasurementDate,
       submittedAt,
     });
+
+    if (status === "submitted") {
+      child.weight = weight;
+      child.height = height;
+      child.bmi = bmi;
+      child.nutritionalStatus = nutritionalStatus;
+      await child.save();
+    }
 
     return newRecord;
   }
@@ -206,7 +297,7 @@ export class NutritionService {
         ? { recordedBy: user.id, daycareCenter: user.daycareCenterId }
         : {}),
     })
-      .sort({ schoolYear: -1, period: 1 })
+      .sort({ measurementDate: -1, schoolYear: -1 })
       .lean();
   }
 
@@ -227,7 +318,7 @@ export class NutritionService {
         ? {}
         : { schoolYear: selectedSchoolYear };
 
-    const [initialRecords, finalRecords] = await Promise.all([
+    const [initialRecords, finalRecords, submittedRecords] = await Promise.all([
       NutritionRecord.find({
         ...schoolYearFilter,
         period: "initial",
@@ -240,10 +331,24 @@ export class NutritionService {
         status: "submitted",
         ...centerFilter,
       }).lean(),
+      NutritionRecord.find({
+        ...schoolYearFilter,
+        status: "submitted",
+        ...centerFilter,
+      })
+        .select("childId nutritionalStatus measurementDate")
+        .lean(),
     ]);
     const summary = summarizeNutritionAnalytics(
       initialRecords as NutritionAnalyticsRecord[],
       finalRecords as NutritionAnalyticsRecord[],
+    );
+    const latestStatuses = summarizeLatestNutritionStatuses(
+      submittedRecords as Array<{
+        childId: unknown;
+        nutritionalStatus: string;
+        measurementDate?: Date;
+      }>,
     );
 
     return {
@@ -253,6 +358,7 @@ export class NutritionService {
       },
       schoolYears,
       ...summary,
+      ...latestStatuses,
     };
   }
 }

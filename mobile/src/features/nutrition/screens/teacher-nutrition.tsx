@@ -1,15 +1,7 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  TextInput,
-  Pressable,
-  ActivityIndicator,
-  Alert,
-} from "react-native";
+import { View, Text, FlatList, Alert, Pressable } from "react-native";
 import { useRouter } from "expo-router";
-import { CheckCircle2, Users } from "lucide-react-native";
+import { Users } from "lucide-react-native";
 import {
   ScreenHeader,
   ScreenLoadingState,
@@ -20,12 +12,8 @@ import {
   useMyClassNutrition,
   useEvaluateNutrition,
 } from "../hooks/useNutrition";
-import {
-  calculateBmi,
-  classifyNutritionalStatus,
-} from "@/src/features/enrollment/utils/enrollment-utils";
 import { StudentNutritionCard } from "../components/student-nutrition-card";
-
+import type { NutritionPeriod } from "@/src/api/nutrition.api";
 
 const getCurrentSchoolYear = (): string => {
   const now = new Date();
@@ -36,9 +24,8 @@ const getCurrentSchoolYear = (): string => {
 
 export const TeacherNutritionScreen = () => {
   const router = useRouter();
-  const [schoolYear, setSchoolYear] = useState(getCurrentSchoolYear);
-  const period = "final";
-
+  const schoolYear = getCurrentSchoolYear();
+  const [period, setPeriod] = useState<NutritionPeriod>("initial");
   const {
     data: students,
     isLoading,
@@ -56,17 +43,18 @@ export const TeacherNutritionScreen = () => {
     field: "weight" | "height",
     value: string,
   ) => {
+    const inputKey = `${period}:${childId}`;
     setLocalInputs((prev) => ({
       ...prev,
-      [childId]: {
-        ...prev[childId],
+      [inputKey]: {
+        ...prev[inputKey],
         [field]: value,
       },
     }));
   };
 
   const handleSave = (childId: string, action: "draft" | "submit") => {
-    const inputs = localInputs[childId];
+    const inputs = localInputs[`${period}:${childId}`];
     if (!inputs || !inputs.weight || !inputs.height) {
       alert("Please enter both weight and height.");
       return;
@@ -77,6 +65,7 @@ export const TeacherNutritionScreen = () => {
         childId,
         schoolYear,
         period,
+        measurementDate: new Date().toISOString(),
         weight: parseFloat(inputs.weight),
         height: parseFloat(inputs.height),
         action,
@@ -86,14 +75,14 @@ export const TeacherNutritionScreen = () => {
           Alert.alert(
             action === "submit" ? "Assessment Submitted" : "Draft Saved",
             action === "submit"
-              ? "The final nutritional assessment has been submitted."
+              ? "The nutritional measurement has been submitted."
               : "Your progress has been saved as a draft.",
           );
         },
         onError: (err) => {
           Alert.alert("Error", err.message || "Failed to save assessment.");
         },
-      }
+      },
     );
   };
 
@@ -121,7 +110,9 @@ export const TeacherNutritionScreen = () => {
           onBack={() => router.back()}
         />
         <View className="flex-1 items-center justify-center p-6">
-          <Text className="text-xl font-bold text-red-600 mb-2">Error loading students</Text>
+          <Text className="text-xl font-bold text-red-600 mb-2">
+            Error loading students
+          </Text>
           <Text className="text-center text-gray-600">
             {error instanceof Error ? error.message : "Unknown error"}
           </Text>
@@ -134,11 +125,36 @@ export const TeacherNutritionScreen = () => {
       <ScreenHeader
         backgroundVariant="teacherGradient"
         title="Nutrition Assessment"
-        subtitle={`Class List (${schoolYear} - ${period})`}
+        subtitle={`Class List (${schoolYear})`}
         onBack={() => router.push("/(teacher)")}
       />
 
       <View className="flex-1 bg-gray-50">
+        <View className="mx-6 mt-4 flex-row rounded-2xl border border-gray-200 bg-white p-1">
+          {(["initial", "final"] as NutritionPeriod[]).map((option) => {
+            const isSelected = period === option;
+            return (
+              <Pressable
+                key={option}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: isSelected }}
+                accessibilityLabel={`${option} assessment`}
+                onPress={() => setPeriod(option)}
+                className={`flex-1 items-center rounded-xl px-3 py-3 ${
+                  isSelected ? "bg-teal-600" : "bg-white"
+                }`}
+              >
+                <Text
+                  className={`font-bold ${
+                    isSelected ? "text-white" : "text-gray-600"
+                  }`}
+                >
+                  {option === "initial" ? "Initial" : "Final"}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
         <FlatList
           data={students}
           keyExtractor={(item) => item.child._id}
@@ -158,9 +174,13 @@ export const TeacherNutritionScreen = () => {
               child={item.child}
               record={item.record}
               initialRecord={item.initialRecord}
-              localInput={localInputs[item.child._id]}
+              period={period}
+              localInput={localInputs[`${period}:${item.child._id}`]}
               isPending={evaluateNutrition.isPending}
-              isSubmitting={evaluateNutrition.isPending && evaluateNutrition.variables?.childId === item.child._id}
+              isSubmitting={
+                evaluateNutrition.isPending &&
+                evaluateNutrition.variables?.childId === item.child._id
+              }
               onSave={handleSave}
               onInputChange={handleInputChange}
             />

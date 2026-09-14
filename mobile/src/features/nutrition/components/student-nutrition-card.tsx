@@ -11,6 +11,7 @@ import {
   calculateBmi,
   classifyNutritionalStatus,
 } from "@/src/features/enrollment/utils/enrollment-utils";
+import type { NutritionPeriod } from "@/src/api/nutrition.api";
 
 export interface StudentNutritionCardProps {
   child: {
@@ -20,6 +21,7 @@ export interface StudentNutritionCardProps {
     age: number;
   };
   record?: {
+    period?: NutritionPeriod;
     status: "draft" | "submitted";
     weight: number;
     height: number;
@@ -30,6 +32,7 @@ export interface StudentNutritionCardProps {
     weight: number;
     height: number;
   };
+  period: NutritionPeriod;
   localInput?: { weight: string; height: string };
   isPending?: boolean;
   isSubmitting?: boolean; // To know if THIS specific card is submitting
@@ -45,6 +48,7 @@ export const StudentNutritionCard: React.FC<StudentNutritionCardProps> = ({
   child,
   record,
   initialRecord,
+  period,
   localInput,
   isPending = false,
   isSubmitting = false,
@@ -52,6 +56,7 @@ export const StudentNutritionCard: React.FC<StudentNutritionCardProps> = ({
   onInputChange,
 }) => {
   const isSubmitted = record?.status === "submitted";
+  const isReadOnly = period === "initial" || isSubmitted;
 
   // Live calculation logic
   const currentWeight =
@@ -96,30 +101,34 @@ export const StudentNutritionCard: React.FC<StudentNutritionCardProps> = ({
         </View>
       )}
 
-      {isSubmitted ? (
+      {isReadOnly ? (
         <View className="mt-4 rounded-2xl bg-teal-50 border border-teal-100 p-4">
           <View className="flex-row items-center mb-2">
             <CheckCircle2 size={18} color="#0D9488" />
             <Text className="ml-2 font-bold text-teal-800">
-              Final Assessment Submitted
+              {record
+                ? `${period === "final" ? "Final" : "Initial"} Assessment ${isSubmitted ? "Submitted" : "From Enrollment"}`
+                : "Initial Assessment Not Available"}
             </Text>
           </View>
-          <View className="bg-white rounded-xl p-3 border border-teal-50">
-            <Text className="text-sm font-semibold text-gray-600 mb-1">
-              Metrics:{" "}
-              <Text className="text-gray-900">
-                {record.weight}kg | {record.height}cm
+          {record ? (
+            <View className="bg-white rounded-xl p-3 border border-teal-50">
+              <Text className="text-sm font-semibold text-gray-600 mb-1">
+                Metrics:{" "}
+                <Text className="text-gray-900">
+                  {record.weight}kg | {record.height}cm
+                </Text>
               </Text>
-            </Text>
-            <Text className="text-sm font-semibold text-gray-600">
-              Status:{" "}
-              <Text className="text-gray-900">{record.nutritionalStatus}</Text>
-              <Text className="text-gray-400">
-                {" "}
-                (BMI: {record.bmi.toFixed(2)})
+              <Text className="text-sm font-semibold text-gray-600">
+                Status:{" "}
+                <Text className="text-gray-900">{record.nutritionalStatus}</Text>
+                <Text className="text-gray-400">
+                  {" "}
+                  (BMI: {record.bmi.toFixed(2)})
+                </Text>
               </Text>
-            </Text>
-          </View>
+            </View>
+          ) : null}
         </View>
       ) : (
         <View className="mt-4">

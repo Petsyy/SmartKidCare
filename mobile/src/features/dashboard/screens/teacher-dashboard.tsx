@@ -1,11 +1,6 @@
 import React, { useMemo } from "react";
 import { useRouter } from "expo-router";
-import {
-  ActivityIndicator,
-  Pressable,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -44,30 +39,30 @@ const NOTICE_TYPE_UI: Record<
     tone: "emerald" | "blue" | "orange";
   }
 > = {
-    attendance_reminder: {
-        fallbackTitle: "Morning Attendance",
-        tone: "emerald",
-    },
-    attendance_incomplete: {
-        fallbackTitle: "Attendance Incomplete",
-        tone: "orange",
-    },
-    feeding_reminder: {
-        fallbackTitle: "Lunch Feeding",
-        tone: "blue",
-    },
-    feeding_incomplete: {
-        fallbackTitle: "Feeding Incomplete",
-        tone: "orange",
-    },
-    attendance_submitted: {
-        fallbackTitle: "",
-        tone: "emerald"
-    },
-    feeding_submitted: {
-        fallbackTitle: "",
-        tone: "emerald"
-    }
+  attendance_reminder: {
+    fallbackTitle: "Morning Attendance",
+    tone: "emerald",
+  },
+  attendance_incomplete: {
+    fallbackTitle: "Attendance Incomplete",
+    tone: "orange",
+  },
+  feeding_reminder: {
+    fallbackTitle: "Lunch Feeding",
+    tone: "blue",
+  },
+  feeding_incomplete: {
+    fallbackTitle: "Feeding Incomplete",
+    tone: "orange",
+  },
+  attendance_submitted: {
+    fallbackTitle: "",
+    tone: "emerald",
+  },
+  feeding_submitted: {
+    fallbackTitle: "",
+    tone: "emerald",
+  },
 };
 
 export default function TeacherDashboardScreen() {
@@ -81,6 +76,10 @@ export default function TeacherDashboardScreen() {
     totalChildren,
     presentToday,
     absentToday,
+    underweightCount,
+    severelyUnderweightCount,
+    overweightCount,
+    obeseCount,
     pendingPickups,
     attendanceData,
     feedingData,
@@ -366,7 +365,7 @@ export default function TeacherDashboardScreen() {
 
             <TeacherOverviewStatCard
               icon={KeyRound}
-              value={!hasChildren ?  pendingPickups : "--"}
+              value={!hasChildren ? pendingPickups : "--"}
               label="Pending pickups"
               caption={
                 !hasChildren
@@ -376,9 +375,7 @@ export default function TeacherDashboardScreen() {
               tone="orange"
               muted={!hasChildren || pendingPickups === 0}
               onPress={
-                hasChildren
-                  ? () => router.push("/(teacher)/pickup")
-                  : undefined
+                hasChildren ? () => router.push("/(teacher)/pickup") : undefined
               }
               accessibilityHint={
                 hasChildren ? "Opens the safe pickup scanner" : undefined
@@ -388,6 +385,33 @@ export default function TeacherDashboardScreen() {
                   ? "Pending pickups is unavailable because no children are assigned"
                   : `${pendingPickups} children are waiting for pickup`
               }
+            />
+          </View>
+
+          <View className="mt-3 flex-row gap-3">
+            <TeacherOverviewStatCard
+              icon={HeartPulse}
+              value={underweightCount + severelyUnderweightCount}
+              label="Underweight"
+              caption="Latest health metrics"
+              tone="rose"
+              muted={underweightCount + severelyUnderweightCount === 0}
+              onPress={() =>
+                router.push("/(teacher)/teacher-record-data/nutrition")
+              }
+              accessibilityLabel={`${underweightCount + severelyUnderweightCount} underweight children`}
+            />
+            <TeacherOverviewStatCard
+              icon={HeartPulse}
+              value={overweightCount + obeseCount}
+              label="Overweight / Obese"
+              caption="Latest health metrics"
+              tone="orange"
+              muted={overweightCount + obeseCount === 0}
+              onPress={() =>
+                router.push("/(teacher)/teacher-record-data/nutrition")
+              }
+              accessibilityLabel={`${overweightCount + obeseCount} overweight or obese children`}
             />
           </View>
         </View>
@@ -546,7 +570,7 @@ export default function TeacherDashboardScreen() {
                     : "Select today or a past date to log a meal."}
               </Text>
             </View>
-            {(feedingActionEnabled || feedingSubmitted || feedingNotRequired) ? (
+            {feedingActionEnabled || feedingSubmitted || feedingNotRequired ? (
               <View className="ml-3 h-11 w-11 items-center justify-center rounded-full bg-orange-500 shadow-sm">
                 <ArrowUpRight size={21} color="#FFFFFF" />
               </View>

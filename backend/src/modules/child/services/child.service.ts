@@ -4,7 +4,11 @@ import {ConflictError,NotFoundError,ValidationError,
 import { resolveTeacherAssignment } from "../shared";
 import { parseDate } from "../../../shared/utils/date.utils";
 import { childRepository } from "../repositories/child.repository";
-import { calculateBmi, classifyNutritionalStatus } from "../../../shared/utils/nutrition.utils";
+import {
+  calculateAgeInMonths,
+  calculateBmi,
+  classifyNutritionalStatus,
+} from "../../../shared/utils/nutrition.utils";
 
 export class ChildService {
   public async ensureNoDuplicate(
@@ -58,10 +62,19 @@ export class ChildService {
     if (body.parentRelationship !== undefined) child.parentRelationship = body.parentRelationship;
     if (body.weight !== undefined) child.weight = Number(body.weight);
     if (body.height !== undefined) child.height = Number(body.height);
-    if (body.weight !== undefined || body.height !== undefined) {
+    if (
+      body.weight !== undefined ||
+      body.height !== undefined ||
+      body.dateOfBirth !== undefined ||
+      body.gender !== undefined
+    ) {
       if (child.weight && child.height) {
         child.bmi = calculateBmi(child.weight, child.height);
-        child.nutritionalStatus = classifyNutritionalStatus(child.bmi, child.age) as never;
+        child.nutritionalStatus = classifyNutritionalStatus(
+          child.bmi,
+          calculateAgeInMonths(child.dateOfBirth),
+          child.gender,
+        ) as never;
       }
     }
     if (body.schoolYear !== undefined) child.schoolYear = body.schoolYear;
