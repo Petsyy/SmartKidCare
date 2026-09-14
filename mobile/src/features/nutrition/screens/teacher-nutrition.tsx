@@ -13,7 +13,9 @@ import {
   useEvaluateNutrition,
 } from "../hooks/useNutrition";
 import { StudentNutritionCard } from "../components/student-nutrition-card";
+import { NutritionDatePicker } from "../components/nutrition-date-picker";
 import type { NutritionPeriod } from "@/src/api/nutrition.api";
+import { getManilaDateKey, formatManilaDateLabel } from "@/src/utils/manila-date";
 
 const getCurrentSchoolYear = (): string => {
   const now = new Date();
@@ -25,7 +27,10 @@ const getCurrentSchoolYear = (): string => {
 export const TeacherNutritionScreen = () => {
   const router = useRouter();
   const schoolYear = getCurrentSchoolYear();
-  const [period, setPeriod] = useState<NutritionPeriod>("initial");
+  const [period, setPeriod] = useState<NutritionPeriod>("quarterly");
+  const [measurementDateKey, setMeasurementDateKey] = useState(() =>
+    getManilaDateKey(),
+  );
   const {
     data: students,
     isLoading,
@@ -65,7 +70,7 @@ export const TeacherNutritionScreen = () => {
         childId,
         schoolYear,
         period,
-        measurementDate: new Date().toISOString(),
+        measurementDate: new Date(`${measurementDateKey}T12:00:00+08:00`).toISOString(),
         weight: parseFloat(inputs.weight),
         height: parseFloat(inputs.height),
         action,
@@ -130,8 +135,13 @@ export const TeacherNutritionScreen = () => {
       />
 
       <View className="flex-1 bg-gray-50">
-        <View className="mx-6 mt-4 flex-row rounded-2xl border border-gray-200 bg-white p-1">
-          {(["initial", "final"] as NutritionPeriod[]).map((option) => {
+        <NutritionDatePicker
+          dateKey={measurementDateKey}
+          dateLabel={formatManilaDateLabel(measurementDateKey)}
+          onDateChange={setMeasurementDateKey}
+        />
+        <View className="mx-6 mt-2 flex-row rounded-2xl border border-gray-200 bg-white p-1">
+          {(["quarterly", "final"] as NutritionPeriod[]).map((option) => {
             const isSelected = period === option;
             return (
               <Pressable
@@ -149,7 +159,7 @@ export const TeacherNutritionScreen = () => {
                     isSelected ? "text-white" : "text-gray-600"
                   }`}
                 >
-                  {option === "initial" ? "Initial" : "Final"}
+                  {option === "quarterly" ? "Quarterly" : "Final"}
                 </Text>
               </Pressable>
             );

@@ -11,7 +11,7 @@ const NutritionRecordSchema = new mongoose.Schema(
     schoolYear: { type: String, required: true },
     period: {
       type: String,
-      enum: ["initial", "final"],
+      enum: ["initial", "quarterly", "final"],
       default: undefined,
     },
     recordedBy: {

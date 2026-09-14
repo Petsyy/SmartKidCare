@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import {
   DocumentsSection,
   HealthSection,
+  GrowthHistorySection,
   ProfileSection,
 } from "./child-details-modal/sections";
 import {
@@ -22,6 +23,7 @@ import { formatFullName } from "./child-details-modal/utils";
 const tabs: { key: ChildDetailsTab; label: string }[] = [
   { key: "profile", label: "Profile" },
   { key: "health", label: "Health & Contacts" },
+  { key: "growth-history", label: "Growth History" },
   { key: "documents", label: "Documents" },
 ];
 
@@ -35,7 +37,7 @@ export default function ChildDetailsModal({
   onClose,
   onOpenDocument,
 }: ChildDetailsModalProps) {
-  const { titleId, descriptionId, profileTabId, healthTabId, documentsTabId } =
+  const { titleId, descriptionId, profileTabId, healthTabId, growthHistoryTabId, documentsTabId } =
     useChildDetailsModal();
 
   if (!child) return null;
@@ -48,6 +50,7 @@ export default function ChildDetailsModal({
   const tabIds: Record<ChildDetailsTab, string> = {
     profile: profileTabId,
     health: healthTabId,
+    "growth-history": growthHistoryTabId,
     documents: documentsTabId,
   };
 
@@ -134,6 +137,9 @@ export default function ChildDetailsModal({
               </TabsContent>
               <TabsContent value="health" asChild>
                 <HealthSection child={child} tabId={healthTabId} />
+              </TabsContent>
+              <TabsContent value="growth-history" asChild>
+                <GrowthHistorySection child={child} tabId={growthHistoryTabId} />
               </TabsContent>
               <TabsContent value="documents" asChild>
                 <DocumentsSection

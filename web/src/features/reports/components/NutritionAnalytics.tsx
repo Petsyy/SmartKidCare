@@ -102,40 +102,85 @@ export function NutritionAnalytics({ centerId = "" }: NutritionAnalyticsProps) {
             </p>
           </div>
         ) : (
-          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <StatCard
-              title="Evaluated Students"
-              value={String(data?.totalEvaluated ?? 0)}
-              subtitle={
-                selectedSchoolYear === "all"
-                  ? "Student-year records with both assessments"
-                  : "With initial and final records"
-              }
-              icon={Activity}
-              color="blue"
-            />
-            <StatCard
-              title="Initially Malnourished"
-              value={String(data?.initiallyMalnourished ?? 0)}
-              subtitle="Underweight or severely underweight"
-              icon={Activity}
-              color="rose"
-            />
-            <StatCard
-              title="Improved to Normal"
-              value={String(data?.improvedToNormal ?? 0)}
-              subtitle="Ended year as Normal status"
-              icon={Activity}
-              color="teal"
-            />
-            <StatCard
-              title="Improvement Rate"
-              value={`${(data?.improvementRate ?? 0).toFixed(1)}%`}
-              subtitle="Of malnourished students improved"
-              icon={Activity}
-              color="purple"
-            />
-          </div>
+          <>
+            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <StatCard
+                title="Evaluated Students"
+                value={String(data?.totalEvaluated ?? 0)}
+                subtitle={
+                  selectedSchoolYear === "all"
+                    ? "Student-year records with both assessments"
+                    : "With initial and final records"
+                }
+                icon={Activity}
+                color="blue"
+              />
+              <StatCard
+                title="Initially Malnourished"
+                value={String(data?.initiallyMalnourished ?? 0)}
+                subtitle="Underweight or severely underweight"
+                icon={Activity}
+                color="rose"
+              />
+              <StatCard
+                title="Improved to Normal"
+                value={String(data?.improvedToNormal ?? 0)}
+                subtitle="Ended year as Normal status"
+                icon={Activity}
+                color="teal"
+              />
+              <StatCard
+                title="Improvement Rate"
+                value={`${(data?.improvementRate ?? 0).toFixed(1)}%`}
+                subtitle="Of malnourished students improved"
+                icon={Activity}
+                color="purple"
+              />
+            </div>
+            
+            <div className="mt-8 border-t border-gray-200 pt-6 dark:border-slate-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-50 mb-4">
+                Current Status Distribution
+              </h3>
+              <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-5">
+                <StatCard
+                  title="Severely Underweight"
+                  value={String(data?.severelyUnderweightCount ?? 0)}
+                  subtitle="Latest submitted"
+                  icon={Activity}
+                  color="rose"
+                />
+                <StatCard
+                  title="Underweight"
+                  value={String(data?.underweightCount ?? 0)}
+                  subtitle="Latest submitted"
+                  icon={Activity}
+                  color="purple"
+                />
+                <StatCard
+                  title="Normal"
+                  value={String(data?.normalCount ?? 0)}
+                  subtitle="Latest submitted"
+                  icon={Activity}
+                  color="teal"
+                />
+                <StatCard
+                  title="Overweight"
+                  value={String(data?.overweightCount ?? 0)}
+                  subtitle="Latest submitted"
+                  icon={Activity}
+                  color="blue"
+                />
+                <StatCard
+                  title="Obese"
+                  value={String(data?.obeseCount ?? 0)}
+                  subtitle="Latest submitted"
+                  icon={Activity}
+                  color="rose"
+                />
+              </div>
+            </div>
+          </>
         )}
       </div>
     </section>

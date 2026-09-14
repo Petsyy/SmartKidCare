@@ -29,6 +29,7 @@ import {
   Scale,
   Ruler,
   Award,
+  TrendingUp,
 } from "lucide-react-native";
 import { useQuery } from "@tanstack/react-query";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
@@ -39,6 +40,7 @@ import {
 } from "@/src/components/ui";
 import { ViewGuardiansBottomSheet } from "../components/view-guardians-bottom-sheet";
 import { AddGuardianBottomSheet } from "../components/add-guardian-bottom-sheet";
+import { GrowthHistoryBottomSheet } from "@/src/features/nutrition/components/growth-history-bottom-sheet";
 import type { Guardian } from "@/src/api/api.types";
 
 export default function TeacherChildDetailsScreen() {
@@ -49,6 +51,7 @@ export default function TeacherChildDetailsScreen() {
   const childId = typeof id === "string" ? id : null;
   const [isGuardiansSheetOpen, setIsGuardiansSheetOpen] = useState(false);
   const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
+  const [isHistorySheetOpen, setIsHistorySheetOpen] = useState(false);
   const [editGuardian, setEditGuardian] = useState<Guardian | null>(null);
   const [editIndex, setEditIndex] = useState<number | null>(null);
 
@@ -254,6 +257,66 @@ export default function TeacherChildDetailsScreen() {
         }}
         showsVerticalScrollIndicator={false}
       >
+        {/* Quick Actions Row */}
+        <View className="flex-row justify-between mb-4 gap-3">
+          <Pressable
+            accessibilityRole="button"
+            onPress={() =>
+              router.push({
+                pathname: "/(teacher)/child-details/competencies/[childId]",
+                params: { childId: child._id },
+              })
+            }
+            className="flex-1 items-center justify-center bg-white rounded-3xl py-4 active:bg-gray-50"
+            style={{
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.06,
+              shadowRadius: 8,
+              elevation: 3,
+            }}
+          >
+            <View className="h-12 w-12 items-center justify-center rounded-2xl bg-teal-50 mb-2">
+              <Award size={24} color="#0D9488" />
+            </View>
+            <Text className="text-xs font-bold text-gray-700 text-center">Evaluate</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => setIsHistorySheetOpen(true)}
+            className="flex-1 items-center justify-center bg-white rounded-3xl py-4 active:bg-gray-50"
+            style={{
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.06,
+              shadowRadius: 8,
+              elevation: 3,
+            }}
+          >
+            <View className="h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 mb-2">
+              <TrendingUp size={24} color="#047857" />
+            </View>
+            <Text className="text-xs font-bold text-gray-700 text-center">History</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => setIsGuardiansSheetOpen(true)}
+            className="flex-1 items-center justify-center bg-white rounded-3xl py-4 active:bg-gray-50"
+            style={{
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.06,
+              shadowRadius: 8,
+              elevation: 3,
+            }}
+          >
+            <View className="h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 mb-2">
+              <ShieldCheck size={24} color="#0284C7" />
+            </View>
+            <Text className="text-xs font-bold text-gray-700 text-center">Guardians</Text>
+          </Pressable>
+        </View>
+
         {/* Today's Status Card */}
         <View
           className="rounded-3xl bg-white p-5 mb-4"
@@ -358,21 +421,6 @@ export default function TeacherChildDetailsScreen() {
                 Child Information
               </Text>
             </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Evaluate child competencies"
-              accessibilityHint="Opens the competency evaluation checklist"
-              onPress={() =>
-                router.push({
-                  pathname: "/(teacher)/child-details/competencies/[childId]",
-                  params: { childId: child._id },
-                })
-              }
-              className="min-h-11 flex-row items-center justify-center gap-1.5 rounded-xl border border-teal-500 bg-teal-50 px-3 active:bg-teal-100"
-            >
-              <Award size={17} color="#0D9488" />
-              <Text className="text-sm font-bold text-teal-700">Evaluate</Text>
-            </Pressable>
           </View>
 
           <View className="flex-row flex-wrap">
@@ -467,50 +515,7 @@ export default function TeacherChildDetailsScreen() {
           </View>
         </View>
 
-        {/* Authorized Guardians Summary Card */}
-        <Pressable
-          onPress={() => setIsGuardiansSheetOpen(true)}
-          className="rounded-3xl bg-white p-5 mb-4 active:bg-gray-50"
-          style={{
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.06,
-            shadowRadius: 8,
-            elevation: 3,
-          }}
-        >
-          <View className="flex-row items-center mb-3 gap-3">
-            <View className="h-10 w-10 items-center justify-center rounded-2xl bg-teal-50">
-              <ShieldCheck size={20} color="#0D9488" />
-            </View>
-            <View className="flex-1">
-              <Text className="text-xl font-bold text-gray-900">
-                Authorized Guardians
-              </Text>
-              <Text className="text-sm text-gray-500 font-medium">
-                {child.authorizedPickupPersons?.filter((g) => g.isActive !== false).length || 0}/5 Configured
-              </Text>
-            </View>
-            <ChevronRight size={24} color="#9CA3AF" />
-          </View>
-          
-          {child.authorizedPickupPersons && child.authorizedPickupPersons.filter((g) => g.isActive !== false).length > 0 ? (
-            <View className="bg-gray-50 rounded-2xl p-3 border border-gray-100">
-              <Text className="text-sm font-semibold text-gray-700 leading-5" numberOfLines={2}>
-                {child.authorizedPickupPersons
-                  .filter((g) => g.isActive !== false)
-                  .map((g) => `${g.firstName} ${g.lastName}`)
-                  .join(" • ")}
-              </Text>
-            </View>
-          ) : (
-            <View className="bg-amber-50 rounded-2xl p-3 border border-amber-100">
-              <Text className="text-sm font-medium text-amber-700">
-                No authorized guardians added yet.
-              </Text>
-            </View>
-          )}
-        </Pressable>
+
 
         {/* Parent Information Card */}
         {child.parent ? (
@@ -600,6 +605,12 @@ export default function TeacherChildDetailsScreen() {
         onClose={handleEditClose}
         editGuardian={editGuardian}
         editIndex={editIndex}
+      />
+      <GrowthHistoryBottomSheet
+        childId={childId}
+        childName={fullName}
+        visible={isHistorySheetOpen}
+        onClose={() => setIsHistorySheetOpen(false)}
       />
     </SafeAreaView>
   );

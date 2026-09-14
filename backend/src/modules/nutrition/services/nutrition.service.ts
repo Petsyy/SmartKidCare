@@ -125,7 +125,7 @@ export class NutritionService {
   public async getMyClassNutrition(
     user: AuthenticatedUser,
     schoolYear: string,
-    period?: "initial" | "final",
+    period?: "initial" | "quarterly" | "final",
   ) {
     const daycareCenterId = assertTeacherCenter(user);
     const children = await Child.find({
@@ -177,7 +177,7 @@ export class NutritionService {
   public async evaluateNutrition(user: AuthenticatedUser, payload: {
     childId: string;
     schoolYear: string;
-    period?: "initial" | "final";
+    period?: "initial" | "quarterly" | "final";
     measurementDate?: string;
     weight: number;
     height: number;

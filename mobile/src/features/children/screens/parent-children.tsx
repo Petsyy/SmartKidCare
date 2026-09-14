@@ -18,6 +18,7 @@ import {
   Users,
   Award,
   ArrowUpRight,
+  TrendingUp,
 } from "lucide-react-native";
 import type { Child } from "@/src/api/parent.api";
 import {
@@ -29,6 +30,8 @@ import {
 } from "@/src/components/ui";
 import { useParentChildrenData } from "@/src/features/children/hooks";
 import { useChildNutritionHistory } from "@/src/features/nutrition/hooks/useNutrition";
+import { GrowthHistoryBottomSheet } from "@/src/features/nutrition/components/growth-history-bottom-sheet";
+import { useState } from "react";
 
 const NOT_PROVIDED = "Not provided";
 
@@ -259,6 +262,7 @@ function ParentNutritionSection({
   childId: string;
   schoolYear?: string;
 }) {
+  const [showHistory, setShowHistory] = useState(false);
   const { data: history, isLoading } = useChildNutritionHistory(childId);
 
   if (isLoading) {
@@ -369,6 +373,20 @@ function ParentNutritionSection({
           </>
         )}
       </View>
+      <Pressable
+        onPress={() => setShowHistory(true)}
+        className="mt-3 flex-row items-center justify-center rounded-xl bg-emerald-50 py-3 border border-emerald-100 active:bg-emerald-100 gap-2"
+      >
+        <TrendingUp size={18} color="#047857" className="mr-2" />
+        <Text className="text-sm font-bold text-emerald-700">View Full History</Text>
+      </Pressable>
+      
+      <GrowthHistoryBottomSheet
+        childId={childId}
+        childName="Your Child"
+        visible={showHistory}
+        onClose={() => setShowHistory(false)}
+      />
     </ProfileSection>
   );
 }

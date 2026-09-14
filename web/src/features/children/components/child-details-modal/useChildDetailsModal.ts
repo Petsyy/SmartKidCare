@@ -5,6 +5,7 @@ export function useChildDetailsModal() {
   const descriptionId = useId();
   const profileTabId = useId();
   const healthTabId = useId();
+  const growthHistoryTabId = useId();
   const documentsTabId = useId();
 
   return {
@@ -12,6 +13,7 @@ export function useChildDetailsModal() {
     descriptionId,
     profileTabId,
     healthTabId,
+    growthHistoryTabId,
     documentsTabId,
   };
 }

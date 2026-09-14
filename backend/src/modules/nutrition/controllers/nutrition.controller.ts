@@ -9,7 +9,7 @@ export const getMyClassNutrition = asyncHandler(
 
     const { schoolYear, period } = req.query as {
       schoolYear: string;
-      period: "initial" | "final";
+      period: "initial" | "quarterly" | "final";
     };
 
     const data = await nutritionService.getMyClassNutrition(

@@ -4,7 +4,7 @@ export interface NutritionRecord {
   _id: string;
   childId: string;
   schoolYear: string;
-  period: "initial" | "final";
+  period: "initial" | "quarterly" | "final";
   recordedBy: string;
   status: "draft" | "submitted";
   weight: number;
@@ -28,8 +28,12 @@ export type NutritionAnalyticsData = {
   improvedToNormal: number;
   remainedMalnourished: number;
   improvementRate: number;
+  underweightCount: number;
+  severelyUnderweightCount: number;
+  normalCount: number;
+  overweightCount: number;
+  obeseCount: number;
 };
-
 export type NutritionAnalyticsFilters = {
   schoolYear?: string;
   centerId?: string;

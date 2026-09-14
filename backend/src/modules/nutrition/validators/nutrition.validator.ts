@@ -14,9 +14,10 @@ export const getMyClassSchema = z.object({
         val === "null"
           ? undefined
           : val,
-      z.enum(["initial", "final"])
+      z.enum(["initial", "quarterly", "final"])
     )
-    .optional(),
+    .optional()
+    .describe("The period of the assessment (e.g., initial, quarterly, final)"),
 });
 
 export const evaluateNutritionSchema = z.object({
@@ -25,9 +26,10 @@ export const evaluateNutritionSchema = z.object({
   period: z
     .preprocess(
       (val) => (val === "" || val === "undefined" || val === "null" ? undefined : val),
-      z.enum(["initial", "final"])
+      z.enum(["initial", "quarterly", "final"])
     )
-    .optional(),
+    .optional()
+    .describe("Assessment period"),
   measurementDate: z.string().datetime({ offset: true }).optional(),
   weight: z.coerce.number().min(0.1, "Weight must be a positive number"),
   height: z.coerce.number().min(10, "Height must be a valid number in cm"),

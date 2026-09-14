@@ -1,6 +1,6 @@
 import { apiClient } from "./client";
 
-export type NutritionPeriod = "initial" | "final";
+export type NutritionPeriod = "initial" | "quarterly" | "final";
 
 export interface NutritionRecord {
   _id: string;

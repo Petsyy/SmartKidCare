@@ -1,6 +1,6 @@
 import type { Child, ChildBlockchainProof, ChildDocumentType } from "@/types/child";
 
-export type ChildDetailsTab = "profile" | "health" | "documents";
+export type ChildDetailsTab = "profile" | "health" | "growth-history" | "documents";
 
 export type ChildDetailsModalProps = {
   child: Child | null;
