@@ -99,7 +99,7 @@ export const ReportsFilters = ({
         <select
           value={centerId}
           onChange={(event) => setCenterId(event.target.value)}
-          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
+          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-gray-700 transition-colors focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/30 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
         >
           <option value="">All centers</option>
           {centers.filter((center) => center.isActive !== false).map((center) => (
@@ -118,7 +118,7 @@ export const ReportsFilters = ({
               type="date"
               value={customStartDate}
               onChange={(event) => setCustomStartDate(event.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-gray-700 transition-colors focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/30 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
             />
           </label>
           <label className="space-y-1">
@@ -129,7 +129,7 @@ export const ReportsFilters = ({
               type="date"
               value={customEndDate}
               onChange={(event) => setCustomEndDate(event.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-gray-700 transition-colors focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/30 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
             />
           </label>
         </div>

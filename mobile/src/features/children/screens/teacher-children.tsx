@@ -205,8 +205,7 @@ export default function ChildScreen() {
                     No Children Enrolled Yet
                   </Text>
                   <Text className="text-lg font-bold text-gray-500 text-center mb-6 leading-7">
-                    Submit a child enrollment request and wait for admin
-                    approval.
+                    Enroll a child from the Enrollment tab to see them here.
                   </Text>
                 </>
               )}

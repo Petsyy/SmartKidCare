@@ -10,7 +10,7 @@ const FeedingProgram = lazy(() => import("./pages/FeedingProgram"));
 const ReportAnalytics = lazy(() => import("./pages/Reports&Analytics"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminSettings = lazy(() => import("./pages/AdminSettings"));
-const EnrollmentRequests = lazy(() => import("./pages/EnrollmentRequests"));
+
 const DaycareCenters = lazy(() => import("./pages/DaycareCenters"));
 
 export default function App() {
@@ -25,7 +25,7 @@ export default function App() {
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/users" element={<UserManagement />} />
               <Route path="/children" element={<ChildrenManagement />} />
-              <Route path="/enrollment-requests" element={<EnrollmentRequests />} />
+
               <Route path="/centers" element={<DaycareCenters />} />
               <Route path="/dashboard" element={<AdminDashboard />} />
               <Route path="/feeding" element={<FeedingProgram />} />

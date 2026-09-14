@@ -1,10 +1,8 @@
 import * as DocumentPicker from "expo-document-picker";
-import type { TeacherEnrollmentRequest } from "@/src/api/teacher.api";
 import {
   ALLOWED_MIME_TYPES,
   MAX_DOCUMENT_SIZE,
 } from "@/src/features/enrollment/constants";
-import type { EnrollmentStatusColors } from "@/src/features/enrollment/types";
 
 export const formatYmd = (value: Date): string => {
   const year = value.getFullYear();
@@ -87,38 +85,6 @@ export const formatRequestDate = (value?: string) => {
     year: "numeric",
     timeZone: "Asia/Manila",
   });
-};
-
-export const buildRequestChildName = (request: TeacherEnrollmentRequest) =>
-  (
-    request.child.fullName ||
-    [request.child.firstName, request.child.middleName, request.child.lastName]
-      .filter((v) => String(v || "").trim().length > 0)
-      .join(" ")
-  ).trim();
-
-export const getStatusColors = (
-  status: TeacherEnrollmentRequest["status"],
-): EnrollmentStatusColors => {
-  if (status === "approved") {
-    return {
-      badgeBackgroundColor: "#DCFCE7",
-      textColor: "#047857",
-      label: "Approved",
-    };
-  }
-  if (status === "rejected") {
-    return {
-      badgeBackgroundColor: "#FEE2E2",
-      textColor: "#B91C1C",
-      label: "Rejected",
-    };
-  }
-  return {
-    badgeBackgroundColor: "#FEF3C7",
-    textColor: "#B45309",
-    label: "Pending",
-  };
 };
 
 export const calculateBmi = (weightKg: number, heightCm: number): number => {

@@ -23,39 +23,39 @@ export function ChildrenTable({
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse">
-        <thead className="border-b bg-gray-50 dark:border-slate-700 dark:bg-slate-900">
-          <tr>
-            <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
+        <thead>
+          <tr className="border-b border-gray-200 bg-gray-50 dark:border-slate-800 dark:bg-slate-900">
+            <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
               Student ID
             </th>
-            <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
+            <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
               Child Name
             </th>
-            <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
+            <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
               Age
             </th>
-            <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
+            <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
               Gender
             </th>
-            <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
+            <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
               School Year
             </th>
-            <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
+            <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
               Status
             </th>
-            <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
+            <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
               Assigned Teacher
             </th>
-            <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
+            <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
               Assigned Center
             </th>
-            <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
+            <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
               Actions
             </th>
           </tr>
         </thead>
 
-        <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
+        <tbody className="">
           {isLoading ? (
             <TableSkeleton columns={9} />
           ) : children.length === 0 ? (
@@ -80,7 +80,7 @@ export function ChildrenTable({
             filteredChildren.map((child) => (
               <tr
                 key={child._id}
-                className="transition-colors hover:bg-gray-50 dark:hover:bg-slate-800/60"
+                className="border-none transition-colors hover:bg-gray-50 dark:hover:bg-slate-800/60"
               >
                 <td className="px-6 py-4 font-mono text-sm text-gray-900 dark:text-slate-100">
                   {child.studentId}

@@ -18,27 +18,27 @@ export function CentersTable({
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse">
-        <thead className="border-b bg-gray-50 dark:border-slate-700 dark:bg-slate-900">
-          <tr>
-            <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
+        <thead>
+          <tr className="border-b border-gray-200 bg-gray-50 dark:border-slate-800 dark:bg-slate-900">
+            <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
               Center
             </th>
-            <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
+            <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
               Assigned CDW
             </th>
-            <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
+            <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
               Children
             </th>
 
-            <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
+            <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
               Status
             </th>
-            <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
+            <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
               Actions
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
+        <tbody className="">
           {isLoading ? (
             <TableSkeleton columns={5} />
           ) : centers.length === 0 ? (
@@ -54,7 +54,7 @@ export function CentersTable({
             centers.map((center) => (
               <tr
                 key={center._id}
-                className="transition-colors hover:bg-gray-50 dark:hover:bg-slate-800/60"
+                className="border-none transition-colors hover:bg-gray-50 dark:hover:bg-slate-800/60"
               >
                 <td className="px-6 py-4">
                   <div className="flex flex-col">
@@ -85,8 +85,8 @@ export function CentersTable({
                     {center.isActive !== false ? "Active" : "Inactive"}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-right">
-                  <div className="flex justify-end items-center gap-1.5">
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => onView(center)}
                       className="group inline-flex items-center gap-1.5 rounded-lg border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-teal-500/30 dark:border-teal-900/50 dark:bg-teal-900/20 dark:text-teal-300 dark:hover:bg-teal-900/40 cursor-pointer"

@@ -3,9 +3,9 @@ import type { UseFormReturn } from "react-hook-form";
 import type { PasswordForm } from "@/features/settings/hooks/useAdminPassword2FA";
 
 const LABEL_CLASS_NAME =
-  "mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300";
+  "mb-2 block text-sm font-semibold tracking-wide text-slate-800 dark:text-slate-200 ml-1";
 const INPUT_CLASS_NAME =
-  "w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 read-only:cursor-not-allowed read-only:bg-slate-100 read-only:text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 dark:disabled:bg-slate-800 dark:disabled:text-slate-500 dark:read-only:bg-slate-800 dark:read-only:text-slate-500";
+  "w-full rounded-xl border border-slate-200/80 bg-slate-50/50 px-4 py-3 text-sm text-slate-900 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] transition-all duration-300 hover:border-slate-300 focus:border-teal-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-teal-500/15 disabled:cursor-not-allowed disabled:bg-slate-100/80 disabled:text-slate-400 disabled:shadow-none read-only:cursor-not-allowed read-only:bg-slate-100/80 read-only:text-slate-400 read-only:shadow-none dark:border-white/10 dark:bg-[#0A101D]/50 dark:text-slate-100 dark:placeholder:text-slate-500 dark:hover:border-slate-600 dark:focus:border-teal-500/50 dark:focus:bg-[#0A101D] dark:focus:ring-teal-500/20 dark:disabled:bg-slate-900/80 dark:disabled:text-slate-600 dark:read-only:bg-slate-900/80 dark:read-only:text-slate-600";
 
 type SecuritySectionProps = {
   form: UseFormReturn<PasswordForm>;

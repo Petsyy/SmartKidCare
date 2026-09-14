@@ -1,12 +1,13 @@
 import type { Express } from "express";
+import mongoose from "mongoose";
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../../../shared/errors/app-error";
 import { logger } from "../../../shared/lib/logger";
 import { type UploadResult } from "../../../shared/utils/upload-cloudinary";
 import { storageService } from "../../../shared/services/storage.service";
 import { hashFileBuffer } from "../../blockchain/utils/ethers";
-import {buildFullName,extractUploadedDocument,isChildGender,isChildProgramType,splitChildName} from "../../child/shared";
-import {normalizeOptionalString,normalizeString} from "../../../shared/utils/string.utils";
-import {computeAgeFromDate,parseDate,} from "../../../shared/utils/date.utils";
+import { buildFullName, extractUploadedDocument, isChildGender, isChildProgramType, splitChildName } from "../../child/shared";
+import { normalizeOptionalString, normalizeString } from "../../../shared/utils/string.utils";
+import { computeAgeFromDate, parseDate } from "../../../shared/utils/date.utils";
 import { createChildRecord } from "../../child/services";
 import {
   calculateAgeInMonths,
@@ -14,12 +15,15 @@ import {
   classifyNutritionalStatus,
 } from "../../../shared/utils/nutrition.utils";
 import { parentService } from "../../parents/services/parents.service";
-import {enrollmentChildRepository,enrollmentRequestRepository,enrollmentCenterRepository,enrollmentUserRepository} from "../repositories/enrollment.repository";
+import { enrollmentChildRepository, enrollmentCenterRepository, enrollmentUserRepository } from "../repositories/enrollment.repository";
 import { authUserRepository } from "../../auth/repositories/auth.repository";
-import type { AuthUser, UploadedFiles, SubmitEnrollmentRequestCommand } from "../types/enrollment-submit.types";
+import { childRepository } from "../../child/repositories/child.repository";
+import NutritionRecord from "../../../models/NutritionRecord";
+import { generateStudentId } from "../../../shared/utils/generate-child-id";
+import type { AuthUser, UploadedFiles, SubmitEnrollmentRequestCommand as DirectEnrollmentCommand } from "../types/enrollment-submit.types";
 
-export const submitChildEnrollmentRequest = async (
-  command: SubmitEnrollmentRequestCommand,
+export const directEnrollChild = async (
+  command: DirectEnrollmentCommand,
 ) => {
   if (!command.user?.id || command.user.role !== "teacher") {
     throw new ForbiddenError("Teachers only");
@@ -77,7 +81,7 @@ export const submitChildEnrollmentRequest = async (
     weight === null ||
     height === null
   ) {
-    throw new ValidationError("Missing required enrollment request fields");
+    throw new ValidationError("Missing required enrollment fields");
   }
 
   const allowedRelationships = ["Mother", "Father", "Guardian", "Grandparent", "Other"];
@@ -103,7 +107,6 @@ export const submitChildEnrollmentRequest = async (
   }
 
   // Child must NOT turn 5 during the school year (June–March)
-  // School year format: "2026-2027" → ends March 31 of the end year
   const schoolYearMatch = /(\d{4})\s*[-–]\s*(\d{4})/.exec(schoolYear);
   if (schoolYearMatch) {
     const endYear = Number(schoolYearMatch[2]);
@@ -158,7 +161,7 @@ export const submitChildEnrollmentRequest = async (
 
   if (teacherCenterId !== String(selectedCenter._id)) {
     throw new ForbiddenError(
-      "You can only submit requests for your assigned center.",
+      "You can only submit records for your assigned center.",
     );
   }
 
@@ -169,15 +172,6 @@ export const submitChildEnrollmentRequest = async (
   );
   if (existingChild) {
     throw new ConflictError("Child already exists in the enrolled records.");
-  }
-
-  const existingPendingRequest = await enrollmentRequestRepository.findPendingDuplicate(
-    firstName,
-    lastName,
-    dateOfBirth,
-  );
-  if (existingPendingRequest) {
-    throw new ConflictError("A pending enrollment request already exists.");
   }
 
   const [existingParent, existingNonParentByPhone] = await Promise.all([
@@ -193,7 +187,7 @@ export const submitChildEnrollmentRequest = async (
   let birthUpload: UploadResult | null = null;
   let parentUpload: UploadResult | null = null;
   let createdParentId: string | null = null;
-  let requestCreated = false;
+  let childCreated = false;
 
   try {
     if (birthFile) {
@@ -220,11 +214,14 @@ export const submitChildEnrollmentRequest = async (
       tempPassword: null as string | null,
     };
 
+    let parentDbRecord = existingParent;
+
     if (!existingParent) {
       const createdParent = await parentService.createParentAccount({
         firstName: parentFirstName,
         middleName: parentMiddleName,
         lastName: parentLastName,
+        email: "", // Will be auto-generated inside createParentAccount if not provided
         phone: parentPhone,
       });
       createdParentId = String(createdParent.parent._id);
@@ -233,58 +230,89 @@ export const submitChildEnrollmentRequest = async (
         phone: parentPhone,
         tempPassword: createdParent.tempPassword,
       };
+      parentDbRecord = createdParent.parent;
     }
 
-    const enrollmentRequest = await enrollmentRequestRepository.create({
-      requestedBy: command.user.id,
-      status: "pending",
-      daycareCenter: selectedCenter._id,
-      child: {
-        fullName: buildFullName([firstName, middleName, lastName]),
+    const calculatedBmi = calculateBmi(weight, height);
+    const calculatedNutritionalStatus = classifyNutritionalStatus(
+      calculatedBmi,
+      calculateAgeInMonths(dateOfBirth, enrollmentDate),
+      gender as "male" | "female",
+    );
+
+    const created = await createChildRecord(
+      {
         firstName,
-        middleName,
+        middleName: middleName || undefined,
         lastName,
         dateOfBirth,
         age: computedAge,
         gender,
         homeAddress,
+        parentRelationship,
         programType,
         enrollmentDate,
         schoolYear,
         weight,
         height,
-        bmi: calculateBmi(weight, height),
-        nutritionalStatus: classifyNutritionalStatus(
-          calculateBmi(weight, height),
-          calculateAgeInMonths(dateOfBirth, enrollmentDate),
-          gender as "male" | "female",
-        ),
+        bmi: calculatedBmi,
+        nutritionalStatus: calculatedNutritionalStatus,
+        status: "Active",
+        studentId: generateStudentId(enrollmentDate.getFullYear()),
+        parent: parentDbRecord?._id,
+        teacher: new mongoose.Types.ObjectId(command.user.id),
+        daycareCenter: selectedCenter._id,
       },
-      parent: {
-        firstName: parentFirstName,
-        middleName: parentMiddleName,
-        lastName: parentLastName,
-        email: parentCredentials.email,
-        phone: parentPhone,
-        relationship: parentRelationship,
+      {
+        birthUpload: birthUpload
+          ? {
+            publicId: birthUpload.publicId,
+            resourceType: String(birthUpload.resourceType || "image"),
+            format: String(birthUpload.format || "jpg"),
+            bytes: birthUpload.bytes || 0,
+          }
+          : null,
+        parentUpload: parentUpload
+          ? {
+            publicId: parentUpload.publicId,
+            resourceType: String(parentUpload.resourceType || "image"),
+            format: String(parentUpload.format || "jpg"),
+            bytes: parentUpload.bytes || 0,
+          }
+          : null,
+        birthDocumentHash,
+        parentIdDocumentHash,
       },
-      documents: {
-        birthCertificate: extractUploadedDocument(
-          birthUpload,
-          birthDocumentHash,
-        ),
-        parentId: extractUploadedDocument(parentUpload, parentIdDocumentHash),
-      },
-    });
-    requestCreated = true;
+    );
+
+    if (weight != null && height != null) {
+      await NutritionRecord.create({
+        childId: created.child._id,
+        schoolYear,
+        period: "initial",
+        recordedBy: new mongoose.Types.ObjectId(command.user.id),
+        status: "submitted",
+        weight,
+        height,
+        ageInMonths: calculateAgeInMonths(dateOfBirth, new Date()),
+        sex: gender as "male" | "female",
+        bmi: calculatedBmi === null ? undefined : calculatedBmi,
+        nutritionalStatus: (calculatedNutritionalStatus === null ? undefined : calculatedNutritionalStatus) as any,
+        measurementDate: new Date(),
+        submittedAt: new Date(),
+      });
+    }
+
+    childCreated = true;
 
     return {
-      message: "Enrollment request submitted for admin review.",
-      request: enrollmentRequest,
+      message: "Child enrolled successfully.",
+      child: created.child,
+      documentAnchor: created.documentsAnchor,
       parentCredentials,
     };
   } catch (error) {
-    if (!requestCreated && createdParentId) {
+    if (!childCreated && createdParentId) {
       await authUserRepository.deleteById(createdParentId).catch((cleanupError: unknown) => {
         logger.error("Failed to clean up parent after enrollment error.", {
           parentId: createdParentId,
@@ -296,7 +324,7 @@ export const submitChildEnrollmentRequest = async (
       });
     }
 
-    if (!requestCreated) {
+    if (!childCreated) {
       await storageService.cleanupUpload(birthUpload);
       await storageService.cleanupUpload(parentUpload);
     }
@@ -304,5 +332,3 @@ export const submitChildEnrollmentRequest = async (
     throw error;
   }
 };
-
-export type { SubmitEnrollmentRequestCommand } from "../types/enrollment-submit.types";

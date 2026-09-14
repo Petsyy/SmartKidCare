@@ -18,7 +18,7 @@ export default function Layout({
   return (
     <div className="flex min-h-screen bg-gray-50 transition-colors dark:bg-slate-950">
       <div className="no-print"><Sidebar activeItem={activeItem} onNavigate={onNavigate} /></div>
-      <main className="ml-60 flex flex-1 flex-col print:ml-0">
+      <main className="ml-64 flex flex-1 flex-col print:ml-0">
         <div className="no-print"><Header breadcrumbs={breadcrumbs} /></div>
         <div className="flex-1">{children}</div>
       </main>

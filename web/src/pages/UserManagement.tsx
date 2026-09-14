@@ -91,7 +91,7 @@ export default function UserManagement() {
               {activeTab === "teacher" && (
                 <button
                   onClick={() => setShowAddTeacherModal(true)}
-                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-teal-500/20 bg-linear-to-r from-teal-600 to-cyan-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:from-teal-700 hover:to-cyan-600 dark:border-cyan-400/20 dark:from-teal-600 dark:to-cyan-600 dark:hover:from-teal-500 dark:hover:to-cyan-500 lg:self-start cursor-pointer"
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-teal-700 lg:self-start cursor-pointer"
                 >
                   <Plus size={16} />
                   Add Teacher

@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import { 
   adminUserRepository, 
   adminChildRepository, 
-  adminEnrollmentRepository, 
+ 
   adminCenterRepository, 
 } from "../repositories/admin.repository";
 import {
@@ -201,20 +201,14 @@ export class AdminUserManagementService {
     if (!user) throw new Error("User not found.");
 
     if (user.role === "parent") {
-      await Promise.all([
-        adminChildRepository.unlinkParent(String(user._id)),
-        adminEnrollmentRepository.deleteByParentEmail(user.email),
-      ]);
+      await adminChildRepository.unlinkParent(String(user._id));
     }
 
     if (user.role === "teacher") {
-      const [linkedChildrenCount, linkedRequestsCount] = await Promise.all([
-        adminChildRepository.countByTeacher(String(user._id)),
-        adminEnrollmentRepository.countByTeacher(String(user._id)),
-      ]);
+      const linkedChildrenCount = await adminChildRepository.countByTeacher(String(user._id));
 
-      if (linkedChildrenCount > 0 || linkedRequestsCount > 0) {
-        throw new Error("Cannot delete this teacher account because it has linked child records or enrollment requests. Deactivate the account instead.");
+      if (linkedChildrenCount > 0) {
+        throw new Error("Cannot delete this teacher account because it has linked child records. Deactivate the account instead.");
       }
     }
 
@@ -227,12 +221,9 @@ export class AdminUserManagementService {
       throw new Error("Parent not found.");
     }
 
-    const [children, requests] = await Promise.all([
-      adminChildRepository.findByParent(parentId),
-      adminEnrollmentRepository.findByParentEmail(parent.email),
-    ]);
+    const children = await adminChildRepository.findByParent(parentId);
 
-    return { children, requests };
+    return { children, requests: [] };
   }
 }
 

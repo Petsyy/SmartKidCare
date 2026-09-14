@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import {School,Search,UserCheck,UserX,Users,ClipboardList} from "lucide-react";
+import {School,Search,UserCheck,UserX,Users} from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Pagination } from "@/components/ui/Pagination";
@@ -223,7 +223,7 @@ export default function ChildrenManagement() {
         {/* Student Directory Card */}
         <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
           {/* Card Header */}
-          <div className="flex flex-col gap-4 border-b p-6 dark:border-slate-700 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-4 border-b border-gray-200 p-6 dark:border-slate-700 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-3">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
                 Child Directory
@@ -242,7 +242,7 @@ export default function ChildrenManagement() {
                   placeholder="Search children..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 bg-white pl-9 pr-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                  className="w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3 py-2 text-sm text-gray-900 transition-colors focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/30 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 />
               </div>
 
@@ -253,7 +253,7 @@ export default function ChildrenManagement() {
                     setPage(1);
                     setStatusFilter(e.target.value as typeof statusFilter);
                   }}
-                  className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/30 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 >
                   <option value="all">All Status</option>
                   <option value="Active">Active</option>
@@ -268,7 +268,7 @@ export default function ChildrenManagement() {
                       e.target.value as typeof assignmentFilter,
                     );
                   }}
-                  className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/30 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 >
                   <option value="all">All Assignment</option>
                   <option value="assigned">Assigned</option>
@@ -281,7 +281,7 @@ export default function ChildrenManagement() {
                     setPage(1);
                     setSchoolYearFilter(e.target.value);
                   }}
-                  className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/30 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 >
                   <option value="all">All Years</option>
                   {schoolYearOptions.map((year) => (
@@ -297,7 +297,7 @@ export default function ChildrenManagement() {
                     setPage(1);
                     setCenterFilter(e.target.value);
                   }}
-                  className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/30 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 >
                   <option value="all">All Centers</option>
                   {centerOptions.map((center) => (
@@ -311,18 +311,11 @@ export default function ChildrenManagement() {
                   type="button"
                   disabled={!hasActiveFilters}
                   onClick={clearFilters}
-                  className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 shadow-sm transition disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                  className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-teal-500/30 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
                 >
                   Clear
                 </button>
               </div>
-              <button
-                onClick={() => navigate("/enrollment-requests")}
-                className="flex cursor-pointer items-center gap-2 rounded-lg border border-teal-500/20 bg-linear-to-r from-teal-600 to-cyan-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:from-teal-700 hover:to-cyan-600 dark:border-cyan-400/20 dark:from-teal-600 dark:to-cyan-600 dark:hover:from-teal-500 dark:hover:to-cyan-500"
-              >
-                <ClipboardList size={16} />
-                Review Requests
-              </button>
             </div>
           </div>
 

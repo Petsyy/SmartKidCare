@@ -5,5 +5,4 @@ export * from "./child-health-enrollment-step-section";
 export * from "./parent-info-step-section";
 export * from "./documents-step-section";
 export * from "./review-submit-step-section";
-export * from "./submitted-requests-panel";
 export * from "./new-enrollment-form";

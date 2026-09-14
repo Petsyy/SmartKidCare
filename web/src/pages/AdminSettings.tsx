@@ -330,22 +330,22 @@ export default function AdminSettings() {
         />
 
         {isLoading && (
-          <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
-            <aside className="h-fit rounded-2xl border border-slate-200 bg-white p-3 shadow-sm xl:sticky xl:top-6 dark:border-slate-700 dark:bg-slate-900">
-              <Skeleton className="mb-4 h-4 w-24" />
+          <div className="grid gap-8 xl:grid-cols-[300px_minmax(0,1fr)] items-start">
+            <aside className="sticky top-28 rounded-3xl border border-slate-200/60 bg-white/60 backdrop-blur-xl p-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] dark:border-white/5 dark:bg-[#0A101D]/80">
+              <Skeleton className="mb-4 h-4 w-24 ml-2" />
               <div className="space-y-2">
                 {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="flex items-start gap-3 rounded-xl border border-transparent p-3">
-                    <Skeleton className="h-8 w-8 shrink-0 rounded-lg" />
-                    <SkeletonText lines={2} className="w-full" />
+                  <div key={i} className="flex items-start gap-3.5 rounded-2xl border border-transparent p-3.5">
+                    <Skeleton className="h-10 w-10 shrink-0 rounded-xl" />
+                    <SkeletonText lines={2} className="w-full mt-1" />
                   </div>
                 ))}
               </div>
             </aside>
-            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-              <div className="mb-6 flex items-start gap-3">
-                <Skeleton className="h-9 w-9 shrink-0 rounded-lg" />
-                <SkeletonText lines={2} className="w-48" />
+            <section className="rounded-3xl border border-slate-200/60 bg-white p-8 shadow-[0_8px_30px_-4px_rgba(0,0,0,0.04)] dark:border-white/5 dark:bg-[#0A101D]/90">
+              <div className="mb-8 flex items-start gap-4">
+                <Skeleton className="h-12 w-12 shrink-0 rounded-xl" />
+                <SkeletonText lines={2} className="w-48 mt-1" />
               </div>
               <div className="space-y-6">
                 {[1, 2, 3].map((i) => (
@@ -378,12 +378,12 @@ export default function AdminSettings() {
         )}
 
         {!isLoading && !loadError && isAdmin && (
-          <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
-            <aside className="h-fit rounded-2xl border border-slate-200 bg-white p-3 shadow-sm xl:sticky xl:top-6 dark:border-slate-700 dark:bg-slate-900">
-              <p className="px-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          <div className="grid gap-8 xl:grid-cols-[300px_minmax(0,1fr)] items-start">
+            <aside className="sticky top-28 rounded-3xl border border-slate-200/60 bg-white/60 backdrop-blur-xl p-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] dark:border-white/5 dark:bg-[#0A101D]/80">
+              <p className="px-3 text-[11px] font-bold uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500">
                 Settings Menu
               </p>
-              <div className="mt-3 space-y-2">
+              <div className="mt-4 space-y-2">
                 {SETTINGS_SECTIONS.map((section) => {
                   const Icon = section.icon;
                   const isActive = section.id === activeSection;
@@ -393,30 +393,30 @@ export default function AdminSettings() {
                       key={section.id}
                       type="button"
                       onClick={() => setActiveSection(section.id)}
-                      className={`cursor-pointer w-full rounded-xl border p-3 text-left transition ${
+                      className={`group relative cursor-pointer w-full rounded-2xl border p-3.5 text-left transition-all duration-300 ease-out ${
                         isActive
-                          ? "border-teal-200 bg-teal-50 dark:border-teal-500/50 dark:bg-teal-500/10"
-                          : "border-transparent bg-white hover:border-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:hover:border-slate-700 dark:hover:bg-slate-800/60"
+                          ? "border-slate-200/80 bg-white shadow-[0_4px_12px_-4px_rgba(0,0,0,0.08)] dark:border-white/10 dark:bg-slate-800/80"
+                          : "border-transparent bg-transparent hover:border-slate-200/60 hover:bg-slate-50/50 hover:shadow-sm dark:hover:border-slate-700/50 dark:hover:bg-slate-800/40"
                       }`}
                     >
-                      <div className="flex items-start gap-3">
+                      <div className="flex items-start gap-3.5">
                         <span
-                          className={`rounded-lg p-2 ${
+                          className={`rounded-xl p-2.5 transition-all duration-300 ${
                             isActive
-                              ? section.iconClassName
-                              : "bg-slate-100 text-slate-500 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700"
+                              ? `${section.iconClassName} shadow-sm scale-110`
+                              : "bg-slate-100/80 text-slate-500 ring-1 ring-slate-200/50 group-hover:scale-105 group-hover:bg-white group-hover:shadow-sm dark:bg-slate-800/80 dark:text-slate-400 dark:ring-slate-700/50 dark:group-hover:bg-slate-800"
                           }`}
                         >
-                          <Icon size={16} />
+                          <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
                         </span>
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        <div className="min-w-0 mt-0.5">
+                          <p className={`text-sm tracking-wide ${isActive ? "font-bold text-slate-900 dark:text-slate-100" : "font-semibold text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-slate-200"}`}>
                             {section.title}
                           </p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                             {section.description}
                           </p>
-                          <p className="mt-1 text-xs font-medium text-teal-700 dark:text-teal-300">
+                          <p className={`mt-1.5 text-xs font-semibold ${isActive ? "text-slate-700 dark:text-slate-300" : "text-slate-500 dark:text-slate-400"}`}>
                             {sectionStatus[section.id]}
                           </p>
                         </div>
@@ -427,18 +427,18 @@ export default function AdminSettings() {
               </div>
             </aside>
 
-            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-              <div className="mb-6 flex items-start gap-3">
+            <section className="rounded-3xl border border-slate-200/60 bg-white p-8 shadow-[0_8px_30px_-4px_rgba(0,0,0,0.04)] transition-all dark:border-white/5 dark:bg-[#0A101D]/90">
+              <div className="mb-8 flex items-start gap-4">
                 <div
-                  className={`rounded-lg p-2 ${activeSectionMeta.iconClassName}`}
+                  className={`rounded-xl p-3 shadow-sm ${activeSectionMeta.iconClassName}`}
                 >
-                  <ActiveSectionIcon size={18} />
+                  <ActiveSectionIcon size={22} strokeWidth={2.5} />
                 </div>
-                <div>
-                  <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+                <div className="mt-1">
+                  <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
                     {activeSectionMeta.title}
                   </h2>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                     {activeSectionMeta.description}
                   </p>
                 </div>

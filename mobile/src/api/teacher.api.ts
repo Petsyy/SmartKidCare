@@ -5,7 +5,6 @@ import type {
   ChildEnrollmentRequestFiles,
   EnrollmentCenterOption,
   ChildEnrollmentSubmissionResponse,
-  TeacherEnrollmentRequest,
 } from "./api.types";
 
 export type {
@@ -13,7 +12,6 @@ export type {
   ChildEnrollmentRequestFiles,
   EnrollmentCenterOption,
   ChildEnrollmentSubmissionResponse,
-  TeacherEnrollmentRequest,
 };
 
 export const getEnrollmentCenters = async (): Promise<EnrollmentCenterOption[]> => {
@@ -23,7 +21,7 @@ export const getEnrollmentCenters = async (): Promise<EnrollmentCenterOption[]> 
   return Array.isArray(data.centers) ? data.centers : [];
 };
 
-export const submitChildEnrollmentRequest = async (
+export const submitChildEnrollment = async (
   payload: ChildEnrollmentRequestPayload,
   files?: ChildEnrollmentRequestFiles,
 ): Promise<ChildEnrollmentSubmissionResponse> => {
@@ -53,17 +51,12 @@ export const submitChildEnrollmentRequest = async (
   }
 
   return apiFormDataClient<ChildEnrollmentSubmissionResponse>(
-    "/api/enrollment/requests",
+    "/api/enrollment",
     formData,
   );
 };
 
-export const getMyEnrollmentRequests = async (): Promise<TeacherEnrollmentRequest[]> => {
-  const data = await apiClient<{ requests?: TeacherEnrollmentRequest[] }>(
-    "/api/enrollment/requests/mine",
-  );
-  return Array.isArray(data.requests) ? data.requests : [];
-};
+
 
 export const getChildren = async (): Promise<Child[]> => {
   const data = await apiClient<Child[] | any>("/api/children");

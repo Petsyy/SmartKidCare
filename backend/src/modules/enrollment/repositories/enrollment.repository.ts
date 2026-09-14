@@ -1,14 +1,8 @@
 import mongoose from "mongoose";
 import Child from "../../../models/Child";
-import User, { IUser } from "../../../models/Users";
-import ChildEnrollmentRequest from "../../../models/ChildEnrollmentRequest";
 import ChildDevelopmentCenter from "../../../models/ChildDevelopmentCenter";
+import User from "../../../models/Users";
 import { BaseRepository } from "../../../shared/repositories/base.repository";
-
-const escapeRegex = (value: string) =>
-  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-// ─── Child ────────────────────────────────────────────────────────────────────
 
 export class EnrollmentChildRepository extends BaseRepository<any> {
   constructor() {
@@ -22,85 +16,16 @@ export class EnrollmentChildRepository extends BaseRepository<any> {
   ): Promise<any | null> {
     return this.model
       .findOne({
-        firstName: { $regex: `^${escapeRegex(firstName)}$`, $options: "i" },
-        lastName: { $regex: `^${escapeRegex(lastName)}$`, $options: "i" },
-        dateOfBirth,
+        firstName: { $regex: new RegExp(`^${firstName}$`, "i") },
+        lastName: { $regex: new RegExp(`^${lastName}$`, "i") },
+        dateOfBirth: {
+          $gte: new Date(new Date(dateOfBirth).setHours(0, 0, 0, 0)),
+          $lt: new Date(new Date(dateOfBirth).setHours(23, 59, 59, 999)),
+        },
       })
-      .select("_id")
       .lean();
   }
 }
-
-// ─── ChildEnrollmentRequest ───────────────────────────────────────────────────
-
-export class EnrollmentRequestRepository extends BaseRepository<any> {
-  constructor() {
-    super(ChildEnrollmentRequest);
-  }
-
-  async findPendingDuplicate(
-    firstName: string,
-    lastName: string,
-    dateOfBirth: Date,
-  ): Promise<any | null> {
-    return this.model
-      .findOne({
-        status: "pending",
-        "child.firstName": {
-          $regex: `^${escapeRegex(firstName)}$`,
-          $options: "i",
-        },
-        "child.lastName": {
-          $regex: `^${escapeRegex(lastName)}$`,
-          $options: "i",
-        },
-        "child.dateOfBirth": dateOfBirth,
-      })
-      .select("_id")
-      .lean();
-  }
-
-  async findByIdFull(requestId: string): Promise<any | null> {
-    if (!mongoose.Types.ObjectId.isValid(requestId)) return null;
-    return this.model.findById(requestId);
-  }
-
-  async findByIdLean(requestId: string): Promise<any | null> {
-    return this.model
-      .findById(requestId)
-      .select("status createdChild")
-      .lean();
-  }
-
-  async findAllWithPopulate(filter: Record<string, unknown>): Promise<any[]> {
-    return this.model
-      .find(filter)
-      .populate("requestedBy", "firstName middleName lastName email")
-      .populate("daycareCenter", "name barangay code isActive")
-      .populate("review.reviewedBy", "firstName middleName lastName email")
-      .populate(
-        "createdChild",
-        "firstName middleName lastName studentId documentIntegrity",
-      )
-      .sort({ createdAt: -1 })
-      .lean();
-  }
-
-  async findByTeacher(teacherId: string): Promise<any[]> {
-    return this.model
-      .find({ requestedBy: teacherId })
-      .populate("daycareCenter", "name barangay code isActive")
-      .populate("review.reviewedBy", "firstName middleName lastName email")
-      .populate(
-        "createdChild",
-        "firstName middleName lastName studentId documentIntegrity",
-      )
-      .sort({ createdAt: -1 })
-      .lean();
-  }
-}
-
-// ─── ChildDevelopmentCenter ───────────────────────────────────────────────────
 
 export class EnrollmentCenterRepository extends BaseRepository<any> {
   constructor() {
@@ -108,43 +33,31 @@ export class EnrollmentCenterRepository extends BaseRepository<any> {
   }
 
   async findActiveById(id: string): Promise<any | null> {
-    return this.model.findById(id).select("_id isActive").lean();
+    return this.model.findOne({ _id: id, isActive: true }).lean();
   }
 
-  async findByTeacherCenter(centerId: string): Promise<any[]> {
+  async findAllActive(): Promise<any[]> {
     return this.model
-      .find({ _id: centerId, isActive: true })
-      .select("_id name barangay code isActive")
-      .sort({ barangay: 1, name: 1 })
+      .find({ isActive: true })
+      .select("name barangay code")
+      .sort({ name: 1 })
       .lean();
   }
 }
 
-// ─── User ─────────────────────────────────────────────────────────────────────
-
-export class EnrollmentUserRepository extends BaseRepository<IUser> {
+export class EnrollmentUserRepository extends BaseRepository<any> {
   constructor() {
     super(User);
   }
 
   async findTeacherById(id: string): Promise<any | null> {
-    return this.model.findById(id).select("daycareCenter").lean();
+    return this.model
+      .findOne({ _id: id, role: "teacher", isActive: true })
+      .select("daycareCenter")
+      .lean();
   }
-
-  async findByEmail(email: string): Promise<IUser | null> {
-    return this.model.findOne({
-      email: {
-        $regex: `^${escapeRegex(String(email).trim())}$`,
-        $options: "i",
-      },
-    });
-  }
-
 }
 
-// ─── Singletons ───────────────────────────────────────────────────────────────
-
 export const enrollmentChildRepository = new EnrollmentChildRepository();
-export const enrollmentRequestRepository = new EnrollmentRequestRepository();
 export const enrollmentCenterRepository = new EnrollmentCenterRepository();
 export const enrollmentUserRepository = new EnrollmentUserRepository();

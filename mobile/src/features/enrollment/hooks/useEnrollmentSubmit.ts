@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { Alert } from "react-native";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  submitChildEnrollmentRequest,
+  submitChildEnrollment,
 } from "@/src/api/teacher.api";
 import { inferMimeType } from "@/src/features/enrollment/utils/enrollment-utils";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
@@ -34,7 +34,7 @@ export const useEnrollmentSubmit = (onSuccess?: () => void) => {
   const submitEnrollmentMutation = useMutation({
     mutationFn: async ({ data }: { data: SubmissionData }) => {
       if (!isAuthenticated) throw new Error("No authentication token.");
-      return submitChildEnrollmentRequest(
+      return submitChildEnrollment(
         { ...data.childData, programType: data.childData.programType as "4Ps Beneficiary" | "Regular Enrollee (Non-beneficiary)", ...data.parentData },
         {
           birthCertificate: data.documentData.birthCertificate
@@ -52,7 +52,7 @@ export const useEnrollmentSubmit = (onSuccess?: () => void) => {
     async (data: SubmissionData) => {
       try {
         const submission = await submitEnrollmentMutation.mutateAsync({ data });
-        await queryClient.invalidateQueries({ queryKey: mobileQueryKeys.submittedRequests() });
+        await queryClient.invalidateQueries({ queryKey: mobileQueryKeys.teacherChildrenOverview() });
 
         const credentials = submission.parentCredentials;
         const submittedEmail = credentials?.email || "Unavailable";
@@ -61,8 +61,8 @@ export const useEnrollmentSubmit = (onSuccess?: () => void) => {
           ? `Login Email: ${submittedEmail}\nTemporary Password: ${generatedPassword}\n\nThe parent must create a new password during first login.`
           : `Login Email: ${submittedEmail}\n\nParent account already exists. Use the current password.`;
 
-        Alert.alert("Submitted", `Enrollment request submitted successfully.\n\n${credentialMessage}`, [
-          { text: "View Requests", onPress: () => { onSuccess?.(); } },
+        Alert.alert("Success", `Child enrolled successfully.\n\n${credentialMessage}`, [
+          { text: "View Children", onPress: () => { onSuccess?.(); } },
         ]);
       } catch (error: any) {
         Alert.alert(

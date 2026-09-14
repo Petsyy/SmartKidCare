@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import User, { IUser } from "../../../models/Users";
 import Child from "../../../models/Child";
-import ChildEnrollmentRequest from "../../../models/ChildEnrollmentRequest";
+
 import ChildDevelopmentCenter from "../../../models/ChildDevelopmentCenter";
 import { BaseRepository } from "../../../shared/repositories/base.repository";
 
@@ -95,29 +95,6 @@ export class AdminChildRepository extends BaseRepository<any> {
   }
 }
 
-// ─── ChildEnrollmentRequest
-
-export class AdminEnrollmentRepository extends BaseRepository<any> {
-  constructor() {
-    super(ChildEnrollmentRequest);
-  }
-
-  async countByTeacher(teacherId: string): Promise<number> {
-    return this.model.countDocuments({ requestedBy: teacherId });
-  }
-
-  async deleteByParentEmail(email: string): Promise<void> {
-    await this.model.deleteMany({ "parent.email": email });
-  }
-
-  async findByParentEmail(email: string): Promise<any[]> {
-    return this.model
-      .find({ "parent.email": email, createdChild: null })
-      .select("status child createdAt")
-      .sort({ createdAt: -1 })
-      .lean();
-  }
-}
 
 // ─── ChildDevelopmentCenter
 
@@ -142,5 +119,5 @@ export class AdminCenterRepository extends BaseRepository<any> {
 
 export const adminUserRepository = new AdminUserRepository();
 export const adminChildRepository = new AdminChildRepository();
-export const adminEnrollmentRepository = new AdminEnrollmentRepository();
+
 export const adminCenterRepository = new AdminCenterRepository();

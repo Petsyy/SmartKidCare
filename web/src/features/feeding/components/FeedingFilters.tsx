@@ -53,10 +53,6 @@ export const FeedingFilters = ({
             <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-50">
               Daily Feeding Logs
             </h2>
-            <p className="text-sm text-gray-500 dark:text-slate-400">
-              Search by child ID, meal, or filter by date range to find specific
-              records.
-            </p>
           </div>
           <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-end lg:w-auto">
             <div className="relative w-full sm:w-72 lg:w-80">
