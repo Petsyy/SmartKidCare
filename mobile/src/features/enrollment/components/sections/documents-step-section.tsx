@@ -3,13 +3,13 @@ import { Text, View } from "react-native";
 import type * as DocumentPicker from "expo-document-picker";
 import { DocumentUploadField } from "@/src/features/enrollment/components/form";
 
-
 export function DocumentsStepSection({
   isWide,
   birthCertificateFile,
   parentIdFile,
   onPickBirthCertificate,
   onPickParentId,
+  onPickParentIdPhoto,
   onClearBirthCertificate,
   onClearParentId,
 }: {
@@ -18,6 +18,7 @@ export function DocumentsStepSection({
   parentIdFile: DocumentPicker.DocumentPickerAsset | null;
   onPickBirthCertificate: () => void;
   onPickParentId: () => void;
+  onPickParentIdPhoto?: () => void;
   onClearBirthCertificate: () => void;
   onClearParentId: () => void;
 }) {
@@ -53,7 +54,7 @@ export function DocumentsStepSection({
       >
         <DocumentUploadField
           label="Birth Certificate *"
-          fileName={birthCertificateFile?.name || null}
+          file={birthCertificateFile}
           showPhotoOption={false}
           onUploadFile={onPickBirthCertificate}
           onClear={onClearBirthCertificate}
@@ -67,9 +68,10 @@ export function DocumentsStepSection({
 
         <DocumentUploadField
           label="Parent ID *"
-          fileName={parentIdFile?.name || null}
-          showPhotoOption={false}
+          file={parentIdFile}
+          showPhotoOption={true}
           onUploadFile={onPickParentId}
+          onUploadImage={onPickParentIdPhoto}
           onClear={onClearParentId}
           containerStyle={isWide ? { flex: 1 } : undefined}
           labelStyle={{
@@ -97,4 +99,3 @@ export function DocumentsStepSection({
     </View>
   );
 }
-

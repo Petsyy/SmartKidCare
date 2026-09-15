@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import {Modal,Platform,Pressable,ScrollView,Text,TextInput,View,
+import {
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import { ChildInfoStepSection } from "./child-info-step-section";
 import { ChildHealthEnrollmentStepSection } from "./child-health-enrollment-step-section";
@@ -8,9 +15,16 @@ import { EnrollmentStartState } from "./enrollment-start-state";
 import { ParentInfoStepSection } from "./parent-info-step-section";
 import { ReviewSubmitStepSection } from "./review-submit-step-section";
 import { StepProgress } from "@/src/features/enrollment/components/ui";
-import {displayDate,formatYmd} from "@/src/features/enrollment/utils/enrollment-utils";
+import {
+  displayDate,
+  formatYmd,
+} from "@/src/features/enrollment/utils/enrollment-utils";
 import { enrollFieldStyles } from "@/src/features/enrollment/styles";
-import {useEnrollmentForm,useEnrollmentCenters,useDatePicker,useDocumentPicker,
+import {
+  useEnrollmentForm,
+  useEnrollmentCenters,
+  useDatePicker,
+  useDocumentPicker,
   useEnrollmentSubmit,
 } from "@/src/features/enrollment/hooks";
 import type { Step } from "@/src/features/enrollment/types";
@@ -47,10 +61,8 @@ export function NewEnrollmentForm({
     },
   );
   const { pickDocument } = useDocumentPicker();
-  const {
-    isSubmitting,
-    submitEnrollment,
-  } = useEnrollmentSubmit(onSubmissionSuccess);
+  const { isSubmitting, submitEnrollment } =
+    useEnrollmentSubmit(onSubmissionSuccess);
 
   const [step, setStep] = useState<Step>(1);
 

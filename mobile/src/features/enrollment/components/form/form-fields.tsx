@@ -1,6 +1,6 @@
 import { useState } from "react";
-import {Pressable,StyleProp,Text,TextInput,TextStyle,View,ViewStyle} from "react-native";
-import { CalendarDays, Camera, ChevronDown, Upload } from "lucide-react-native";
+import {Pressable,StyleProp,Text,TextInput,TextStyle,View,ViewStyle,Image} from "react-native";
+import { CalendarDays, Camera, ChevronDown, Upload, Trash2, CheckCircle2 } from "lucide-react-native";
 import {displayDate,parseYmd} from "@/src/features/enrollment/utils/enrollment-utils";
 import { type InputProps, INPUT_PLACEHOLDER } from "../types/enrollment-types";
 
@@ -233,7 +233,7 @@ export function SelectField({
 
 export function DocumentUploadField({
   label,
-  fileName,
+  file,
   onUploadFile,
   onClear,
   containerStyle,
@@ -242,7 +242,7 @@ export function DocumentUploadField({
   onUploadImage,
 }: {
   label: string;
-  fileName: string | null;
+  file: { uri: string; name: string; mimeType?: string } | null;
   onUploadFile: () => void;
   onClear: () => void;
   containerStyle?: StyleProp<ViewStyle>;
@@ -268,9 +268,9 @@ export function DocumentUploadField({
       </Text>
 
       <View
-        className={`w-full ${hasPhotoOption ? "flex-row gap-3" : "flex-col"}`}
+        className={`w-full ${hasPhotoOption && !file ? "flex-row gap-3" : "flex-col"}`}
       >
-        {hasPhotoOption ? (
+        {!file && hasPhotoOption ? (
           <Pressable
             onPress={onUploadImage}
             className="flex-1 items-center rounded-[14px] border-[1.5px] border-dashed border-[#10B981] bg-[#ECFDF5] px-[14px] py-[18px] min-h-[100px] justify-center"
@@ -285,48 +285,67 @@ export function DocumentUploadField({
           </Pressable>
         ) : null}
 
-        {fileName ? (
-          <View
-            className={`items-center rounded-[14px] border-[1.5px] border-dashed border-[#10B981] bg-[#ECFDF5] px-[14px] py-[18px] min-h-[100px] justify-between ${
-              hasPhotoOption ? "flex-1" : "w-full"
-            }`}
-          >
-            <Pressable
-              onPress={onUploadFile}
-              className="items-center justify-center w-full"
-            >
-              <Upload size={26} color="#047857" />
-              <Text
-                numberOfLines={1}
-                className="mt-2 text-[14px] font-bold text-[#047857]"
-              >
-                Upload File
-              </Text>
-              <Text
-                numberOfLines={1}
-                className="mt-0.5 text-[11px] font-medium text-[#059669]"
-              >
-                Tap to replace file
-              </Text>
-            </Pressable>
-
-            <View className="w-full mt-2.5 pt-2.5 border-t border-[#A7F3D0] flex-row items-center">
-              <Text
-                numberOfLines={1}
-                className="flex-1 mr-2 text-[12px] font-semibold text-[#065F46]"
-              >
-                {fileName}
-              </Text>
+        {file ? (
+          (file.mimeType?.startsWith("image/") || file.name.match(/\.(jpg|jpeg|png)$/i)) ? (
+            <View className="relative border border-gray-200 rounded-2xl overflow-hidden bg-gray-50 items-center justify-center">
+              <Image 
+                source={{ uri: file.uri }} 
+                style={{ width: "100%", height: 160 }} 
+                resizeMode="cover"
+              />
+              <View className="absolute inset-0 bg-black/20" />
               <Pressable
                 onPress={onClear}
-                className="rounded-lg bg-[#FFFFFF] px-2.5 py-1.5"
+                className="absolute top-3 right-3 h-8 w-8 rounded-full bg-black/50 items-center justify-center active:bg-black/70"
               >
-                <Text className="text-[11px] font-bold text-[#DC2626]">
-                  Remove
+                <Trash2 size={16} color="white" />
+              </Pressable>
+              <View className="absolute bottom-3 left-3 bg-white/90 px-3 py-1.5 rounded-lg flex-row items-center">
+                <CheckCircle2 size={14} color="#10B981" />
+                <Text className="ml-1.5 text-xs font-bold text-gray-800">Photo Attached</Text>
+              </View>
+            </View>
+          ) : (
+            <View
+              className={`items-center rounded-[14px] border-[1.5px] border-dashed border-[#10B981] bg-[#ECFDF5] px-[14px] py-[18px] min-h-[100px] justify-between w-full`}
+            >
+              <Pressable
+                onPress={onUploadFile}
+                className="items-center justify-center w-full"
+              >
+                <Upload size={26} color="#047857" />
+                <Text
+                  numberOfLines={1}
+                  className="mt-2 text-[14px] font-bold text-[#047857]"
+                >
+                  Upload File
+                </Text>
+                <Text
+                  numberOfLines={1}
+                  className="mt-0.5 text-[11px] font-medium text-[#059669]"
+                >
+                  Tap to replace file
                 </Text>
               </Pressable>
+
+              <View className="w-full mt-2.5 pt-2.5 border-t border-[#A7F3D0] flex-row items-center">
+                <Text
+                  numberOfLines={1}
+                  className="flex-1 mr-2 text-[12px] font-semibold text-[#065F46]"
+                >
+                  {file.name}
+                </Text>
+                <Pressable
+                  onPress={onClear}
+                  className="rounded-lg bg-[#FFFFFF] px-2.5 py-1.5"
+                >
+                  <Text className="text-[11px] font-bold text-[#DC2626]">
+                    Remove
+                  </Text>
+                </Pressable>
+              </View>
             </View>
-          </View>
+          )
         ) : (
           <Pressable
             onPress={onUploadFile}

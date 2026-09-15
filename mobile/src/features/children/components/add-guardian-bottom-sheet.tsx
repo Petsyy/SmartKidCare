@@ -296,7 +296,7 @@ export function AddGuardianBottomSheet({
               <TextInput
                 value={formData.phone}
                 onChangeText={(t) => setFormData({ ...formData, phone: t })}
-                placeholder="0912 345 6789"
+                placeholder="09123456789"
                 placeholderTextColor="#9CA3AF"
                 keyboardType="phone-pad"
                 className="bg-white border border-gray-200 rounded-2xl px-5 py-4 mb-5 text-base text-gray-900 font-semibold"

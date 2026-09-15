@@ -28,6 +28,8 @@
     "backfill:rag-dataset:dry": "ts-node scripts/backfillRagDataset.ts --dry-run",
     "backfill:record-centers": "ts-node scripts/backfill-record-centers.ts",
     "backfill:record-centers:apply": "ts-node scripts/backfill-record-centers.ts --apply",
+    "backfill:nutrition": "ts-node scripts/backfillNutritionMeasurements.ts",
+    "backfill:nutrition:apply": "ts-node scripts/backfillNutritionMeasurements.ts --apply",
     "sync:rag-dataset": "ts-node scripts/syncRagEvaluationDataset.ts",
     "rebuild:rag-benchmark": "ts-node scripts/rebuildBenchmarkEvaluationDataset.ts",
     "eval:rag-benchmark": "npm run rebuild:rag-benchmark && node scripts/runRagasEvaluation.js --dataset src/data/rag_evaluation_dataset.json --metrics faithfulness,answer_relevancy --pretty"

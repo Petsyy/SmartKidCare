@@ -56,7 +56,7 @@ export function ParentInfoStepSection({ control }: { control: Control<any> }) {
         control={control}
         name="parentPhone"
         label="Phone Number *"
-        placeholder="0912 345 6789"
+        placeholder="09123456789"
         keyboardType="phone-pad"
       />
 
