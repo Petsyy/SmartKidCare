@@ -19,6 +19,7 @@ import {
   Award,
   ArrowUpRight,
   TrendingUp,
+  ShieldCheck,
 } from "lucide-react-native";
 import type { Child } from "@/src/api/parent.api";
 import {
@@ -27,10 +28,12 @@ import {
   ScreenShell,
   EmptyStateCard,
   RefreshableScrollView,
+  ProfileSection,
 } from "@/src/components/ui";
 import { useParentChildrenData } from "@/src/features/children/hooks";
 import { useChildNutritionHistory } from "@/src/features/nutrition/hooks/useNutrition";
 import { GrowthHistoryBottomSheet } from "@/src/features/nutrition/components/growth-history-bottom-sheet";
+import { ViewGuardiansBottomSheet } from "@/src/features/children/components/view-guardians-bottom-sheet";
 import { useState } from "react";
 
 const NOT_PROVIDED = "Not provided";
@@ -132,64 +135,7 @@ function ProfileInfoRow({
   );
 }
 
-function ProfileSection({
-  icon,
-  title,
-  tone,
-  children,
-}: {
-  icon: ReactNode;
-  title: string;
-  tone: "sky" | "emerald" | "teal" | "amber";
-  children: ReactNode;
-}) {
-  const theme = {
-    sky: {
-      border: "border-sky-100",
-      accent: "bg-sky-500",
-      iconBackground: "bg-sky-50",
-    },
-    emerald: {
-      border: "border-emerald-100",
-      accent: "bg-emerald-500",
-      iconBackground: "bg-emerald-50",
-    },
-    teal: {
-      border: "border-teal-100",
-      accent: "bg-teal-500",
-      iconBackground: "bg-teal-50",
-    },
-    amber: {
-      border: "border-amber-100",
-      accent: "bg-amber-500",
-      iconBackground: "bg-amber-50",
-    },
-  }[tone];
 
-  return (
-    <View
-      className={`mb-4 overflow-hidden rounded-3xl border bg-white shadow-sm ${theme.border}`}
-    >
-      <View className={`h-1.5 rounded-t-3xl ${theme.accent}`} />
-      <View className="p-4">
-        <View className="flex-row items-center border-b border-gray-100 pb-3">
-          <View
-            className={`h-11 w-11 items-center justify-center rounded-2xl ${theme.iconBackground}`}
-          >
-            {icon}
-          </View>
-          <Text
-            className="ml-3 flex-1 text-xl font-black text-gray-900"
-            accessibilityRole="header"
-          >
-            {title}
-          </Text>
-        </View>
-        <View>{children}</View>
-      </View>
-    </View>
-  );
-}
 
 function StatusPill({
   label,
@@ -262,7 +208,6 @@ function ParentNutritionSection({
   childId: string;
   schoolYear?: string;
 }) {
-  const [showHistory, setShowHistory] = useState(false);
   const { data: history, isLoading } = useChildNutritionHistory(childId);
 
   if (isLoading) {
@@ -373,29 +318,19 @@ function ParentNutritionSection({
           </>
         )}
       </View>
-      <Pressable
-        onPress={() => setShowHistory(true)}
-        className="mt-3 flex-row items-center justify-center rounded-xl bg-emerald-50 py-3 border border-emerald-100 active:bg-emerald-100 gap-2"
-      >
-        <TrendingUp size={18} color="#047857" className="mr-2" />
-        <Text className="text-sm font-bold text-emerald-700">View Full History</Text>
-      </Pressable>
-      
-      <GrowthHistoryBottomSheet
-        childId={childId}
-        childName="Your Child"
-        visible={showHistory}
-        onClose={() => setShowHistory(false)}
-      />
     </ProfileSection>
   );
 }
+
+
 
 // MAIN SCREEN
 import { useRouter } from "expo-router";
 
 export default function ParentChildrenScreen() {
   const router = useRouter();
+  const [showGuardians, setShowGuardians] = useState(false);
+  const [showGrowthHistory, setShowGrowthHistory] = useState(false);
   const {
     children,
     selectedChild,
@@ -613,23 +548,6 @@ export default function ParentChildrenScreen() {
                     </View>
                   </View>
                 </View>
-
-                <Pressable
-                  onPress={() =>
-                    router.push(
-                      `/(parent)/competencies/${selectedChild._id}?isParentView=true`,
-                    )
-                  }
-                  accessibilityRole="button"
-                  accessibilityLabel={`See ${getFullName(selectedChild)}'s ECCD Assessment records.`}
-                  accessibilityHint="Opens developmental progress evaluation"
-                  className="h-10 flex-row items-center justify-center rounded-full border border-teal-100 bg-teal-50 px-3 shadow-sm active:bg-teal-100 mt-1"
-                >
-                  <Award size={18} color="#0D9488" />
-                  <Text className="ml-1.5 text-xs font-extrabold uppercase tracking-wide text-teal-800">
-                    ECCD Eval
-                  </Text>
-                </Pressable>
               </View>
 
               <View className="mt-4 border-t border-gray-100 pt-4">
@@ -642,6 +560,43 @@ export default function ParentChildrenScreen() {
                   <StatusPill label="Feeding" status={feedingStatus} />
                 </View>
               </View>
+            </View>
+
+            {/* ── Quick Actions ── */}
+            <View className="mb-6 flex-row gap-3">
+              <Pressable
+                onPress={() =>
+                  router.push(
+                    `/(parent)/competencies/${selectedChild._id}?isParentView=true`,
+                  )
+                }
+                className="flex-1 items-center justify-center rounded-2xl border border-teal-100 bg-white p-4 shadow-sm active:bg-gray-50"
+              >
+                <View className="mb-2 h-12 w-12 items-center justify-center rounded-full bg-teal-50">
+                  <Award size={24} color="#0D9488" />
+                </View>
+                <Text className="text-center text-xs font-bold text-gray-700">ECCD Eval</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => setShowGrowthHistory(true)}
+                className="flex-1 items-center justify-center rounded-2xl border border-emerald-100 bg-white p-4 shadow-sm active:bg-gray-50"
+              >
+                <View className="mb-2 h-12 w-12 items-center justify-center rounded-full bg-emerald-50">
+                  <TrendingUp size={24} color="#047857" />
+                </View>
+                <Text className="text-center text-xs font-bold text-gray-700">Growth</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => setShowGuardians(true)}
+                className="flex-1 items-center justify-center rounded-2xl border border-sky-100 bg-white p-4 shadow-sm active:bg-gray-50"
+              >
+                <View className="mb-2 h-12 w-12 items-center justify-center rounded-full bg-sky-50">
+                  <ShieldCheck size={24} color="#0369A1" />
+                </View>
+                <Text className="text-center text-xs font-bold text-gray-700">Pickups</Text>
+              </Pressable>
             </View>
 
             {/* ── Section 1: School Information ── */}
@@ -687,7 +642,7 @@ export default function ParentChildrenScreen() {
               ))}
             </ProfileSection>
 
-            {/* ── Section 4: Teacher Contact ── */}
+            {/* ── Section 5: Teacher Contact ── */}
             {selectedChild.teacher ? (
               <ProfileSection
                 icon={<User size={22} color="#047857" />}
@@ -722,6 +677,21 @@ export default function ParentChildrenScreen() {
                 />
               </ProfileSection>
             )}
+
+            <GrowthHistoryBottomSheet
+              childId={selectedChild._id}
+              childName={getFullName(selectedChild)}
+              visible={showGrowthHistory}
+              onClose={() => setShowGrowthHistory(false)}
+            />
+
+            <ViewGuardiansBottomSheet
+              childId={selectedChild._id}
+              childName={getFullName(selectedChild)}
+              visible={showGuardians}
+              onClose={() => setShowGuardians(false)}
+              readOnly={true}
+            />
           </>
         ) : null}
       </RefreshableScrollView>

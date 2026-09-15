@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import { X, ShieldCheck, Edit2, Trash2, Phone, UserRound, IdCard } from "lucide-
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGuardians } from "../hooks/useGuardian";
 import type { Guardian } from "@/src/api/api.types";
+import { ImageViewerModal } from "@/src/components/ui";
 
 interface ViewGuardiansBottomSheetProps {
   childId: string | null;
@@ -22,6 +23,7 @@ interface ViewGuardiansBottomSheetProps {
   visible: boolean;
   onClose: () => void;
   onEditGuardian?: (guardian: Guardian, index: number) => void;
+  readOnly?: boolean;
 }
 
 export function ViewGuardiansBottomSheet({
@@ -30,6 +32,7 @@ export function ViewGuardiansBottomSheet({
   visible,
   onClose,
   onEditGuardian,
+  readOnly = false,
 }: ViewGuardiansBottomSheetProps) {
   const insets = useSafeAreaInsets();
   const {
@@ -37,6 +40,8 @@ export function ViewGuardiansBottomSheet({
     isLoading,
     removeGuardian,
   } = useGuardians(childId || undefined);
+
+  const [selectedImage, setSelectedImage] = useState<{ url: string; title: string } | null>(null);
 
   const activeGuardians = guardians.filter(
     (guardian) =>
@@ -122,7 +127,9 @@ export function ViewGuardiansBottomSheet({
                   </View>
                   <Text className="text-base font-bold text-gray-700 mb-1">No Guardians Yet</Text>
                   <Text className="text-sm text-gray-500 text-center px-6">
-                    Swipe a child card on the list to add an authorized guardian.
+                    {readOnly 
+                      ? "No authorized guardians have been added for this child." 
+                      : "Swipe a child card on the list to add an authorized guardian."}
                   </Text>
                 </View>
               ) : (
@@ -143,11 +150,15 @@ export function ViewGuardiansBottomSheet({
                           {/* Photo Column */}
                           <View className="mr-3">
                             {guardian.photoUrl ? (
-                              <Image
-                                source={{ uri: guardian.photoUrl }}
-                                className="h-12 w-12 rounded-full border border-gray-200 bg-gray-100 mt-1"
-                                resizeMode="cover"
-                              />
+                              <Pressable
+                                onPress={() => setSelectedImage({ url: guardian.photoUrl!, title: `${guardian.firstName}'s Photo` })}
+                              >
+                                <Image
+                                  source={{ uri: guardian.photoUrl }}
+                                  className="h-12 w-12 rounded-full border border-gray-200 bg-gray-100 mt-1"
+                                  resizeMode="cover"
+                                />
+                              </Pressable>
                             ) : (
                               <View className="h-12 w-12 rounded-full bg-gray-100 items-center justify-center border border-gray-200 mt-1">
                                 <UserRound size={24} color="#9CA3AF" />
@@ -164,7 +175,7 @@ export function ViewGuardiansBottomSheet({
                               </Text>
                               
                               <View className="flex-row gap-1">
-                                {onEditGuardian && (
+                                {!readOnly && onEditGuardian && (
                                   <Pressable
                                     onPress={() => onEditGuardian(guardian, originalIndex)}
                                     className="p-2 rounded-full active:bg-gray-100"
@@ -172,17 +183,19 @@ export function ViewGuardiansBottomSheet({
                                     <Edit2 size={18} color="#4B5563" />
                                   </Pressable>
                                 )}
-                                <Pressable
-                                  onPress={() =>
-                                    handleRemove(
-                                      originalIndex,
-                                      `${guardian.firstName} ${guardian.lastName}`
-                                    )
-                                  }
-                                  className="p-2 rounded-full active:bg-red-50"
-                                >
-                                  <Trash2 size={18} color="#EF4444" />
-                                </Pressable>
+                                {!readOnly && (
+                                  <Pressable
+                                    onPress={() =>
+                                      handleRemove(
+                                        originalIndex,
+                                        `${guardian.firstName} ${guardian.lastName}`
+                                      )
+                                    }
+                                    className="p-2 rounded-full active:bg-red-50"
+                                  >
+                                    <Trash2 size={18} color="#EF4444" />
+                                  </Pressable>
+                                )}
                               </View>
                             </View>
 
@@ -211,13 +224,16 @@ export function ViewGuardiansBottomSheet({
                               ID Document
                             </Text>
                           </View>
-                          <View className="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm">
+                          <Pressable
+                            onPress={() => setSelectedImage({ url: guardian.idUrl!, title: `${guardian.firstName}'s ID Document` })}
+                            className="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm"
+                          >
                             <Image
                               source={{ uri: guardian.idUrl }}
                               className="h-32 w-full"
                               resizeMode="cover"
                             />
-                          </View>
+                          </Pressable>
                         </View>
                       )}
                     </View>
@@ -228,6 +244,13 @@ export function ViewGuardiansBottomSheet({
           </View>
         </View>
       </KeyboardAvoidingView>
+
+      <ImageViewerModal
+        visible={!!selectedImage}
+        imageUrl={selectedImage?.url || null}
+        title={selectedImage?.title}
+        onClose={() => setSelectedImage(null)}
+      />
     </Modal>
   );
 }

@@ -144,7 +144,7 @@ export function NewEnrollmentForm({
     : assignedCenterDisplayInfo.secondary;
 
   const primaryLabel =
-    step < 5 ? "Next" : isSubmitting ? "Submitting..." : "Submit Request";
+    step < 5 ? "Next" : isSubmitting ? "Enrolling..." : "Enroll Child";
 
   return (
     <>

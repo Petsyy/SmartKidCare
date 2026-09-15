@@ -257,66 +257,6 @@ export default function TeacherChildDetailsScreen() {
         }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Quick Actions Row */}
-        <View className="flex-row justify-between mb-4 gap-3">
-          <Pressable
-            accessibilityRole="button"
-            onPress={() =>
-              router.push({
-                pathname: "/(teacher)/child-details/competencies/[childId]",
-                params: { childId: child._id },
-              })
-            }
-            className="flex-1 items-center justify-center bg-white rounded-3xl py-4 active:bg-gray-50"
-            style={{
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.06,
-              shadowRadius: 8,
-              elevation: 3,
-            }}
-          >
-            <View className="h-12 w-12 items-center justify-center rounded-2xl bg-teal-50 mb-2">
-              <Award size={24} color="#0D9488" />
-            </View>
-            <Text className="text-xs font-bold text-gray-700 text-center">Evaluate</Text>
-          </Pressable>
-
-          <Pressable
-            onPress={() => setIsHistorySheetOpen(true)}
-            className="flex-1 items-center justify-center bg-white rounded-3xl py-4 active:bg-gray-50"
-            style={{
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.06,
-              shadowRadius: 8,
-              elevation: 3,
-            }}
-          >
-            <View className="h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 mb-2">
-              <TrendingUp size={24} color="#047857" />
-            </View>
-            <Text className="text-xs font-bold text-gray-700 text-center">History</Text>
-          </Pressable>
-
-          <Pressable
-            onPress={() => setIsGuardiansSheetOpen(true)}
-            className="flex-1 items-center justify-center bg-white rounded-3xl py-4 active:bg-gray-50"
-            style={{
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.06,
-              shadowRadius: 8,
-              elevation: 3,
-            }}
-          >
-            <View className="h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 mb-2">
-              <ShieldCheck size={24} color="#0284C7" />
-            </View>
-            <Text className="text-xs font-bold text-gray-700 text-center">Guardians</Text>
-          </Pressable>
-        </View>
-
         {/* Today's Status Card */}
         <View
           className="rounded-3xl bg-white p-5 mb-4"
@@ -399,6 +339,66 @@ export default function TeacherChildDetailsScreen() {
               </Text>
             </View>
           )}
+        </View>
+
+        {/* Quick Actions Row */}
+        <View className="flex-row justify-between mb-4 gap-3">
+          <Pressable
+            accessibilityRole="button"
+            onPress={() =>
+              router.push({
+                pathname: "/(teacher)/child-details/competencies/[childId]",
+                params: { childId: child._id },
+              })
+            }
+            className="flex-1 items-center justify-center bg-white rounded-3xl py-4 active:bg-gray-50"
+            style={{
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.06,
+              shadowRadius: 8,
+              elevation: 3,
+            }}
+          >
+            <View className="h-12 w-12 items-center justify-center rounded-2xl bg-teal-50 mb-2">
+              <Award size={24} color="#0D9488" />
+            </View>
+            <Text className="text-xs font-bold text-gray-700 text-center">Evaluate</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => setIsHistorySheetOpen(true)}
+            className="flex-1 items-center justify-center bg-white rounded-3xl py-4 active:bg-gray-50"
+            style={{
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.06,
+              shadowRadius: 8,
+              elevation: 3,
+            }}
+          >
+            <View className="h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 mb-2">
+              <TrendingUp size={24} color="#047857" />
+            </View>
+            <Text className="text-xs font-bold text-gray-700 text-center">History</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => setIsGuardiansSheetOpen(true)}
+            className="flex-1 items-center justify-center bg-white rounded-3xl py-4 active:bg-gray-50"
+            style={{
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.06,
+              shadowRadius: 8,
+              elevation: 3,
+            }}
+          >
+            <View className="h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 mb-2">
+              <ShieldCheck size={24} color="#0284C7" />
+            </View>
+            <Text className="text-xs font-bold text-gray-700 text-center">Guardians</Text>
+          </Pressable>
         </View>
 
         {/* Child Information Card */}

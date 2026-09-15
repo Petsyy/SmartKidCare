@@ -5,6 +5,7 @@ import {
   FlatList,
   ActivityIndicator,
   Modal,
+  Alert,
 } from "react-native";
 import {
   ChevronDown,
@@ -23,6 +24,7 @@ import {
   ScreenLoadingState,
   ScreenShell,
   SearchBar,
+  SuccessFeedbackModal,
 } from "@/src/components/ui";
 
 export default function RecordFeeding() {
@@ -408,53 +410,13 @@ export default function RecordFeeding() {
         }
       />
 
-      <Modal
+      <SuccessFeedbackModal
         visible={showSuccessFeedback}
-        animationType="slide"
-        presentationStyle="fullScreen"
-        onRequestClose={dismissSuccessFeedback}
-      >
-        <View
-          className="flex-1 bg-emerald-50 px-6"
-          accessibilityViewIsModal
-          accessibilityLabel="Feeding record submission confirmation"
-        >
-          <View className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-emerald-100" />
-          <View className="absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-teal-100" />
-
-          <View className="flex-1 items-center justify-center">
-            <View className="h-28 w-28 items-center justify-center rounded-full border-4 border-emerald-200 bg-white shadow-lg shadow-emerald-200">
-              <View className="h-20 w-20 items-center justify-center rounded-full bg-emerald-600">
-                <CheckCircle2 size={48} color="#FFFFFF" />
-              </View>
-            </View>
-
-            <Text
-              className="mt-8 text-center text-3xl font-extrabold text-emerald-950"
-              accessibilityRole="header"
-            >
-              Feeding Record Submitted
-            </Text>
-            <Text
-              className="mt-3 max-w-sm text-center text-lg leading-7 text-emerald-900"
-              accessibilityLiveRegion="polite"
-            >
-              The feeding record has been submitted to the focal person.
-            </Text>
-          </View>
-
-          <Pressable
-            onPress={dismissSuccessFeedback}
-            accessibilityRole="button"
-            accessibilityLabel="Done"
-            accessibilityHint="Returns to the submitted feeding record"
-            className="min-h-14 w-full items-center justify-center rounded-2xl bg-emerald-600 px-5 py-4 shadow-md active:opacity-90"
-            style={{ marginBottom: Math.max(insets.bottom + 32, 32) }}
-          >
-            <Text className="text-xl font-bold text-white">Done</Text>
-          </Pressable>
-        </View>
-      </Modal>
+        title="Feeding Submitted"
+        message="Feeding report has been submitted successfully."
+        onDismiss={dismissSuccessFeedback}
+        accessibilityLabel="Feeding submission confirmation"
+      />
 
       <Modal
         visible={showMenuModal}
@@ -523,7 +485,16 @@ export default function RecordFeeding() {
 
       <View className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white/95 px-6 py-4">
         <Pressable
-          onPress={handleSubmit}
+          onPress={() => {
+            Alert.alert(
+              "Submit Feeding",
+              "Are you sure you want to submit the feeding record?",
+              [
+                { text: "Cancel", style: "cancel" },
+                { text: "Submit", onPress: handleSubmit },
+              ]
+            );
+          }}
           disabled={isSubmitting || isReadOnly}
           accessibilityRole="button"
           accessibilityLabel={
