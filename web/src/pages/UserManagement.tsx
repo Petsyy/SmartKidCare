@@ -8,7 +8,6 @@ import { ViewUserModal } from "@/features/users/components/ViewUserModal";
 import { UserActionMenu } from "@/features/users/components/UserActionMenu";
 import AddTeacherModal from "@/features/users/components/AddTeacherModal";
 import EditUserModal from "@/features/users/components/EditUserModal";
-import { DeleteUserModal } from "@/features/users/components/DeleteUserModal";
 import { UserFilters } from "@/features/users/components/UserFilters";
 import { UserTable } from "@/features/users/components/UserTable";
 import { useUserManagement } from "@/features/users/hooks/useUserManagement";
@@ -19,7 +18,6 @@ export default function UserManagement() {
     activeTab,
     showAddTeacherModal,
     editingUser,
-    deletingUser,
     openMenuUserId,
     menuAnchorRect,
     menuUser,
@@ -28,7 +26,6 @@ export default function UserManagement() {
     setActiveTab,
     setShowAddTeacherModal,
     setEditingUser,
-    setDeletingUser,
     setViewingUser,
     setTeacherCenterFilter,
 
@@ -59,8 +56,6 @@ export default function UserManagement() {
     handleViewUser,
     handleResetPassword,
     handleToggleStatus,
-    handleDeleteUser,
-    confirmDeleteUser,
   } = useUserManagement();
 
   return (
@@ -148,14 +143,6 @@ export default function UserManagement() {
         />
       )}
 
-      {deletingUser && (
-        <DeleteUserModal
-          user={deletingUser}
-          onClose={() => setDeletingUser(null)}
-          onDelete={confirmDeleteUser}
-        />
-      )}
-
       <ViewUserModal
         user={viewingUser}
         onClose={() => setViewingUser(null)}
@@ -168,7 +155,6 @@ export default function UserManagement() {
           onClose={closeMenu}
           onResetPassword={handleResetPassword}
           onToggleStatus={handleToggleStatus}
-          onDeleteUser={handleDeleteUser}
         />
       )}
 

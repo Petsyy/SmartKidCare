@@ -11,11 +11,14 @@ export function ViewCenterModal({ center, onClose }: ViewCenterModalProps) {
   if (!center) return null;
 
   return (
-    <Dialog open={!!center} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={!!center}>
       <DialogContent
         overlayClassName="bg-transparent"
         className="fixed inset-0 z-60 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm outline-none transition-all"
-        onClick={onClose}
+        onInteractOutside={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onFocusOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={onClose}
       >
         <DialogTitle className="sr-only">View Center Details</DialogTitle>
         <DialogDescription className="sr-only">
@@ -23,7 +26,6 @@ export function ViewCenterModal({ center, onClose }: ViewCenterModalProps) {
         </DialogDescription>
         <div
           className="w-full max-w-lg overflow-hidden rounded-3xl border border-white/20 bg-white/95 shadow-2xl backdrop-blur-xl dark:border-slate-700/50 dark:bg-slate-900/95"
-          onClick={(event) => event.stopPropagation()}
         >
           <div className="flex items-center justify-between border-b border-gray-200/50 bg-gradient-to-r from-teal-50 to-emerald-50/50 px-6 py-5 backdrop-blur-md dark:border-slate-700/50 dark:from-teal-900/30 dark:to-emerald-900/20">
             <div className="flex items-center gap-3">

@@ -47,7 +47,27 @@ export const getAdminDateMatch = (range: AdminReportRange): Record<string, unkno
 
 export const getChildEnrollmentDateMatch = (
   range: AdminReportRange,
-): Record<string, unknown> => getRangeDateMatch(range, "enrollmentDate");
+): Record<string, unknown> => {
+  if (range.startDate && range.endDate) {
+    const endStart = parseManilaDateKeyStart(range.endDate);
+    return {
+      enrollmentDate: {
+        $lte: new Date(endStart.getTime() + DAY_MS - 1),
+      },
+    };
+  }
+
+  if (!range.datePreset || range.datePreset === "all") return {};
+
+  const todayKey = toLocalDateKey(new Date(), MANILA_OFFSET_MINUTES);
+  const todayStart = parseManilaDateKeyStart(todayKey);
+
+  return {
+    enrollmentDate: {
+      $lte: new Date(todayStart.getTime() + DAY_MS - 1),
+    },
+  };
+};
 
 export const normalizePagination = (range: AdminReportRange) => {
   const page = Math.max(DEFAULT_STUDENT_PAGE, Number(range.page) || DEFAULT_STUDENT_PAGE);

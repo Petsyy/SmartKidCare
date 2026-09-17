@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getUsers, type User } from "@/api/authentication.api";
-import { toggleUserStatus, resetUserPassword, deleteUser } from "@/api/admin.api";
+import { toggleUserStatus, resetUserPassword } from "@/api/admin.api";
 import { webQueryKeys } from "@/lib/query-keys";
 import { useUserManagementStore } from "@/stores/user-management.store";
 import { showErrorModal, showResetPasswordModal, showToggleUserStatusModal, showToggleUserStatusSuccessModal } from "@/utils/sweet-alert-modal";
@@ -20,7 +20,6 @@ export function useUserManagement() {
     activeTab,
     showAddTeacherModal,
     editingUser,
-    deletingUser,
     openMenuUserId,
     menuAnchorRect,
     menuUser,
@@ -37,7 +36,6 @@ export function useUserManagement() {
     setActiveTab,
     setShowAddTeacherModal,
     setEditingUser,
-    setDeletingUser,
     setOpenMenuUserId,
     setMenuAnchorRect,
     setMenuUser,
@@ -96,15 +94,6 @@ export function useUserManagement() {
     },
   });
 
-  const deleteUserMutation = useMutation({
-    mutationFn: (userId: string) => deleteUser(userId),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: webQueryKeys.usersRoot(),
-      });
-    },
-  });
-
   const handleEditUser = (user: User) => setEditingUser(user);
   const handleViewUser = (user: User) => setViewingUser(user);
 
@@ -133,15 +122,6 @@ export function useUserManagement() {
     } catch (err: any) {
       showErrorModal(err.message || "Failed to update account status");
     }
-  };
-
-  const handleDeleteUser = (user: User) => {
-    setDeletingUser(user);
-    closeMenu();
-  };
-
-  const confirmDeleteUser = async (user: User) => {
-    await deleteUserMutation.mutateAsync(user._id);
   };
 
   const errorMessage = error instanceof Error ? error.message : null;
@@ -287,7 +267,6 @@ export function useUserManagement() {
     activeTab,
     showAddTeacherModal,
     editingUser,
-    deletingUser,
     openMenuUserId,
     menuAnchorRect,
     menuUser,
@@ -321,7 +300,6 @@ export function useUserManagement() {
     handlePageSizeChange,
     handlePageChange,
     clearFilters,
-
     // Modals and Menus
     openMenu,
     closeMenu,
@@ -329,9 +307,5 @@ export function useUserManagement() {
     handleViewUser,
     handleResetPassword,
     handleToggleStatus,
-    handleDeleteUser,
-    confirmDeleteUser,
-    setDeletingUser,
-
   };
 }

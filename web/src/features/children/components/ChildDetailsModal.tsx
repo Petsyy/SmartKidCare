@@ -1,7 +1,6 @@
 import { X, UserRound } from "lucide-react";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogTitle,
@@ -55,17 +54,19 @@ export default function ChildDetailsModal({
   };
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
+    <Dialog open>
       <DialogContent
         aria-labelledby={titleId}
         aria-describedby={descriptionId}
         overlayClassName="bg-transparent"
         className="fixed inset-0 z-60 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm outline-none transition-all"
-        onClick={onClose}
+        onInteractOutside={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onFocusOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
       >
         <div
           className="flex max-h-[90dvh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-white/20 bg-white/95 shadow-2xl backdrop-blur-xl dark:border-slate-700/50 dark:bg-slate-900/95"
-          onClick={(event) => event.stopPropagation()}
         >
           <div className="flex items-center justify-between border-b border-gray-200/50 bg-gradient-to-r from-teal-50 to-emerald-50/50 px-6 py-5 backdrop-blur-md dark:border-slate-700/50 dark:from-teal-900/30 dark:to-emerald-900/20">
             <div className="flex min-w-0 items-center gap-4">
@@ -97,15 +98,14 @@ export default function ChildDetailsModal({
                 </DialogDescription>
               </div>
             </div>
-            <DialogClose asChild>
-              <button
-                type="button"
-                aria-label="Close child details"
-                className="cursor-pointer shrink-0 rounded-xl bg-white/50 p-2 text-gray-500 shadow-sm backdrop-blur-sm transition-all duration-200 hover:bg-white hover:text-gray-700 dark:bg-slate-800/50 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
-              >
-                <X size={18} />
-              </button>
-            </DialogClose>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close child details"
+              className="cursor-pointer shrink-0 rounded-xl bg-white/50 p-2 text-gray-500 shadow-sm backdrop-blur-sm transition-all duration-200 hover:bg-white hover:text-gray-700 dark:bg-slate-800/50 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+            >
+              <X size={18} />
+            </button>
           </div>
 
           <Tabs

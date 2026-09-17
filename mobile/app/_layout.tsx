@@ -5,14 +5,12 @@ import { AuthProvider } from "@/src/context/auth-context";
 import { useAuth } from "@/src/hooks/use-auth";
 import { SystemSettingsProvider } from "@/src/context/system-settings-context";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import {
-  configureReanimatedLogger,
-  ReanimatedLogLevel,
-} from "react-native-reanimated";
+import {configureReanimatedLogger,ReanimatedLogLevel} from "react-native-reanimated";
 import { useEffect } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/src/lib/query-client";
 import { ErrorBoundary } from "@/src/components/ui/error-boundary";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 configureReanimatedLogger({
   level: ReanimatedLogLevel.warn,
@@ -47,16 +45,18 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <SafeAreaProvider>
-          <AuthProvider>
-            <SystemSettingsProvider>
-              <LayoutContent />
-            </SystemSettingsProvider>
-          </AuthProvider>
-        </SafeAreaProvider>
-      </QueryClientProvider>
-    </ErrorBoundary>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ErrorBoundary>
+        <QueryClientProvider client={queryClient}>
+          <SafeAreaProvider>
+            <AuthProvider>
+              <SystemSettingsProvider>
+                <LayoutContent />
+              </SystemSettingsProvider>
+            </AuthProvider>
+          </SafeAreaProvider>
+        </QueryClientProvider>
+      </ErrorBoundary>
+    </GestureHandlerRootView>
   );
 }

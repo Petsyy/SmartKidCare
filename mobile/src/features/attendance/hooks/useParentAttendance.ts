@@ -172,6 +172,10 @@ export const useParentAttendance = () => {
     });
   };
 
+  const jumpToToday = () => {
+    setCurrentDate(new Date());
+  };
+
   return {
     router,
     insets,
@@ -196,5 +200,6 @@ export const useParentAttendance = () => {
     calculateMonthlySummary,
     calculateAttendanceRate,
     navigateMonth,
+    jumpToToday,
   };
 };

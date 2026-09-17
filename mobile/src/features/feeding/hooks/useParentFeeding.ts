@@ -132,11 +132,15 @@ export const useParentFeeding = () => {
     });
   };
 
+  const jumpToToday = () => {
+    setCurrentDate(new Date());
+  };
+
   return {
     router, insets, children, selectedChild, setSelectedChild, loading,
     showChildDropdown, setShowChildDropdown, currentDate, feedingData,
     selectedDay, setSelectedDay, showDayModal, setShowDayModal,
     getDaysInMonth, getMonthName, getStatusForDay, getDetailsForDay,
-    getStatusColor, calculateMonthlySummary, calculateFeedingRate, navigateMonth,
+    getStatusColor, calculateMonthlySummary, calculateFeedingRate, navigateMonth, jumpToToday,
   };
 };
