@@ -17,7 +17,7 @@ export function ChangeStatusModal({ child, value, onChangeValue, onClose, onSubm
       open
       onClose={onClose}
       title="Change Status"
-      subtitle={`Update status for ${child.firstName} ${child.lastName}.`}
+      subtitle="Update status for this child."
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>Cancel</Button>

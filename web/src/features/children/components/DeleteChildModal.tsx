@@ -31,7 +31,7 @@ export function DeleteChildModal({
           <div className="flex-1">
             <AlertDialogTitle>Delete Child</AlertDialogTitle>
             <AlertDialogDescription>
-              Delete {child.firstName} {child.lastName} from the records.
+              Delete this child from the records.
             </AlertDialogDescription>
           </div>
         </AlertDialogHeader>

@@ -17,7 +17,7 @@ import {
   type ChildDetailsTab,
 } from "./child-details-modal/types";
 import { useChildDetailsModal } from "./child-details-modal/useChildDetailsModal";
-import { formatFullName } from "./child-details-modal/utils";
+
 
 const tabs: { key: ChildDetailsTab; label: string }[] = [
   { key: "profile", label: "Profile" },
@@ -41,11 +41,6 @@ export default function ChildDetailsModal({
 
   if (!child) return null;
 
-  const fullName = formatFullName(
-    child.firstName,
-    child.middleName,
-    child.lastName,
-  );
   const tabIds: Record<ChildDetailsTab, string> = {
     profile: profileTabId,
     health: healthTabId,
@@ -79,7 +74,7 @@ export default function ChildDetailsModal({
                     id={titleId}
                     className="truncate text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100"
                   >
-                    {fullName || "Child details"}
+                    Child details
                   </h2>
                 </DialogTitle>
                 <DialogDescription asChild>

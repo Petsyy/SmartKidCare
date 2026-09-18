@@ -1,4 +1,4 @@
-﻿import Swal from "sweetalert2";
+import Swal from "sweetalert2";
 
 export interface ParentCredentials {
   email: string;
@@ -186,8 +186,6 @@ export const showLinkedChildrenModal = (
 
   const childrenList = children
     .map((child) => {
-      const middleName = child.middleName ? ` ${child.middleName}` : "";
-      const fullName = `${child.firstName}${middleName} ${child.lastName}`;
       const statusColor =
         child.status === "Active"
           ? "#10b981"
@@ -211,7 +209,7 @@ export const showLinkedChildrenModal = (
               Child Name:
             </p>
             <p style="margin: 0; font-size: 18px; font-weight: 600; color: #111827;">
-              ${fullName}
+              [Redacted]
             </p>
           </div>
           ${
@@ -349,13 +347,13 @@ export const handleViewUser = (user: ViewUser) => {
 };
 
 export const showChangeChildStatusModal = async (
-  childName: string,
+  _childName: string,
   currentStatus: string,
 ): Promise<string | null> => {
   const result = await Swal.fire({
     title: "Change Status",
     html: `
-      <p class="text-gray-600 mb-4">Update status for ${childName}</p>
+      <p class="text-gray-600 mb-4">Update status for this child</p>
       <select id="child-status-select" class="swal2-input w-full">
         <option value="Active" ${currentStatus === "Active" ? "selected" : ""}>Active</option>
         <option value="Inactive" ${currentStatus === "Inactive" ? "selected" : ""}>Inactive</option>
@@ -377,11 +375,11 @@ export const showChangeChildStatusModal = async (
 };
 
 export const showUnlinkParentConfirm = async (
-  childName: string,
+  _childName: string,
 ): Promise<boolean> => {
   const result = await Swal.fire({
     title: "Unlink Parent?",
-    text: `Remove the parent association for ${childName}?`,
+    text: "Remove the parent association for this child?",
     icon: "warning",
     showCancelButton: true,
     confirmButtonColor: "#DC2626",
