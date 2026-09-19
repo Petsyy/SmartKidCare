@@ -1,12 +1,21 @@
 import { z } from "zod";
 
+// ─── Constants ───────────────────────────────────────────────────────────────
+
+const NAME_REGEX = /^[A-Za-z][A-Za-z .'-]*$/;
+const PH_PHONE_REGEX = /^09\d{9}$/;
+const YMD_REGEX = /^(\d{4})-(\d{2})-(\d{2})$/;
+const SCHOOL_YEAR_REGEX = /([0-9]{4})\s*[-–]\s*([0-9]{4})/;
+
 const PROGRAM_TYPES = [
   "4Ps Beneficiary",
   "Regular Enrollee (Non-beneficiary)",
 ] as const;
 
+// ─── Date Helpers ────────────────────────────────────────────────────────────
+
 const parseYmd = (value: string): Date | null => {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || "").trim());
+  const match = YMD_REGEX.exec(String(value || "").trim());
   if (!match) return null;
 
   const year = Number(match[1]);
@@ -14,15 +23,12 @@ const parseYmd = (value: string): Date | null => {
   const day = Number(match[3]);
   const parsed = new Date(year, month - 1, day);
 
-  if (
-    parsed.getFullYear() !== year ||
-    parsed.getMonth() !== month - 1 ||
-    parsed.getDate() !== day
-  ) {
-    return null;
-  }
+  const isValid =
+    parsed.getFullYear() === year &&
+    parsed.getMonth() === month - 1 &&
+    parsed.getDate() === day;
 
-  return parsed;
+  return isValid ? parsed : null;
 };
 
 export const computeAgeFromDateOfBirth = (value: string) => {
@@ -43,6 +49,25 @@ export const computeAgeFromDateOfBirth = (value: string) => {
   return Math.max(0, age);
 };
 
+// ─── Reusable Schema Builders ────────────────────────────────────────────────
+
+const nameSchema = (label: string) =>
+  z
+    .string()
+    .trim()
+    .min(1, `${label} is required.`)
+    .min(2, `${label} is too short.`)
+    .max(50, `${label} must be at most 50 characters.`)
+    .regex(NAME_REGEX, `${label} contains invalid characters.`);
+
+const phoneSchema = () =>
+  z
+    .string()
+    .trim()
+    .min(1, "Phone number is required.")
+    .length(11, "Phone number must be exactly 11 digits.")
+    .regex(PH_PHONE_REGEX, "Phone must start with 09 and be 11 digits.");
+
 const ymdDateSchema = (label: string) =>
   z
     .string()
@@ -52,43 +77,51 @@ const ymdDateSchema = (label: string) =>
       message: `${label} must be a valid date.`,
     });
 
+const numericRangeSchema = (
+  label: string,
+  min: number,
+  max: number,
+  unit: string,
+) =>
+  z
+    .string()
+    .trim()
+    .min(1, `${label} is required.`)
+    .max(5, `${label} must be at most 5 characters.`)
+    .refine(
+      (v) => {
+        const n = Number(v);
+        return Number.isFinite(n) && n >= min && n <= max;
+      },
+      { message: `${label} must be between ${min} and ${max} ${unit}.` },
+    );
+
+// ─── Step 1: Child Information, Health & Enrollment ──────────────────────────
+
 export const childEnrollmentStepOneSchema = z
   .object({
-    firstName: z.string().trim().min(1, "Child first name is required."),
-    middleName: z.string().trim().min(1, "Child middle name is required."),
-    lastName: z.string().trim().min(1, "Child last name is required."),
+    firstName: nameSchema("First name"),
+    middleName: nameSchema("Middle name"),
+    lastName: nameSchema("Last name"),
     dateOfBirth: ymdDateSchema("Date of birth"),
     gender: z.enum(["male", "female"], {
       required_error: "Gender is required.",
       invalid_type_error: "Gender is required.",
     }),
-    homeAddress: z.string().trim().min(5, "Complete home address is required.").max(300),
-    daycareCenterId: z
+    homeAddress: z
       .string()
       .trim()
-      .min(1, "Assigned center is required."),
+      .min(5, "Complete home address is required.")
+      .max(300, "Address must be at most 300 characters."),
+    daycareCenterId: z.string().trim().min(1, "Assigned center is required."),
     programType: z.enum(PROGRAM_TYPES, {
       required_error: "Program type is required.",
       invalid_type_error: "Program type is required.",
     }),
     enrollmentDate: ymdDateSchema("Enrollment date"),
     schoolYear: z.string().trim().min(1, "School year is required."),
-    weight: z
-      .string()
-      .trim()
-      .min(1, "Weight is required.")
-      .refine((v) => {
-        const n = Number(v);
-        return Number.isFinite(n) && n >= 5 && n <= 50;
-      }, { message: "Weight must be between 5 and 50 kg." }),
-    height: z
-      .string()
-      .trim()
-      .min(1, "Height is required.")
-      .refine((v) => {
-        const n = Number(v);
-        return Number.isFinite(n) && n >= 60 && n <= 150;
-      }, { message: "Height must be between 60 and 150 cm." }),
+    weight: numericRangeSchema("Weight", 5, 50, "kg"),
+    height: numericRangeSchema("Height", 60, 150, "cm"),
   })
   .superRefine((data, ctx) => {
     const birthDate = parseYmd(data.dateOfBirth);
@@ -104,7 +137,7 @@ export const childEnrollmentStepOneSchema = z
       return;
     }
 
-    const schoolYearMatch = /([0-9]{4})\s*[-–]\s*([0-9]{4})/.exec(data.schoolYear);
+    const schoolYearMatch = SCHOOL_YEAR_REGEX.exec(data.schoolYear);
     if (schoolYearMatch) {
       const endYear = Number(schoolYearMatch[2]);
       const schoolYearEnd = new Date(endYear, 2, 31);
@@ -127,15 +160,20 @@ export const childEnrollmentStepOneSchema = z
     }
   });
 
+// ─── Step 2: Parent / Guardian Information ───────────────────────────────────
+
 export const childEnrollmentStepTwoSchema = z.object({
-  parentFirstName: z.string().trim().min(1, "Parent first name is required."),
-  parentMiddleName: z.string().trim().min(1, "Parent middle name is required."),
-  parentLastName: z.string().trim().min(1, "Parent last name is required."),
-  parentPhone: z.string().trim().min(1, "Parent phone is required."),
-  parentRelationship: z.enum(["Mother", "Father", "Guardian", "Grandparent", "Other"], {
-    required_error: "Relationship to the child is required.",
-  }),
+  parentFirstName: nameSchema("First name"),
+  parentMiddleName: nameSchema("Middle name"),
+  parentLastName: nameSchema("Last name"),
+  parentPhone: phoneSchema(),
+  parentRelationship: z.enum(
+    ["Mother", "Father", "Guardian", "Grandparent", "Other"],
+    { required_error: "Relationship to the child is required." },
+  ),
 });
+
+// ─── Validate Helpers ────────────────────────────────────────────────────────
 
 export const validateChildEnrollmentStepOne = (payload: {
   firstName: string;
@@ -157,5 +195,6 @@ export const validateChildEnrollmentStepTwo = (payload: {
   parentMiddleName: string;
   parentLastName: string;
   parentPhone: string;
-  parentRelationship: "Mother" | "Father" | "Guardian" | "Grandparent" | "Other";
+  parentRelationship:
+    "Mother" | "Father" | "Guardian" | "Grandparent" | "Other";
 }) => childEnrollmentStepTwoSchema.safeParse(payload);

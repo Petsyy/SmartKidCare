@@ -12,6 +12,7 @@ export function Input({
   keyboardType = "default",
   autoCapitalize = "words",
   containerStyle,
+  maxLength,
   editable = true,
   computed = false,
   labelHint,
@@ -63,6 +64,7 @@ export function Input({
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
         editable={editable}
+        maxLength={maxLength}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         className={`min-h-[48px] rounded-xl border-[1.5px] px-[14px] py-3 text-[15px] ${inputVariantClasses}`}

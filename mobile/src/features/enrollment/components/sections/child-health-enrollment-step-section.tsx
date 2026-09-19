@@ -54,6 +54,7 @@ export function ChildHealthEnrollmentStepSection({
           label="Weight (kg) *"
           placeholder="e.g. 15.5"
           keyboardType="decimal-pad"
+          maxLength={5}
         />
         <FormInput
           control={control}
@@ -62,6 +63,7 @@ export function ChildHealthEnrollmentStepSection({
           label="Height (cm) *"
           placeholder="e.g. 105"
           keyboardType="decimal-pad"
+          maxLength={5}
         />
       </View>
 

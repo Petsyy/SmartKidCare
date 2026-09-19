@@ -44,6 +44,7 @@ export function ChildInfoStepSection({
           containerStyle={enrollFieldStyles.inputHalf}
           label="First Name *"
           placeholder="e.g. Juan"
+          maxLength={50}
         />
         <FormInput
           control={control}
@@ -51,6 +52,7 @@ export function ChildInfoStepSection({
           containerStyle={enrollFieldStyles.inputHalf}
           label="Last Name *"
           placeholder="e.g. Dela Cruz"
+          maxLength={50}
         />
       </View>
 
@@ -59,6 +61,7 @@ export function ChildInfoStepSection({
         name="middleName"
         label="Middle Name *"
         placeholder="e.g. Santos"
+        maxLength={50}
       />
 
       <FormDateField
@@ -74,6 +77,7 @@ export function ChildInfoStepSection({
         label="Complete Home Address *"
         placeholder="House no., street, barangay, city"
         autoCapitalize="words"
+        maxLength={300}
       />
 
       <Input

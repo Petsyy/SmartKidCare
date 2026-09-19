@@ -13,6 +13,7 @@ export type InputProps = {
     | "decimal-pad";
   autoCapitalize?: "none" | "sentences" | "words" | "characters";
   containerStyle?: StyleProp<ViewStyle>;
+  maxLength?: number;
   editable?: boolean;
   computed?: boolean;
   labelHint?: string;

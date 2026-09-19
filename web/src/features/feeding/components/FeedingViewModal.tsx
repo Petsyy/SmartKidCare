@@ -71,11 +71,6 @@ export const FeedingViewModal = ({ viewingRow, onClose }: ViewModalProps) => {
                 <h3 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
                   View Feeding Record
                 </h3>
-                <p className="text-sm font-normal text-slate-600 dark:text-slate-400">
-                  {viewingRow.childName ||
-                    viewingRow.studentId ||
-                    "Feeding record"}
-                </p>
               </div>
             </div>
             <button

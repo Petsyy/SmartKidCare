@@ -35,6 +35,7 @@ export function ParentInfoStepSection({ control }: { control: Control<any> }) {
           containerStyle={enrollFieldStyles.inputHalf}
           label="First Name *"
           placeholder="e.g. Maria"
+          maxLength={50}
         />
         <FormInput
           control={control}
@@ -42,6 +43,7 @@ export function ParentInfoStepSection({ control }: { control: Control<any> }) {
           containerStyle={enrollFieldStyles.inputHalf}
           label="Last Name *"
           placeholder="e.g. Dela Cruz"
+          maxLength={50}
         />
       </View>
 
@@ -50,6 +52,7 @@ export function ParentInfoStepSection({ control }: { control: Control<any> }) {
         name="parentMiddleName"
         label="Middle Name *"
         placeholder="e.g. Santos"
+        maxLength={50}
       />
 
       <FormInput
@@ -58,6 +61,7 @@ export function ParentInfoStepSection({ control }: { control: Control<any> }) {
         label="Phone Number *"
         placeholder="09123456789"
         keyboardType="phone-pad"
+        maxLength={11}
       />
 
       <Text className="mb-4 text-sm leading-5 text-teal-700">
