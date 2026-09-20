@@ -13,6 +13,7 @@ import {
 } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { getChildById, type Child } from "@/src/api/parent.api";
+import { getChildParentCredentials, resetChildParentPassword } from "@/src/api/teacher.api";
 import { getTodayAttendance, getTodayFeeding } from "@/src/api/records.api";
 import { useAuth } from "@/src/hooks/use-auth";
 import {
@@ -40,7 +41,9 @@ import {
 } from "@/src/components/ui";
 import { ViewGuardiansBottomSheet } from "../components/view-guardians-bottom-sheet";
 import { AddGuardianBottomSheet } from "../components/add-guardian-bottom-sheet";
+import { ParentCredentialsModal } from "@/src/features/enrollment/components/ui/parent-credentials-modal";
 import { GrowthHistoryBottomSheet } from "@/src/features/nutrition/components/growth-history-bottom-sheet";
+import { Alert } from "react-native";
 import type { Guardian } from "@/src/api/api.types";
 
 export default function TeacherChildDetailsScreen() {
@@ -54,6 +57,56 @@ export default function TeacherChildDetailsScreen() {
   const [isHistorySheetOpen, setIsHistorySheetOpen] = useState(false);
   const [editGuardian, setEditGuardian] = useState<Guardian | null>(null);
   const [editIndex, setEditIndex] = useState<number | null>(null);
+  const [credentialsModal, setCredentialsModal] = useState<{ visible: boolean; email: string; tempPassword?: string | null } | null>(null);
+  const [isLoadingCredentials, setIsLoadingCredentials] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+
+  const handleViewCredentials = async () => {
+    if (!childId) return;
+    try {
+      setIsLoadingCredentials(true);
+      const credentials = await getChildParentCredentials(childId);
+      setCredentialsModal({
+        visible: true,
+        email: credentials.email,
+        tempPassword: credentials.tempPassword,
+      });
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Failed to retrieve credentials.");
+    } finally {
+      setIsLoadingCredentials(false);
+    }
+  };
+
+  const handleResetPassword = () => {
+    if (!childId) return;
+    Alert.alert(
+      "Reset Parent Password",
+      "Are you sure you want to reset this parent's password? Their current password will be invalidated immediately. This will affect their entire account.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Reset Password",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setIsResettingPassword(true);
+              const credentials = await resetChildParentPassword(childId);
+              setCredentialsModal({
+                visible: true,
+                email: credentials.email,
+                tempPassword: credentials.tempPassword,
+              });
+            } catch (error: any) {
+              Alert.alert("Error", error.message || "Failed to reset password.");
+            } finally {
+              setIsResettingPassword(false);
+            }
+          },
+        },
+      ],
+    );
+  };
 
   const handleEditGuardian = (guardian: Guardian, index: number) => {
     setEditGuardian(guardian);
@@ -562,6 +615,29 @@ export default function TeacherChildDetailsScreen() {
                 />
               )}
             </View>
+            <View className="mt-4 flex-row gap-3">
+              <Pressable
+                onPress={handleViewCredentials}
+                disabled={isLoadingCredentials}
+                className="flex-1 flex-row items-center justify-center gap-2 bg-sky-50 py-3 rounded-xl active:bg-sky-100"
+              >
+                <ShieldCheck size={20} color="#0284C7" />
+                <Text className="text-sky-700 font-semibold text-center text-sm">
+                  {isLoadingCredentials ? "Loading..." : "View Initial Credentials"}
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={handleResetPassword}
+                disabled={isResettingPassword}
+                className="flex-1 flex-row items-center justify-center gap-2 bg-rose-50 py-3 rounded-xl active:bg-rose-100"
+              >
+                <ShieldCheck size={20} color="#E11D48" />
+                <Text className="text-rose-700 font-semibold text-center text-sm">
+                  {isResettingPassword ? "Resetting..." : "Reset Password"}
+                </Text>
+              </Pressable>
+            </View>
           </View>
         ) : (
           <View
@@ -606,12 +682,23 @@ export default function TeacherChildDetailsScreen() {
         editGuardian={editGuardian}
         editIndex={editIndex}
       />
-      <GrowthHistoryBottomSheet
-        childId={childId}
-        childName={fullName}
-        visible={isHistorySheetOpen}
-        onClose={() => setIsHistorySheetOpen(false)}
-      />
+      {isHistorySheetOpen && (
+        <GrowthHistoryBottomSheet
+          childId={childId || ""}
+          childName={fullName}
+          visible={isHistorySheetOpen}
+          onClose={() => setIsHistorySheetOpen(false)}
+        />
+      )}
+
+      {credentialsModal && (
+        <ParentCredentialsModal
+          visible={credentialsModal.visible}
+          email={credentialsModal.email}
+          tempPassword={credentialsModal.tempPassword}
+          onClose={() => setCredentialsModal(null)}
+        />
+      )}
     </SafeAreaView>
   );
 }

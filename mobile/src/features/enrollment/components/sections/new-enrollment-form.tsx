@@ -14,7 +14,7 @@ import { DocumentsStepSection } from "./documents-step-section";
 import { EnrollmentStartState } from "./enrollment-start-state";
 import { ParentInfoStepSection } from "./parent-info-step-section";
 import { ReviewSubmitStepSection } from "./review-submit-step-section";
-import { StepProgress } from "@/src/features/enrollment/components/ui";
+import { ParentCredentialsModal, StepProgress } from "@/src/features/enrollment/components/ui";
 import {
   displayDate,
   formatYmd,
@@ -61,10 +61,29 @@ export function NewEnrollmentForm({
     },
   );
   const { pickDocument } = useDocumentPicker();
-  const { isSubmitting, submitEnrollment } =
-    useEnrollmentSubmit(onSubmissionSuccess);
-
   const [step, setStep] = useState<Step>(1);
+  const [credentialsModal, setCredentialsModal] = useState<{ visible: boolean; email: string; tempPassword?: string | null } | null>(null);
+
+  const resetForm = () => {
+    form.resetForm();
+    setHasStarted(false);
+    setStep(1);
+  };
+
+  const { isSubmitting, submitEnrollment } =
+    useEnrollmentSubmit((credentials) => {
+      setCredentialsModal({
+        visible: true,
+        email: credentials.email,
+        tempPassword: credentials.tempPassword,
+      });
+    });
+
+  const handleModalClose = () => {
+    setCredentialsModal(null);
+    resetForm();
+    onSubmissionSuccess();
+  };
 
   // Auto-select center if only one available
   useEffect(() => {
@@ -84,12 +103,6 @@ export function NewEnrollmentForm({
 
   const previousStep = () => {
     setStep((prev) => (prev > 1 ? ((prev - 1) as Step) : prev));
-  };
-
-  const resetForm = () => {
-    form.resetForm();
-    setHasStarted(false);
-    setStep(1);
   };
 
   const handlePickBirthCertificate = async () => {
@@ -366,6 +379,15 @@ export function NewEnrollmentForm({
           </View>
         </Modal>
       ) : null}
+
+      {credentialsModal && (
+        <ParentCredentialsModal
+          visible={credentialsModal.visible}
+          email={credentialsModal.email}
+          tempPassword={credentialsModal.tempPassword}
+          onClose={handleModalClose}
+        />
+      )}
     </>
   );
 }

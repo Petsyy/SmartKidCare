@@ -27,7 +27,12 @@ interface SubmissionData {
   };
 }
 
-export const useEnrollmentSubmit = (onSuccess?: () => void) => {
+export interface ParentCredentials {
+  email: string;
+  tempPassword?: string | null;
+}
+
+export const useEnrollmentSubmit = (onSuccess?: (credentials: ParentCredentials) => void) => {
   const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
 
@@ -57,13 +62,11 @@ export const useEnrollmentSubmit = (onSuccess?: () => void) => {
         const credentials = submission.parentCredentials;
         const submittedEmail = credentials?.email || "Unavailable";
         const generatedPassword = credentials?.tempPassword;
-        const credentialMessage = generatedPassword
-          ? `Login Email: ${submittedEmail}\nTemporary Password: ${generatedPassword}\n\nThe parent must create a new password during first login.`
-          : `Login Email: ${submittedEmail}\n\nParent account already exists. Use the current password.`;
 
-        Alert.alert("Success", `Child enrolled successfully.\n\n${credentialMessage}`, [
-          { text: "View Children", onPress: () => { onSuccess?.(); } },
-        ]);
+        onSuccess?.({
+          email: submittedEmail,
+          tempPassword: generatedPassword,
+        });
       } catch (error: any) {
         Alert.alert(
           "Submission Error",

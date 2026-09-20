@@ -62,3 +62,25 @@ export const getChildren = async (): Promise<Child[]> => {
   const data = await apiClient<Child[] | any>("/api/children");
   return Array.isArray(data) ? data : [];
 };
+
+export const getChildParentCredentials = async (
+  childId: string,
+): Promise<{ email: string; tempPassword?: string | null }> => {
+  return apiClient<{ email: string; tempPassword?: string | null }>(
+    `/api/children/${childId}/parent-credentials`,
+    {
+      method: "GET",
+    },
+  );
+};
+
+export const resetChildParentPassword = async (
+  childId: string,
+): Promise<{ email: string; tempPassword?: string | null }> => {
+  return apiClient<{ email: string; tempPassword?: string | null }>(
+    `/api/children/${childId}/parent-credentials/reset`,
+    {
+      method: "POST",
+    },
+  );
+};

@@ -82,6 +82,23 @@ export class ParentService {
     throw new Error("Unable to generate a unique parent login email.");
   }
 
+  public async resetPassword(parentId: string): Promise<{ tempPassword: string }> {
+    const tempPassword = generateTempPassword();
+    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+    const updatedParent = await parentRepository.updateById(parentId, {
+      password: hashedPassword,
+      mustChangePassword: true,
+      latestTempPassword: tempPassword,
+      latestTempPasswordIssuedAt: new Date(),
+    } as any);
+
+    if (!updatedParent) {
+      throw new Error("Parent not found");
+    }
+
+    return { tempPassword };
+  }
 }
 
 export const parentService = new ParentService();

@@ -6,10 +6,12 @@ import { type InputProps } from "../types/enrollment-types";
 export function FormInput<T extends FieldValues>({
   control,
   name,
+  filterRegex,
   ...props
 }: Omit<InputProps, "value" | "onChangeText" | "error"> & {
   control: Control<T>;
   name: Path<T>;
+  filterRegex?: RegExp;
 }) {
   return (
     <Controller
@@ -19,7 +21,13 @@ export function FormInput<T extends FieldValues>({
         <Input
           {...props}
           value={value as string}
-          onChangeText={onChange}
+          onChangeText={(text) => {
+            if (filterRegex) {
+              onChange(text.replace(filterRegex, ""));
+            } else {
+              onChange(text);
+            }
+          }}
           error={error?.message}
         />
       )}

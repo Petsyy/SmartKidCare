@@ -3,6 +3,8 @@ import {
   getChildren,
   getMyChildren,
   getChildById,
+  getParentCredentials,
+  resetParentCredentials,
   createChild,
   deleteChild,
   updateChild,
@@ -40,6 +42,8 @@ router.get("/", validateGetChildrenQuery, getChildren);
 router.get("/my-children", getMyChildren);
 
 router.get("/:id", getChildById);
+router.get("/:id/parent-credentials", requireRole("teacher", "admin"), getParentCredentials);
+router.post("/:id/parent-credentials/reset", requireRole("teacher"), resetParentCredentials);
 
 router.post(
   "/",

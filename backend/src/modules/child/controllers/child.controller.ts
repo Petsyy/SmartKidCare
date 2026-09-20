@@ -6,6 +6,7 @@ import { ensureCanAccessChild, withDerivedDaycareCenter } from "../shared";
 import { childRepository } from "../repositories/child.repository";
 import { childService } from "../services/child.service";
 import { childOnboardingService } from "../services/child-onboarding.service";
+import { parentService } from "../../parents/services/parents.service";
 import type { UploadedFiles } from "../types/child-onboarding.types";
 import { buildChildAccessFilter } from "../../../shared/services/child-access.service";
 
@@ -48,6 +49,60 @@ export const getChildById = asyncHandler(
     if (!ensureCanAccessChild(normalizedChild, req)) throw new ForbiddenError();
 
     res.json(normalizedChild);
+  },
+);
+
+export const getParentCredentials = asyncHandler(
+  async (req: Request, res: Response) => {
+    if (!req.user?.id) throw new UnauthorizedError();
+    const id = String(req.params.id || "").trim();
+    if (!mongoose.Types.ObjectId.isValid(id))
+      throw new ValidationError("Invalid child ID");
+
+    const child = await childRepository.findByIdWithDetails(id);
+    if (!child) throw new NotFoundError("Child");
+
+    if (!ensureCanAccessChild(withDerivedDaycareCenter(child), req)) {
+      throw new ForbiddenError();
+    }
+
+    const parent = child.parent as any;
+    if (!parent) {
+      throw new NotFoundError("Parent not found for this child");
+    }
+
+    res.json({
+      email: parent.email,
+      tempPassword: parent.mustChangePassword ? parent.latestTempPassword : null,
+    });
+  },
+);
+
+export const resetParentCredentials = asyncHandler(
+  async (req: Request, res: Response) => {
+    if (!req.user?.id) throw new UnauthorizedError();
+    const id = String(req.params.id || "").trim();
+    if (!mongoose.Types.ObjectId.isValid(id))
+      throw new ValidationError("Invalid child ID");
+
+    const child = await childRepository.findByIdWithDetails(id);
+    if (!child) throw new NotFoundError("Child");
+
+    if (!ensureCanAccessChild(withDerivedDaycareCenter(child), req)) {
+      throw new ForbiddenError();
+    }
+
+    const parent = child.parent as any;
+    if (!parent) {
+      throw new NotFoundError("Parent not found for this child");
+    }
+
+    const { tempPassword } = await parentService.resetPassword(parent._id.toString());
+
+    res.json({
+      email: parent.email,
+      tempPassword,
+    });
   },
 );
 

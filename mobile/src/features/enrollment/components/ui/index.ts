@@ -3,3 +3,4 @@ export * from "./review";
 export * from "./filter-chips";
 export * from "./search-bar";
 export * from "./tab-switcher";
+export * from "./parent-credentials-modal";

@@ -15,10 +15,13 @@ import {
 import { X, UserCheck, Camera, IdCard, CheckCircle2, Image as ImageIcon, Trash2 } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQueryClient } from "@tanstack/react-query";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useGuardians } from "../hooks/useGuardian";
 import type { Guardian } from "@/src/api/api.types";
 import { useDocumentPicker } from "@/src/features/enrollment/hooks/useDocumentPicker";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
+import { guardianSchema, type GuardianFormValues } from "../validations/guardian-validation";
 
 interface AddGuardianBottomSheetProps {
   childId: string | null;
@@ -45,41 +48,52 @@ export function AddGuardianBottomSheet({
   
   const { addGuardian, updateGuardian, isMutating } = useGuardians(childId || undefined);
 
-  const [formData, setFormData] = useState<Partial<Guardian>>(() => 
-    editGuardian ? { ...editGuardian } : {
+  const { control, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<GuardianFormValues>({
+    resolver: zodResolver(guardianSchema),
+    defaultValues: {
       firstName: "",
       lastName: "",
       relationship: "Guardian",
       customRelationship: null,
       phone: "",
-      photoUrl: null,
-      idUrl: null,
     }
-  );
+  });
+
+  const relationshipValue = watch("relationship");
+
   const [guardianPhotoFile, setGuardianPhotoFile] = useState<any>(null);
   const [guardianIdFile, setGuardianIdFile] = useState<any>(null);
+  const [existingPhotoUrl, setExistingPhotoUrl] = useState<string | null>(null);
+  const [existingIdUrl, setExistingIdUrl] = useState<string | null>(null);
 
-  // Sync form when editGuardian changes (opening in edit mode)
   React.useEffect(() => {
     if (editGuardian) {
-      setFormData({ ...editGuardian });
+      reset({
+        firstName: editGuardian.firstName,
+        lastName: editGuardian.lastName,
+        relationship: editGuardian.relationship as any,
+        customRelationship: editGuardian.customRelationship || null,
+        phone: editGuardian.phone,
+      });
+      setExistingPhotoUrl(editGuardian.photoUrl || null);
+      setExistingIdUrl(editGuardian.idUrl || null);
     } else {
       resetForm();
     }
-  }, [editGuardian]);
+  }, [editGuardian, reset]);
 
   const resetForm = () => {
-    setGuardianPhotoFile(null);
-    setGuardianIdFile(null);
-    setFormData({
+    reset({
       firstName: "",
       lastName: "",
       relationship: "Guardian",
       customRelationship: null,
       phone: "",
-      photoUrl: null,
-      idUrl: null,
     });
+    setGuardianPhotoFile(null);
+    setGuardianIdFile(null);
+    setExistingPhotoUrl(null);
+    setExistingIdUrl(null);
   };
 
   const handleClose = () => {
@@ -87,37 +101,18 @@ export function AddGuardianBottomSheet({
     onClose();
   };
 
-  const handleSave = async () => {
+  const onSubmit = async (data: GuardianFormValues) => {
     if (!childId) return;
-    
+
     try {
-      if (
-        !formData.firstName?.trim() ||
-        !formData.lastName?.trim() ||
-        !formData.phone?.trim()
-      ) {
-        Alert.alert(
-          "Required Fields",
-          "Please provide a first name, last name, and contact phone number.",
-        );
-        return;
-      }
-
-      if (
-        formData.relationship === "Other" &&
-        !formData.customRelationship?.trim()
-      ) {
-        Alert.alert(
-          "Required Field",
-          "Please specify the relationship when selecting 'Other'.",
-        );
-        return;
-      }
-
       const payload: Partial<Guardian> = {
-        ...(formData as Guardian),
-        photoUrl: formData.photoUrl || null,
-        idUrl: formData.idUrl || null,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        relationship: data.relationship,
+        customRelationship: data.customRelationship || null,
+        phone: data.phone,
+        photoUrl: existingPhotoUrl,
+        idUrl: existingIdUrl,
       };
 
       if (isEditMode) {
@@ -212,24 +207,48 @@ export function AddGuardianBottomSheet({
               <Text className="text-base font-extrabold text-gray-700 mb-2 ml-2">
                 First Name <Text className="text-red-500">*</Text>
               </Text>
-              <TextInput
-                value={formData.firstName}
-                onChangeText={(t) => setFormData({ ...formData, firstName: t })}
-                placeholder="Jane"
-                placeholderTextColor="#9CA3AF"
-                className="bg-white border border-gray-200 rounded-2xl px-5 py-4 mb-4 text-base text-gray-900 font-semibold"
+              <Controller
+                control={control}
+                name="firstName"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextInput
+                    value={value}
+                    onChangeText={(val) => onChange(val.replace(/[^a-zA-Z\s\-']/g, ""))}
+                    onBlur={onBlur}
+                    placeholder="Jane"
+                    placeholderTextColor="#9CA3AF"
+                    className={`bg-white border rounded-2xl px-5 py-4 ${
+                      errors.firstName ? "border-red-500 mb-1" : "border-gray-200 mb-4"
+                    } text-base text-gray-900 font-semibold`}
+                  />
+                )}
               />
+              {errors.firstName ? (
+                <Text className="text-red-500 text-sm ml-2 mb-3">{errors.firstName.message}</Text>
+              ) : null}
 
               <Text className="text-base font-extrabold text-gray-700 mb-2 ml-2">
                 Last Name <Text className="text-red-500">*</Text>
               </Text>
-              <TextInput
-                value={formData.lastName}
-                onChangeText={(t) => setFormData({ ...formData, lastName: t })}
-                placeholder="Doe"
-                placeholderTextColor="#9CA3AF"
-                className="bg-white border border-gray-200 rounded-2xl px-5 py-4 mb-4 text-base text-gray-900 font-semibold"
+              <Controller
+                control={control}
+                name="lastName"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextInput
+                    value={value}
+                    onChangeText={(val) => onChange(val.replace(/[^a-zA-Z\s\-']/g, ""))}
+                    onBlur={onBlur}
+                    placeholder="Doe"
+                    placeholderTextColor="#9CA3AF"
+                    className={`bg-white border rounded-2xl px-5 py-4 ${
+                      errors.lastName ? "border-red-500 mb-1" : "border-gray-200 mb-4"
+                    } text-base text-gray-900 font-semibold`}
+                  />
+                )}
               />
+              {errors.lastName ? (
+                <Text className="text-red-500 text-sm ml-2 mb-3">{errors.lastName.message}</Text>
+              ) : null}
 
               <Text className="text-base font-extrabold text-gray-700 mb-3 ml-2">
                 Relationship to Child
@@ -241,18 +260,16 @@ export function AddGuardianBottomSheet({
               >
                 {["Mother", "Father", "Guardian", "Grandparent", "Other"].map(
                   (rel) => {
-                    const isSelected = formData.relationship === rel;
+                    const isSelected = relationshipValue === rel;
                     return (
                       <Pressable
                         key={rel}
-                        onPress={() =>
-                          setFormData({
-                            ...formData,
-                            relationship: rel as any,
-                            customRelationship:
-                              rel === "Other" ? formData.customRelationship : null,
-                          })
-                        }
+                        onPress={() => {
+                          setValue("relationship", rel as any, { shouldValidate: true });
+                          if (rel !== "Other") {
+                            setValue("customRelationship", null);
+                          }
+                        }}
                         className={`mr-3 px-5 py-3 rounded-xl border active:opacity-85 ${
                           isSelected
                             ? "bg-teal-600 border-teal-600 shadow-sm"
@@ -272,35 +289,57 @@ export function AddGuardianBottomSheet({
                 )}
               </ScrollView>
 
-              {formData.relationship === "Other" && (
+              {relationshipValue === "Other" && (
                 <>
                   <Text className="text-base font-extrabold text-gray-700 mb-2 ml-2">
                     Specify Relationship <Text className="text-red-500">*</Text>
                   </Text>
-                  <TextInput
-                    value={formData.customRelationship || ""}
-                    onChangeText={(t) =>
-                      setFormData({ ...formData, customRelationship: t })
-                    }
-                    placeholder="e.g. Uncle, Nanny, Family Friend"
-                    placeholderTextColor="#9CA3AF"
-                    maxLength={50}
-                    className="bg-white border border-gray-200 rounded-2xl px-5 py-4 mb-4 text-base text-gray-900 font-semibold"
+                  <Controller
+                    control={control}
+                    name="customRelationship"
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <TextInput
+                        value={value || ""}
+                        onChangeText={onChange}
+                        onBlur={onBlur}
+                        placeholder="e.g. Uncle, Nanny, Family Friend"
+                        placeholderTextColor="#9CA3AF"
+                        maxLength={50}
+                        className={`bg-white border rounded-2xl px-5 py-4 ${
+                          errors.customRelationship ? "border-red-500 mb-1" : "border-gray-200 mb-4"
+                        } text-base text-gray-900 font-semibold`}
+                      />
+                    )}
                   />
+                  {errors.customRelationship ? (
+                    <Text className="text-red-500 text-sm ml-2 mb-3">{errors.customRelationship.message}</Text>
+                  ) : null}
                 </>
               )}
 
               <Text className="text-base font-extrabold text-gray-700 mb-2 ml-2">
                 Contact Phone Number <Text className="text-red-500">*</Text>
               </Text>
-              <TextInput
-                value={formData.phone}
-                onChangeText={(t) => setFormData({ ...formData, phone: t })}
-                placeholder="09123456789"
-                placeholderTextColor="#9CA3AF"
-                keyboardType="phone-pad"
-                className="bg-white border border-gray-200 rounded-2xl px-5 py-4 mb-5 text-base text-gray-900 font-semibold"
+              <Controller
+                control={control}
+                name="phone"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextInput
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    placeholder="09123456789"
+                    placeholderTextColor="#9CA3AF"
+                    keyboardType="phone-pad"
+                    className={`bg-white border rounded-2xl px-5 py-4 ${
+                      errors.phone ? "border-red-500 mb-1" : "border-gray-200 mb-5"
+                    } text-base text-gray-900 font-semibold`}
+                  />
+                )}
               />
+              {errors.phone ? (
+                <Text className="text-red-500 text-sm ml-2 mb-4">{errors.phone.message}</Text>
+              ) : null}
 
               <Text className="text-base font-extrabold text-gray-700 mb-2 ml-2">
                 Guardian Photo
@@ -316,7 +355,7 @@ export function AddGuardianBottomSheet({
                   <Pressable
                     onPress={() => {
                       setGuardianPhotoFile(null);
-                      setFormData(prev => ({ ...prev, photoUrl: null }));
+                      setExistingPhotoUrl(null);
                     }}
                     className="absolute top-3 right-3 h-8 w-8 rounded-full bg-black/50 items-center justify-center active:bg-black/70"
                   >
@@ -358,7 +397,7 @@ export function AddGuardianBottomSheet({
                   <Pressable
                     onPress={() => {
                       setGuardianIdFile(null);
-                      setFormData(prev => ({ ...prev, idUrl: null }));
+                      setExistingIdUrl(null);
                     }}
                     className="absolute top-3 right-3 h-8 w-8 rounded-full bg-black/50 items-center justify-center active:bg-black/70"
                   >
@@ -394,7 +433,7 @@ export function AddGuardianBottomSheet({
                   <Text className="text-gray-700 font-black text-base">Cancel</Text>
                 </Pressable>
                 <Pressable
-                  onPress={handleSave}
+                  onPress={handleSubmit(onSubmit)}
                   disabled={isMutating}
                   className={`flex-1 items-center justify-center py-4 rounded-2xl shadow-sm active:opacity-90 ${
                     isMutating ? "bg-teal-400" : "bg-teal-600"

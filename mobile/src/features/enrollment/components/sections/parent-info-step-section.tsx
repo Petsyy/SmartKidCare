@@ -35,7 +35,8 @@ export function ParentInfoStepSection({ control }: { control: Control<any> }) {
           containerStyle={enrollFieldStyles.inputHalf}
           label="First Name *"
           placeholder="e.g. Maria"
-          maxLength={50}
+          maxLength={30}
+          filterRegex={/[^a-zA-Z\s\-']/g}
         />
         <FormInput
           control={control}
@@ -43,7 +44,8 @@ export function ParentInfoStepSection({ control }: { control: Control<any> }) {
           containerStyle={enrollFieldStyles.inputHalf}
           label="Last Name *"
           placeholder="e.g. Dela Cruz"
-          maxLength={50}
+          maxLength={30}
+          filterRegex={/[^a-zA-Z\s\-']/g}
         />
       </View>
 
@@ -52,7 +54,8 @@ export function ParentInfoStepSection({ control }: { control: Control<any> }) {
         name="parentMiddleName"
         label="Middle Name *"
         placeholder="e.g. Santos"
-        maxLength={50}
+        maxLength={30}
+        filterRegex={/[^a-zA-Z\s\-']/g}
       />
 
       <FormInput

@@ -44,7 +44,8 @@ export function ChildInfoStepSection({
           containerStyle={enrollFieldStyles.inputHalf}
           label="First Name *"
           placeholder="e.g. Juan"
-          maxLength={50}
+          maxLength={30}
+          filterRegex={/[^a-zA-Z\s\-']/g}
         />
         <FormInput
           control={control}
@@ -52,7 +53,8 @@ export function ChildInfoStepSection({
           containerStyle={enrollFieldStyles.inputHalf}
           label="Last Name *"
           placeholder="e.g. Dela Cruz"
-          maxLength={50}
+          maxLength={30}
+          filterRegex={/[^a-zA-Z\s\-']/g}
         />
       </View>
 
@@ -61,7 +63,8 @@ export function ChildInfoStepSection({
         name="middleName"
         label="Middle Name *"
         placeholder="e.g. Santos"
-        maxLength={50}
+        maxLength={30}
+        filterRegex={/[^a-zA-Z\s\-']/g}
       />
 
       <FormDateField
@@ -77,7 +80,7 @@ export function ChildInfoStepSection({
         label="Complete Home Address *"
         placeholder="House no., street, barangay, city"
         autoCapitalize="words"
-        maxLength={300}
+        maxLength={200}
       />
 
       <Input

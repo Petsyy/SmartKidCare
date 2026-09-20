@@ -2,7 +2,7 @@ import { z } from "zod";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const NAME_REGEX = /^[A-Za-z][A-Za-z .'-]*$/;
+const NAME_REGEX = /^[a-zA-Z\s\-']+$/;
 const PH_PHONE_REGEX = /^09\d{9}$/;
 const YMD_REGEX = /^(\d{4})-(\d{2})-(\d{2})$/;
 const SCHOOL_YEAR_REGEX = /([0-9]{4})\s*[-–]\s*([0-9]{4})/;
@@ -57,8 +57,16 @@ const nameSchema = (label: string) =>
     .trim()
     .min(1, `${label} is required.`)
     .min(2, `${label} is too short.`)
-    .max(50, `${label} must be at most 50 characters.`)
-    .regex(NAME_REGEX, `${label} contains invalid characters.`);
+    .max(30, `${label} must be at most 30 characters.`)
+    .regex(/^(?!.*\s{2,})/, `${label} cannot contain consecutive spaces.`)
+    .regex(NAME_REGEX, `${label} contains invalid characters.`)
+    .refine((val) => {
+      const words = val.toLowerCase().split(/\s+/);
+      for (let i = 0; i < words.length - 1; i++) {
+        if (words[i] === words[i + 1]) return false;
+      }
+      return true;
+    }, `${label} cannot contain the same word twice in a row.`);
 
 const phoneSchema = () =>
   z
@@ -112,7 +120,7 @@ export const childEnrollmentStepOneSchema = z
       .string()
       .trim()
       .min(5, "Complete home address is required.")
-      .max(300, "Address must be at most 300 characters."),
+      .max(200, "Address must be at most 200 characters."),
     daycareCenterId: z.string().trim().min(1, "Assigned center is required."),
     programType: z.enum(PROGRAM_TYPES, {
       required_error: "Program type is required.",
