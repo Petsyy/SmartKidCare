@@ -1,6 +1,7 @@
 import { Suspense, lazy } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import ProtectedLayout from "./components/auth/ProtectedLayout";
+import { RoleHome, RoleRoute } from "./components/auth/RoleRoute";
 import { SystemSettingsProvider } from "./context/SystemSettingsContext";
 
 const AdminLogin = lazy(() => import("./pages/AdminLogin"));
@@ -10,8 +11,9 @@ const FeedingProgram = lazy(() => import("./pages/FeedingProgram"));
 const ReportAnalytics = lazy(() => import("./pages/Reports&Analytics"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminSettings = lazy(() => import("./pages/AdminSettings"));
-
-const DaycareCenters = lazy(() => import("./pages/DaycareCenters"));
+const SystemDashboard = lazy(() => import("./pages/SystemDashboard"));
+const CaptainActivation = lazy(() => import("./pages/CaptainActivation"));
+const CaptainConcerns = lazy(() => import("./pages/CaptainConcerns"));
 
 export default function App() {
   return (
@@ -20,20 +22,26 @@ export default function App() {
         <Suspense fallback={null}>
           <Routes>
             <Route path="/login" element={<AdminLogin />} />
+            <Route path="/activate-captain" element={<CaptainActivation />} />
 
             <Route element={<ProtectedLayout />}>
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/users" element={<UserManagement />} />
-              <Route path="/children" element={<ChildrenManagement />} />
-
-              <Route path="/centers" element={<DaycareCenters />} />
-              <Route path="/dashboard" element={<AdminDashboard />} />
-              <Route path="/feeding" element={<FeedingProgram />} />
-              <Route path="/reports/*" element={<ReportAnalytics />} />
-              <Route path="/settings" element={<AdminSettings />} />
+              <Route path="/" element={<RoleHome />} />
+              <Route element={<RoleRoute role="barangay_captain" />}>
+                <Route path="/monitoring/dashboard" element={<AdminDashboard />} />
+                <Route path="/monitoring/records" element={<ChildrenManagement />} />
+                <Route path="/monitoring/feeding" element={<FeedingProgram />} />
+                <Route path="/monitoring/concerns" element={<CaptainConcerns />} />
+                <Route path="/monitoring/reports/*" element={<ReportAnalytics />} />
+                <Route path="/monitoring/settings" element={<AdminSettings />} />
+              </Route>
+              <Route element={<RoleRoute role="system_admin" />}>
+                <Route path="/system/dashboard" element={<SystemDashboard />} />
+                <Route path="/system/users" element={<UserManagement />} />
+                <Route path="/system/settings" element={<AdminSettings />} />
+              </Route>
             </Route>
 
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
       </BrowserRouter>

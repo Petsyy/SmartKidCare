@@ -1,10 +1,8 @@
 import { colors } from "./theme";
-import type { BottomTabNavigationOptions } from "@react-navigation/bottom-tabs";
-
 
 export function getTabBarScreenOptions(
   bottomInset: number,
-): BottomTabNavigationOptions {
+) {
   const tabBarHeight = 64 + bottomInset;
 
   return {

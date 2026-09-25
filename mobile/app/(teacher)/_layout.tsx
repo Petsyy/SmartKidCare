@@ -100,11 +100,15 @@ export default function TeacherLayout() {
           name="child-details"
           options={{ href: null, tabBarStyle: { display: "none" } }}
         />
+        <Tabs.Screen
+          name="edit-child/[id]"
+          options={{ href: null, tabBarStyle: { display: "none" } }}
+        />
       </Tabs>
       {loading ? (
         <View
           pointerEvents="auto"
-          style={[StyleSheet.absoluteFillObject, { zIndex: 100 }]}
+          style={[StyleSheet.absoluteFill, { zIndex: 100 }]}
           className="bg-gray-50"
         >
           <ScreenLoadingState

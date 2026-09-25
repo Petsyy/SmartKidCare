@@ -7,6 +7,8 @@ interface StatCardProps {
   subtitle?: string;
   icon: LucideIcon;
   color: "blue" | "teal" | "purple" | "rose";
+  onClick?: () => void;
+  accessibilityLabel?: string;
 }
 
 const colorMap: Record<StatCardProps["color"], string> = {
@@ -16,9 +18,39 @@ const colorMap: Record<StatCardProps["color"], string> = {
   rose: "bg-rose-50 text-rose-600 dark:bg-rose-500/15 dark:text-rose-300",
 };
 
-export function StatCard({ title, value, subtitle, icon: Icon, color }: StatCardProps) {
+export function StatCard({
+  title,
+  value,
+  subtitle,
+  icon: Icon,
+  color,
+  onClick,
+  accessibilityLabel,
+}: StatCardProps) {
+  const interactiveProps = onClick
+    ? {
+        role: "button" as const,
+        tabIndex: 0,
+        onClick,
+        onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onClick();
+          }
+        },
+        "aria-label": accessibilityLabel || title,
+      }
+    : {};
+
   return (
-    <Card className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+    <Card
+      className={`rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900 ${
+        onClick
+          ? "cursor-pointer transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+          : ""
+      }`}
+      {...interactiveProps}
+    >
       <CardContent className="flex items-start justify-between">
         <div className="flex-1">
           <p className="text-sm font-medium text-gray-600 dark:text-slate-400">{title}</p>

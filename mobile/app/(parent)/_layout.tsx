@@ -90,6 +90,10 @@ export default function ParentLayout() {
           options={{ href: null, tabBarStyle: { display: "none" } }}
         />
         <Tabs.Screen
+          name="concerns"
+          options={{ href: null, tabBarStyle: { display: "none" } }}
+        />
+        <Tabs.Screen
           name="competencies/[childId]"
           options={{ href: null, tabBarStyle: { display: "none" } }}
         />
@@ -105,7 +109,7 @@ export default function ParentLayout() {
       {loading ? (
         <View
           pointerEvents="auto"
-          style={[StyleSheet.absoluteFillObject, { zIndex: 100 }]}
+          style={[StyleSheet.absoluteFill, { zIndex: 100 }]}
           className="bg-gray-50"
         >
           <ParentLoadingState

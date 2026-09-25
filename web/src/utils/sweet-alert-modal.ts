@@ -110,6 +110,37 @@ export const showTeacherCredentialsModal = (
   });
 };
 
+export const showCaptainCredentialsModal = (
+  firstName: string,
+  lastName: string,
+  credentials: TeacherCredentials,
+  emailDelivery?: TeacherEmailDelivery,
+) => {
+  const deliveryMessage = emailDelivery?.sent
+    ? `Credentials were sent to <strong>${emailDelivery.to}</strong>.`
+    : emailDelivery?.message ||
+      "Email delivery failed. Copy and share the temporary credentials securely.";
+
+  return Swal.fire({
+    title: "Barangay Captain Account Created",
+    html: `
+      <div style="padding: 16px; text-align: left;">
+        <p><strong>Name:</strong> ${firstName} ${lastName}</p>
+        <p><strong>Email:</strong> ${credentials.email}</p>
+        <p><strong>Temporary password:</strong><br>
+          <span style="font-family: monospace; background: #f3f4f6; padding: 8px 12px; border-radius: 6px; display: inline-block; margin-top: 6px;">${credentials.tempPassword}</span>
+        </p>
+        <p style="margin-top: 16px; color: ${emailDelivery?.sent ? "#155e75" : "#9a3412"};">${deliveryMessage}</p>
+        <p style="margin-top: 12px; color: #92400e;">The Captain must change this password on first login.</p>
+      </div>
+    `,
+    icon: "success",
+    confirmButtonText: "Done",
+    confirmButtonColor: "#0D9488",
+    allowOutsideClick: false,
+  });
+};
+
 export const showResetPasswordModal = (credentials: TeacherCredentials) => {
   return Swal.fire({
     title: "Password Reset Successful",
@@ -282,7 +313,7 @@ export interface ViewUser {
   firstName: string;
   lastName: string;
   email: string;
-  role: "admin" | "teacher" | "parent";
+  role: "system_admin" | "barangay_captain" | "teacher" | "parent";
   isActive?: boolean;
 }
 
@@ -347,13 +378,13 @@ export const handleViewUser = (user: ViewUser) => {
 };
 
 export const showChangeChildStatusModal = async (
-  _childName: string,
+  childName: string,
   currentStatus: string,
 ): Promise<string | null> => {
   const result = await Swal.fire({
     title: "Change Status",
     html: `
-      <p class="text-gray-600 mb-4">Update status for this child</p>
+      <p class="text-gray-600 mb-4">Update status for ${childName}</p>
       <select id="child-status-select" class="swal2-input w-full">
         <option value="Active" ${currentStatus === "Active" ? "selected" : ""}>Active</option>
         <option value="Inactive" ${currentStatus === "Inactive" ? "selected" : ""}>Inactive</option>
@@ -375,11 +406,11 @@ export const showChangeChildStatusModal = async (
 };
 
 export const showUnlinkParentConfirm = async (
-  _childName: string,
+  childName: string,
 ): Promise<boolean> => {
   const result = await Swal.fire({
     title: "Unlink Parent?",
-    text: "Remove the parent association for this child?",
+    text: `Remove the parent association for ${childName}?`,
     icon: "warning",
     showCancelButton: true,
     confirmButtonColor: "#DC2626",

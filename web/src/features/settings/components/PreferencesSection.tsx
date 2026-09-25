@@ -18,8 +18,8 @@ export const PreferencesSection = ({
   return (
     <div className="space-y-4">
       <ToggleRow
-        title="Require MFA on admin login"
-        description="If enabled, every admin sign-in requires an OTP sent to email."
+        title="Require email OTP on login"
+        description="If enabled, every sign-in requires a one-time code sent to your account email."
         checked={preferences.adminMfaEnabled}
         onChange={(checked) => onPreferenceToggle("adminMfaEnabled", checked)}
       />

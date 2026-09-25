@@ -20,6 +20,7 @@ import {
   Clock3,
   KeyRound,
   MessageCircle,
+  MessagesSquare,
   RefreshCw,
   School,
   Utensils,
@@ -47,6 +48,8 @@ const PARENT_NOTICE_TONE: Record<
   missed_meal_alert: "orange",
   pickup_code_generated: "blue",
   child_released: "emerald",
+  concern_reply: "blue",
+  concern_status_changed: "emerald",
 };
 
 function getChildRecordStatus(record: any, childId?: string): string | null {
@@ -413,6 +416,27 @@ export default function ParentDashboardScreen() {
             </Text>
           </View>
           <ChevronRight size={20} color="#FFFFFF" />
+        </Pressable>
+
+        <Pressable
+          onPress={() => router.push("/(parent)/concerns")}
+          accessibilityRole="button"
+          accessibilityLabel="Concerns and Feedback"
+          accessibilityHint="Opens official concerns handled by the barangay captain"
+          className="mb-6 min-h-14 flex-row items-center rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 shadow-sm active:opacity-85"
+        >
+          <View className="h-10 w-10 items-center justify-center rounded-xl bg-sky-600">
+            <MessagesSquare size={21} color="#FFFFFF" />
+          </View>
+          <View className="ml-3 flex-1">
+            <Text className="text-base font-extrabold text-gray-900">
+              Concerns &amp; Feedback
+            </Text>
+            <Text className="mt-0.5 text-sm text-gray-600">
+              Send and track an official message to the captain
+            </Text>
+          </View>
+          <ChevronRight size={20} color="#0369A1" />
         </Pressable>
 
         {/* Section 1: Records and History */}

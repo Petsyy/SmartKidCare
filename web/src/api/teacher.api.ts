@@ -6,7 +6,7 @@ export interface TeacherData {
   lastName: string;
   email: string;
   phone: string;
-  daycareCenterId: string;
+  daycareCenterId?: string;
   status?: "Active" | "Inactive";
 }
 

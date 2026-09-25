@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/src/hooks/use-auth";
@@ -22,8 +22,7 @@ export const useParentAttendance = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { isAuthenticated } = useAuth();
-  const [children, setChildren] = useState<Child[]>([]);
-  const [selectedChild, setSelectedChild] = useState<Child | null>(null);
+  const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
   const [showChildDropdown, setShowChildDropdown] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
@@ -45,19 +44,14 @@ export const useParentAttendance = () => {
     },
   });
 
-  useEffect(() => {
-    setChildren(childrenData);
-    setSelectedChild((currentSelectedChild) => {
-      if (!childrenData.length) return null;
-      if (currentSelectedChild) {
-        const matchedChild = childrenData.find(
-          (child) => child._id === currentSelectedChild._id,
-        );
-        if (matchedChild) return matchedChild;
-      }
-      return childrenData[0];
-    });
-  }, [childrenData]);
+  const children = childrenData;
+  const selectedChild = useMemo(
+    () =>
+      children.find((child) => child._id === selectedChildId) ??
+      children[0] ??
+      null,
+    [children, selectedChildId],
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -181,7 +175,7 @@ export const useParentAttendance = () => {
     insets,
     children,
     selectedChild,
-    setSelectedChild,
+    setSelectedChild: (child: Child) => setSelectedChildId(child._id),
     loading,
     showChildDropdown,
     setShowChildDropdown,

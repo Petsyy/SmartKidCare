@@ -19,10 +19,11 @@ export function SwipeableChildCard({
 }: SwipeableChildCardProps) {
   
   const guardianCount = childCardProps.guardianCount ?? 0;
+  const isInactive = childCardProps.isInactive;
   
   const renderRightActions = (progress: any, dragX: any) => {
-    // Hide swipe action if they already have max guardians or if no handler is provided
-    if (guardianCount >= 5 || !onAddGuardian) return null;
+    // Hide swipe action if they already have max guardians, no handler is provided, or if inactive
+    if (guardianCount >= 5 || !onAddGuardian || isInactive) return null;
 
     const trans = dragX.interpolate({
       inputRange: [-80, 0],

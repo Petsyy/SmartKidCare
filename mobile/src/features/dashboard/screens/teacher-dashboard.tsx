@@ -391,7 +391,7 @@ export default function TeacherDashboardScreen() {
           <View className="mt-3 flex-row gap-3">
             <TeacherOverviewStatCard
               icon={HeartPulse}
-              value={underweightCount + severelyUnderweightCount}
+              value={(underweightCount + severelyUnderweightCount) || "--"}
               label="Underweight"
               caption="Latest health metrics"
               tone="rose"
@@ -403,7 +403,7 @@ export default function TeacherDashboardScreen() {
             />
             <TeacherOverviewStatCard
               icon={HeartPulse}
-              value={overweightCount + obeseCount}
+              value={(overweightCount + obeseCount) || "--"}
               label="Overweight / Obese"
               caption="Latest health metrics"
               tone="orange"

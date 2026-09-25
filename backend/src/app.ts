@@ -9,6 +9,7 @@ import authRoutes from "./modules/auth/routes/auth.routes";
 import blockchainRoutes from "./modules/blockchain/blockchain.routes";
 import childRoutes from "./modules/child/routes/child.routes";
 import competencyRoutes from "./modules/competencies/routes/competency.routes";
+import concernRoutes from "./modules/concerns/routes/concern.routes";
 import documentsRoutes from "./modules/documents/routes/documents.routes";
 import enrollmentRoutes from "./modules/enrollment/routes/enrollment.routes";
 import feedingRoutes from "./modules/feeding/routes/feeding.routes";
@@ -50,6 +51,7 @@ app.use("/api/enrollment", enrollmentRoutes);
 app.use("/api/blockchain", blockchainRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/competencies", competencyRoutes);
+app.use("/api/concerns", concernRoutes);
 app.use("/api/nutrition", nutritionRoutes);
 app.use("/api/pickup", pickupRoutes);
 

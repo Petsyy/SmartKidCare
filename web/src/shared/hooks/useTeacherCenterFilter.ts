@@ -15,20 +15,14 @@ function pickDefaultTeacher(items: User[]): User | null {
     ),
   );
 
-  const bonuanGueset = sorted.find((teacher) =>
-    `${teacher.daycareCenter?.name || ""} ${teacher.daycareCenter?.barangay || ""}`
-      .toLowerCase()
-      .includes("bonuan gueset"),
-  );
-
-  return bonuanGueset ?? sorted[0] ?? null;
+  return sorted[0] ?? null;
 }
 
 export function useTeacherCenterFilter({
   teacherId,
   updateTeacherFilter,
 }: UseTeacherCenterFilterOptions) {
-  const [centerId, setCenterId] = useState("");
+
   const [initialized, setInitialized] = useState(false);
 
   const {
@@ -51,46 +45,21 @@ export function useTeacherCenterFilter({
         pickDefaultTeacher(activeTeachers) ?? pickDefaultTeacher(teachers);
 
       if (defaultTeacher) {
-        setCenterId(defaultTeacher.daycareCenter?._id ?? "");
         updateTeacherFilter(defaultTeacher._id);
       } else {
-        setCenterId("");
         updateTeacherFilter("");
       }
       setInitialized(true);
     }
   }, [teachers, initialized, updateTeacherFilter]);
 
-  const centerOptions = useMemo(
-    () =>
-      Array.from(
-        new Map(
-          teachers
-            .filter((teacher) => Boolean(teacher.daycareCenter?._id))
-            .map((teacher) => [
-              teacher.daycareCenter!._id,
-              teacher.daycareCenter as NonNullable<User["daycareCenter"]>,
-            ]),
-        ).values(),
-      ).sort((left, right) =>
-        `${left.code} ${left.barangay} ${left.name}`.localeCompare(
-          `${right.code} ${right.barangay} ${right.name}`,
-        ),
-      ),
-    [teachers],
-  );
-
   const teacherOptions = useMemo(() => {
-    const sortedTeachers = [...teachers].sort((left, right) =>
+    return [...teachers].sort((left, right) =>
       `${left.lastName}, ${left.firstName}`.localeCompare(
         `${right.lastName}, ${right.firstName}`,
       ),
     );
-    if (!centerId) return sortedTeachers;
-    return sortedTeachers.filter(
-      (teacher) => teacher.daycareCenter?._id === centerId,
-    );
-  }, [centerId, teachers]);
+  }, [teachers]);
 
   useEffect(() => {
     if (!initialized) return; // Wait for initial setup
@@ -113,9 +82,7 @@ export function useTeacherCenterFilter({
     teachers,
     teachersLoading,
     teachersError,
-    centerId,
-    setCenterId,
-    centerOptions,
+
     teacherOptions,
   };
 }

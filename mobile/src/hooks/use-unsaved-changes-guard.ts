@@ -4,7 +4,7 @@ import {
   useNavigation,
   usePreventRemove,
   type NavigationAction,
-} from "@react-navigation/native";
+} from "expo-router/react-navigation";
 
 type UnsavedChangesGuardOptions = {
   hasUnsavedChanges: boolean;

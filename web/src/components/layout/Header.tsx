@@ -18,7 +18,9 @@ export default function Header({
   const { user } = useAuthSession();
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const adminEmail = user?.email || "admin@smartkidcare.com";
+  const adminEmail = user?.email || "web@smartkidcare.com";
+  const roleLabel = user?.role === "system_admin" ? "System Administrator" : "Barangay Captain";
+  const displayName = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || roleLabel;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -111,10 +113,10 @@ export default function Header({
               </div>
               <div className="text-sm text-left hidden sm:block">
                 <div className="font-semibold text-gray-900 dark:text-slate-200">
-                  Admin User
+                  {displayName}
                 </div>
                 <div className="text-xs text-gray-500 dark:text-slate-400">
-                  {adminEmail}
+                  {roleLabel}
                 </div>
               </div>
             </button>

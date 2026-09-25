@@ -20,13 +20,13 @@ export function AuthLayout({
   keyboardDismissMode = "on-drag",
 }: AuthLayoutProps) {
   return (
-    <LinearGradient colors={gradientColors} className="flex-1">
+    <LinearGradient colors={gradientColors} style={{ flex: 1 }}>
       <StatusBar
         barStyle="dark-content"
         translucent
         backgroundColor="transparent"
       />
-      <SafeAreaView className="flex-1" edges={["top"]}>
+      <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
         {onBack && (
           <Pressable
             onPress={onBack}
@@ -38,9 +38,11 @@ export function AuthLayout({
 
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
-          className="flex-1 justify-center px-6"
+          style={{ flex: 1 }}
+          className="justify-center px-6"
         >
           <ScrollView
+            style={{ flex: 1 }}
             contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"

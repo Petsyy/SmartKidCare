@@ -50,6 +50,8 @@ export const childrenQueryKeys = {
     ["teacherChildrenOverview"] as const,
   teacherChildDetails: (childId: string | null) =>
     ["teacherChildDetails", childId] as const,
+  teacherChildEdit: (childId: string | null) =>
+    ["teacherChildEdit", childId] as const,
   parentChildDetails: (
     childId: string | null,
     viewerEmail: string | undefined,
@@ -66,6 +68,12 @@ export const competencyQueryKeys = {
   competencyHistory: (childId: string | null) => ["competencyHistory", childId] as const,
 };
 
+export const concernQueryKeys = {
+  concerns: (page: number) => ["concerns", page] as const,
+  concernRoot: () => ["concerns"] as const,
+  concernDetail: (id: string) => ["concern", id] as const,
+};
+
 export const mobileQueryKeys = {
   ...attendanceQueryKeys,
   ...feedingQueryKeys,
@@ -75,4 +83,5 @@ export const mobileQueryKeys = {
   ...childrenQueryKeys,
   ...requestsQueryKeys,
   ...competencyQueryKeys,
+  ...concernQueryKeys,
 };

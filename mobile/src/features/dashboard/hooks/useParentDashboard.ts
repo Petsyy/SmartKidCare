@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useAuth } from "@/src/hooks/use-auth";
 import { getMyChildren, Child } from "@/src/api/parent.api";
 import {
@@ -43,8 +43,6 @@ export interface ParentDashboardData {
 
 export function useParentDashboard(): ParentDashboardData {
   const { isAuthenticated, user } = useAuth();
-  const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
-
   const [archivedIds, setArchivedIds] = useState<Set<string>>(new Set());
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
 
@@ -65,7 +63,7 @@ export function useParentDashboard(): ParentDashboardData {
       return () => {
         isMounted = false;
       };
-    }, [user?.id])
+    }, [user])
   );
 
   const { data, isLoading, isRefetching, error, refetch } = useQuery({
@@ -101,16 +99,7 @@ export function useParentDashboard(): ParentDashboardData {
       .slice(0, 2);
   }, [recentNotificationsRaw, archivedIds, deletedIds]);
 
-  useEffect(() => {
-    if (!selectedChildId && children.length > 0) {
-      setSelectedChildId(children[0]._id);
-    }
-  }, [children, selectedChildId, setSelectedChildId]);
-
-  const selectedChild = useMemo(() => {
-    if (!selectedChildId) return children[0] ?? null;
-    return children.find((c) => c._id === selectedChildId) ?? children[0] ?? null;
-  }, [children, selectedChildId]);
+  const selectedChild = children[0] ?? null;
 
   const stats = useMemo(() => {
     if (!selectedChild) return { present: 0, absent: 0, mealsCompleted: 0, mealsMissed: 0 };

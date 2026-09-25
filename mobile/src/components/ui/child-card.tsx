@@ -9,6 +9,7 @@ type Props = {
   feeding?: "Finished" | "Missed" | "Not Recorded";
   lastUpdated?: string;
   guardianCount?: number;
+  isInactive?: boolean;
   onAddGuardian?: () => void;
   onPress?: () => void;
 };
@@ -21,6 +22,7 @@ export default function ChildCard({
   feeding = "Not Recorded",
   lastUpdated = "No data",
   guardianCount,
+  isInactive,
   onAddGuardian,
   onPress,
 }: Props) {
@@ -53,9 +55,16 @@ export default function ChildCard({
                 <Text className="text-xl font-black text-gray-900" numberOfLines={1}>
                   {name}
                 </Text>
-                <Text className="text-base font-bold text-gray-500 mt-0.5">
-                  {age} years old • {gender}
-                </Text>
+                <View className="flex-row items-center mt-0.5">
+                  <Text className="text-base font-bold text-gray-500">
+                    {age} years old • {gender}
+                  </Text>
+                  {isInactive && (
+                    <View className="ml-2 px-2 py-0.5 rounded bg-gray-200">
+                      <Text className="text-xs font-bold text-gray-700">INACTIVE</Text>
+                    </View>
+                  )}
+                </View>
               </View>
             </View>
 

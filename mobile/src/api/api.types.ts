@@ -326,11 +326,101 @@ export interface ParentNotificationFeedItem {
     | "feeding_submitted"
     | "missed_meal_alert"
     | "pickup_code_generated"
-    | "child_released";
+    | "child_released"
+    | "concern_reply"
+    | "concern_status_changed";
   title: string;
   message: string;
   timeLabel: string;
   actionLabel: string;
+}
+
+export type ConcernCategory =
+  | "child_safety"
+  | "attendance"
+  | "feeding_nutrition"
+  | "child_records"
+  | "daycare_service"
+  | "feedback_suggestion"
+  | "other";
+
+export type ConcernStatus =
+  | "new"
+  | "acknowledged"
+  | "in_progress"
+  | "resolved"
+  | "closed";
+
+export interface ConcernPerson {
+  _id: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  role?: "parent" | "barangay_captain";
+}
+
+export interface ConcernChild {
+  _id: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  studentId?: string;
+}
+
+export interface ConcernMessage {
+  _id: string;
+  sender: ConcernPerson | string;
+  senderRole: "parent" | "barangay_captain";
+  body: string;
+  createdAt: string;
+}
+
+export interface ConcernStatusHistoryItem {
+  _id: string;
+  previousStatus: ConcernStatus | null;
+  newStatus: ConcernStatus;
+  changedBy: ConcernPerson | string;
+  changedByRole: "parent" | "barangay_captain";
+  note?: string;
+  changedAt: string;
+}
+
+export interface ParentConcernSummary {
+  _id: string;
+  parent: ConcernPerson;
+  child: ConcernChild;
+  category: ConcernCategory;
+  subject: string;
+  status: ConcernStatus;
+  messages: ConcernMessage[];
+  lastActivityAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ParentConcernDetail extends ParentConcernSummary {
+  statusHistory: ConcernStatusHistoryItem[];
+  acknowledgedAt?: string | null;
+  resolvedAt?: string | null;
+  closedAt?: string | null;
+}
+
+export interface ConcernPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface ConcernListResponse {
+  success: true;
+  data: ParentConcernSummary[];
+  pagination: ConcernPagination;
+}
+
+export interface ConcernDetailResponse {
+  success: true;
+  data: ParentConcernDetail;
 }
 
 export interface PickupEligibleChild {

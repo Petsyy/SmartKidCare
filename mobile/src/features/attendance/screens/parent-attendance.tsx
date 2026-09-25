@@ -47,7 +47,7 @@ export default function ViewAttendanceDetails() {
       loading={loading}
       insetsTop={insets.top}
       onBack={() => router.push("/(parent)")}
-      children={children}
+      childOptions={children}
       selectedChild={selectedChild}
       onSelectChild={setSelectedChild}
       showChildDropdown={showChildDropdown}

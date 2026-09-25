@@ -18,7 +18,7 @@ type MonthlyRecordViewerProps<TDetails> = {
   loading: boolean;
   insetsTop: number;
   onBack: () => void;
-  children: Child[];
+  childOptions: Child[];
   selectedChild: Child | null;
   onSelectChild: (child: Child) => void;
   showChildDropdown: boolean;
@@ -55,7 +55,7 @@ export function MonthlyRecordViewer<TDetails>({
   loading,
   insetsTop,
   onBack,
-  children,
+  childOptions,
   selectedChild,
   onSelectChild,
   showChildDropdown,
@@ -211,13 +211,13 @@ export function MonthlyRecordViewer<TDetails>({
       >
         {/* Child Selection Bar */}
         <View className="mb-5">
-          {children.length > 1 ? (
+          {childOptions.length > 1 ? (
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
               className="flex-row py-1"
             >
-              {children.map((child) => {
+              {childOptions.map((child) => {
                 const isSelected = selectedChild?._id === child._id;
                 return (
                   <Pressable
@@ -275,7 +275,7 @@ export function MonthlyRecordViewer<TDetails>({
                     : "Child Record"}
                 </Text>
               </View>
-              {showChildDropdown && children.length > 1 ? (
+              {showChildDropdown && childOptions.length > 1 ? (
                 <ChevronDown size={20} color="#6B7280" />
               ) : null}
             </View>

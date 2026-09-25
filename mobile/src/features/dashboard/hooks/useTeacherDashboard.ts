@@ -64,7 +64,7 @@ export function useTeacherDashboard(): TeacherDashboardData {
       return () => {
         isMounted = false;
       };
-    }, [user?.id])
+    }, [user])
   );
 
   const {

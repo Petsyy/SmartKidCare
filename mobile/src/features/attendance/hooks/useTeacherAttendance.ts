@@ -66,6 +66,8 @@ export const useTeacherAttendance = () => {
   useEffect(() => {
     if (!data) return;
     if (data.todayRecord) {
+      // Query completion intentionally hydrates the editable attendance draft.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsReadOnly(true);
       const existingAttendance: Record<string, boolean> = {};
       data.todayRecord.records.forEach((record: any) => {
@@ -84,6 +86,8 @@ export const useTeacherAttendance = () => {
   }, [data]);
 
   useEffect(() => {
+    // Keep draft keys aligned when the assigned-child query changes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAttendance((currentAttendance) => {
       const nextAttendance: Record<string, boolean> = {};
 

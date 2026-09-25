@@ -27,8 +27,9 @@ export const login = async (
     return data;
   }
 
-  if ((data as any).user?.role === "admin") {
-    throw new Error("Admin accounts cannot log in on the mobile app");
+  const role = (data as any).user?.role;
+  if (role !== "teacher" && role !== "parent") {
+    throw new Error("This account must use the web portal");
   }
 
   return data;

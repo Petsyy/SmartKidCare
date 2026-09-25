@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
 import { View, ActivityIndicator } from "react-native";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/src/hooks/use-auth";
 import { getMyChildren } from "@/src/api/parent.api";
+import { mobileQueryKeys } from "@/src/lib/query-keys";
 
 type Props = {
   children: React.ReactNode;
@@ -9,28 +10,12 @@ type Props = {
 
 export default function ParentGate({ children }: Props) {
   const { isAuthenticated } = useAuth();
-  const [childrenList, setChildrenList] = useState<unknown[] | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const fetchChildren = async () => {
-    if (!isAuthenticated) {
-      setChildrenList([]);
-      setLoading(false);
-      return;
-    }
-    try {
-      const data = await getMyChildren();
-      setChildrenList(data);
-    } catch {
-      setChildrenList([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchChildren();
-  }, [isAuthenticated]);
+  const { isLoading: loading } = useQuery({
+    queryKey: mobileQueryKeys.parentChildrenDashboard(),
+    queryFn: getMyChildren,
+    enabled: isAuthenticated,
+    retry: false,
+  });
 
   if (loading) {
     return (

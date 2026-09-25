@@ -76,6 +76,7 @@ export default function AdminSettings() {
     preferences,
     setPreferences,
     isAdmin,
+    role,
     isLoading,
     loadError,
     loadSettings,
@@ -87,6 +88,9 @@ export default function AdminSettings() {
 
   const [activeSection, setActiveSection] =
     useState<SettingsSectionId>("profile");
+  const visibleSections = role === "system_admin"
+    ? SETTINGS_SECTIONS
+    : SETTINGS_SECTIONS.filter((section) => section.id !== "system");
   const [isProfileEditing, setIsProfileEditing] = useState(false);
   const [profileSnapshot, setProfileSnapshot] =
     useState<AdminProfileForm | null>(null);
@@ -235,11 +239,11 @@ export default function AdminSettings() {
       setProfileSnapshot(null);
       resetProfileForm(savedProfile);
       await showAdminProfileSavedModal();
-    } catch (error: any) {
+    } catch (error: unknown) {
       setProfileState({
         saving: false,
         success: null,
-        error: error?.message || "Failed to update profile.",
+        error: error instanceof Error ? error.message : "Failed to update profile.",
       });
     }
   };
@@ -253,11 +257,11 @@ export default function AdminSettings() {
         success: "Preferences saved successfully.",
         error: null,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       setPreferenceState({
         saving: false,
         success: null,
-        error: error?.message || "Failed to save preferences.",
+        error: error instanceof Error ? error.message : "Failed to save preferences.",
       });
     }
   };
@@ -319,8 +323,8 @@ export default function AdminSettings() {
 
   return (
     <Layout
-      activeItem="settings"
-      breadcrumbs={["Admin", "Settings"]}
+      activeItem={role === "system_admin" ? "system/settings" : "monitoring/settings"}
+      breadcrumbs={[role === "system_admin" ? "System Admin" : "Barangay Captain", "Settings"]}
       onNavigate={(path) => navigate(`/${path}`)}
     >
       <div className="space-y-6 p-8">
@@ -384,7 +388,7 @@ export default function AdminSettings() {
                 Settings Menu
               </p>
               <div className="mt-4 space-y-2">
-                {SETTINGS_SECTIONS.map((section) => {
+                {visibleSections.map((section) => {
                   const Icon = section.icon;
                   const isActive = section.id === activeSection;
 
@@ -456,7 +460,7 @@ export default function AdminSettings() {
                 />
               )}
 
-              {activeSection === "system" && <SystemSection />}
+              {activeSection === "system" && role === "system_admin" && <SystemSection />}
 
               {activeSection === "security" && (
                 <SecuritySection

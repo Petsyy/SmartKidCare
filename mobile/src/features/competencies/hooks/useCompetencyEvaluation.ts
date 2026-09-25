@@ -55,6 +55,8 @@ export function useCompetencyEvaluation(
         newLevels[entry.competency._id] = entry.level;
         if (entry.remarks) newRemarks[entry.competency._id] = entry.remarks;
       }
+      // A period change loads a distinct server-backed form snapshot.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLevels(newLevels);
       setRemarks(newRemarks);
       setGeneralNotes(selectedEvaluation.generalNotes || "");

@@ -22,23 +22,6 @@ const nameSchema = (label: string, minLength = 2, maxLength = 50) =>
       message: `${label} contains invalid characters.`,
     });
 
-const emailSchema = (label: string) =>
-  z
-    .string()
-    .trim()
-    .min(1, `${label} is required.`)
-    .email(`${label} is invalid.`);
-
-const phoneSchema = (_label: string) =>
-  z
-    .string()
-    .trim()
-    .min(1, "Phone number is required.")
-    .refine((value) => {
-      const digitsOnly = value.replace(/\D/g, "");
-      return /^09\d{9}$/.test(digitsOnly) || /^639\d{9}$/.test(digitsOnly);
-    }, `Invalid phone number.`);
-
 const dateOfBirthSchema = z
   .string()
   .refine((val) => val.length > 0, "Date of birth is required.")
@@ -195,83 +178,3 @@ export const validateAddChildForParentForm = (
   return errors;
 };
 
-// AddTeacher Schema and Types
-export const addTeacherSchema = z.object({
-  firstName: nameSchema("First name", 2, 50),
-  middleName: nameSchema("Middle name", 2, 50),
-  lastName: nameSchema("Last name", 2, 50),
-  email: emailSchema("Email"),
-  phone: phoneSchema("Phone"),
-  daycareCenterId: z.string().trim().min(1, "Assigned center is required."),
-});
-
-const createAddTeacherSchema = () => addTeacherSchema;
-
-export type AddTeacherFormValues = z.infer<
-  ReturnType<typeof createAddTeacherSchema>
->;
-export type AddTeacherField = keyof AddTeacherFormValues;
-export type AddTeacherFormErrors = Partial<Record<AddTeacherField, string>>;
-
-export const validateAddTeacherField = (
-  field: AddTeacherField,
-  values: AddTeacherFormValues,
-): string | undefined => {
-  const schema = createAddTeacherSchema();
-
-  try {
-    const fieldSchema = schema.shape[field];
-    if (fieldSchema) {
-      fieldSchema.parse(values[field]);
-    }
-    return undefined;
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      const fieldError = error.issues[0];
-      return fieldError?.message;
-    }
-    return undefined;
-  }
-};
-
-export const validateAddTeacherForm = (form: AddTeacherFormValues) => {
-  const schema = createAddTeacherSchema();
-  const errors: AddTeacherFormErrors = {};
-
-  try {
-    schema.parse(form);
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      error.issues.forEach((err: z.ZodIssue) => {
-        const field = err.path[0] as AddTeacherField;
-        errors[field] = err.message;
-      });
-    }
-  }
-
-  return errors;
-};
-
-// EditChild Schema
-export const editChildSchema = createAddChildForParentSchema().and(
-  z.object({
-    teacherId: z.string().optional().nullable(),
-    homeAddress: z.string().trim().min(5, "Complete home address is required.").max(300),
-    parentRelationship: z.enum(["Mother", "Father", "Guardian", "Grandparent", "Other"]),
-    weight: z.string().trim().refine((value) => Number(value) >= 5 && Number(value) <= 50, "Weight must be between 5 and 50 kg."),
-    height: z.string().trim().refine((value) => Number(value) >= 60 && Number(value) <= 150, "Height must be between 60 and 150 cm."),
-  })
-);
-
-export type EditChildFormValues = z.infer<typeof editChildSchema>;
-
-// EditUser Schema
-export const editUserSchema = z.object({
-  firstName: nameSchema("First name", 2, 50),
-  middleName: nameSchema("Middle name", 2, 50),
-  lastName: nameSchema("Last name", 2, 50),
-  email: emailSchema("Email"),
-  phone: phoneSchema("Phone"),
-});
-
-export type EditUserFormValues = z.infer<typeof editUserSchema>;

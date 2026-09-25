@@ -68,13 +68,15 @@ export function useAdminSettings() {
       setProfile(mappedProfile);
       setPreferences(mappedPreferences);
       return {
-        isAdmin: user.role === "admin",
+        isAdmin: user.role === "system_admin" || user.role === "barangay_captain",
+        role: user.role,
         profile: mappedProfile,
         preferences: mappedPreferences,
       };
     },
   });
   const isAdmin = data?.isAdmin ?? false;
+  const role = data?.role;
   const loadError = error instanceof Error ? error.message : null;
   const profileMutation = useMutation({
     mutationFn: async (nextProfile: AdminProfileForm) => {
@@ -134,9 +136,12 @@ export function useAdminSettings() {
     otp: string,
   ) => {
     await changeCurrentPassword(currentPassword, newPassword, otp);
+    await queryClient.invalidateQueries({ queryKey: webQueryKeys.authSession() });
+    await queryClient.invalidateQueries({ queryKey: webQueryKeys.adminSettings() });
   };
 
   return {
+    role,
     profile,
     setProfile,
     preferences,

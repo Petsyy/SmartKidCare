@@ -1,13 +1,14 @@
 import {
   LayoutDashboard,
-  Utensils,
   BarChart3,
   Settings,
-  Building2,
   UsersRound,
   UserCog,
+  Utensils,
+  MessagesSquare,
 } from "lucide-react";
 import { useSystemSettings } from "../../context/SystemSettingsContext";
+import { useAuthSession } from "../auth/useAuthSession";
 
 type NavItem = {
   icon: React.ElementType;
@@ -20,35 +21,26 @@ type NavGroup = {
   items: NavItem[];
 };
 
-const navGroups: NavGroup[] = [
-  {
-    groupName: "MAIN",
-    items: [{ icon: LayoutDashboard, label: "Dashboard", path: "dashboard" }],
-  },
-  {
-    groupName: "OPERATIONS",
-    items: [
-      { icon: Building2, label: "Centers", path: "centers" },
-      { icon: UsersRound, label: "Children Records", path: "children" },
-    ],
-  },
+const captainNavGroups: NavGroup[] = [
   {
     groupName: "MONITORING",
     items: [
-      { icon: Utensils, label: "Feeding Program", path: "feeding" },
+      { icon: LayoutDashboard, label: "Dashboard", path: "monitoring/dashboard" },
+      { icon: UsersRound, label: "Daycare Records", path: "monitoring/records" },
+      { icon: Utensils, label: "Feeding Monitoring", path: "monitoring/feeding" },
+      { icon: MessagesSquare, label: "Parent Concerns", path: "monitoring/concerns" },
     ],
   },
   {
-    groupName: "MANAGEMENT",
-    items: [{ icon: UserCog, label: "User Management", path: "users" }],
-  },
-  {
     groupName: "INSIGHTS",
-    items: [{ icon: BarChart3, label: "Reports & Analytics", path: "reports" }],
+    items: [{ icon: BarChart3, label: "Reports & Analytics", path: "monitoring/reports" }],
   },
 ];
 
-const systemItem: NavItem = { icon: Settings, label: "Settings", path: "settings" };
+const systemAdminNavGroups: NavGroup[] = [
+  { groupName: "SYSTEM", items: [{ icon: LayoutDashboard, label: "Dashboard", path: "system/dashboard" }] },
+  { groupName: "MANAGEMENT", items: [{ icon: UserCog, label: "User Management", path: "system/users" }] },
+];
 
 type SidebarProps = {
   activeItem?: string;
@@ -60,6 +52,14 @@ export default function Sidebar({
   onNavigate,
 }: SidebarProps) {
   const { settings, loading } = useSystemSettings();
+  const { user } = useAuthSession();
+  const isSystemAdmin = user?.role === "system_admin";
+  const navGroups = isSystemAdmin ? systemAdminNavGroups : captainNavGroups;
+  const systemItem: NavItem = {
+    icon: Settings,
+    label: isSystemAdmin ? "Settings" : "Profile / Settings",
+    path: isSystemAdmin ? "system/settings" : "monitoring/settings",
+  };
 
   return (
     <aside className="fixed left-0 top-0 flex h-screen w-64 flex-col bg-[#0A101D] text-slate-400 transition-colors dark:bg-[#060913] border-r border-white/5 shadow-2xl z-50 font-sans">
@@ -79,7 +79,7 @@ export default function Sidebar({
               {loading ? "Loading..." : settings?.schoolName || "Smart KidCare"}
             </h1>
             <p className="text-[10px] font-bold text-teal-400/80 uppercase tracking-widest mt-1">
-              Admin Panel
+              {isSystemAdmin ? "System Administration" : "Captain Monitoring"}
             </p>
           </div>
         </div>

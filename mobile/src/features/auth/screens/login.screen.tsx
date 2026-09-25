@@ -150,24 +150,24 @@ export default function Login() {
   return (
     <LinearGradient
       colors={["#f0fdf4", "#dcfce7", "#bbf7d0"]}
-      className="flex-1"
+      style={{ flex: 1 }}
     >
       <StatusBar
         barStyle="dark-content"
         translucent
         backgroundColor="transparent"
       />
-      <SafeAreaView className="flex-1" edges={["top"]}>
+      <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
-          className="flex-1"
+          style={{ flex: 1 }}
         >
-          <View className="flex-1">
+          <View style={{ flex: 1 }}>
             <View className="absolute -top-16 -right-14 h-48 w-48 rounded-full bg-emerald-200/70" />
             <View className="absolute -bottom-20 -left-14 h-56 w-56 rounded-full bg-teal-200/50" />
 
             <ScrollView
-              className="flex-1"
+              style={{ flex: 1 }}
               contentContainerStyle={{
                 flexGrow: 1,
                 justifyContent: "center",
