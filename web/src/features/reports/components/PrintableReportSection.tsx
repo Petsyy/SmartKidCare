@@ -1,4 +1,4 @@
-﻿import {
+import {
   Bar,
   BarChart,
   CartesianGrid,
@@ -18,10 +18,8 @@ import type {
   ReportStudentListItem,
   ReportStudentListPagination,
   ReportSummary,
-  TrendPoint,
 } from "@/features/reports/hooks/useReportAnalytics";
 import {
-  formatDateKey,
   formatDateTime,
 } from "@/features/reports/hooks/useReportAnalytics";
 
@@ -32,8 +30,6 @@ const STUDENT_PAGE_SIZE_OPTIONS = [10, 20, 50];
 
 const GENDER_COLORS = ["#14b8a6", "#f472b6"];
 const AGE_COLOR = "#0f766e";
-const ATTENDANCE_COLOR = "#0d9488";
-const FEEDING_COLOR = "#3b82f6";
 
 type PrintableReportSectionProps = {
 
@@ -48,7 +44,6 @@ type PrintableReportSectionProps = {
   setStudentPage: (page: number) => void;
   studentPageSize: number;
   setStudentPageSize: (size: number) => void;
-  recentDailyRows: TrendPoint[];
 };
 
 export function PrintableReportSection({
@@ -63,7 +58,6 @@ export function PrintableReportSection({
   setStudentPage,
   setStudentPageSize,
   studentPageSize,
-  recentDailyRows,
 }: PrintableReportSectionProps) {
   const studentRangeLabel =
     studentListPagination.total === 0
@@ -82,8 +76,6 @@ export function PrintableReportSection({
       percentage: genderBreakdown.femalePercentage,
     },
   ];
-
-  const trendRows = [...recentDailyRows].reverse();
 
   return (
     <section className="print-report-sheet rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
@@ -304,29 +296,7 @@ export function PrintableReportSection({
         </div>
       </div>
 
-      <div className="print-trend-card print-card print-card-padding mt-6 rounded-xl border border-gray-200 p-6 dark:border-slate-700">
-        <div className="mb-3">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
-            Attendance and Feeding Trends
-          </h3>
-          <p className="text-sm text-gray-500 dark:text-slate-400">
-            Recent daily percentages across attendance and feeding records.
-          </p>
-        </div>
-        <div className="print-compact-chart print-trend-chart h-80" role="img" aria-label="Attendance and feeding trend chart">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={trendRows} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
-              <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="dateKey" tickFormatter={formatDateKey} tickLine={false} axisLine={false} />
-              <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={36} />
-              <Tooltip labelFormatter={(label) => formatDateKey(String(label))} />
-              <Legend />
-              <Bar dataKey="attendanceRate" name="Attendance Rate %" fill={ATTENDANCE_COLOR} radius={[4, 4, 0, 0]} maxBarSize={36} />
-              <Bar dataKey="feedingRate" name="Feeding Rate %" fill={FEEDING_COLOR} radius={[4, 4, 0, 0]} maxBarSize={36} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+
 
       <div className="print-table-card print-card-padding mt-6 print-page-break print-card rounded-xl border border-gray-200 p-6 dark:border-slate-700">
         <div className="mb-3">

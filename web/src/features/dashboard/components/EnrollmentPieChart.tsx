@@ -10,10 +10,10 @@ export function EnrollmentPieChart({ data }: EnrollmentPieChartProps) {
     <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
       <div className="mb-4">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
-          Center And Enrollment Overview
+          Bonuan Sabangan Enrollment Overview
         </h3>
         <p className="text-sm text-gray-500 dark:text-slate-400">
-          Distribution of your main child development metrics
+          Distribution of the center's child development metrics
         </p>
       </div>
 

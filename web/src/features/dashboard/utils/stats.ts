@@ -3,7 +3,6 @@ import type { DashboardStats } from "./types";
 export function computeStats(
   childrenArray: any[],
   usersArray: any[],
-  centersArray: any[],
   attendanceArray: any[],
   feedingArray: any[]
 ): DashboardStats {
@@ -17,10 +16,6 @@ export function computeStats(
       u.role === "teacher" &&
       u.isActive !== false &&
       Boolean(u.daycareCenter)
-  ).length;
-
-  const activeCenters = centersArray.filter(
-    (center: any) => center?.isActive !== false
   ).length;
 
   const fourPsBeneficiaries = childrenArray.filter(
@@ -70,15 +65,15 @@ export function computeStats(
 
   const todayAttendanceRate = allAttTotal
     ? Math.round((allAttPresent / allAttTotal) * 100)
-    : 0;
+    : null;
   const todayFeedingRate = allFeedTotal
     ? Math.round((allFeedCompleted / allFeedTotal) * 100)
-    : 0;
+    : null;
   const todayExceptions =
     allAttTotal - allAttPresent + (allFeedTotal - allFeedCompleted);
 
   return {
-    totalChildDevelopmentCenters: activeCenters,
+    totalChildDevelopmentCenters: 1,
     childDevelopmentWorkers: totalTeachers,
     totalEnrolledDaycares: totalChildren,
     fourPsBeneficiaries,
@@ -88,6 +83,10 @@ export function computeStats(
     totalTeachers,
     todayAttendanceRate,
     todayFeedingRate,
+    hasTodayAttendance: allAttTotal > 0,
+    hasTodayFeeding: allFeedTotal > 0,
+    todayAbsentCount: allAttTotal - allAttPresent,
+    todayMissedCount: allFeedTotal - allFeedCompleted,
     todayExceptions,
     underweightCount,
     severelyUnderweightCount,

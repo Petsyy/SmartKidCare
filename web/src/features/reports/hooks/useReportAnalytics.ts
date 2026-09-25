@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { API_BASE } from "@/api/config";
 import { webQueryKeys } from "@/lib/query-keys";
-import { getDaycareCenters } from "@/api/daycare-center.api";
 
 export type ReportDatePreset = "7d" | "30d" | "90d" | "all" | "custom";
 
@@ -163,11 +162,6 @@ export function useReportAnalytics() {
   const [customEndDate, setCustomEndDate] = useState("");
   const [studentPage, setStudentPage] = useState(1);
   const [studentPageSize, setStudentPageSize] = useState(10);
-  const [centerId, setCenterId] = useState("");
-  const { data: centers = [] } = useQuery({
-    queryKey: ["daycare-centers"],
-    queryFn: getDaycareCenters,
-  });
 
   const customRangeError = useMemo(() => {
     if (datePreset !== "custom") return null;
@@ -182,7 +176,7 @@ export function useReportAnalytics() {
 
   useEffect(() => {
     setStudentPage(1);
-  }, [datePreset, customStartDate, customEndDate, centerId]);
+  }, [datePreset, customStartDate, customEndDate]);
 
   const activeRange = useMemo<ActiveRange>(() => {
     const today = new Date();
@@ -232,9 +226,8 @@ export function useReportAnalytics() {
     }
     params.set("page", String(studentPage));
     params.set("limit", String(studentPageSize));
-    if (centerId) params.set("centerId", centerId);
     return params.toString();
-  }, [centerId, customEndDate, customStartDate, datePreset, studentPage, studentPageSize]);
+  }, [customEndDate, customStartDate, datePreset, studentPage, studentPageSize]);
 
   const {
     data,
@@ -290,7 +283,7 @@ export function useReportAnalytics() {
       "",
       "Summary",
       "Metric,Value",
-      `Total Child Development Centers,${summary.totalChildDevelopmentCenters}`,
+      `Bonuan Sabangan Daycare Center,${summary.totalChildDevelopmentCenters}`,
       `Child Development Workers,${summary.childDevelopmentWorkers}`,
       `Total Enrolled Children,${summary.totalEnrolledChildren}`,
       `Active Children,${summary.activeChildren}`,
@@ -316,7 +309,7 @@ export function useReportAnalytics() {
       lines.push([toCsvCell(row.age), toCsvCell(row.count)].join(","));
     });
 
-    lines.push("", "Student List", "Student ID,Name,Gender,Age,Status,Program Type,School Year,Teacher,Center,Enrollment Date");
+    lines.push("", "Student List", "Student ID,Name,Gender,Age,Status,Program Type,School Year,Teacher,Enrollment Date");
 
     studentList.forEach((student) => {
       lines.push(
@@ -329,7 +322,7 @@ export function useReportAnalytics() {
           toCsvCell(student.programType),
           toCsvCell(student.schoolYear),
           toCsvCell(student.teacherName),
-          toCsvCell(student.centerName),
+
           toCsvCell(student.enrollmentDate ? formatDateTime(student.enrollmentDate) : "-"),
         ].join(","),
       );
@@ -371,9 +364,7 @@ export function useReportAnalytics() {
   return {
     isLoading,
     error,
-    centers,
-    centerId,
-    setCenterId,
+
     datePreset,
     setDatePreset,
     customStartDate,

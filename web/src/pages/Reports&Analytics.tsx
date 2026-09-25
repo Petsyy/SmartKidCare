@@ -34,15 +34,13 @@ export default function ReportAnalytics() {
   const isAcademicsTab = location.pathname.includes("/academics");
   const showDateRangeControls = !isNutritionTab && !isAcademicsTab;
   const scopeDescription = isNutritionTab
-    ? "Nutrition progress is grouped by school year and the selected center."
-    : "Competency results are grouped by school year, period, and the selected center.";
+    ? "Nutrition progress for Bonuan Sabangan is grouped by school year."
+    : "Bonuan Sabangan competency results are grouped by school year and period.";
 
   const {
     isLoading,
     error,
-    centers,
-    centerId,
-    setCenterId,
+
     datePreset,
     setDatePreset,
     customStartDate,
@@ -61,7 +59,7 @@ export default function ReportAnalytics() {
     setStudentPage,
     studentPageSize,
     setStudentPageSize,
-    recentDailyRows,
+
     hasData,
     fetchReportData,
     downloadCsv,
@@ -70,8 +68,8 @@ export default function ReportAnalytics() {
 
   return (
     <Layout
-      activeItem="reports"
-      breadcrumbs={["Admin", "Reports & Analytics"]}
+      activeItem="monitoring/reports"
+      breadcrumbs={["Barangay Captain", "Reports & Analytics"]}
       onNavigate={(path) => navigate(`/${path}`)}
     >
       <div className="space-y-6 p-8">
@@ -96,17 +94,15 @@ export default function ReportAnalytics() {
           onRefresh={() => void fetchReportData()}
           onExport={downloadCsv}
           onPrint={printReport}
-          centers={centers}
-          centerId={centerId}
-          setCenterId={setCenterId}
+
           showDateRangeControls={showDateRangeControls}
           scopeDescription={scopeDescription}
         />
 
         <div className="no-print flex space-x-2 border-b border-gray-200 pb-4 dark:border-slate-800 overflow-x-auto">
-          <TabLink to="/reports/overview">Overview</TabLink>
-          <TabLink to="/reports/nutrition">Health & Nutrition</TabLink>
-          <TabLink to="/reports/academics">Academic Competency</TabLink>
+          <TabLink to="/monitoring/reports/overview">Overview</TabLink>
+          <TabLink to="/monitoring/reports/nutrition">Health & Nutrition</TabLink>
+          <TabLink to="/monitoring/reports/academics">Academic Competency</TabLink>
         </div>
 
         {error && <ErrorAlert message={error} />}
@@ -131,11 +127,9 @@ export default function ReportAnalytics() {
                 ) : (
                   <div className="no-print mt-4">
                     <ReportsOverview
-                      rangeLabel={activeRange.label}
-                      summary={summary}
                       genderBreakdown={genderBreakdown}
                       ageBreakdown={ageBreakdown}
-                      recentDailyRows={recentDailyRows}
+
                       studentList={studentList}
                       studentListPagination={studentListPagination}
                       studentPage={studentPage}
@@ -153,10 +147,7 @@ export default function ReportAnalytics() {
             path="nutrition"
             element={
               <div className="no-print">
-                <NutritionAnalytics
-                  key={centerId || "all-centers"}
-                  centerId={centerId}
-                />
+                <NutritionAnalytics />
               </div>
             }
           />
@@ -165,14 +156,14 @@ export default function ReportAnalytics() {
             path="academics"
             element={
               <div className="no-print">
-                <CompetencyAnalytics centerId={centerId} />
+                <CompetencyAnalytics />
               </div>
             }
           />
 
           <Route
             path="export"
-            element={<Navigate to="/reports/overview" replace />}
+            element={<Navigate to="/monitoring/reports/overview" replace />}
           />
         </Routes>
 
@@ -192,7 +183,6 @@ export default function ReportAnalytics() {
               setStudentPage={setStudentPage}
               studentPageSize={studentPageSize}
               setStudentPageSize={setStudentPageSize}
-              recentDailyRows={recentDailyRows}
             />
           )}
         </div>

@@ -1,80 +1,149 @@
-import { useMemo } from "react";
-import { API_BASE } from "@/api/config";
 import { useQuery } from "@tanstack/react-query";
+import { apiRequestOrThrow } from "@/api/api-client";
+import { getNutritionAnalytics } from "@/api/nutrition.api";
 import { webQueryKeys } from "@/lib/query-keys";
+import { computePieData } from "../utils";
 import {
-  processDashboardData,
-  DEFAULT_STATS,
   DEFAULT_DATE_META,
-  type DashboardStats,
+  DEFAULT_STATS,
   type ChartDataPoint,
-  type PieDataPoint,
   type DashboardDateMeta,
+  type DashboardStats,
+  type PieDataPoint,
 } from "../utils";
+import { getManilaDateKey, shiftDateKey } from "../utils";
 
-export type {
-  DashboardStats,
-  ChartDataPoint,
-  PieDataPoint,
-  DashboardDateMeta,
+type DashboardReport = {
+  summary: {
+    totalChildDevelopmentCenters: number;
+    childDevelopmentWorkers: number;
+    totalEnrolledChildren: number;
+    fourPsBeneficiaries: number;
+    regularAttendees: number;
+    activeChildren: number;
+    attendanceRate: number;
+    feedingRate: number;
+  };
+  recentDailyRows: Array<{
+    dateKey: string;
+    attendanceRate: number;
+    feedingRate: number;
+    present: number;
+    absent: number;
+    completed: number;
+    missed: number;
+  }>;
+  lastUpdatedAt: string;
 };
 
+export type { DashboardStats, ChartDataPoint, PieDataPoint, DashboardDateMeta };
+
+const dayLabel = (dateKey: string) =>
+  new Intl.DateTimeFormat("en-PH", {
+    weekday: "short",
+    timeZone: "Asia/Manila",
+  }).format(new Date(`${dateKey}T00:00:00+08:00`));
+
 export function useAdminDashboard() {
-  const { data, isLoading, refetch } = useQuery({
+  const {
+    data,
+    isLoading,
+    isFetching,
+    error: queryError,
+    refetch,
+    dataUpdatedAt,
+  } = useQuery({
     queryKey: webQueryKeys.adminDashboard(),
     queryFn: async () => {
-      const fetchJson = async (url: string) => {
-        const res = await fetch(url, {
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-        });
-        const payload = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          const message =
-            (payload as { message?: string; error?: string }).message ||
-            (payload as { message?: string; error?: string }).error ||
-            `Request failed (${res.status})`;
-          throw new Error(`${url}: ${message}`);
-        }
-        return payload;
-      };
-
-      const [
-        childrenPayload,
-        usersPayload,
-        attendancePayload,
-        feedingPayload,
-        centersPayload,
-      ] = await Promise.all([
-        fetchJson(`${API_BASE}/children`),
-        fetchJson(`${API_BASE}/auth/users`),
-        fetchJson(`${API_BASE}/records/attendance`),
-        fetchJson(`${API_BASE}/records/feeding`),
-        fetchJson(`${API_BASE}/admin/daycare-centers`),
+      const [report, nutrition] = await Promise.all([
+        apiRequestOrThrow<DashboardReport>(
+          "/reports/admin-analytics?datePreset=7d&limit=1",
+          "Failed to load dashboard analytics",
+        ),
+        getNutritionAnalytics({}),
       ]);
 
-      return processDashboardData(
-        childrenPayload,
-        usersPayload,
-        attendancePayload,
-        feedingPayload,
-        centersPayload
+      const todayKey = getManilaDateKey(new Date());
+      const today = report.recentDailyRows.find(
+        (row) => row.dateKey === todayKey,
       );
+      const todayAttendanceTotal = (today?.present ?? 0) + (today?.absent ?? 0);
+      const todayFeedingTotal = (today?.completed ?? 0) + (today?.missed ?? 0);
+      const hasTodayAttendance = todayAttendanceTotal > 0;
+      const hasTodayFeeding = todayFeedingTotal > 0;
+      const stats: DashboardStats = {
+        ...DEFAULT_STATS,
+        totalChildDevelopmentCenters: report.summary.totalChildDevelopmentCenters,
+        childDevelopmentWorkers: report.summary.childDevelopmentWorkers,
+        totalEnrolledDaycares: report.summary.totalEnrolledChildren,
+        totalChildren: report.summary.totalEnrolledChildren,
+        activeChildren: report.summary.activeChildren,
+        totalTeachers: report.summary.childDevelopmentWorkers,
+        fourPsBeneficiaries: report.summary.fourPsBeneficiaries,
+        regularAttendees: report.summary.regularAttendees,
+        todayAttendanceRate: hasTodayAttendance ? today?.attendanceRate ?? null : null,
+        todayFeedingRate: hasTodayFeeding ? today?.feedingRate ?? null : null,
+        hasTodayAttendance,
+        hasTodayFeeding,
+        todayAbsentCount: today?.absent ?? 0,
+        todayMissedCount: today?.missed ?? 0,
+        todayExceptions: (today?.absent ?? 0) + (today?.missed ?? 0),
+        underweightCount: nutrition.underweightCount,
+        severelyUnderweightCount: nutrition.severelyUnderweightCount,
+        normalCount: nutrition.normalCount,
+        overweightCount: nutrition.overweightCount,
+        obeseCount: nutrition.obeseCount,
+      };
+
+      const rowsByDate = new Map(
+        report.recentDailyRows.map((row) => [row.dateKey, row]),
+      );
+      const chartData = Array.from({ length: 7 }, (_, index) => {
+        const dateKey = shiftDateKey(todayKey, index - 6);
+        const row = rowsByDate.get(dateKey);
+        const attendanceTotal = (row?.present ?? 0) + (row?.absent ?? 0);
+        const feedingTotal = (row?.completed ?? 0) + (row?.missed ?? 0);
+        return {
+          day: dayLabel(dateKey),
+          attendance: attendanceTotal > 0 ? row?.attendanceRate ?? null : null,
+          feeding: feedingTotal > 0 ? row?.feedingRate ?? null : null,
+        };
+      });
+
+      return {
+        stats,
+        chartData,
+        pieData: computePieData(stats),
+        dateMeta: {
+          todayKey,
+          attendanceKey: hasTodayAttendance ? todayKey : "",
+          feedingKey: hasTodayFeeding ? todayKey : "",
+        },
+        serverUpdatedAt: report.lastUpdatedAt,
+      };
     },
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
   });
 
-  const stats = data?.stats ?? DEFAULT_STATS;
-  const chartData = data?.chartData ?? [];
-  const pieData = data?.pieData ?? [];
-  const dateMeta = data?.dateMeta ?? DEFAULT_DATE_META;
-  const fetchDashboardData = useMemo(() => refetch, [refetch]);
+  const error =
+    queryError instanceof Error
+      ? queryError.message
+      : queryError
+        ? "Unable to load dashboard data."
+        : null;
 
   return {
-    stats,
-    chartData,
-    pieData,
+    stats: data?.stats ?? DEFAULT_STATS,
+    chartData: data?.chartData ?? [],
+    pieData: data?.pieData ?? [],
     isLoading,
-    dateMeta,
-    fetchDashboardData,
+    isRefreshing: isFetching && !isLoading,
+    hasData: Boolean(data),
+    error,
+    lastUpdatedAt: dataUpdatedAt ? new Date(dataUpdatedAt) : null,
+    dateMeta: data?.dateMeta ?? DEFAULT_DATE_META,
+    fetchDashboardData: refetch,
   };
 }

@@ -1,62 +1,65 @@
-import { Home, Users, UserCircle, Heart, Smile, Activity } from "lucide-react";
+import {
+  Activity,
+  AlertTriangle,
+  Heart,
+  UserCircle,
+  UsersRound,
+} from "lucide-react";
 import { StatCard } from "@/components/ui/StatCard";
 import type { DashboardStats } from "../hooks/useAdminDashboard";
 
 type StatsGridProps = {
   stats: DashboardStats;
+  onNavigate: (path: string) => void;
 };
 
-export function StatsGrid({ stats }: StatsGridProps) {
+export function StatsGrid({ stats, onNavigate }: StatsGridProps) {
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
       <StatCard
-        title="Total Child Development Centers"
-        value={String(stats.totalChildDevelopmentCenters)}
-        subtitle="Active centers"
-        icon={Home}
-        color="blue"
-      />
-      <StatCard
-        title="Underweight Children"
-        value={String(stats.underweightCount + stats.severelyUnderweightCount)}
-        subtitle="Latest submitted metrics"
-        icon={Activity}
-        color="rose"
-      />
-      <StatCard
-        title="Overweight / Obese"
-        value={String(stats.overweightCount + stats.obeseCount)}
-        subtitle="Latest submitted metrics"
-        icon={Activity}
-        color="rose"
-      />
-      <StatCard
-        title="Child Development Workers"
-        value={String(stats.childDevelopmentWorkers)}
-        subtitle="Active teacher accounts"
-        icon={Users}
-        color="teal"
-      />
-      <StatCard
         title="Total Enrolled Children"
         value={String(stats.totalEnrolledDaycares)}
-        subtitle="Total enrolled children"
+        subtitle="Basis for meal and supply allocation"
         icon={UserCircle}
+        color="blue"
+        onClick={() => onNavigate("/monitoring/records")}
+        accessibilityLabel="Open daycare records for all enrolled children"
+      />
+      <StatCard
+        title="Underweight"
+        value={String(stats.underweightCount)}
+        subtitle="Priority for feeding support"
+        icon={Activity}
         color="purple"
+        onClick={() => onNavigate("/monitoring/reports/nutrition")}
+        accessibilityLabel="Open health and nutrition analytics for underweight children"
+      />
+      <StatCard
+        title="Severely Underweight"
+        value={String(stats.severelyUnderweightCount)}
+        subtitle="Highest priority nutrition cases"
+        icon={AlertTriangle}
+        color="rose"
+        onClick={() => onNavigate("/monitoring/reports/nutrition")}
+        accessibilityLabel="Open health and nutrition analytics for severely underweight children"
       />
       <StatCard
         title="4P's Beneficiaries"
         value={String(stats.fourPsBeneficiaries)}
-        subtitle="Children under 4Ps program"
+        subtitle="Children under assistance tracking"
         icon={Heart}
-        color="rose"
+        color="blue"
+        onClick={() => onNavigate("/monitoring/reports/overview")}
+        accessibilityLabel="Open reports for 4Ps beneficiaries"
       />
       <StatCard
         title="Regular Attendees"
         value={String(stats.regularAttendees)}
-        subtitle="Non-beneficiary enrollees"
-        icon={Smile}
-        color="blue"
+        subtitle="Regular enrollees without 4Ps assistance"
+        icon={UsersRound}
+        color="teal"
+        onClick={() => onNavigate("/monitoring/reports/overview")}
+        accessibilityLabel="Open reports for regular attendees"
       />
     </div>
   );

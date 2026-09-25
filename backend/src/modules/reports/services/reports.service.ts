@@ -7,9 +7,11 @@ import type { ReportDateRange, AdminReportRange } from "../types/reports.types";
 import { getAdminAnalyticsReport } from "./admin/reports-admin-analytics.service";
 import type { AuthenticatedUser } from "../../../shared/types/auth.types";
 import {
+  assertCaptainCenter,
   assertCanAccessChild,
   assertTeacherCenter,
 } from "../../../shared/services/child-access.service";
+import { getSingleCenterId } from "../../../shared/services/single-center.service";
 export { buildReportDemographics, buildStudentList } from "../shared/reports-aggregation.helpers";
 
 export class ReportsService {
@@ -34,8 +36,13 @@ export class ReportsService {
     return query;
   }
 
-  public async getAdminAnalytics(range: AdminReportRange) {
-    return getAdminAnalyticsReport(range);
+  public async getAdminAnalytics(
+    user: AuthenticatedUser,
+    range: AdminReportRange,
+  ) {
+    const centerId = await getSingleCenterId();
+    assertCaptainCenter(user, centerId);
+    return getAdminAnalyticsReport(range, centerId);
   }
 
   public async getChildReport(

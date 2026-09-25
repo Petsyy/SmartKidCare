@@ -55,7 +55,7 @@ export function AttendanceChart({ data }: AttendanceChartProps) {
               fontSize: "12px",
             }}
             formatter={(value: number | string | undefined) => [
-              `${value ?? 0}%`,
+              value == null ? "No submission" : `${value}%`,
               "Rate",
             ]}
           />
@@ -66,6 +66,7 @@ export function AttendanceChart({ data }: AttendanceChartProps) {
             stroke="#14b8a6"
             strokeWidth={3}
             name="Attendance Rate"
+            connectNulls={false}
             dot={{ fill: "#14b8a6", r: 4 }}
           />
           <Line
@@ -74,6 +75,7 @@ export function AttendanceChart({ data }: AttendanceChartProps) {
             stroke="#10b981"
             strokeWidth={3}
             name="Feeding Rate"
+            connectNulls={false}
             dot={{ fill: "#10b981", r: 3 }}
           />
         </LineChart>

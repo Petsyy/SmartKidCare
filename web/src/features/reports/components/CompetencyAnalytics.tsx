@@ -25,7 +25,7 @@ const PERIOD_OPTIONS = [
 const csvCell = (value: string | number) =>
   `"${String(value).replace(/"/g, '""')}"`;
 
-export function CompetencyAnalytics({ centerId = "" }: { centerId?: string }) {
+export function CompetencyAnalytics() {
   const {
     data,
     isLoading,
@@ -36,7 +36,7 @@ export function CompetencyAnalytics({ centerId = "" }: { centerId?: string }) {
     setPeriod,
     schoolYear,
     setSchoolYear,
-  } = useCompetencyAnalytics(centerId);
+  } = useCompetencyAnalytics();
 
   const competencies = data?.competencies ?? [];
   const hasData = (data?.totalStudents ?? 0) > 0;

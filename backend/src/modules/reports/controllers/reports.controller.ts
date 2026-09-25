@@ -11,7 +11,9 @@ export const getChildReport = asyncHandler(async (req: Request, res: Response) =
 });
 
 export const getAdminAnalytics = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user?.id) throw new UnauthorizedError();
   const result = await reportsService.getAdminAnalytics(
+    req.user,
     req.query as {
       startDate?: string;
       endDate?: string;

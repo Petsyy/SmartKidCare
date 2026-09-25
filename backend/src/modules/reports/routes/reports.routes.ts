@@ -14,7 +14,7 @@ router.use(authenticateToken);
 
 router.get(
   "/admin-analytics",
-  requireRole("admin"),
+  requireRole("barangay_captain"),
   validateAdminReportQuery,
   getAdminAnalytics,
 );
@@ -30,7 +30,7 @@ router.get(
 // Parents, Teachers, and Admins can get a specific child's report
 router.get(
   "/child/:childId",
-  requireRole("admin", "teacher", "parent"),
+  requireRole("barangay_captain", "teacher", "parent"),
   validateReportQuery,
   getChildReport
 );

@@ -1,6 +1,6 @@
 import { Clock, RefreshCw, Download, Printer } from "lucide-react";
 import type { ReportDatePreset } from "@/features/reports/hooks/useReportAnalytics";
-import type { DaycareCenter } from "@/api/daycare-center.api";
+
 
 const PRESET_OPTIONS: Array<{ value: ReportDatePreset; label: string }> = [
   { value: "7d", label: "Last 7 Days" },
@@ -24,9 +24,7 @@ type ReportsFiltersProps = {
   onRefresh: () => void;
   onExport: () => void;
   onPrint: () => void;
-  centers: DaycareCenter[];
-  centerId: string;
-  setCenterId: (value: string) => void;
+
   showDateRangeControls: boolean;
   scopeDescription?: string;
 };
@@ -45,9 +43,7 @@ export const ReportsFilters = ({
   onRefresh,
   onExport,
   onPrint,
-  centers,
-  centerId,
-  setCenterId,
+
   showDateRangeControls,
   scopeDescription,
 }: ReportsFiltersProps) => {
@@ -92,21 +88,6 @@ export const ReportsFilters = ({
         )}
       </div>
 
-      <label className="mt-4 block max-w-sm space-y-1">
-        <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
-          Child Development Center
-        </span>
-        <select
-          value={centerId}
-          onChange={(event) => setCenterId(event.target.value)}
-          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-gray-700 transition-colors focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/30 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
-        >
-          <option value="">All centers</option>
-          {centers.filter((center) => center.isActive !== false).map((center) => (
-            <option key={center._id} value={center._id}>{center.name}</option>
-          ))}
-        </select>
-      </label>
 
       {showDateRangeControls && datePreset === "custom" && (
         <div className="mt-4 grid gap-3 md:grid-cols-2">

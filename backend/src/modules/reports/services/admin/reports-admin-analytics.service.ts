@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Child from "../../../../models/Child";
 import Attendance from "../../../../models/Attendance";
 import Feeding from "../../../../models/Feeding";
@@ -25,10 +26,14 @@ import {
 const CHILD_SELECT =
   "firstName lastName age gender status studentId programType schoolYear enrollmentDate teacher daycareCenter";
 
-export async function getAdminAnalyticsReport(range: AdminReportRange) {
+export async function getAdminAnalyticsReport(
+  range: AdminReportRange,
+  centerId: string,
+) {
+  const centerObjectId = new mongoose.Types.ObjectId(centerId);
   const dateMatch = getAdminDateMatch(range);
   const childEnrollmentMatch = getChildEnrollmentDateMatch(range);
-  const centerMatch = range.centerId ? { daycareCenter: range.centerId } : {};
+  const centerMatch = { daycareCenter: centerObjectId };
   const scopedChildMatch = { ...childEnrollmentMatch, ...centerMatch };
   const scopedRecordMatch = { ...dateMatch, ...centerMatch };
   const { page, limit } = normalizePagination(range);
@@ -48,13 +53,12 @@ export async function getAdminAnalyticsReport(range: AdminReportRange) {
   ] = await Promise.all([
     ChildDevelopmentCenter.countDocuments({
       isActive: { $ne: false },
-      ...(range.centerId ? { _id: range.centerId } : {}),
+      _id: centerId,
     }),
     User.countDocuments({
       role: "teacher",
       isActive: { $ne: false },
-      daycareCenter: { $ne: null },
-      ...(range.centerId ? { daycareCenter: range.centerId } : {}),
+      daycareCenter: centerId,
     }),
     Child.countDocuments(scopedChildMatch),
     Child.countDocuments({ ...scopedChildMatch, status: "Active" }),

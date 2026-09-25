@@ -8,22 +8,16 @@ import { SelectFilter } from "@/components/ui/SelectFilter";
 import { StatCard } from "@/components/ui/StatCard";
 import { webQueryKeys } from "@/lib/query-keys";
 
-type NutritionAnalyticsProps = {
-  centerId?: string;
-};
-
-export function NutritionAnalytics({ centerId = "" }: NutritionAnalyticsProps) {
+export function NutritionAnalytics() {
   const [schoolYear, setSchoolYear] = useState("");
 
   const { data, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: webQueryKeys.nutritionAnalytics(
       schoolYear || "latest",
-      centerId || "all-centers",
     ),
     queryFn: () =>
       getNutritionAnalytics({
         schoolYear: schoolYear || undefined,
-        centerId: centerId || undefined,
       }),
   });
 
@@ -98,7 +92,7 @@ export function NutritionAnalytics({ centerId = "" }: NutritionAnalyticsProps) {
               No completed nutrition assessments found.
             </p>
             <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
-              Choose another school year or center, or submit both initial and final assessments.
+              Choose another school year or submit both initial and final assessments for Bonuan Sabangan.
             </p>
           </div>
         ) : (

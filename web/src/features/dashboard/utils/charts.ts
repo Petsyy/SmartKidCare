@@ -70,7 +70,7 @@ export function computeChartData(
 export function computePieData(stats: DashboardStats): PieDataPoint[] {
   return [
     {
-      name: "Total Child Development Centers",
+      name: "Bonuan Sabangan Center",
       value: stats.totalChildDevelopmentCenters,
       color: "#38bdf8",
     },
@@ -80,7 +80,7 @@ export function computePieData(stats: DashboardStats): PieDataPoint[] {
       color: "#14b8a6",
     },
     {
-      name: "Total Enrolled Daycares",
+      name: "Total Enrolled Children",
       value: stats.totalEnrolledDaycares,
       color: "#f59e0b",
     },
