@@ -2,7 +2,51 @@ import { z } from "zod";
 import { validate } from "../../../shared/middleware/validate.middleware";
 
 const nonEmptyString = z.string().trim().min(1, "Field is required.");
-const emailSchema = z.email("Invalid email format.").trim();
+const STRICT_EMAIL_REGEX =
+  /^[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}$/;
+const ACCEPTED_EMAIL_DOMAINS = [
+  "aol.com",
+  "gmail.com",
+  "googlemail.com",
+  "hotmail.com",
+  "icloud.com",
+  "live.com",
+  "me.com",
+  "msn.com",
+  "outlook.com",
+  "proton.me",
+  "protonmail.com",
+  "rocketmail.com",
+  "yahoo.com",
+  "ymail.com",
+  "zoho.com",
+];
+
+const usesAcceptedEmailDomain = (email: string) => {
+  const domain = email.split("@")[1]?.toLowerCase() ?? "";
+
+  return ACCEPTED_EMAIL_DOMAINS.includes(domain);
+};
+
+const emailSchema = z
+  .string()
+  .trim()
+  .min(1, "Email is required.")
+  .max(254, "Email cannot exceed 254 characters.")
+  .email("Invalid email format.")
+  .refine((value) => !/\s/.test(value), "Email cannot contain spaces.")
+  .refine(
+    (value) => (value.split("@")[0]?.length ?? 0) <= 64,
+    "Email address before @ cannot exceed 64 characters.",
+  )
+  .regex(
+    STRICT_EMAIL_REGEX,
+    "Email must include a valid domain, such as name@gmail.com.",
+  )
+  .refine(
+    (value) => usesAcceptedEmailDomain(value),
+    "Email must use a supported email provider such as Gmail, Yahoo, Outlook, Hotmail, iCloud, Proton, or Zoho.",
+  );
 const objectIdSchema = z
   .string()
   .trim()
@@ -28,13 +72,75 @@ const getDaycareCentersQuerySchema = z.object({
 });
 
 const createTeacherSchema = z.object({
-  firstName: nonEmptyString,
-  middleName: nonEmptyString,
-  lastName: nonEmptyString,
+  firstName: z
+    .string()
+    .trim()
+    .min(2, "First name must contain at least 2 characters.")
+    .max(50, "First name cannot exceed 50 characters.")
+    .regex(
+      /^[A-Za-z][A-Za-z .'-]*$/,
+      "First name contains invalid characters.",
+    ),
+  middleName: z
+    .string()
+    .trim()
+    .min(2, "Middle name must contain at least 2 characters.")
+    .max(50, "Middle name cannot exceed 50 characters.")
+    .regex(
+      /^[A-Za-z][A-Za-z .'-]*$/,
+      "Middle name contains invalid characters.",
+    ),
+  lastName: z
+    .string()
+    .trim()
+    .min(2, "Last name must contain at least 2 characters.")
+    .max(50, "Last name cannot exceed 50 characters.")
+    .regex(/^[A-Za-z][A-Za-z .'-]*$/, "Last name contains invalid characters."),
   email: emailSchema,
-  phone: nonEmptyString,
-  daycareCenterId: objectIdSchema,
+  phone: z
+    .string()
+    .trim()
+    .regex(/^09\d{9}$/, "Phone number must use the format 09XXXXXXXXX."),
+  daycareCenterId: objectIdSchema.optional(),
 });
+
+const captainNameSchema = (label: string) =>
+  z
+    .string()
+    .trim()
+    .min(2, `${label} must contain at least 2 characters.`)
+    .max(50, `${label} cannot exceed 50 characters.`)
+    .regex(/^[A-Za-z][A-Za-z .'-]*$/, `${label} contains invalid characters.`);
+
+const createCaptainSchema = z.object({
+  username: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .regex(
+      /^[a-z0-9]{4,30}$/,
+      "Username must contain 4-30 letters or numbers without spaces.",
+    ),
+  firstName: captainNameSchema("First name"),
+  middleName: z
+    .string()
+    .trim()
+    .max(50, "Middle name cannot exceed 50 characters.")
+    .refine(
+      (value) => value.length === 0 || /^[A-Za-z][A-Za-z .'-]*$/.test(value),
+      "Middle name contains invalid characters.",
+    )
+    .optional(),
+  lastName: captainNameSchema("Last name"),
+  email: emailSchema,
+  phone: z
+    .string()
+    .trim()
+    .regex(/^09\d{9}$/, "Phone number must use the format 09XXXXXXXXX."),
+  replaceCaptainId: objectIdSchema.optional(),
+});
+
+const captainIdParamsSchema = z.object({ id: objectIdSchema });
 
 const updateUserProfileSchema = z.object({
   firstName: nonEmptyString,
@@ -42,9 +148,6 @@ const updateUserProfileSchema = z.object({
   lastName: nonEmptyString,
   email: emailSchema,
   phone: nonEmptyString,
-  daycareCenterId: z
-    .union([objectIdSchema, z.literal(""), z.null()])
-    .optional(),
 });
 
 export const validateCreateDaycareCenter = validate(createDaycareCenterSchema);
@@ -54,4 +157,9 @@ export const validateGetDaycareCentersQuery = validate(
   "query",
 );
 export const validateCreateTeacher = validate(createTeacherSchema);
+export const validateCreateCaptain = validate(createCaptainSchema);
+export const validateCaptainIdParams = validate(
+  captainIdParamsSchema,
+  "params",
+);
 export const validateUpdateUserProfile = validate(updateUserProfileSchema);

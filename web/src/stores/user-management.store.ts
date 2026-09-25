@@ -4,7 +4,7 @@ import type { User } from "@/api/authentication.api";
 type AccountStatusFilter = "all" | "active" | "inactive";
 
 type UserManagementUiState = {
-  activeTab: "teacher" | "parent";
+  activeTab: "barangay_captain" | "teacher" | "parent";
   showAddTeacherModal: boolean;
   editingUser: User | null;
   deletingUser: User | null;
@@ -21,7 +21,7 @@ type UserManagementUiState = {
   teacherPageSize: number;
   parentPageSize: number;
   viewingUser: User | null;
-  setActiveTab: (value: "teacher" | "parent") => void;
+  setActiveTab: (value: "barangay_captain" | "teacher" | "parent") => void;
   setShowAddTeacherModal: (value: boolean) => void;
   setEditingUser: (value: User | null) => void;
   setDeletingUser: (value: User | null) => void;

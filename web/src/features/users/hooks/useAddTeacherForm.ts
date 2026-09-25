@@ -1,10 +1,9 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createTeacher } from "@/api/teacher.api";
-import { getDaycareCenters, type DaycareCenter } from "@/api/daycare-center.api";
 import { showTeacherCredentialsModal, showErrorModal } from "@/utils/sweet-alert-modal";
-import { addTeacherSchema, type AddTeacherFormValues } from "@/utils/form-validation";
+import { addTeacherSchema, type AddTeacherFormValues } from "@/features/users/validations/create-teacher.validation";
 
 type UseAddTeacherFormProps = {
   onClose: () => void;
@@ -17,7 +16,6 @@ const EMPTY_FORM: AddTeacherFormValues = {
   lastName: "",
   email: "",
   phone: "",
-  daycareCenterId: "",
 };
 
 export const useAddTeacherForm = ({ onClose, onCreated }: UseAddTeacherFormProps) => {
@@ -28,12 +26,6 @@ export const useAddTeacherForm = ({ onClose, onCreated }: UseAddTeacherFormProps
     defaultValues: EMPTY_FORM,
     mode: "onBlur",
     reValidateMode: "onChange",
-  });
-
-  const { data: centers = [], isLoading: loadingCenters } = useQuery<DaycareCenter[]>({
-    queryKey: ["daycare-centers"],
-    queryFn: getDaycareCenters,
-    select: (data) => data.filter((center) => center.isActive !== false),
   });
 
   const mutation = useMutation({
@@ -61,8 +53,6 @@ export const useAddTeacherForm = ({ onClose, onCreated }: UseAddTeacherFormProps
 
   return {
     form,
-    centers,
-    loadingCenters,
     isSubmitting: mutation.isPending,
     onSubmit: form.handleSubmit((data) => mutation.mutate(data)),
   };

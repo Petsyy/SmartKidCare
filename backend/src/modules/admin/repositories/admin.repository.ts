@@ -3,6 +3,9 @@ import User, { IUser } from "../../../models/Users";
 import Child from "../../../models/Child";
 
 import ChildDevelopmentCenter from "../../../models/ChildDevelopmentCenter";
+import SecurityAuditLog, {
+  type SecurityAuditAction,
+} from "../../../models/SecurityAuditLog";
 import { BaseRepository } from "../../../shared/repositories/base.repository";
 
 const escapeRegex = (value: string) =>
@@ -22,6 +25,59 @@ export class AdminUserRepository extends BaseRepository<IUser> {
         $options: "i",
       },
     });
+  }
+
+  async findByUsername(username: string): Promise<IUser | null> {
+    return this.model.findOne({ username: String(username).trim() });
+  }
+
+  async findActiveCaptainByCenter(centerId: string): Promise<IUser | null> {
+    return this.model.findOne({
+      role: "barangay_captain",
+      daycareCenter: centerId,
+      isActive: true,
+    });
+  }
+
+  async findPendingCaptainByCenter(centerId: string): Promise<IUser | null> {
+    return this.model.findOne({
+      role: "barangay_captain",
+      daycareCenter: centerId,
+      captainOnboardingStatus: "invitation_pending",
+    });
+  }
+
+  async findCaptainById(id: string): Promise<IUser | null> {
+    if (!mongoose.Types.ObjectId.isValid(id)) return null;
+    return this.model.findOne({ _id: id, role: "barangay_captain" });
+  }
+
+  async findCaptainInvitationByHash(hash: string): Promise<IUser | null> {
+    return this.model
+      .findOne({
+        role: "barangay_captain",
+        captainInvitationTokenHash: hash,
+      })
+      .select("+captainInvitationTokenHash");
+  }
+
+  async createAuditEvent(input: {
+    action: SecurityAuditAction;
+    actor?: string | null;
+    targetUser: string;
+    daycareCenter?: string | null;
+    metadata?: Record<string, unknown>;
+  }): Promise<void> {
+    await SecurityAuditLog.create(input);
+  }
+
+  async getSystemOverview(): Promise<Record<string, number>> {
+    const counts: Record<string, number> = {};
+    for (const role of ["barangay_captain", "teacher", "parent"] as const) {
+      counts[`${role}Active`] = await this.model.countDocuments({ role, isActive: { $ne: false } });
+      counts[`${role}Inactive`] = await this.model.countDocuments({ role, isActive: false });
+    }
+    return counts;
   }
 
   async findByEmailExcluding(
@@ -112,6 +168,13 @@ export class AdminCenterRepository extends BaseRepository<any> {
 
   async findById(id: string): Promise<any | null> {
     return this.model.findById(id).select("_id").lean();
+  }
+
+  async findActiveByCode(code: string): Promise<any | null> {
+    return this.model
+      .findOne({ code, isActive: { $ne: false } })
+      .select("_id name barangay code isActive")
+      .lean();
   }
 }
 

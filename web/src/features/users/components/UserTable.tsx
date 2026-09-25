@@ -1,9 +1,10 @@
-import { Eye, Pencil, MoreVertical } from "lucide-react";
+import { Eye, Mail, Pencil, MoreVertical, XCircle } from "lucide-react";
+import { useState } from "react";
 import type { User } from "@/api/authentication.api";
 import { TableSkeleton } from "@/components/ui/TableSkeleton";
 
 type UserTableProps = {
-  activeTab: "teacher" | "parent";
+  activeTab: "barangay_captain" | "teacher" | "parent";
   isLoading: boolean;
   usersLength: number;
   filteredUsersLength: number;
@@ -13,6 +14,8 @@ type UserTableProps = {
   onCloseMenu: () => void;
   onViewUser: (user: User) => void;
   onEditUser: (user: User) => void;
+  onResendInvitation: (user: User) => void;
+  onRevokeInvitation: (user: User) => void;
   paginationRangeLabel: string;
   safeCurrentPage: number;
   totalPages: number;
@@ -30,12 +33,15 @@ export const UserTable = ({
   onCloseMenu,
   onViewUser,
   onEditUser,
+  onResendInvitation,
+  onRevokeInvitation,
   paginationRangeLabel,
   safeCurrentPage,
   totalPages,
   onPageChange,
 }: UserTableProps) => {
-  const tableColumnCount = activeTab === "teacher" ? 6 : 5;
+  const tableColumnCount = 5;
+  const [renderedAt] = useState(() => Date.now());
 
   return (
     <>
@@ -52,11 +58,7 @@ export const UserTable = ({
               <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
                 Phone
               </th>
-              {activeTab === "teacher" && (
-                <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
-                  Assigned Center
-                </th>
-              )}
+
               <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
                 Status
               </th>
@@ -105,42 +107,39 @@ export const UserTable = ({
                 <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-300">
                   {user.phone || "-"}
                 </td>
-                {activeTab === "teacher" && (
-                  <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-300">
-                    {user.daycareCenter ? (
-                      <div className="flex flex-col">
-                        <span className="font-medium text-gray-900 dark:text-slate-100">
-                          {user.daycareCenter.name}
-                        </span>
-                        <span className="text-xs text-gray-500 dark:text-slate-400">
-                          {user.daycareCenter.barangay}
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="text-gray-400 dark:text-slate-500">
-                        Unassigned
-                      </span>
-                    )}
-                  </td>
-                )}
+
                 <td className="px-6 py-4 text-sm">
                   <span
                     className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
-                      user.isActive !== false
+                      user.captainOnboardingStatus === "invitation_pending"
+                        ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200"
+                        : user.isActive !== false
                         ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200"
                         : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200"
                     }`}
                   >
                     <span
                       className={`h-1.5 w-1.5 rounded-full ${
-                        user.isActive !== false ? "bg-green-500" : "bg-red-500"
+                        user.captainOnboardingStatus === "invitation_pending"
+                          ? "bg-amber-500"
+                          : user.isActive !== false ? "bg-green-500" : "bg-red-500"
                       }`}
                     />
-                    {user.isActive !== false ? "Active" : "Inactive"}
+                    {user.captainOnboardingStatus === "invitation_pending"
+                      ? new Date(user.captainInvitationExpiresAt || 0).getTime() <= renderedAt
+                        ? "Invitation Expired"
+                        : "Invitation Pending"
+                      : user.isActive !== false ? "Active" : "Inactive"}
                   </span>
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex flex-wrap items-center gap-1.5">
+                    {user.captainOnboardingStatus === "invitation_pending" ? (
+                      <>
+                        <button onClick={() => onResendInvitation(user)} className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-100"><Mail size={14} />Resend</button>
+                        <button onClick={() => onRevokeInvitation(user)} className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100"><XCircle size={14} />Revoke</button>
+                      </>
+                    ) : null}
                     <button
                       onClick={() => onViewUser(user)}
                       className="group inline-flex items-center gap-1.5 rounded-lg border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-teal-500/30 dark:border-teal-900/50 dark:bg-teal-900/20 dark:text-teal-300 dark:hover:bg-teal-900/40 cursor-pointer"

@@ -6,7 +6,7 @@ import Swal from "sweetalert2";
 import { type User } from "@/api/authentication.api";
 import { updateUser } from "@/api/admin.api";
 import { showErrorModal } from "@/utils/sweet-alert-modal";
-import { editUserSchema, type EditUserFormValues } from "@/utils/form-validation";
+import { editUserSchema, type EditUserFormValues } from "@/features/users/validations/edit-user.validation";
 
 type UseEditUserFormProps = {
   user: User;

@@ -5,16 +5,14 @@ import type { AccountStatusFilter } from "../hooks/useUserManagement";
 import { PAGE_SIZE_OPTIONS } from "../hooks/useUserManagement";
 
 type UserFiltersProps = {
-  activeTab: "teacher" | "parent";
+  activeTab: "barangay_captain" | "teacher" | "parent";
   hasActiveFilters: boolean;
   resultCount: number;
   currentSearchQuery: string;
   onSearchChange: (value: string) => void;
   currentStatusFilter: string;
   onStatusFilterChange: (value: AccountStatusFilter) => void;
-  teacherCenterFilter: string;
-  onTeacherCenterFilterChange: (value: string) => void;
-  teacherCenterOptions: { _id: string; name: string; barangay: string }[];
+
   currentPageSize: number;
   onPageSizeChange: (value: number) => void;
   onClearFilters: () => void;
@@ -28,9 +26,7 @@ export const UserFilters = ({
   onSearchChange,
   currentStatusFilter,
   onStatusFilterChange,
-  teacherCenterFilter,
-  onTeacherCenterFilterChange,
-  teacherCenterOptions,
+
   currentPageSize,
   onPageSizeChange,
   onClearFilters,
@@ -44,7 +40,7 @@ export const UserFilters = ({
       <SearchInput
         value={currentSearchQuery}
         onChange={onSearchChange}
-        placeholder={`Search ${activeTab === "teacher" ? "teachers" : "parents"}...`}
+        placeholder={`Search ${activeTab === "barangay_captain" ? "captains" : activeTab === "teacher" ? "teachers" : "parents"}...`}
         className="min-w-55 flex-1 sm:max-w-xs"
       />
       <SelectFilter
@@ -56,23 +52,7 @@ export const UserFilters = ({
           { value: "inactive", label: "Inactive" },
         ]}
       />
-      {activeTab === "teacher" && (
-        <SelectFilter
-          value={teacherCenterFilter}
-          onChange={(v) => {
-            onTeacherCenterFilterChange(v);
-          }}
-          options={[
-            { value: "all", label: "All Centers" },
-            { value: "assigned", label: "Assigned Only" },
-            { value: "unassigned", label: "Unassigned" },
-            ...teacherCenterOptions.map((center) => ({
-              value: center._id,
-              label: `${center.barangay} - ${center.name}`,
-            })),
-          ]}
-        />
-      )}
+
       <SelectFilter
         value={String(currentPageSize)}
         onChange={(v) => onPageSizeChange(Number(v))}
