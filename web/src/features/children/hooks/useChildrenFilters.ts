@@ -9,7 +9,7 @@ export function useChildrenFilters({ childrenList }: UseChildrenFiltersProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [assignmentFilter, setAssignmentFilter] = useState("all");
-  const [centerFilter, setCenterFilter] = useState("all");
+
   const [schoolYearFilter, setSchoolYearFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -26,26 +26,7 @@ export function useChildrenFilters({ childrenList }: UseChildrenFiltersProps) {
     });
   }, [childrenList, searchTerm]);
 
-  const centerOptions = useMemo(() => {
-    const uniqueCenters = new Map<string, { id: string; label: string }>();
 
-    childrenList.forEach((child) => {
-      const center = child.daycareCenter;
-      if (!center?._id) return;
-
-      if (!uniqueCenters.has(center._id)) {
-        const barangay = String(center.barangay || "").trim();
-        uniqueCenters.set(center._id, {
-          id: center._id,
-          label: barangay ? `${center.name} (${barangay})` : center.name,
-        });
-      }
-    });
-
-    return Array.from(uniqueCenters.values()).sort((a, b) =>
-      a.label.localeCompare(b.label),
-    );
-  }, [childrenList]);
 
   const schoolYearOptions = useMemo(() => {
     const years = new Set<string>();
@@ -65,10 +46,7 @@ export function useChildrenFilters({ childrenList }: UseChildrenFiltersProps) {
         if (assignmentFilter === "assigned" && !hasTeacher) return false;
         if (assignmentFilter === "unassigned" && hasTeacher) return false;
       }
-      if (centerFilter !== "all") {
-        const centerId = String(child.daycareCenter?._id || "");
-        if (centerId !== centerFilter) return false;
-      }
+
       if (schoolYearFilter !== "all" && child.schoolYear !== schoolYearFilter) {
         return false;
       }
@@ -76,7 +54,7 @@ export function useChildrenFilters({ childrenList }: UseChildrenFiltersProps) {
     });
   }, [
     assignmentFilter,
-    centerFilter,
+
     filteredChildren,
     schoolYearFilter,
     statusFilter,
@@ -97,13 +75,11 @@ export function useChildrenFilters({ childrenList }: UseChildrenFiltersProps) {
   const hasActiveFilters =
     statusFilter !== "all" ||
     assignmentFilter !== "all" ||
-    centerFilter !== "all" ||
     schoolYearFilter !== "all";
 
   const clearFilters = () => {
     setStatusFilter("all");
     setAssignmentFilter("all");
-    setCenterFilter("all");
     setSchoolYearFilter("all");
     setPage(1);
   };
@@ -125,15 +101,14 @@ export function useChildrenFilters({ childrenList }: UseChildrenFiltersProps) {
     setStatusFilter,
     assignmentFilter,
     setAssignmentFilter,
-    centerFilter,
-    setCenterFilter,
+
     schoolYearFilter,
     setSchoolYearFilter,
     page: safePage,
     setPage,
     limit,
     setLimit,
-    centerOptions,
+
     schoolYearOptions,
     total,
     totalPages,

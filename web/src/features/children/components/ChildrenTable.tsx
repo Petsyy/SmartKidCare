@@ -10,6 +10,7 @@ interface ChildrenTableProps {
   onViewChild: (child: Child) => void;
   onEditChild: (child: Child) => void;
   onMenuClick: (child: Child, buttonEl: HTMLButtonElement) => void;
+  readOnly?: boolean;
 }
 
 export function ChildrenTable({
@@ -19,6 +20,7 @@ export function ChildrenTable({
   onViewChild,
   onEditChild,
   onMenuClick,
+  readOnly = false,
 }: ChildrenTableProps) {
   return (
     <div className="overflow-x-auto">
@@ -46,9 +48,7 @@ export function ChildrenTable({
             <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
               Assigned Teacher
             </th>
-            <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
-              Assigned Center
-            </th>
+
             <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
               Actions
             </th>
@@ -128,20 +128,7 @@ export function ChildrenTable({
                     ? `${child.teacher.lastName}, ${child.teacher.firstName}${child.teacher.middleName ? ` ${child.teacher.middleName}` : ""}`
                     : "Unassigned"}
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-300">
-                  {child.daycareCenter ? (
-                    <div className="flex flex-col">
-                      <span className="font-medium text-gray-900 dark:text-slate-100">
-                        {child.daycareCenter.name}
-                      </span>
-                      <span className="text-xs text-gray-500 dark:text-slate-400">
-                        {child.daycareCenter.barangay}
-                      </span>
-                    </div>
-                  ) : (
-                    "Unassigned"
-                  )}
-                </td>
+
                 <td className="px-6 py-4">
                   <div className="flex flex-wrap items-center gap-1.5">
                     <button
@@ -155,7 +142,7 @@ export function ChildrenTable({
                       />
                       View
                     </button>
-                    <button
+                    {!readOnly && <button
                       onClick={() => onEditChild(child)}
                       className="group inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-blue-900/50 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/40 cursor-pointer"
                       title="Edit"
@@ -165,8 +152,8 @@ export function ChildrenTable({
                         className="transition-transform duration-200 group-hover:-rotate-6"
                       />
                       Edit
-                    </button>
-                    <div className="inline-block shrink-0">
+                    </button>}
+                    {!readOnly && <div className="inline-block shrink-0">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -180,7 +167,7 @@ export function ChildrenTable({
                       >
                         <MoreVertical size={14} />
                       </button>
-                    </div>
+                    </div>}
                   </div>
                 </td>
               </tr>

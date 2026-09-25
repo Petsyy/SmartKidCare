@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import {
-  Linking,
   Text,
   View,
   ScrollView,
   StatusBar,
   Pressable,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import {
   SafeAreaView,
@@ -18,7 +19,6 @@ import { getTodayAttendance, getTodayFeeding } from "@/src/api/records.api";
 import { useAuth } from "@/src/hooks/use-auth";
 import {
   ChevronLeft,
-  ChevronRight,
   User,
   Mail,
   Phone,
@@ -31,6 +31,9 @@ import {
   Ruler,
   Award,
   TrendingUp,
+  Archive,
+  ArchiveRestore,
+  Edit3,
 } from "lucide-react-native";
 import { useQuery } from "@tanstack/react-query";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
@@ -43,7 +46,10 @@ import { ViewGuardiansBottomSheet } from "../components/view-guardians-bottom-sh
 import { AddGuardianBottomSheet } from "../components/add-guardian-bottom-sheet";
 import { ParentCredentialsModal } from "@/src/features/enrollment/components/ui/parent-credentials-modal";
 import { GrowthHistoryBottomSheet } from "@/src/features/nutrition/components/growth-history-bottom-sheet";
-import { Alert } from "react-native";
+import {
+  useArchiveChild,
+  useRestoreChild,
+} from "../hooks/useArchiveChild";
 import type { Guardian } from "@/src/api/api.types";
 
 export default function TeacherChildDetailsScreen() {
@@ -55,6 +61,10 @@ export default function TeacherChildDetailsScreen() {
   const [isGuardiansSheetOpen, setIsGuardiansSheetOpen] = useState(false);
   const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
   const [isHistorySheetOpen, setIsHistorySheetOpen] = useState(false);
+  const { mutate: archiveChild, isPending: isArchiving } =
+    useArchiveChild(childId);
+  const { mutate: restoreChild, isPending: isRestoring } =
+    useRestoreChild(childId);
   const [editGuardian, setEditGuardian] = useState<Guardian | null>(null);
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [credentialsModal, setCredentialsModal] = useState<{ visible: boolean; email: string; tempPassword?: string | null } | null>(null);
@@ -145,6 +155,8 @@ export default function TeacherChildDetailsScreen() {
   const child: Child | null = data?.child ?? null;
   const attendanceRecord = data?.attendanceRecord ?? null;
   const feedingRecord = data?.feedingRecord ?? null;
+  const isInactive = child?.status === "Inactive";
+  const isUpdatingStatus = isArchiving || isRestoring;
 
   const status = useMemo(() => {
     if (!child) return { attendance: "Not Recorded", feeding: "Not Recorded" };
@@ -451,6 +463,79 @@ export default function TeacherChildDetailsScreen() {
               <ShieldCheck size={24} color="#0284C7" />
             </View>
             <Text className="text-xs font-bold text-gray-700 text-center">Guardians</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push(`/(teacher)/edit-child/${childId}`)}
+            className="flex-1 items-center justify-center bg-white rounded-3xl py-4 active:bg-gray-50"
+            style={{
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.06,
+              shadowRadius: 8,
+              elevation: 3,
+            }}
+          >
+            <View className="h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 mb-2">
+              <Edit3 size={24} color="#4F46E5" />
+            </View>
+            <Text className="text-xs font-bold text-gray-700 text-center">Edit</Text>
+          </Pressable>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={isInactive ? "Unarchive child" : "Archive child"}
+            disabled={isUpdatingStatus}
+            onPress={() => {
+              Alert.alert(
+                isInactive ? "Unarchive Child" : "Archive Child",
+                isInactive
+                  ? "This will restore the child to your active children list. Are you sure?"
+                  : "This will mark the child as Inactive. They will no longer appear in your active children list. Are you sure?",
+                [
+                  { text: "Cancel", style: "cancel" },
+                  {
+                    text: isInactive ? "Unarchive" : "Archive",
+                    style: isInactive ? "default" : "destructive",
+                    onPress: () =>
+                      isInactive ? restoreChild() : archiveChild(),
+                  },
+                ]
+              );
+            }}
+            className={`flex-1 items-center justify-center bg-white rounded-3xl py-4 active:bg-gray-50 ${
+              isUpdatingStatus ? "opacity-60" : ""
+            }`}
+            style={{
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.06,
+              shadowRadius: 8,
+              elevation: 3,
+            }}
+          >
+            <View
+              className={`h-12 w-12 items-center justify-center rounded-2xl mb-2 ${
+                isInactive ? "bg-emerald-50" : "bg-rose-50"
+              }`}
+            >
+              {isUpdatingStatus ? (
+                <ActivityIndicator color={isInactive ? "#047857" : "#E11D48"} />
+              ) : isInactive ? (
+                <ArchiveRestore size={24} color="#047857" />
+              ) : (
+                <Archive size={24} color="#E11D48" />
+              )}
+            </View>
+            <Text className="text-xs font-bold text-gray-700 text-center">
+              {isUpdatingStatus
+                ? isInactive
+                  ? "Restoring..."
+                  : "Archiving..."
+                : isInactive
+                  ? "Unarchive"
+                  : "Archive"}
+            </Text>
           </Pressable>
         </View>
 

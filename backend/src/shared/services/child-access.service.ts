@@ -19,7 +19,12 @@ const asId = (value: unknown): string => {
 export const buildChildAccessFilter = (
   user: AuthenticatedUser,
 ): Record<string, unknown> => {
-  if (user.role === "admin") return {};
+  if (user.role === "barangay_captain") {
+    if (!user.daycareCenterId) {
+      throw new ForbiddenError("Barangay Captain has no center assignment.");
+    }
+    return { daycareCenter: user.daycareCenterId };
+  }
   if (user.role === "parent") return { parent: user.id };
   if (user.role === "teacher") {
     if (!user.daycareCenterId) {
@@ -38,7 +43,11 @@ export const canAccessChild = (
   child: ChildAccessRecord | null | undefined,
 ): boolean => {
   if (!user?.id || !child) return false;
-  if (user.role === "admin") return true;
+  if (user.role === "barangay_captain") {
+    return Boolean(
+      user.daycareCenterId && asId(child.daycareCenter) === user.daycareCenterId,
+    );
+  }
   if (user.role === "parent") return asId(child.parent) === user.id;
   if (user.role === "teacher") {
     return Boolean(
@@ -55,8 +64,7 @@ export const canAccessChildIdentityDocument = (
   child: ChildAccessRecord | null | undefined,
 ): boolean =>
   Boolean(
-    user?.role === "admin" ||
-      (user?.role === "parent" && asId(child?.parent) === user.id),
+    user?.role === "parent" && asId(child?.parent) === user.id,
   );
 
 export const assertCanAccessChild = (
@@ -77,6 +85,22 @@ export const assertTeacherCenter = (
   }
   if (!user.daycareCenterId) {
     throw new ForbiddenError("Teacher has no active center assignment.");
+  }
+  return user.daycareCenterId;
+};
+
+export const assertCaptainCenter = (
+  user: AuthenticatedUser | undefined,
+  expectedCenterId: string,
+): string => {
+  if (!user?.id || user.role !== "barangay_captain") {
+    throw new ForbiddenError("Barangay Captains only");
+  }
+  if (!user.daycareCenterId) {
+    throw new ForbiddenError("Barangay Captain has no center assignment.");
+  }
+  if (user.daycareCenterId !== expectedCenterId) {
+    throw new ForbiddenError("Barangay Captain is not assigned to this center.");
   }
   return user.daycareCenterId;
 };

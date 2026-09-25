@@ -17,9 +17,11 @@ import { ChangeStatusModal } from "@/features/children/components/ChangeStatusMo
 import { DeleteChildModal } from "@/features/children/components/DeleteChildModal";
 import { getChildBlockchainProof, getChildDocumentUrl } from "@/api/child.api";
 import type {Child,ChildBlockchainProof,ChildDocumentType} from "@/types/child";
+import { useAuthSession } from "@/components/auth/useAuthSession";
 
 export default function ChildrenManagement() {
   const navigate = useNavigate();
+  const { user } = useAuthSession();
   const [searchParams, setSearchParams] = useSearchParams();
   const [editingChild, setEditingChild] = useState<Child | null>(null);
   const [viewingChild, setViewingChild] = useState<Child | null>(null);
@@ -53,15 +55,14 @@ export default function ChildrenManagement() {
     setStatusFilter,
     assignmentFilter,
     setAssignmentFilter,
-    centerFilter,
-    setCenterFilter,
+
     schoolYearFilter,
     setSchoolYearFilter,
     page: safePage,
     setPage,
     limit,
     setLimit,
-    centerOptions,
+
     schoolYearOptions,
     totalPages,
     rangeLabel,
@@ -108,6 +109,10 @@ export default function ChildrenManagement() {
     setViewError(null);
     setBlockchainProof(null);
     setBlockchainProofError(null);
+    if (user?.role === "barangay_captain") {
+      setBlockchainProofLoading(false);
+      return;
+    }
     setBlockchainProofLoading(true);
 
     getChildBlockchainProof(child._id)
@@ -168,14 +173,14 @@ export default function ChildrenManagement() {
 
   return (
     <Layout
-      activeItem="children"
-      breadcrumbs={["Admin", "Children Records"]}
+      activeItem="monitoring/records"
+      breadcrumbs={["Barangay Captain", "Daycare Records"]}
       onNavigate={(path) => navigate(`/${path}`)}
     >
       <div className="space-y-6 p-8">
         <PageHeader
-          title="Children Records"
-          subtitle="View and manage student information"
+          title="Daycare Records"
+          subtitle="Read-only child records for Bonuan Sabangan"
         />
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -290,23 +295,6 @@ export default function ChildrenManagement() {
                     </option>
                   ))}
                 </select>
-
-                <select
-                  value={centerFilter}
-                  onChange={(e) => {
-                    setPage(1);
-                    setCenterFilter(e.target.value);
-                  }}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/30 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-                >
-                  <option value="all">All Centers</option>
-                  {centerOptions.map((center) => (
-                    <option key={center.id} value={center.id}>
-                      {center.label}
-                    </option>
-                  ))}
-                </select>
-
                 <button
                   type="button"
                   disabled={!hasActiveFilters}
@@ -326,6 +314,7 @@ export default function ChildrenManagement() {
             onViewChild={openViewModal}
             onEditChild={setEditingChild}
             onMenuClick={openMenu}
+            readOnly
           />
 
           <Pagination

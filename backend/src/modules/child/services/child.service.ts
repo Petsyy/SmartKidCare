@@ -1,9 +1,10 @@
 import mongoose from "mongoose";
 import {ConflictError,NotFoundError,ValidationError,
 } from "../../../shared/errors/app-error";
-import { resolveTeacherAssignment } from "../shared";
 import { parseDate } from "../../../shared/utils/date.utils";
 import { childRepository } from "../repositories/child.repository";
+import { assertCanAccessChild } from "../../../shared/services/child-access.service";
+import type { AuthenticatedUser } from "../../../shared/types/auth.types";
 import {
   calculateAgeInMonths,
   calculateBmi,
@@ -47,9 +48,14 @@ export class ChildService {
     return child;
   }
 
-  async updateChild(id: string, body: Record<string, any>) {
+  async updateChild(
+    id: string,
+    body: Record<string, any>,
+    user: AuthenticatedUser | undefined,
+  ) {
     const child = await childRepository.findById(id);
     if (!child) throw new NotFoundError("Child");
+    assertCanAccessChild(user, child);
 
     if (body.firstName !== undefined) child.firstName = body.firstName;
     if (body.middleName !== undefined) child.middleName = body.middleName;
@@ -80,36 +86,17 @@ export class ChildService {
     if (body.schoolYear !== undefined) child.schoolYear = body.schoolYear;
     if (body.status !== undefined) child.status = body.status;
 
-    if (body.unlinkParent === true) {
-      child.parent = undefined;
-    }
-
-    if (body.unlinkTeacher === true) {
-      child.teacher = undefined;
-      child.daycareCenter = undefined;
-    } else if (body.teacherId !== undefined) {
-      try {
-        const teacherAssignment = await resolveTeacherAssignment(
-          body.teacherId,
-        );
-        child.teacher = teacherAssignment?.teacherId || undefined;
-        child.daycareCenter = teacherAssignment?.daycareCenterId || undefined;
-      } catch (error: unknown) {
-        if (error instanceof Error && error.message === "invalid_teacher_id")
-          throw new ValidationError("Invalid teacher ID");
-        if (error instanceof Error && error.message === "teacher_not_found")
-          throw new NotFoundError("Teacher");
-        throw error;
-      }
-    }
-
     await child.save();
     return await childRepository.findByIdWithDetails(child._id.toString());
   }
 
-  async deleteChild(id: string) {
+  async deleteChild(id: string, user: AuthenticatedUser | undefined) {
     if (!mongoose.Types.ObjectId.isValid(id))
       throw new ValidationError("Invalid child ID");
+    const child = await childRepository.findById(id);
+    if (!child) throw new NotFoundError("Child");
+    assertCanAccessChild(user, child);
+
     const deleted = await childRepository.deleteById(id);
     if (!deleted) throw new NotFoundError("Child");
     return true;

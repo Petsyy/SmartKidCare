@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateChild } from "@/api/child.api";
 import { getUsers, type User } from "@/api/authentication.api";
 import { showErrorModal } from "@/utils/sweet-alert-modal";
-import { editChildSchema, type EditChildFormValues } from "@/utils/form-validation";
+import { editChildSchema, type EditChildFormValues } from "@/features/children/validations/edit-child.validation";
 import type { ChildForEdit } from "../components/EditChildModal";
 
 type UseEditChildFormProps = {

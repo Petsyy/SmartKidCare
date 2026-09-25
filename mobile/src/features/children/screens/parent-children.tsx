@@ -135,8 +135,6 @@ function ProfileInfoRow({
   );
 }
 
-
-
 function StatusPill({
   label,
   status,
@@ -201,6 +199,51 @@ function StatusPill({
   );
 }
 
+function NutritionRecordCard({ title, record }: { title: string; record: any }) {
+  const isNormal = record.nutritionalStatus === "Normal";
+  const isOverweight = record.nutritionalStatus === "Overweight";
+
+  return (
+    <View className="mb-4 rounded-2xl border border-gray-100 bg-gray-50 p-4">
+      <Text className="mb-3 text-base font-bold text-gray-900">{title}</Text>
+      <View className="mb-2 flex-row">
+        <Text className="flex-1 text-sm font-semibold text-gray-500">Weight</Text>
+        <Text className="flex-1 text-right text-sm font-bold text-gray-900">
+          {record.weight} kg
+        </Text>
+      </View>
+      <View className="mb-2 flex-row">
+        <Text className="flex-1 text-sm font-semibold text-gray-500">Height</Text>
+        <Text className="flex-1 text-right text-sm font-bold text-gray-900">
+          {record.height} cm
+        </Text>
+      </View>
+      <View className="mb-2 flex-row">
+        <Text className="flex-1 text-sm font-semibold text-gray-500">BMI</Text>
+        <Text className="flex-1 text-right text-sm font-bold text-gray-900">
+          {Number(record.bmi).toFixed(2)}
+        </Text>
+      </View>
+      <View className="mt-1 flex-row items-center">
+        <Text className="flex-1 text-sm font-semibold text-gray-500">Status</Text>
+        <View
+          className={`rounded-full px-3 py-1 ${
+            isNormal ? "bg-emerald-100" : isOverweight ? "bg-orange-100" : "bg-red-100"
+          }`}
+        >
+          <Text
+            className={`text-sm font-extrabold ${
+              isNormal ? "text-emerald-700" : isOverweight ? "text-orange-700" : "text-red-700"
+            }`}
+          >
+            {record.nutritionalStatus}
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
 function ParentNutritionSection({
   childId,
   schoolYear,
@@ -234,64 +277,6 @@ function ParentNutritionSection({
   const initialRecord = currentRecords.find((r: any) => r.period === "initial");
   const finalRecord = currentRecords.find((r: any) => r.period === "final");
 
-  const RecordCard = ({ title, record }: { title: string; record: any }) => (
-    <View className="mb-4 rounded-2xl border border-gray-100 bg-gray-50 p-4">
-      <Text className="mb-3 text-base font-bold text-gray-900">{title}</Text>
-
-      <View className="mb-2 flex-row">
-        <Text className="flex-1 text-sm font-semibold text-gray-500">
-          Weight
-        </Text>
-        <Text className="flex-1 text-right text-sm font-bold text-gray-900">
-          {record.weight} kg
-        </Text>
-      </View>
-
-      <View className="mb-2 flex-row">
-        <Text className="flex-1 text-sm font-semibold text-gray-500">
-          Height
-        </Text>
-        <Text className="flex-1 text-right text-sm font-bold text-gray-900">
-          {record.height} cm
-        </Text>
-      </View>
-
-      <View className="mb-2 flex-row">
-        <Text className="flex-1 text-sm font-semibold text-gray-500">BMI</Text>
-        <Text className="flex-1 text-right text-sm font-bold text-gray-900">
-          {record.bmi.toFixed(2)}
-        </Text>
-      </View>
-
-      <View className="flex-row items-center mt-1">
-        <Text className="flex-1 text-sm font-semibold text-gray-500">
-          Status
-        </Text>
-        <View
-          className={`rounded-full px-3 py-1 ${
-            record.nutritionalStatus === "Normal"
-              ? "bg-emerald-100"
-              : record.nutritionalStatus === "Overweight"
-                ? "bg-orange-100"
-                : "bg-red-100"
-          }`}
-        >
-          <Text
-            className={`text-sm font-extrabold ${
-              record.nutritionalStatus === "Normal"
-                ? "text-emerald-700"
-                : record.nutritionalStatus === "Overweight"
-                  ? "text-orange-700"
-                  : "text-red-700"
-            }`}
-          >
-            {record.nutritionalStatus}
-          </Text>
-        </View>
-      </View>
-    </View>
-  );
-
   return (
     <ProfileSection
       icon={<HeartPulse size={22} color="#047857" />}
@@ -310,10 +295,10 @@ function ParentNutritionSection({
         ) : (
           <>
             {initialRecord && (
-              <RecordCard title="Initial Assessment" record={initialRecord} />
+              <NutritionRecordCard title="Initial Assessment" record={initialRecord} />
             )}
             {finalRecord && (
-              <RecordCard title="Final Assessment" record={finalRecord} />
+              <NutritionRecordCard title="Final Assessment" record={finalRecord} />
             )}
           </>
         )}
@@ -552,7 +537,7 @@ export default function ParentChildrenScreen() {
 
               <View className="mt-4 border-t border-gray-100 pt-4">
                 <Text className="text-base font-extrabold text-gray-900">
-                  Today's Care
+                  Today’s Care
                 </Text>
                 <View className="mt-3 flex-row items-stretch">
                   <StatusPill label="Attendance" status={attendanceStatus} />

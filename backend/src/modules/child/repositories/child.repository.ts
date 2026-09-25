@@ -37,6 +37,17 @@ export class ChildRepository extends BaseRepository<any> {
       .lean();
   }
 
+  async findByIdWithParentCredentials(id: string): Promise<any | null> {
+    return this.model.findById(id)
+      .populate(
+        "parent",
+        "firstName lastName email phone mustChangePassword latestTempPassword",
+      )
+      .populate(teacherWithCenterPopulate as never)
+      .populate("daycareCenter", "name barangay code isActive")
+      .lean();
+  }
+
   async findDuplicate(
     firstName: string,
     lastName: string,

@@ -61,9 +61,6 @@ export const updateChildSchema = z.object({
   height: z.coerce.number().min(60).max(150).optional(),
   schoolYear: z.string().trim().optional(),
   status: z.enum(["Active", "Inactive"]).optional(),
-  unlinkParent: z.boolean().optional(),
-  teacherId: z.string().trim().optional(),
-  unlinkTeacher: z.boolean().optional(),
 });
 
 export const validateCreateChild = validate(createChildSchema);

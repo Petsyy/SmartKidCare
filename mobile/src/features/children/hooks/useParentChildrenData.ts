@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import { useBottomTabBarHeight } from "expo-router/js-tabs";
 import { useFocusEffect } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/src/hooks/use-auth";

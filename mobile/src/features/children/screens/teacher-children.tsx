@@ -30,6 +30,7 @@ export default function ChildScreen() {
   const { isAuthenticated } = useAuth();
   
   const [selectedChildForGuardian, setSelectedChildForGuardian] = useState<{ id: string; name: string } | null>(null);
+  const [statusFilter, setStatusFilter] = useState<"Active" | "All">("Active");
 
   const {
     childrenSearchQuery: searchQuery,
@@ -95,18 +96,24 @@ export default function ChildScreen() {
     return { attendance, feeding, lastUpdated };
   };
 
-  // Filter children based on search query
+  // Filter children based on search query and status
   const filteredChildren = useMemo(() => {
-    if (!searchQuery.trim()) return children;
+    let result = children;
+    
+    if (statusFilter === "Active") {
+      result = result.filter((child) => child.status !== "Inactive");
+    }
+
+    if (!searchQuery.trim()) return result;
 
     const query = searchQuery.toLowerCase();
-    return children.filter((child) => {
+    return result.filter((child) => {
       const fullName =
         `${child.firstName} ${child.middleName || ""} ${child.lastName}`.toLowerCase();
-      const studentId = child.studentId.toLowerCase();
+      const studentId = child.studentId?.toLowerCase() || "";
       return fullName.includes(query) || studentId.includes(query);
     });
-  }, [children, searchQuery]);
+  }, [children, searchQuery, statusFilter]);
 
   if (loading) {
     return (
@@ -175,6 +182,34 @@ export default function ChildScreen() {
         iconColor="#9CA3AF"
       />
 
+      {/* Status Filter Toggle */}
+      <View className="flex-row gap-3 px-5 pb-4 bg-gray-50">
+        <Pressable
+          onPress={() => setStatusFilter("Active")}
+          className={`flex-1 rounded-xl py-3 border items-center justify-center ${
+            statusFilter === "Active" 
+              ? "bg-teal-600 border-teal-600" 
+              : "bg-white border-gray-200"
+          }`}
+        >
+          <Text className={`font-bold ${statusFilter === "Active" ? "text-white" : "text-gray-600"}`}>
+            Active
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setStatusFilter("All")}
+          className={`flex-1 rounded-xl py-3 border items-center justify-center ${
+            statusFilter === "All" 
+              ? "bg-teal-600 border-teal-600" 
+              : "bg-white border-gray-200"
+          }`}
+        >
+          <Text className={`font-bold ${statusFilter === "All" ? "text-white" : "text-gray-600"}`}>
+            All Students
+          </Text>
+        </Pressable>
+      </View>
+
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 24 }}
@@ -228,6 +263,7 @@ export default function ChildScreen() {
                     feeding={status.feeding}
                     lastUpdated={status.lastUpdated}
                     guardianCount={activeGuardians}
+                    isInactive={child.status === "Inactive"}
                     onAddGuardian={() => setSelectedChildForGuardian({ id: child._id, name: childName })}
                     onPress={() =>
                       router.push(`/(teacher)/child-details/${child._id}`)

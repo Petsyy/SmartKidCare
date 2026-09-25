@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  assertCaptainCenter,
   buildChildAccessFilter,
   canAccessChild,
   canAccessChildIdentityDocument,
@@ -49,7 +50,7 @@ test("parent can access only their linked child", () => {
   assert.equal(canAccessChild(parent, { parent: "parent-2" }), false);
 });
 
-test("identity documents exclude teachers but allow linked parents and admins", () => {
+test("identity documents exclude teachers and captains but allow linked parents", () => {
   const child = { parent: "parent-1", teacher: "teacher-1", daycareCenter: "center-1" };
   assert.equal(canAccessChildIdentityDocument(teacher, child), false);
   assert.equal(
@@ -61,11 +62,50 @@ test("identity documents exclude teachers but allow linked parents and admins", 
   );
   assert.equal(
     canAccessChildIdentityDocument(
-      { id: "admin-1", role: "admin", daycareCenterId: null },
+      { id: "captain-1", role: "barangay_captain", daycareCenterId: "center-1" },
       child,
     ),
-    true,
+    false,
   );
+});
+
+test("captain reads only children from the assigned center", () => {
+  const captain = { id: "captain-1", role: "barangay_captain" as const, daycareCenterId: "center-1" };
+  assert.deepEqual(buildChildAccessFilter(captain), { daycareCenter: "center-1" });
+  assert.equal(canAccessChild(captain, { daycareCenter: "center-1" }), true);
+  assert.equal(canAccessChild(captain, { daycareCenter: "center-2" }), false);
+});
+
+test("captain analytics access requires the configured center assignment", () => {
+  const captain = {
+    id: "captain-1",
+    role: "barangay_captain" as const,
+    daycareCenterId: "center-1",
+  };
+
+  assert.equal(assertCaptainCenter(captain, "center-1"), "center-1");
+  assert.throws(
+    () => assertCaptainCenter({ ...captain, daycareCenterId: null }, "center-1"),
+    /no center assignment/i,
+  );
+  assert.throws(
+    () => assertCaptainCenter(captain, "center-2"),
+    /not assigned to this center/i,
+  );
+  assert.throws(
+    () =>
+      assertCaptainCenter(
+        { id: "teacher-1", role: "teacher", daycareCenterId: "center-1" },
+        "center-1",
+      ),
+    /captains only/i,
+  );
+});
+
+test("system admin cannot access operational child records", () => {
+  const systemAdmin = { id: "system-1", role: "system_admin" as const, daycareCenterId: null };
+  assert.throws(() => buildChildAccessFilter(systemAdmin), /forbidden/i);
+  assert.equal(canAccessChild(systemAdmin, { daycareCenter: "center-1" }), false);
 });
 
 test("teacher without a center cannot build an access filter", () => {
