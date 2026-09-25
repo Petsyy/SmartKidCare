@@ -8,7 +8,7 @@ export interface User {
   lastName: string;
   email: string;
   phone: string;                // teacher/parent
-  role: "admin" | "teacher" | "parent";
+  role: "system_admin" | "barangay_captain" | "teacher" | "parent";
   daycareCenter?: {
     _id: string;
     name: string;
@@ -20,6 +20,11 @@ export interface User {
   mustChangePassword: boolean;
   latestTempPassword?: string;
   latestTempPasswordIssuedAt?: string;
+  captainOnboardingStatus?: "invitation_pending" | "active" | "inactive";
+  captainInvitationExpiresAt?: string;
+  captainInvitationSentAt?: string;
+  captainInvitationActivatedAt?: string;
+  captainReplaces?: string;
   linkedChildren?: Array<{
     _id: string;
     firstName: string;
@@ -34,7 +39,7 @@ export interface User {
 }
 
 export interface GetUsersParams {
-  role?: "teacher" | "parent" | "admin";
+  role?: "teacher" | "parent" | "barangay_captain";
 }
 
 export const getUsers = async (

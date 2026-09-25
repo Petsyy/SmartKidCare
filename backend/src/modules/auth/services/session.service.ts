@@ -64,7 +64,7 @@ export class SessionService {
         requiresMfa: true,
         mfaToken,
         email: maskEmail(user.email),
-        message: "OTP sent to your admin email.",
+        message: "OTP sent to your account email.",
       };
     } catch (error: any) {
       console.error("Admin login OTP send failed:", {
@@ -121,7 +121,7 @@ export class SessionService {
     }
 
     // Handle admin login with MFA
-    if (user.role === "admin") {
+    if (user.role === "system_admin" || user.role === "barangay_captain") {
       return await this.handleAdminLogin(user, res);
     }
 
@@ -157,8 +157,8 @@ export class SessionService {
 
     // Update username (admin only)
     if (payload.username !== undefined) {
-      if (user.role !== "admin") {
-        throw new Error("Only admin accounts can update username.");
+      if (user.role !== "system_admin" && user.role !== "barangay_captain") {
+        throw new Error("Only web accounts can update username.");
       }
 
       const normalizedUsername = String(payload.username).trim();
@@ -223,19 +223,19 @@ export class SessionService {
   ): Promise<any> {
     const user = await this.authUserRepository.findById(userId);
 
-    if (!user || user.role !== "admin") {
-      throw new Error("Admin account not found.");
+    if (!user || !["system_admin", "barangay_captain"].includes(user.role)) {
+      throw new Error("Web administrator account not found.");
     }
 
     if (typeof payload.adminMfaEnabled === "boolean") {
       user.adminMfaEnabled = payload.adminMfaEnabled;
     }
 
-    if (typeof payload.adminNotifySecurityEvents === "boolean") {
+    if (user.role === "system_admin" && typeof payload.adminNotifySecurityEvents === "boolean") {
       user.adminNotifySecurityEvents = payload.adminNotifySecurityEvents;
     }
 
-    if (typeof payload.adminNotifySystemUpdates === "boolean") {
+    if (user.role === "system_admin" && typeof payload.adminNotifySystemUpdates === "boolean") {
       user.adminNotifySystemUpdates = payload.adminNotifySystemUpdates;
     }
 
@@ -254,11 +254,7 @@ export class SessionService {
   public async getAllUsers(role?: string): Promise<UserWithChildren[]> {
     if (role === "parent") {
       const enrolledParentIds = await this.authChildRepository.findEnrolledParentIds();
-      const users = await this.authUserRepository.findParentsByIds(enrolledParentIds);
-      if (users.length > 0) {
-        return await this.attachLinkedChildren(users);
-      }
-      return users;
+      return this.authUserRepository.findParentsByIds(enrolledParentIds);
     }
 
     return this.authUserRepository.findAllByRole(role);

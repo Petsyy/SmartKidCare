@@ -45,6 +45,21 @@ const passwordSetupSchema = z.object({
   newPassword: passwordSchema,
 });
 
+const captainInvitationTokenSchema = z.object({
+  token: z.string().trim().min(32, "Invitation token is invalid."),
+});
+
+const captainActivationSchema = z
+  .object({
+    token: z.string().trim().min(32, "Invitation token is invalid."),
+    newPassword: passwordSchema,
+    confirmPassword: nonEmptyString,
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords do not match.",
+    path: ["confirmPassword"],
+  });
+
 const forgotPasswordResetSchema = z.object({
   passwordResetToken: nonEmptyString,
   newPassword: passwordSchema,
@@ -110,7 +125,7 @@ const updateAdminPreferencesSchema = z
   );
 
 const getUsersQuerySchema = z.object({
-  role: z.enum(["admin", "teacher", "parent"]).optional(),
+  role: z.enum(["system_admin", "barangay_captain", "teacher", "parent"]).optional(),
 });
 
 export const validateLogin = validate(loginSchema);
@@ -119,6 +134,8 @@ export const validateAdminMfaVerify = validate(adminMfaVerifySchema);
 export const validateAdminMfaResend = validate(adminMfaResendSchema);
 export const validateResendOtp = validate(emailOnlySchema);
 export const validatePasswordSetup = validate(passwordSetupSchema);
+export const validateCaptainInvitationToken = validate(captainInvitationTokenSchema);
+export const validateCaptainActivation = validate(captainActivationSchema);
 export const validateForgotPasswordRequest = validate(emailOnlySchema);
 export const validateForgotPasswordVerify = validate(otpVerifySchema);
 export const validateForgotPasswordReset = validate(forgotPasswordResetSchema);

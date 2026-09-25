@@ -7,6 +7,7 @@ export default function ProtectedLayout() {
     isAuthenticated,
     authCheckError,
     retryAuthCheck,
+    user,
   } = useAuthSession();
 
   if (isChecking) {
@@ -33,6 +34,10 @@ export default function ProtectedLayout() {
   }
 
   if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user?.role !== "system_admin" && user?.role !== "barangay_captain") {
     return <Navigate to="/login" replace />;
   }
 

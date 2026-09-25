@@ -2,6 +2,10 @@ import { Router } from "express";
 import { login, getCsrf, getMe, updateMe, updateAdminPreferences, getAllUsers, logout } from "../controllers/session.controller";
 import { verifyAdminLoginMfa, resendAdminLoginMfa } from "../controllers/mfa.controller";
 import {
+  activateCaptainInvitation,
+  validateCaptainInvitation,
+} from "../controllers/captain-activation.controller";
+import {
   verifyTeacherPasswordOtp,
   resendTeacherPasswordOtp,
   completeTeacherPasswordSetup,
@@ -25,6 +29,8 @@ import {
   validateLogin,
   validateOtpVerify,
   validatePasswordSetup,
+  validateCaptainActivation,
+  validateCaptainInvitationToken,
   validateResendOtp,
 } from "../validators/auth.validator";
 import { authenticateToken } from "../../../shared/middleware/auth.middleware";
@@ -36,6 +42,7 @@ import {
   authenticatedOtpResendCooldownLimiter,
   authenticatedOtpSendLimiter,
   loginLimiter,
+  captainInvitationLimiter,
   otpResendCooldownLimiter,
   otpSendLimiter,
   otpVerifyLimiter,
@@ -50,6 +57,8 @@ router.post("/login", loginLimiter, validateLogin, login);
 router.post("/admin/login", loginLimiter, validateLogin, login);
 router.post("/admin/mfa/verify", validateAdminMfaVerify, adminMfaVerifyLimiter, verifyAdminLoginMfa);
 router.post("/admin/mfa/resend", validateAdminMfaResend, adminMfaSendLimiter, adminMfaResendCooldownLimiter, resendAdminLoginMfa);
+router.post("/captain-invitation/validate", captainInvitationLimiter, validateCaptainInvitationToken, validateCaptainInvitation);
+router.post("/captain-invitation/activate", captainInvitationLimiter, validateCaptainActivation, activateCaptainInvitation);
 router.post("/password-otp/verify", validateOtpVerify, otpVerifyLimiter, verifyTeacherPasswordOtp);
 router.post("/password-otp/resend", validateResendOtp, otpSendLimiter, otpResendCooldownLimiter, resendTeacherPasswordOtp);
 router.post("/password/setup", validatePasswordSetup, completeTeacherPasswordSetup);
@@ -70,7 +79,7 @@ router.post("/logout", authenticateToken, logout);
 /**
  * Admin-Only Auth Routes
  */
-router.patch("/me/preferences", authenticateToken, requireRole("admin"), validateAdminPreferences, updateAdminPreferences);
-router.get("/users", authenticateToken, requireRole("admin"), validateGetUsersQuery, getAllUsers);
+router.patch("/me/preferences", authenticateToken, requireRole("system_admin", "barangay_captain"), validateAdminPreferences, updateAdminPreferences);
+router.get("/users", authenticateToken, requireRole("system_admin"), validateGetUsersQuery, getAllUsers);
 
 export default router;

@@ -30,7 +30,7 @@ export const verifyAdminLoginMfa = async (req: Request, res: Response) => {
     }
 
     const user = await User.findById(userId);
-    if (!user || user.role !== "admin") {
+    if (!user || !["system_admin", "barangay_captain"].includes(user.role)) {
       return res.status(404).json({ message: "Admin account not found." });
     }
 
@@ -83,7 +83,7 @@ export const resendAdminLoginMfa = async (req: Request, res: Response) => {
     }
 
     const user = await User.findById(userId);
-    if (!user || user.role !== "admin") {
+    if (!user || !["system_admin", "barangay_captain"].includes(user.role)) {
       return res.status(404).json({ message: "Admin account not found." });
     }
 

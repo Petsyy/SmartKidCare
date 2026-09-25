@@ -81,10 +81,11 @@ export const authenticateToken = async (
         : null,
     };
 
-    if (authenticatedUser.role === "parent") {
+    if (authenticatedUser.role === "parent" || authenticatedUser.role === "barangay_captain") {
 
       const path = String(req.path || "");
       const isAllowedDuringForcedChange =
+        path === "/change-password/otp/request" ||
         path === "/change-password" ||
         path === "/logout" ||
         path === "/me" ||

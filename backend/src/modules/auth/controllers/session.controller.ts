@@ -74,8 +74,8 @@ export const updateAdminPreferences = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "Not authenticated." });
     }
 
-    if (req.user.role !== "admin") {
-      return res.status(403).json({ message: "Admins only." });
+    if (!["system_admin", "barangay_captain"].includes(req.user.role)) {
+      return res.status(403).json({ message: "Web administrators only." });
     }
 
     const preferences = await sessionService.updateAdminPreferences(
@@ -115,8 +115,8 @@ export const logout = async (_req: Request, res: Response) => {
 
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
-    if (req.user?.role !== "admin") {
-      return res.status(403).json({ message: "Admins only." });
+    if (req.user?.role !== "system_admin") {
+      return res.status(403).json({ message: "System administrators only." });
     }
 
     const { role } = req.query;

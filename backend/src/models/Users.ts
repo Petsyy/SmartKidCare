@@ -17,7 +17,7 @@ export interface IUser extends Document {
   lastName: string;
   email: string;
   password: string;
-  role: "admin" | "teacher" | "parent";
+  role: "system_admin" | "barangay_captain" | "teacher" | "parent";
   phone?: string; // required for teacher/parent
   adminMfaEnabled?: boolean; // admin only
   adminNotifySecurityEvents?: boolean; // admin only
@@ -32,6 +32,13 @@ export interface IUser extends Document {
   passwordResetOtpPurpose?: string;
   latestTempPassword?: string;
   latestTempPasswordIssuedAt?: Date;
+  captainOnboardingStatus?: "invitation_pending" | "active" | "inactive";
+  captainInvitationTokenHash?: string;
+  captainInvitationExpiresAt?: Date;
+  captainInvitationSentAt?: Date;
+  captainInvitationActivatedAt?: Date;
+  captainInvitedBy?: mongoose.Types.ObjectId;
+  captainReplaces?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -71,7 +78,7 @@ const UserSchema: Schema = new Schema(
     phone: {
       type: String,
       required: function (this: { role?: string }): boolean {
-        return this.role !== "admin";
+        return this.role !== "system_admin";
       },
       trim: true,
     },
@@ -79,21 +86,21 @@ const UserSchema: Schema = new Schema(
     adminMfaEnabled: {
       type: Boolean,
       default: function (this: { role?: string }): boolean {
-        return this.role === "admin"; 
+        return this.role === "system_admin"; 
       },
     },
 
     adminNotifySecurityEvents: {
       type: Boolean,
       default: function (this: { role?: string }): boolean {
-        return this.role === "admin";
+        return this.role === "system_admin";
       },
     },
 
     adminNotifySystemUpdates: {
       type: Boolean,
       default: function (this: { role?: string }): boolean {
-        return this.role === "admin";
+        return this.role === "system_admin";
       },
     },
 
@@ -136,7 +143,7 @@ const UserSchema: Schema = new Schema(
 
     role: {
       type: String,
-      enum: ["admin", "teacher", "parent"],
+      enum: ["system_admin", "barangay_captain", "teacher", "parent"],
       required: true,
     },
 
@@ -176,10 +183,45 @@ const UserSchema: Schema = new Schema(
       type: Date,
       default: undefined,
     },
+    captainOnboardingStatus: {
+      type: String,
+      enum: ["invitation_pending", "active", "inactive"],
+      default: undefined,
+    },
+    captainInvitationTokenHash: {
+      type: String,
+      select: false,
+      default: undefined,
+    },
+    captainInvitationExpiresAt: { type: Date, default: undefined },
+    captainInvitationSentAt: { type: Date, default: undefined },
+    captainInvitationActivatedAt: { type: Date, default: undefined },
+    captainInvitedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      default: undefined,
+    },
+    captainReplaces: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      default: undefined,
+    },
   },
   {
     timestamps: true,
     collection: "users",
+  },
+);
+
+UserSchema.index(
+  { daycareCenter: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      role: "barangay_captain",
+      isActive: true,
+    },
+    name: "one_active_captain_per_center",
   },
 );
 

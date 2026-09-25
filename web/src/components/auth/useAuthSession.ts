@@ -10,6 +10,7 @@ type AuthSessionState = {
     role?: string;
     firstName?: string;
     lastName?: string;
+    mustChangePassword?: boolean;
   } | null;
 };
 

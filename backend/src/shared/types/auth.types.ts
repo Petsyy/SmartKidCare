@@ -1,4 +1,4 @@
-export type AppUserRole = "admin" | "teacher" | "parent";
+export type AppUserRole = "system_admin" | "barangay_captain" | "teacher" | "parent";
 
 export interface AuthenticatedUser {
   id: string;

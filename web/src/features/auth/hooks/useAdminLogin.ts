@@ -40,8 +40,8 @@ export function useAdminLogin() {
   const { isAuthenticated, user, isChecking } = useAuthSession();
 
   useEffect(() => {
-    if (!isChecking && isAuthenticated && user?.role === "admin") {
-      navigate("/dashboard", { replace: true });
+    if (!isChecking && isAuthenticated && (user?.role === "system_admin" || user?.role === "barangay_captain")) {
+      navigate(user.role === "system_admin" ? "/system/dashboard" : user.mustChangePassword ? "/monitoring/settings" : "/monitoring/dashboard", { replace: true });
     }
   }, [isAuthenticated, isChecking, user, navigate]);
 
@@ -279,7 +279,7 @@ export function useAdminLogin() {
         }
 
         await queryClient.invalidateQueries({ queryKey: webQueryKeys.authSession() });
-        navigate("/dashboard");
+        navigate(data?.user?.role === "system_admin" ? "/system/dashboard" : data?.user?.mustChangePassword ? "/monitoring/settings" : "/monitoring/dashboard");
         return;
       }
 
@@ -288,10 +288,19 @@ export function useAdminLogin() {
         throw new Error("Please enter the verification code.");
       }
 
-      await verifyMutation.mutateAsync({ mfaToken, otp });
+      const data = await verifyMutation.mutateAsync({ mfaToken, otp });
 
       await queryClient.invalidateQueries({ queryKey: webQueryKeys.authSession() });
-      navigate("/dashboard");
+      setMfaToken(null);
+      setMfaEmail(null);
+      setValue("otp", "");
+      navigate(
+        data?.user?.role === "system_admin"
+          ? "/system/dashboard"
+          : data?.user?.mustChangePassword
+            ? "/monitoring/settings"
+            : "/monitoring/dashboard",
+      );
     } catch (err: any) {
       setError(err.message || "Login failed. Please try again.");
     }

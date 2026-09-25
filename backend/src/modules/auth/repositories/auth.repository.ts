@@ -1,6 +1,9 @@
 import mongoose from "mongoose";
 import User, { IUser } from "../../../models/Users";
 import Child from "../../../models/Child";
+import SecurityAuditLog, {
+  type SecurityAuditAction,
+} from "../../../models/SecurityAuditLog";
 import { BaseRepository } from "../../../shared/repositories/base.repository";
 
 const escapeRegex = (value: string) =>
@@ -25,7 +28,7 @@ export class AuthUserRepository extends BaseRepository<IUser> {
 
     if (isAdminRoute) {
       return this.model.findOne({
-        role: "admin",
+        role: { $in: ["system_admin", "barangay_captain"] },
         $or: [
           {
             email: {
@@ -67,6 +70,29 @@ export class AuthUserRepository extends BaseRepository<IUser> {
         $options: "i",
       },
     });
+  }
+
+  async findCaptainInvitationByHash(hash: string): Promise<IUser | null> {
+    return this.model
+      .findOne({
+        role: "barangay_captain",
+        captainInvitationTokenHash: hash,
+      })
+      .select("+captainInvitationTokenHash");
+  }
+
+  async findCaptainById(id: string): Promise<IUser | null> {
+    return this.model.findOne({ _id: id, role: "barangay_captain" });
+  }
+
+  async createAuditEvent(input: {
+    action: SecurityAuditAction;
+    actor?: string | null;
+    targetUser: string;
+    daycareCenter?: string | null;
+    metadata?: Record<string, unknown>;
+  }): Promise<void> {
+    await SecurityAuditLog.create(input);
   }
 
   async findByEmailExcluding(

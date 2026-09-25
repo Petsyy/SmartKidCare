@@ -348,9 +348,9 @@ export const requestChangePasswordOtp = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "User not found." });
     }
 
-    if (user.role !== "admin") {
+    if (user.role !== "system_admin" && user.role !== "barangay_captain") {
       return res.status(403).json({
-        message: "Two-factor password confirmation is available for admins only.",
+        message: "Password confirmation is available for web accounts only.",
       });
     }
 
@@ -396,7 +396,7 @@ export const changePassword = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "Current password is incorrect." });
     }
 
-    if (user.role === "admin") {
+    if (user.role === "system_admin" || user.role === "barangay_captain") {
       const normalizedOtp = String(otp || "").trim();
       if (!normalizedOtp) {
         return res.status(400).json({

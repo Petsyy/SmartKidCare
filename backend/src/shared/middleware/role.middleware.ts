@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 
-export type UserRole = "admin" | "teacher" | "parent";
+export type UserRole = "system_admin" | "barangay_captain" | "teacher" | "parent";
 
 export const requireRole = (...allowedRoles: UserRole[]) => {
   return (req: Request, res: Response, next: NextFunction): void => {
