@@ -20,6 +20,7 @@ import type {
   CompetencyEvaluationRepositoryContract,
 } from "../types/competency.types";
 import { canAccessChild } from "../../../shared/services/child-access.service";
+import { getSingleCenterId } from "../../../shared/services/single-center.service";
 
 export class CompetencyService {
   constructor(
@@ -173,13 +174,16 @@ export class CompetencyService {
     filters: { period?: string; schoolYear?: string; centerId?: string },
   ) {
     const validUser = this.assertReader(user);
-    if (validUser.role !== "admin")
-      throw new ForbiddenError("Administrators only");
+    if (validUser.role !== "barangay_captain")
+      throw new ForbiddenError("Barangay Captains only");
+
+    const centerId = await getSingleCenterId();
+    const scopedFilters = { ...filters, centerId };
 
     const [definitions, evaluations, schoolYears] = await Promise.all([
       this.definitionRepository.findActive(),
-      this.evaluationRepository.aggregateLatestSubmitted(filters),
-      this.evaluationRepository.findSubmittedSchoolYears(filters.centerId),
+      this.evaluationRepository.aggregateLatestSubmitted(scopedFilters),
+      this.evaluationRepository.findSubmittedSchoolYears(centerId),
     ]);
 
     const levels = [
@@ -232,7 +236,7 @@ export class CompetencyService {
       filters: {
         period: filters.period || "all",
         schoolYear: filters.schoolYear || "all",
-        centerId: filters.centerId || null,
+        centerId,
       },
       totalStudents: evaluations.length,
       schoolYears,
@@ -244,7 +248,7 @@ export class CompetencyService {
     user?: CompetencyAuthUser,
   ): Required<CompetencyAuthUser> {
     if (!user?.id) throw new UnauthorizedError();
-    if (user.role !== "teacher" && user.role !== "admin" && user.role !== "parent")
+    if (user.role !== "teacher" && user.role !== "barangay_captain" && user.role !== "parent")
       throw new ForbiddenError();
     return user as Required<CompetencyAuthUser>;
   }

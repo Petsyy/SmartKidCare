@@ -24,6 +24,7 @@ const attendanceHistoryQuerySchema = z.object({
   date: z.string().trim().optional(),
   startDate: z.string().trim().optional(),
   endDate: z.string().trim().optional(),
+  datePreset: z.enum(["today", "thisWeek", "thisMonth"]).optional(),
   teacherId: objectId.optional(),
   centerId: objectId.optional(),
   search: z.string().trim().max(100).optional(),

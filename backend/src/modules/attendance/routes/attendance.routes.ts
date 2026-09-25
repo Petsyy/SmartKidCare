@@ -18,6 +18,6 @@ router.use(authenticateToken);
 router.post("/", requireRole("teacher"), validateSubmitAttendance, submitAttendance);
 
 // Multi-role History Queries (Admin, Teacher, Parent)
-router.get("/", requireRole("admin", "teacher", "parent"), validateAttendanceHistoryQuery, getAttendanceHistory);
+router.get("/", requireRole("barangay_captain", "teacher", "parent"), validateAttendanceHistoryQuery, getAttendanceHistory);
 
 export default router;

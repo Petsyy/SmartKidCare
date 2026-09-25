@@ -20,12 +20,12 @@ const router = express.Router();
 router.use(authenticateToken);
 router.get(
   "/definitions",
-  requireRole("admin", "teacher", "parent"),
+  requireRole("barangay_captain", "teacher", "parent"),
   listDefinitions,
 );
 router.get(
   "/analytics",
-  requireRole("admin"),
+  requireRole("barangay_captain"),
   validateAnalyticsQuery,
   competencyAnalytics,
 );
@@ -37,13 +37,13 @@ router.post(
 );
 router.get(
   "/children/:childId/evaluations/:period",
-  requireRole("admin", "teacher", "parent"),
+  requireRole("barangay_captain", "teacher", "parent"),
   validateChildAndPeriodParams,
   evaluationByPeriod,
 );
 router.get(
   "/children/:childId/evaluations",
-  requireRole("admin", "teacher", "parent"),
+  requireRole("barangay_captain", "teacher", "parent"),
   validateChildParams,
   validateHistoryQuery,
   validateAnalyticsQuery,

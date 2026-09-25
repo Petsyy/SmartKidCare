@@ -1,7 +1,7 @@
 import {ForbiddenError,UnauthorizedError,ValidationError,
 } from "../errors/app-error";
 
-export type RecordAuthUser = { id: string; role: string };
+export type RecordAuthUser = { id: string; role: string; daycareCenterId?: string | null };
 export type RecordDateRange = { start: Date; end: Date };
 export type CompositeRecordId = { parentId: string; childId: string };
 
@@ -84,14 +84,13 @@ export class RecordServiceSupport {
   }
 
   assertPrivileged(user: RecordAuthUser | undefined): RecordAuthUser {
-    if (!user?.id || (user.role !== "admin" && user.role !== "teacher")) {
+    if (!user?.id || user.role !== "teacher") {
       throw new ForbiddenError("Forbidden");
     }
     return user;
   }
 
   canMutateTeacherRecord(user: RecordAuthUser, teacherId: unknown): boolean {
-    if (user.role === "admin") return true;
     return user.role === "teacher" && String(teacherId || "") === user.id;
   }
 

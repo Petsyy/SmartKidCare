@@ -1,4 +1,12 @@
 import type { Request } from "express";
+import {
+  buildWeekRange,
+  getCurrentMonthRange,
+  getCurrentWeekStart,
+  toLocalDayUtcRange,
+} from "./date.utils";
+
+const MANILA_OFFSET_MINUTES = 8 * 60;
 
 export const parsePositiveInt = (value: unknown, fallback: number): number => {
   const parsed = Number(value);
@@ -19,31 +27,22 @@ export const formatChildName = (child?: any): string => {
 
 export const getDateRangeFromPreset = (
   preset: string,
+  now = new Date(),
 ): { start: Date; end: Date } | null => {
-  const now = new Date();
-  const start = new Date(now);
-  const end = new Date(now);
+  const today = toLocalDayUtcRange(now, MANILA_OFFSET_MINUTES);
 
   if (preset === "today") {
-    start.setHours(0, 0, 0, 0);
-    end.setHours(23, 59, 59, 999);
-    return { start, end };
+    return today;
   }
 
   if (preset === "thisWeek") {
-    const day = start.getDay();
-    const diffToMonday = day === 0 ? 6 : day - 1;
-    start.setDate(start.getDate() - diffToMonday);
-    start.setHours(0, 0, 0, 0);
-    end.setHours(23, 59, 59, 999);
-    return { start, end };
+    return buildWeekRange(
+      getCurrentWeekStart(today.start, MANILA_OFFSET_MINUTES),
+    );
   }
 
   if (preset === "thisMonth") {
-    start.setDate(1);
-    start.setHours(0, 0, 0, 0);
-    end.setHours(23, 59, 59, 999);
-    return { start, end };
+    return getCurrentMonthRange(today.start, MANILA_OFFSET_MINUTES);
   }
 
   return null;
