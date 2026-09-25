@@ -1,5 +1,6 @@
 import React from "react";
-import { Modal, View, Pressable, Image, Text, SafeAreaView } from "react-native";
+import { Modal, View, Pressable, Image, Text } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { X } from "lucide-react-native";
 
 export interface ImageViewerModalProps {

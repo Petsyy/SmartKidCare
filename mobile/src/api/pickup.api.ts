@@ -1,4 +1,5 @@
 import { apiClient, apiFormDataClient } from "./client";
+import { File } from "expo-file-system";
 import type {
   Guardian,
   PickupEligibleChild,
@@ -20,19 +21,19 @@ const appendGuardianMultipartData = (
   });
 
   if (files?.guardianPhoto) {
-    formData.append("guardianPhoto", {
-      uri: files.guardianPhoto.uri,
-      name: files.guardianPhoto.name || "guardian-photo.jpg",
-      type: files.guardianPhoto.mimeType || "image/jpeg",
-    } as any);
+    formData.append(
+      "guardianPhoto",
+      new File(files.guardianPhoto.uri),
+      files.guardianPhoto.name || "guardian-photo.jpg",
+    );
   }
 
   if (files?.guardianId) {
-    formData.append("guardianId", {
-      uri: files.guardianId.uri,
-      name: files.guardianId.name || "guardian-id.jpg",
-      type: files.guardianId.mimeType || "image/jpeg",
-    } as any);
+    formData.append(
+      "guardianId",
+      new File(files.guardianId.uri),
+      files.guardianId.name || "guardian-id.jpg",
+    );
   }
 };
 

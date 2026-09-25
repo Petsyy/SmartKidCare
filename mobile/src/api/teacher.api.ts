@@ -1,4 +1,5 @@
 import { apiClient, apiFormDataClient } from "./client";
+import { File } from "expo-file-system";
 import type {
   Child,
   ChildEnrollmentRequestPayload,
@@ -35,19 +36,19 @@ export const submitChildEnrollment = async (
     });
 
   if (files?.birthCertificate?.uri) {
-    formData.append("birthCertificate", {
-      uri: files.birthCertificate.uri,
-      name: files.birthCertificate.name,
-      type: files.birthCertificate.mimeType || "application/octet-stream",
-    } as any);
+    formData.append(
+      "birthCertificate",
+      new File(files.birthCertificate.uri),
+      files.birthCertificate.name,
+    );
   }
 
   if (files?.parentId?.uri) {
-    formData.append("parentId", {
-      uri: files.parentId.uri,
-      name: files.parentId.name,
-      type: files.parentId.mimeType || "application/octet-stream",
-    } as any);
+    formData.append(
+      "parentId",
+      new File(files.parentId.uri),
+      files.parentId.name,
+    );
   }
 
   return apiFormDataClient<ChildEnrollmentSubmissionResponse>(
@@ -83,4 +84,24 @@ export const resetChildParentPassword = async (
       method: "POST",
     },
   );
+};
+
+export const updateChild = async (
+  childId: string,
+  payload: Partial<ChildEnrollmentRequestPayload> & { weight?: number | null; height?: number | null },
+): Promise<Child> => {
+  return apiClient<Child>(`/api/children/${childId}`, {
+    method: "PATCH",
+    body: payload,
+  });
+};
+
+export const updateChildStatus = async (
+  childId: string,
+  status: "Active" | "Inactive",
+): Promise<Child> => {
+  return apiClient<Child>(`/api/children/${childId}`, {
+    method: "PATCH",
+    body: { status },
+  });
 };

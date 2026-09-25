@@ -13,10 +13,10 @@ import {
   classifyNutritionalStatus,
 } from "@/src/features/enrollment/utils/enrollment-utils";
 import {
-  computeAgeFromDateOfBirth,
   childEnrollmentStepOneSchema,
   childEnrollmentStepTwoSchema,
 } from "@/src/features/enrollment/validations/child-enrollment-validation";
+import { computeAgeFromDateOfBirth } from "@/src/shared/validations/child-validation-utils";
 import DocumentPicker from "expo-document-picker";
 
 const enrollmentSchema = z.intersection(
@@ -61,6 +61,14 @@ export const useEnrollmentForm = () => {
   const dateOfBirth = watch("dateOfBirth");
   const enrollmentDate = watch("enrollmentDate");
   const schoolYear = watch("schoolYear");
+  const firstName = watch("firstName");
+  const middleName = watch("middleName");
+  const lastName = watch("lastName");
+  const parentFirstName = watch("parentFirstName");
+  const parentMiddleName = watch("parentMiddleName");
+  const parentLastName = watch("parentLastName");
+  const weight = watch("weight");
+  const height = watch("height");
 
   const minDateOfBirth = useMemo(() => {
     if (schoolYear) {
@@ -86,10 +94,10 @@ export const useEnrollmentForm = () => {
 
   const childFullName = useMemo(
     () =>
-      [watch("firstName"), watch("middleName"), watch("lastName")]
+      [firstName, middleName, lastName]
         .filter((v) => String(v || "").trim().length > 0)
         .join(" "),
-    [watch("firstName"), watch("middleName"), watch("lastName")],
+    [firstName, middleName, lastName],
   );
 
   const computedChildAge = dateOfBirth
@@ -98,22 +106,14 @@ export const useEnrollmentForm = () => {
 
   const parentFullName = useMemo(
     () =>
-      [
-        watch("parentFirstName"),
-        watch("parentMiddleName"),
-        watch("parentLastName"),
-      ]
+      [parentFirstName, parentMiddleName, parentLastName]
         .filter((v) => String(v || "").trim().length > 0)
         .join(" "),
-    [
-      watch("parentFirstName"),
-      watch("parentMiddleName"),
-      watch("parentLastName"),
-    ],
+    [parentFirstName, parentMiddleName, parentLastName],
   );
 
-  const weightValue = Number(watch("weight"));
-  const heightValue = Number(watch("height"));
+  const weightValue = Number(weight);
+  const heightValue = Number(height);
 
   const computedBmi = useMemo(() => {
     if (weightValue > 0 && heightValue > 0) {
@@ -279,8 +279,8 @@ export const useEnrollmentForm = () => {
     gender: watch("gender"),
     programType: watch("programType"),
     schoolYear: watch("schoolYear"),
-    weight: watch("weight"),
-    height: watch("height"),
+    weight,
+    height,
     parentPhone: watch("parentPhone"),
     homeAddress: watch("homeAddress"),
     parentRelationship: watch("parentRelationship"),

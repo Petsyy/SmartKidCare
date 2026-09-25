@@ -47,6 +47,8 @@ export function NewEnrollmentForm({
 }) {
   const form = useEnrollmentForm();
   const centers = useEnrollmentCenters();
+  const currentCenterId = form.daycareCenterId;
+  const setAssignedCenterId = form.setDaycareCenterId;
   const datePicker = useDatePicker(
     form.dateOfBirth,
     form.enrollmentDate,
@@ -85,13 +87,15 @@ export function NewEnrollmentForm({
     onSubmissionSuccess();
   };
 
-  // Auto-select center if only one available
+  // Enrollment is always scoped to the teacher's single assigned center.
   useEffect(() => {
-    if (centers.enrollmentCenters.length > 0 && !form.daycareCenterId) {
-      const defaultId = centers.getDefaultCenterId("");
-      form.setDaycareCenterId(defaultId);
+    if (
+      centers.assignedCenterId &&
+      currentCenterId !== centers.assignedCenterId
+    ) {
+      setAssignedCenterId(centers.assignedCenterId);
     }
-  }, [centers.enrollmentCenters, form.daycareCenterId, centers]);
+  }, [centers.assignedCenterId, currentCenterId, setAssignedCenterId]);
 
   const nextStep = async () => {
     if (step === 1 && !(await form.validateStepOne())) return;
@@ -128,20 +132,9 @@ export function NewEnrollmentForm({
     await submitEnrollment(submissionData);
   };
 
-  const assignedCenterSource = useMemo(() => {
-    const selectedCenter = centers.enrollmentCenters.find(
-      (center) => center._id === form.daycareCenterId,
-    );
-    return selectedCenter || centers.assignedTeacherCenter;
-  }, [
-    centers.enrollmentCenters,
-    form.daycareCenterId,
-    centers.assignedTeacherCenter,
-  ]);
-
   const assignedCenterDisplayInfo = useMemo(
-    () => getDaycareCenterDisplay(assignedCenterSource),
-    [assignedCenterSource],
+    () => getDaycareCenterDisplay(centers.assignedCenter),
+    [centers.assignedCenter],
   );
 
   const assignedCenterReviewValue = useMemo(() => {
@@ -151,7 +144,9 @@ export function NewEnrollmentForm({
 
   const assignedCenterPrimary = centers.loadingCenters
     ? "Loading assigned center..."
-    : assignedCenterDisplayInfo.primary;
+    : centers.centerError
+      ? "Unable to load assigned center"
+      : assignedCenterDisplayInfo.primary;
   const assignedCenterSecondary = centers.loadingCenters
     ? ""
     : assignedCenterDisplayInfo.secondary;
