@@ -32,12 +32,9 @@ export function ParentPickupScreen() {
     },
   );
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (children.length > 0 && !selectedChildId) {
-      setSelectedChildId(children[0]._id);
-    }
-  }, [children, selectedChildId]);
+  const activeChildId = children.some((child) => child._id === selectedChildId)
+    ? selectedChildId
+    : children[0]?._id ?? null;
 
   if (loadingChildren) {
     return (
@@ -94,19 +91,19 @@ export function ParentPickupScreen() {
                     key={child._id}
                     onPress={() => setSelectedChildId(child._id)}
                     className={`mr-3 px-6 py-3 rounded-full border flex-row items-center ${
-                      selectedChildId === child._id
+                      activeChildId === child._id
                         ? "bg-teal-600 border-teal-600 shadow-sm"
                         : "bg-white border-gray-200"
                     }`}
                     accessibilityRole="button"
                     accessibilityLabel={`Select ${child.firstName}`}
                     accessibilityState={{
-                      selected: selectedChildId === child._id,
+                      selected: activeChildId === child._id,
                     }}
                   >
                     <View
                       className={`h-2 w-2 rounded-full mr-2 ${
-                        selectedChildId === child._id
+                        activeChildId === child._id
                           ? "bg-white"
                           : "bg-teal-500"
                       }`}
@@ -125,9 +122,9 @@ export function ParentPickupScreen() {
               </ScrollView>
             )}
 
-            {selectedChildId && (
+            {activeChildId && (
               <>
-                <PickupManager childId={selectedChildId} />
+                <PickupManager childId={activeChildId} />
 
                 {/* Authorized Guardians Section */}
                 <View className="mb-6 overflow-hidden rounded-3xl border bg-white shadow-sm border-teal-100">
@@ -149,7 +146,7 @@ export function ParentPickupScreen() {
                         </Text>
                       </View>
                     </View>
-                    <GuardianList childId={selectedChildId} readOnly={true} />
+                    <GuardianList childId={activeChildId} readOnly={true} />
                   </View>
                 </View>
               </>
@@ -201,7 +198,7 @@ function PickupManager({ childId }: { childId: string }) {
       }
     }, 1000);
     return () => clearInterval(interval);
-  }, [expiresAt]);
+  }, [childId, expiresAt, queryClient]);
 
   const handleGenerateCode = async () => {
     try {
@@ -252,7 +249,7 @@ function PickupManager({ childId }: { childId: string }) {
             </Text>
           </View>
           <Text className="text-gray-600 text-base leading-6 mb-6 ml-2">
-            Create a secure 6-digit PIN for today's pickup. The code will expire
+            Create a secure 6-digit PIN for today’s pickup. The code will expire
             in 60 minutes.
           </Text>
 

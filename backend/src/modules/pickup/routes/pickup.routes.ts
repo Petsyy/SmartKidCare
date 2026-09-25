@@ -52,7 +52,7 @@ router.get(
 );
 router.get(
   "/history",
-  requireRole("admin", "teacher", "parent"),
+  requireRole("teacher", "parent"),
   validate(validatePickupHistoryQuery, "query"),
   getPickupHistory,
 );

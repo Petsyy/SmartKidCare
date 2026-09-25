@@ -105,7 +105,7 @@ export function PickupManualOverridePanel({
         <View className="flex-row items-start">
           <AlertCircle size={18} color="#D97706" />
           <Text className="text-amber-800 text-sm font-semibold ml-2 flex-1 leading-5">
-            Check the person's government-issued photo ID and confirm it matches
+            Check the person’s government-issued photo ID and confirm it matches
             one of the authorized persons below before releasing the child.
           </Text>
         </View>
