@@ -39,11 +39,11 @@
         }
       ],
       "expo-secure-store",
+      "expo-notifications",
       "@react-native-community/datetimepicker",
       "expo-font",
       "expo-web-browser"
     ],
-    "newArchEnabled": true,
     "experiments": {
       "typedRoutes": true
     },
