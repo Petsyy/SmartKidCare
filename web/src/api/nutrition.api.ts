@@ -20,7 +20,6 @@ export interface NutritionRecord {
 export type NutritionAnalyticsData = {
   filters: {
     schoolYear: string;
-    centerId: string | null;
   };
   schoolYears: string[];
   totalEvaluated: number;
@@ -36,7 +35,6 @@ export type NutritionAnalyticsData = {
 };
 export type NutritionAnalyticsFilters = {
   schoolYear?: string;
-  centerId?: string;
 };
 
 export const getChildNutritionHistory = async (
@@ -51,11 +49,9 @@ export const getChildNutritionHistory = async (
 
 export const getNutritionAnalytics = async ({
   schoolYear,
-  centerId,
 }: NutritionAnalyticsFilters): Promise<NutritionAnalyticsData> => {
   const params = new URLSearchParams();
   if (schoolYear) params.set("schoolYear", schoolYear);
-  if (centerId) params.set("centerId", centerId);
   const suffix = params.size > 0 ? `?${params.toString()}` : "";
   const response = await apiRequestOrThrow<{ data: NutritionAnalyticsData }>(
     `/nutrition/analytics${suffix}`,

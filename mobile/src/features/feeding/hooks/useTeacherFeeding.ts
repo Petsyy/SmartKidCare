@@ -98,6 +98,8 @@ export const useTeacherFeeding = () => {
   );
 
   useEffect(() => {
+    // Route parameters are the source of truth when this screen is reused.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAttendanceDateKey(initialAttendanceDateKey);
   }, [initialAttendanceDateKey]);
 
@@ -217,6 +219,8 @@ export const useTeacherFeeding = () => {
     if (!data) return;
 
     const childIds = data.childrenToShow.map((child) => child._id);
+    // Query completion intentionally hydrates this multi-field editable draft.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setChildren(data.childrenToShow);
     setIsReadOnly(data.isReadOnly);
     setFoodServed(data.foodServed);

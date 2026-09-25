@@ -24,14 +24,14 @@ router.post(
 
 router.get(
   "/child/:id",
-  requireRole("admin", "teacher", "parent"),
+  requireRole("barangay_captain", "teacher", "parent"),
   validator.validateChildNutritionParams,
   nutritionController.getChildNutritionHistory,
 );
 
 router.get(
   "/analytics",
-  requireRole("admin"),
+  requireRole("barangay_captain"),
   validator.validateNutritionAnalytics,
   nutritionController.getNutritionAnalytics,
 );

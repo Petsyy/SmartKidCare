@@ -64,6 +64,11 @@ type PaginatedFeedingResponse = {
 export type DatePreset = "all" | "today" | "thisWeek" | "thisMonth";
 export type FeedingStatusFilter = "all" | "completed" | "missed";
 
+type UseFeedingProgramOptions = {
+  initialDatePreset?: DatePreset;
+  initialStatusFilter?: FeedingStatusFilter;
+};
+
 const formatChildName = (child?: ChildRef | null) => {
   if (!child) return "Unknown";
   return (
@@ -75,13 +80,17 @@ const formatChildName = (child?: ChildRef | null) => {
   );
 };
 
-export function useFeedingProgram() {
+export function useFeedingProgram({
+  initialDatePreset = "all",
+  initialStatusFilter = "all",
+}: UseFeedingProgramOptions = {}) {
   const [search, setSearch] = useState("");
-  const [datePreset, setDatePreset] = useState<DatePreset>("all");
+  const [datePreset, setDatePreset] =
+    useState<DatePreset>(initialDatePreset);
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [statusFilter, setStatusFilter] =
-    useState<FeedingStatusFilter>("completed");
+    useState<FeedingStatusFilter>(initialStatusFilter);
   const [teacherId, setTeacherId] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -126,13 +135,6 @@ export function useFeedingProgram() {
     [search, datePreset, startDate, endDate, statusFilter, teacherId, page, limit],
   );
   const fetchFeeding = useCallback(async () => {
-    if (!teacherId) {
-      return {
-        rows: [] as FeedingRow[],
-        total: 0,
-        totalPages: 0,
-      };
-    }
     const params = new URLSearchParams({
       page: String(page),
       limit: String(limit),
@@ -149,7 +151,7 @@ export function useFeedingProgram() {
     if (statusFilter !== "all") {
       params.set("status", statusFilter);
     }
-    params.set("teacherId", teacherId);
+    if (teacherId) params.set("teacherId", teacherId);
     const url = `${API_BASE}/records/feeding?${params.toString()}`;
     const response = await fetch(url, {
       credentials: "include",
@@ -251,7 +253,9 @@ export function useFeedingProgram() {
   const hasActiveFilters =
     datePreset !== "all" ||
     Boolean(startDate && endDate) ||
-    search.trim().length > 0;
+    search.trim().length > 0 ||
+    statusFilter !== "all" ||
+    Boolean(teacherId);
 
   const updateSearch = useCallback((value: string) => {
     setPage(1);
@@ -288,7 +292,8 @@ export function useFeedingProgram() {
     setDatePreset("all");
     setStartDate("");
     setEndDate("");
-    setStatusFilter("completed");
+    setStatusFilter("all");
+    setTeacherId("");
   }, []);
 
   const updateFeedingStatus = useCallback(

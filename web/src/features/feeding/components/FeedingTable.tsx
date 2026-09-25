@@ -9,6 +9,7 @@ type FeedingTableProps = {
   onViewRecord: (id: string) => void;
   onEditRecord: (id: string, status: FeedingRow["status"]) => void;
   onDeleteRecord: (id: string) => void;
+  readOnly?: boolean;
 };
 
 const formatDate = (value: string) =>
@@ -37,6 +38,7 @@ export function FeedingTable({
   onViewRecord,
   onEditRecord,
   onDeleteRecord,
+  readOnly = false,
 }: FeedingTableProps) {
   return (
     <div className="overflow-x-auto">
@@ -122,30 +124,34 @@ export function FeedingTable({
                       />
                       <span className="hidden sm:inline">View</span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => onEditRecord(row.id, row.status)}
-                      className="group inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-blue-300 hover:bg-blue-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-blue-900/50 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/40 sm:px-3"
-                      title="Edit"
-                    >
-                      <Pencil
-                        size={14}
-                        className="transition-transform duration-200 group-hover:-rotate-6"
-                      />
-                      <span className="hidden sm:inline">Edit</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onDeleteRecord(row.id)}
-                      className="group inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-rose-300 hover:bg-rose-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-rose-500/30 dark:border-rose-900/50 dark:bg-rose-900/20 dark:text-rose-300 dark:hover:bg-rose-900/40 sm:px-3"
-                      title="Delete"
-                    >
-                      <Trash2
-                        size={14}
-                        className="transition-transform duration-200 group-hover:scale-110"
-                      />
-                      <span className="hidden sm:inline">Delete</span>
-                    </button>
+                    {!readOnly && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => onEditRecord(row.id, row.status)}
+                          className="group inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-blue-300 hover:bg-blue-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-blue-900/50 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/40 sm:px-3"
+                          title="Edit"
+                        >
+                          <Pencil
+                            size={14}
+                            className="transition-transform duration-200 group-hover:-rotate-6"
+                          />
+                          <span className="hidden sm:inline">Edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onDeleteRecord(row.id)}
+                          className="group inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-rose-300 hover:bg-rose-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-rose-500/30 dark:border-rose-900/50 dark:bg-rose-900/20 dark:text-rose-300 dark:hover:bg-rose-900/40 sm:px-3"
+                          title="Delete"
+                        >
+                          <Trash2
+                            size={14}
+                            className="transition-transform duration-200 group-hover:scale-110"
+                          />
+                          <span className="hidden sm:inline">Delete</span>
+                        </button>
+                      </>
+                    )}
                   </div>
                 </td>
               </tr>

@@ -1,5 +1,8 @@
 import { Search } from "lucide-react";
-import type { DatePreset } from "@/features/feeding/hooks/useFeedingProgram";
+import type {
+  DatePreset,
+  FeedingStatusFilter,
+} from "@/features/feeding/hooks/useFeedingProgram";
 import type { User } from "@/api/authentication.api";
 
 type FeedingFiltersProps = {
@@ -7,6 +10,8 @@ type FeedingFiltersProps = {
   updateSearch: (val: string) => void;
   datePreset: DatePreset;
   updateDatePreset: (val: DatePreset) => void;
+  statusFilter: FeedingStatusFilter;
+  updateStatusFilter: (val: FeedingStatusFilter) => void;
   isAdvancedOpen: boolean;
   setIsAdvancedOpen: (val: boolean | ((prev: boolean) => boolean)) => void;
   hasActiveFilters: boolean;
@@ -14,14 +19,12 @@ type FeedingFiltersProps = {
   startDate: string;
   endDate: string;
   updateDateRange: (start: string, end: string) => void;
-  centerId: string;
-  setCenterId: (val: string) => void;
   teachersLoading: boolean;
-  centerOptions: User["daycareCenter"][];
   teacherId: string;
   updateTeacherFilter: (val: string) => void;
   teacherOptions: User[];
   teachersError: string | null;
+  showTeacherFilter?: boolean;
 };
 
 export const FeedingFilters = ({
@@ -29,6 +32,8 @@ export const FeedingFilters = ({
   updateSearch,
   datePreset,
   updateDatePreset,
+  statusFilter,
+  updateStatusFilter,
   isAdvancedOpen,
   setIsAdvancedOpen,
   hasActiveFilters,
@@ -36,14 +41,12 @@ export const FeedingFilters = ({
   startDate,
   endDate,
   updateDateRange,
-  centerId,
-  setCenterId,
   teachersLoading,
-  centerOptions,
   teacherId,
   updateTeacherFilter,
   teacherOptions,
   teachersError,
+  showTeacherFilter = true,
 }: FeedingFiltersProps) => {
   return (
     <>
@@ -81,6 +84,20 @@ export const FeedingFilters = ({
                 <option value="thisWeek">This Week</option>
                 <option value="thisMonth">This Month</option>
               </select>
+              <select
+                value={statusFilter}
+                onChange={(event) =>
+                  updateStatusFilter(
+                    event.target.value as FeedingStatusFilter,
+                  )
+                }
+                aria-label="Filter by feeding status"
+                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
+              >
+                <option value="all">All Statuses</option>
+                <option value="completed">Completed</option>
+                <option value="missed">Missed</option>
+              </select>
               <button
                 type="button"
                 onClick={() => setIsAdvancedOpen((prev) => !prev)}
@@ -102,7 +119,7 @@ export const FeedingFilters = ({
       </div>
 
       {isAdvancedOpen && (
-        <div className="grid gap-3 border-b border-gray-200 bg-white px-6 py-4 dark:border-slate-700 dark:bg-slate-900 md:grid-cols-4">
+        <div className="grid gap-3 border-b border-gray-200 bg-white px-6 py-4 dark:border-slate-700 dark:bg-slate-900 md:grid-cols-3">
           <div className="space-y-1">
             <label className="text-xs font-semibold text-gray-600 dark:text-slate-300">
               Start date
@@ -125,29 +142,8 @@ export const FeedingFilters = ({
               className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
             />
           </div>
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-gray-600 dark:text-slate-300">
-              Center
-            </label>
-            <select
-              value={centerId}
-              onChange={(e) => setCenterId(e.target.value)}
-              disabled={teachersLoading}
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-50"
-            >
-              {centerOptions.length === 0 && (
-                <option value="" disabled>
-                  No centers available
-                </option>
-              )}
-              {centerOptions.map((center) => (
-                <option key={center?._id} value={center?._id}>
-                  {center?.code} - {center?.barangay}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-1">
+
+          {showTeacherFilter && <div className="space-y-1">
             <label className="text-xs font-semibold text-gray-600 dark:text-slate-300">
               Teacher
             </label>
@@ -170,13 +166,12 @@ export const FeedingFilters = ({
                 </option>
               ))}
             </select>
-          </div>
-          <div className="md:col-span-4">
+          </div>}
+          <div className="md:col-span-3">
             <p className="text-xs text-gray-500 dark:text-slate-400">
-              Date range and teacher filters are server-filtered. Pick a center
-              first to narrow the teacher list.
+              Date filters are server-filtered. Records are limited to Bonuan Sabangan.
             </p>
-            {teachersError && (
+            {showTeacherFilter && teachersError && (
               <p className="mt-1 text-xs text-red-600 dark:text-red-300">
                 {teachersError}
               </p>

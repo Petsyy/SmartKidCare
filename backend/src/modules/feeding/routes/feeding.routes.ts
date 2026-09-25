@@ -21,10 +21,10 @@ router.use(authenticateToken);
 router.post("/", requireRole("teacher"), validateSubmitFeeding, submitFeeding);
 
 // Admin & Teacher Mutations
-router.patch("/:id", requireRole("admin", "teacher"), validateUpdateFeeding, updateFeedingRecord);
-router.delete("/:id", requireRole("admin", "teacher"), deleteFeedingRecord);
+router.patch("/:id", requireRole("teacher"), validateUpdateFeeding, updateFeedingRecord);
+router.delete("/:id", requireRole("teacher"), deleteFeedingRecord);
 
 // Multi-role History Queries (Admin, Teacher, Parent)
-router.get("/", requireRole("admin", "teacher", "parent"), validateFeedingHistoryQuery, getFeedingHistory);
+router.get("/", requireRole("barangay_captain", "teacher", "parent"), validateFeedingHistoryQuery, getFeedingHistory);
 
 export default router;

@@ -43,12 +43,15 @@ export const getChildNutritionHistory = asyncHandler(
 
 export const getNutritionAnalytics = asyncHandler(
   async (req: Request, res: Response) => {
-    const { schoolYear, centerId } = req.query as {
+    if (!req.user?.id) throw new UnauthorizedError();
+    const { schoolYear } = req.query as {
       schoolYear?: string;
-      centerId?: string;
     };
 
-    const data = await nutritionService.getNutritionAnalytics(schoolYear, centerId);
+    const data = await nutritionService.getNutritionAnalytics(
+      req.user,
+      schoolYear,
+    );
     res.json({ success: true, data });
   },
 );

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/src/hooks/use-auth";
@@ -23,8 +23,7 @@ export const useParentFeeding = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { isAuthenticated } = useAuth();
-  const [children, setChildren] = useState<Child[]>([]);
-  const [selectedChild, setSelectedChild] = useState<Child | null>(null);
+  const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
   const [showChildDropdown, setShowChildDropdown] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
@@ -39,17 +38,14 @@ export const useParentFeeding = () => {
     queryFn: () => getMyChildren(),
   });
 
-  useEffect(() => {
-    setChildren(childrenData);
-    setSelectedChild((current) => {
-      if (!childrenData.length) return null;
-      if (current) {
-        const matched = childrenData.find((child) => child._id === current._id);
-        if (matched) return matched;
-      }
-      return childrenData[0];
-    });
-  }, [childrenData]);
+  const children = childrenData;
+  const selectedChild = useMemo(
+    () =>
+      children.find((child) => child._id === selectedChildId) ??
+      children[0] ??
+      null,
+    [children, selectedChildId],
+  );
 
   const { data: feedingData = [], isLoading: isLoadingFeeding } = useQuery({
     queryKey: mobileQueryKeys.parentFeedingHistory(selectedChild?._id ?? null, monthKey),
@@ -137,7 +133,8 @@ export const useParentFeeding = () => {
   };
 
   return {
-    router, insets, children, selectedChild, setSelectedChild, loading,
+    router, insets, children, selectedChild,
+    setSelectedChild: (child: Child) => setSelectedChildId(child._id), loading,
     showChildDropdown, setShowChildDropdown, currentDate, feedingData,
     selectedDay, setSelectedDay, showDayModal, setShowDayModal,
     getDaysInMonth, getMonthName, getStatusForDay, getDetailsForDay,

@@ -9,9 +9,11 @@ import {
 } from "../../../shared/utils/nutrition.utils";
 import type { AuthenticatedUser } from "../../../shared/types/auth.types";
 import {
+  assertCaptainCenter,
   assertCanAccessChild,
   assertTeacherCenter,
 } from "../../../shared/services/child-access.service";
+import { getSingleCenterId } from "../../../shared/services/single-center.service";
 
 type NutritionAnalyticsRecord = {
   childId: unknown;
@@ -301,8 +303,13 @@ export class NutritionService {
       .lean();
   }
 
-  public async getNutritionAnalytics(schoolYear?: string, centerId?: string) {
-    const centerFilter = centerId ? { daycareCenter: centerId } : {};
+  public async getNutritionAnalytics(
+    user: AuthenticatedUser,
+    schoolYear?: string,
+  ) {
+    const centerId = await getSingleCenterId();
+    assertCaptainCenter(user, centerId);
+    const centerFilter = { daycareCenter: centerId };
     const schoolYears = (
       await NutritionRecord.distinct("schoolYear", {
         status: "submitted",
@@ -354,7 +361,7 @@ export class NutritionService {
     return {
       filters: {
         schoolYear: selectedSchoolYear,
-        centerId: centerId || null,
+        centerId,
       },
       schoolYears,
       ...summary,

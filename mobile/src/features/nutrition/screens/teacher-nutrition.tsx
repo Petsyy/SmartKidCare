@@ -16,6 +16,10 @@ import { StudentNutritionCard } from "../components/student-nutrition-card";
 import { NutritionDatePicker } from "../components/nutrition-date-picker";
 import type { NutritionPeriod } from "@/src/api/nutrition.api";
 import { getManilaDateKey, formatManilaDateLabel } from "@/src/utils/manila-date";
+import {
+  validateNutritionAssessment,
+  type NutritionAssessmentErrors,
+} from "../validations/nutrition-assessment.validation";
 
 const getCurrentSchoolYear = (): string => {
   const now = new Date();
@@ -42,6 +46,9 @@ export const TeacherNutritionScreen = () => {
   const [localInputs, setLocalInputs] = useState<
     Record<string, { weight: string; height: string }>
   >({});
+  const [fieldErrors, setFieldErrors] = useState<
+    Record<string, NutritionAssessmentErrors>
+  >({});
 
   const handleInputChange = (
     childId: string,
@@ -56,14 +63,32 @@ export const TeacherNutritionScreen = () => {
         [field]: value,
       },
     }));
+
+    // Clear the error for this field as the user types
+    setFieldErrors((prev) => {
+      const current = prev[inputKey];
+      if (!current?.[field]) return prev;
+      const { [field]: _, ...remaining } = current;
+      return { ...prev, [inputKey]: remaining };
+    });
   };
 
   const handleSave = (childId: string, action: "draft" | "submit") => {
-    const inputs = localInputs[`${period}:${childId}`];
-    if (!inputs || !inputs.weight || !inputs.height) {
-      alert("Please enter both weight and height.");
+    const inputKey = `${period}:${childId}`;
+    const inputs = localInputs[inputKey];
+
+    const errors = validateNutritionAssessment({
+      weight: inputs?.weight ?? "",
+      height: inputs?.height ?? "",
+    });
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors((prev) => ({ ...prev, [inputKey]: errors }));
       return;
     }
+
+    // Clear any lingering errors on successful validation
+    setFieldErrors((prev) => ({ ...prev, [inputKey]: {} }));
 
     evaluateNutrition.mutate(
       {
@@ -186,6 +211,7 @@ export const TeacherNutritionScreen = () => {
               initialRecord={item.initialRecord}
               period={period}
               localInput={localInputs[`${period}:${item.child._id}`]}
+              errors={fieldErrors[`${period}:${item.child._id}`]}
               isPending={evaluateNutrition.isPending}
               isSubmitting={
                 evaluateNutrition.isPending &&

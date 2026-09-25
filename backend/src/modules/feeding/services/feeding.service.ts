@@ -162,7 +162,7 @@ const getFeedingHistoryOperation = async (
   dependencies: FeedingServiceDependencies,
 ): Promise<any[] | PaginatedResult<any>> => {
   const validUser = dependencies.support.assertAuthenticated(user);
-  const { startDate, endDate, datePreset, teacherId, centerId } = queryInput;
+  const { startDate, endDate, datePreset, teacherId } = queryInput;
   const query: Record<string, unknown> = {};
   let parentChildIds: string[] = [];
   const teacherFilter = dependencies.support.parseTeacherIdQuery(teacherId);
@@ -171,11 +171,12 @@ const getFeedingHistoryOperation = async (
     const daycareCenterId = assertTeacherCenter(validUser as any);
     query.teacher = validUser.id;
     query.daycareCenter = daycareCenterId;
-  } else if (validUser.role === "admin" && teacherFilter) {
-    query.teacher = teacherFilter;
-    if (centerId) query.daycareCenter = String(centerId);
-  } else if (validUser.role === "admin" && centerId) {
-    query.daycareCenter = String(centerId);
+  } else if (validUser.role === "barangay_captain") {
+    if (!validUser.daycareCenterId) {
+      throw new ForbiddenError("Barangay Captain has no center assignment.");
+    }
+    query.daycareCenter = validUser.daycareCenterId;
+    if (teacherFilter) query.teacher = teacherFilter;
   } else if (validUser.role === "parent") {
     parentChildIds = await dependencies.findChildIdsByParent(validUser.id);
     if (parentChildIds.length) {
@@ -184,9 +185,14 @@ const getFeedingHistoryOperation = async (
   }
 
   if (startDate && endDate) {
+    const startRange = dependencies.support.parseDayRange(startDate);
+    const endRange = dependencies.support.parseDayRange(endDate);
+    if (!startRange || !endRange) {
+      throw new ValidationError("Invalid date range.");
+    }
     query.date = {
-      $gte: new Date(startDate as string),
-      $lte: new Date(endDate as string),
+      $gte: startRange.start,
+      $lte: endRange.end,
     };
   } else if (datePreset) {
     const range = getDateRangeFromPreset(String(datePreset));

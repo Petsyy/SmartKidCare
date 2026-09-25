@@ -12,6 +12,11 @@ import {
   classifyNutritionalStatus,
 } from "@/src/features/enrollment/utils/enrollment-utils";
 import type { NutritionPeriod } from "@/src/api/nutrition.api";
+import {
+  WEIGHT_MAX_INPUT_LENGTH,
+  HEIGHT_MAX_INPUT_LENGTH,
+  type NutritionAssessmentErrors,
+} from "../validations/nutrition-assessment.validation";
 
 export interface StudentNutritionCardProps {
   child: {
@@ -34,6 +39,7 @@ export interface StudentNutritionCardProps {
   };
   period: NutritionPeriod;
   localInput?: { weight: string; height: string };
+  errors?: NutritionAssessmentErrors;
   isPending?: boolean;
   isSubmitting?: boolean; // To know if THIS specific card is submitting
   onSave: (childId: string, action: "draft" | "submit") => void;
@@ -50,6 +56,7 @@ export const StudentNutritionCard: React.FC<StudentNutritionCardProps> = ({
   initialRecord,
   period,
   localInput,
+  errors,
   isPending = false,
   isSubmitting = false,
   onSave,
@@ -138,28 +145,48 @@ export const StudentNutritionCard: React.FC<StudentNutritionCardProps> = ({
                 Weight (kg)
               </Text>
               <TextInput
-                className="h-12 rounded-xl border border-gray-200 bg-gray-50 px-4 text-base font-semibold text-gray-900"
+                className={`h-12 rounded-xl border px-4 text-base font-semibold text-gray-900 ${
+                  errors?.weight
+                    ? "border-red-400 bg-red-50"
+                    : "border-gray-200 bg-gray-50"
+                }`}
                 keyboardType="numeric"
+                maxLength={WEIGHT_MAX_INPUT_LENGTH}
                 placeholder="e.g. 15.5"
                 value={currentWeight}
                 onChangeText={(text) =>
                   onInputChange(child._id, "weight", text)
                 }
               />
+              {errors?.weight && (
+                <Text className="mt-1 ml-1 text-xs font-semibold text-red-600">
+                  {errors.weight}
+                </Text>
+              )}
             </View>
             <View className="flex-1">
               <Text className="text-sm font-bold text-gray-700 mb-1.5 ml-1">
                 Height (cm)
               </Text>
               <TextInput
-                className="h-12 rounded-xl border border-gray-200 bg-gray-50 px-4 text-base font-semibold text-gray-900"
+                className={`h-12 rounded-xl border px-4 text-base font-semibold text-gray-900 ${
+                  errors?.height
+                    ? "border-red-400 bg-red-50"
+                    : "border-gray-200 bg-gray-50"
+                }`}
                 keyboardType="numeric"
+                maxLength={HEIGHT_MAX_INPUT_LENGTH}
                 placeholder="e.g. 100.5"
                 value={currentHeight}
                 onChangeText={(text) =>
                   onInputChange(child._id, "height", text)
                 }
               />
+              {errors?.height && (
+                <Text className="mt-1 ml-1 text-xs font-semibold text-red-600">
+                  {errors.height}
+                </Text>
+              )}
             </View>
           </View>
 

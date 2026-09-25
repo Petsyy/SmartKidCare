@@ -29,9 +29,15 @@ export function FeedingDatePicker({
 }: FeedingDatePickerProps) {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [pickerDate, setPickerDate] = useState(() => new Date());
+  const [dateBounds] = useState(() => {
+    const maximumDate = new Date();
+    return {
+      minimumDate: new Date(maximumDate.getTime() - 6 * DAY_MS),
+      maximumDate,
+    };
+  });
   const selectedDate = new Date(`${dateKey}T12:00:00+08:00`);
-  const minimumDate = new Date(Date.now() - 6 * DAY_MS);
-  const maximumDate = new Date();
+  const { minimumDate, maximumDate } = dateBounds;
 
   const openDatePicker = () => {
     setPickerDate(selectedDate);
