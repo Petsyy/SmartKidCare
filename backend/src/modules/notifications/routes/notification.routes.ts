@@ -33,7 +33,7 @@ router.post(
 // Admin-only Push Testing
 router.post(
   "/send-test",
-  requireRole("admin"),
+  requireRole("system_admin"),
   validateSendTestPush,
   sendTestPushNotification,
 );
@@ -41,13 +41,13 @@ router.post(
 // Teacher Notification Endpoints
 router.post(
   "/teacher-v1/dispatch",
-  requireRole("teacher", "admin"),
+  requireRole("teacher"),
   validateDispatchTeacherNotifications,
   dispatchTeacherNotifications,
 );
 router.get(
   "/teacher-v1/feed",
-  requireRole("teacher", "admin"),
+  requireRole("teacher"),
   validateTeacherNotificationsFeed,
   getTeacherNotifications,
 );
@@ -55,7 +55,7 @@ router.get(
 // Parent Notification Endpoints
 router.get(
   "/parent-v1/feed",
-  requireRole("parent", "admin"),
+  requireRole("parent"),
   validateParentNotificationsFeed,
   getParentNotifications,
 );

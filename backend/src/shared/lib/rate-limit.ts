@@ -28,6 +28,14 @@ export const loginLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+export const captainInvitationLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 10,
+  message: { message: "Too many invitation attempts. Please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 export const otpVerifyLimiter = rateLimit({
   windowMs: 5 * 60 * 1000,
   max: 10,

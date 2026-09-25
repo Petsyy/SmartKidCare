@@ -9,6 +9,6 @@ const router = Router();
 router.get("/", SettingsController.getSettings);
 
 // Admin only
-router.put("/", authenticateToken, requireRole("admin"), SettingsController.updateSettings);
+router.put("/", authenticateToken, requireRole("system_admin"), SettingsController.updateSettings);
 
 export default router;
