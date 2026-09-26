@@ -1,9 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { CheckCircle2, Gauge, Utensils } from "lucide-react";
 import Layout from "@/components/layout/Layout";
-import { StatCard } from "@/components/ui/StatCard";
-import { StatCardSkeleton } from "@/components/ui/StatCardSkeleton";
 import { FeedingTable } from "@/features/feeding/components/FeedingTable";
 import { FeedingFilters } from "@/features/feeding/components/FeedingFilters";
 import { FeedingViewModal } from "@/features/feeding/components/FeedingViewModal";
@@ -46,15 +43,6 @@ export default function FeedingProgram() {
 
   const [viewingRowId, setViewingRowId] = useState<string | null>(null);
 
-  const analytics = useMemo(() => {
-    const total = rows.length;
-    const completed = rows.filter((row) => row.status === "completed").length;
-    return {
-      total,
-      completed,
-      rate: total === 0 ? 0 : Math.round((completed / total) * 100),
-    };
-  }, [rows]);
 
   const viewingRow = useMemo(
     () => rows.find((row) => row.id === viewingRowId) ?? null,

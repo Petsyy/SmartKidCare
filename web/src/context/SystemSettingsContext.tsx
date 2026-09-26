@@ -8,7 +8,7 @@ type SystemSettingsContextType = {
   refreshSettings: () => Promise<void>;
 };
 
-const SystemSettingsContext = createContext<SystemSettingsContextType | undefined>(undefined);
+export const SystemSettingsContext = createContext<SystemSettingsContextType | undefined>(undefined);
 
 export const SystemSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<SystemSettings | null>(null);
