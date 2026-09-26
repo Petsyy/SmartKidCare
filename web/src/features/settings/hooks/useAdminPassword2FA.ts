@@ -1,4 +1,16 @@
 import { useMemo, useState } from "react";
+import {
+  PASSWORD_MIN_LENGTH,
+  hasLowercaseRegex,
+  hasNumberRegex,
+  hasSpecialCharacterRegex,
+  startsWithUppercaseRegex,
+} from "@/utils/password-policy";
+import {
+  passwordChangeFormSchema,
+  passwordChangeRequestSchema,
+  type PasswordChangeFormValues,
+} from "@/features/auth/validations/auth.validation";
 
 type SendPasswordChangeOtp = (
   currentPassword: string,
@@ -17,12 +29,7 @@ type UseAdminPassword2FAOptions = {
   onPasswordChanged?: () => void | Promise<void>;
 };
 
-export type PasswordForm = {
-  currentPassword: string;
-  newPassword: string;
-  confirmPassword: string;
-  otp: string;
-};
+export type PasswordForm = PasswordChangeFormValues;
 
 export type PasswordFieldErrors = Partial<Record<keyof PasswordForm, string>>;
 
@@ -42,15 +49,12 @@ export type PasswordOtpState = {
 type PasswordPolicyChecks = {
   minimumLength: boolean;
   startsWithUppercase: boolean;
+  hasLowercase: boolean;
+  hasNumber: boolean;
   hasSpecialCharacter: boolean;
   differsFromCurrent: boolean;
   matchesConfirmation: boolean;
 };
-
-const PASSWORD_MIN_LENGTH = 8;
-const startsWithUppercaseRegex = /^[A-Z]/;
-const hasSpecialCharacterRegex = /[^A-Za-z0-9]/;
-const otpRegex = /^\d{6}$/;
 
 const INITIAL_PASSWORD_STATE: PasswordState = {
   saving: false,
@@ -73,6 +77,8 @@ type PasswordValidationIssue = {
 const getPasswordPolicyChecks = (form: PasswordForm): PasswordPolicyChecks => ({
   minimumLength: form.newPassword.length >= PASSWORD_MIN_LENGTH,
   startsWithUppercase: startsWithUppercaseRegex.test(form.newPassword),
+  hasLowercase: hasLowercaseRegex.test(form.newPassword),
+  hasNumber: hasNumberRegex.test(form.newPassword),
   hasSpecialCharacter: hasSpecialCharacterRegex.test(form.newPassword),
   differsFromCurrent:
     form.currentPassword.length > 0 &&
@@ -88,69 +94,24 @@ const validatePasswordForm = (
   form: PasswordForm,
   requireOtp: boolean,
 ): PasswordValidationIssue | null => {
-  if (!form.currentPassword.trim()) {
-    return {
-      field: "currentPassword",
-      message: "Current password is required.",
-    };
+  const result = requireOtp
+    ? passwordChangeFormSchema.safeParse(form)
+    : passwordChangeRequestSchema.safeParse(form);
+
+  if (result.success) return null;
+
+  const issue = result.error.issues[0];
+  const field = issue?.path[0];
+  if (
+    field !== "currentPassword" &&
+    field !== "newPassword" &&
+    field !== "confirmPassword" &&
+    field !== "otp"
+  ) {
+    return null;
   }
-  if (!form.newPassword.trim()) {
-    return {
-      field: "newPassword",
-      message: "New password is required.",
-    };
-  }
-  if (form.newPassword.length < PASSWORD_MIN_LENGTH) {
-    return {
-      field: "newPassword",
-      message: `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`,
-    };
-  }
-  if (!startsWithUppercaseRegex.test(form.newPassword)) {
-    return {
-      field: "newPassword",
-      message: "Password must start with a capital letter.",
-    };
-  }
-  if (!hasSpecialCharacterRegex.test(form.newPassword)) {
-    return {
-      field: "newPassword",
-      message: "Password must include at least one special character.",
-    };
-  }
-  if (form.newPassword === form.currentPassword) {
-    return {
-      field: "newPassword",
-      message: "New password must be different from current password.",
-    };
-  }
-  if (!form.confirmPassword.trim()) {
-    return {
-      field: "confirmPassword",
-      message: "Please confirm your new password.",
-    };
-  }
-  if (form.newPassword !== form.confirmPassword) {
-    return {
-      field: "confirmPassword",
-      message: "New password and confirmation do not match.",
-    };
-  }
-  if (requireOtp) {
-    if (!form.otp.trim()) {
-      return {
-        field: "otp",
-        message: "OTP is required.",
-      };
-    }
-    if (!otpRegex.test(form.otp.trim())) {
-      return {
-        field: "otp",
-        message: "OTP must be a 6-digit code.",
-      };
-    }
-  }
-  return null;
+
+  return { field, message: issue.message };
 };
 
 const getBackendErrorField = (message: string): keyof PasswordForm | null => {
@@ -161,7 +122,9 @@ const getBackendErrorField = (message: string): keyof PasswordForm | null => {
   if (
     lower.includes("new password") ||
     lower.includes("must start with a capital") ||
-    lower.includes("special character")
+    lower.includes("special character") ||
+    lower.includes("lowercase letter") ||
+    lower.includes("include at least one number")
   ) {
     return "newPassword";
   }

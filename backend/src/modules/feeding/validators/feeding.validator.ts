@@ -36,6 +36,7 @@ const feedingHistoryQuerySchema = z.object({
   teacherId: objectId.optional(),
   centerId: objectId.optional(),
   search: z.string().trim().max(100).optional(),
+  foodServed: z.string().trim().max(200).optional(),
   status: z.enum(["completed", "missed"]).optional(),
   limit: z.coerce.number().optional(),
   page: z.coerce.number().optional(),

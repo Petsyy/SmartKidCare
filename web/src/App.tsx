@@ -11,8 +11,6 @@ const FeedingProgram = lazy(() => import("./pages/FeedingProgram"));
 const ReportAnalytics = lazy(() => import("./pages/Reports&Analytics"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminSettings = lazy(() => import("./pages/AdminSettings"));
-const SystemDashboard = lazy(() => import("./pages/SystemDashboard"));
-const CaptainActivation = lazy(() => import("./pages/CaptainActivation"));
 const CaptainConcerns = lazy(() => import("./pages/CaptainConcerns"));
 
 export default function App() {
@@ -22,22 +20,17 @@ export default function App() {
         <Suspense fallback={null}>
           <Routes>
             <Route path="/login" element={<AdminLogin />} />
-            <Route path="/activate-captain" element={<CaptainActivation />} />
 
             <Route element={<ProtectedLayout />}>
               <Route path="/" element={<RoleHome />} />
               <Route element={<RoleRoute role="barangay_captain" />}>
                 <Route path="/monitoring/dashboard" element={<AdminDashboard />} />
+                <Route path="/monitoring/users" element={<UserManagement />} />
                 <Route path="/monitoring/records" element={<ChildrenManagement />} />
                 <Route path="/monitoring/feeding" element={<FeedingProgram />} />
                 <Route path="/monitoring/concerns" element={<CaptainConcerns />} />
                 <Route path="/monitoring/reports/*" element={<ReportAnalytics />} />
                 <Route path="/monitoring/settings" element={<AdminSettings />} />
-              </Route>
-              <Route element={<RoleRoute role="system_admin" />}>
-                <Route path="/system/dashboard" element={<SystemDashboard />} />
-                <Route path="/system/users" element={<UserManagement />} />
-                <Route path="/system/settings" element={<AdminSettings />} />
               </Route>
             </Route>
 

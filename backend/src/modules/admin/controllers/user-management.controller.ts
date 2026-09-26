@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import { adminUserManagementService } from "../services/user-management.service";
 import { AppError } from "../../../shared/errors/app-error";
-import { asyncHandler } from "../../../shared/utils/async-handler";
 
 export const createTeacher = async (req: Request, res: Response) => {
   try {
@@ -17,35 +16,6 @@ export const createTeacher = async (req: Request, res: Response) => {
     res.status(500).json({ message: error.message });
   }
 };
-
-export const createCaptain = asyncHandler(async (req: Request, res: Response) => {
-  const result = await adminUserManagementService.createCaptain(
-    req.body,
-    String(req.user!.id),
-  );
-  res.status(201).json(result);
-});
-
-export const resendCaptainInvitation = asyncHandler(
-  async (req: Request, res: Response) => {
-    res.json(
-      await adminUserManagementService.resendCaptainInvitation(
-        String(req.params.id),
-        String(req.user!.id),
-      ),
-    );
-  },
-);
-
-export const revokeCaptainInvitation = asyncHandler(
-  async (req: Request, res: Response) => {
-    await adminUserManagementService.revokeCaptainInvitation(
-      String(req.params.id),
-      String(req.user!.id),
-    );
-    res.status(204).send();
-  },
-);
 
 export const getSystemOverview = async (_req: Request, res: Response) => {
   try {

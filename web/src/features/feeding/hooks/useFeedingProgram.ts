@@ -51,6 +51,7 @@ export type FeedingRow = {
 
 type PaginatedFeedingResponse = {
   data: FeedingRow[];
+  foodOptions?: string[];
   pagination: {
     page: number;
     limit: number;
@@ -66,7 +67,6 @@ export type FeedingStatusFilter = "all" | "completed" | "missed";
 
 type UseFeedingProgramOptions = {
   initialDatePreset?: DatePreset;
-  initialStatusFilter?: FeedingStatusFilter;
 };
 
 const formatChildName = (child?: ChildRef | null) => {
@@ -82,16 +82,11 @@ const formatChildName = (child?: ChildRef | null) => {
 
 export function useFeedingProgram({
   initialDatePreset = "all",
-  initialStatusFilter = "all",
 }: UseFeedingProgramOptions = {}) {
   const [search, setSearch] = useState("");
   const [datePreset, setDatePreset] =
     useState<DatePreset>(initialDatePreset);
-  const [startDate, setStartDate] = useState<string>("");
-  const [endDate, setEndDate] = useState<string>("");
-  const [statusFilter, setStatusFilter] =
-    useState<FeedingStatusFilter>(initialStatusFilter);
-  const [teacherId, setTeacherId] = useState("");
+  const [foodServedFilter, setFoodServedFilter] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const queryClient = useQueryClient();
@@ -120,21 +115,7 @@ export function useFeedingProgram({
     [],
   );
 
-  const paramsKey = useMemo(
-    () =>
-      JSON.stringify({
-        search,
-        datePreset,
-        startDate,
-        endDate,
-        statusFilter,
-        teacherId,
-        page,
-        limit,
-      }),
-    [search, datePreset, startDate, endDate, statusFilter, teacherId, page, limit],
-  );
-  const fetchFeeding = useCallback(async () => {
+  const queryString = useMemo(() => {
     const params = new URLSearchParams({
       page: String(page),
       limit: String(limit),
@@ -142,17 +123,15 @@ export function useFeedingProgram({
     if (search.trim()) {
       params.set("search", search.trim());
     }
-    if (startDate && endDate) {
-      params.set("startDate", startDate);
-      params.set("endDate", endDate);
-    } else if (datePreset !== "all") {
+    if (datePreset !== "all") {
       params.set("datePreset", datePreset);
     }
-    if (statusFilter !== "all") {
-      params.set("status", statusFilter);
-    }
-    if (teacherId) params.set("teacherId", teacherId);
-    const url = `${API_BASE}/records/feeding?${params.toString()}`;
+    if (foodServedFilter) params.set("foodServed", foodServedFilter);
+    return params.toString();
+  }, [datePreset, foodServedFilter, limit, page, search]);
+
+  const fetchFeeding = useCallback(async () => {
+    const url = `${API_BASE}/records/feeding?${queryString}`;
     const response = await fetch(url, {
       credentials: "include",
       headers: {
@@ -170,7 +149,12 @@ export function useFeedingProgram({
 
     if (Array.isArray(payload)) {
       const rows = flattenFeeding(payload as FeedingApiResponse[]);
-      return { rows, total: rows.length, totalPages: rows.length > 0 ? 1 : 0 };
+      return {
+        rows,
+        foodOptions: [...new Set(rows.map((row) => row.foodServed).filter(Boolean))],
+        total: rows.length,
+        totalPages: rows.length > 0 ? 1 : 0,
+      };
     }
     const paginated = payload as PaginatedFeedingResponse;
     const rowsFromApi = Array.isArray(paginated.data) ? paginated.data : [];
@@ -180,25 +164,20 @@ export function useFeedingProgram({
         notes: String(row.notes ?? "").trim(),
         childName: maskCompositeName(row.childName) || row.childName || "Unknown",
       })),
+      foodOptions: Array.isArray(paginated.foodOptions)
+        ? paginated.foodOptions
+        : [],
       total: Number(paginated.pagination?.total ?? 0),
       totalPages: Number(paginated.pagination?.totalPages ?? 0),
     };
-  }, [
-    datePreset,
-    endDate,
-    flattenFeeding,
-    limit,
-    page,
-    search,
-    startDate,
-    statusFilter,
-    teacherId,
-  ]);
-  const { data, isLoading, error: queryError, refetch } = useQuery({
-    queryKey: webQueryKeys.feedingTracking(paramsKey),
+  }, [flattenFeeding, queryString]);
+  const { data, isLoading, isFetching, error: queryError, refetch } = useQuery({
+    queryKey: webQueryKeys.feedingTracking(queryString),
     queryFn: fetchFeeding,
+    staleTime: 0,
   });
   const rows = data?.rows ?? [];
+  const foodOptions = data?.foodOptions ?? [];
   const total = data?.total ?? 0;
   const totalPages = data?.totalPages ?? 0;
   const error = queryError instanceof Error ? queryError.message : null;
@@ -252,10 +231,8 @@ export function useFeedingProgram({
 
   const hasActiveFilters =
     datePreset !== "all" ||
-    Boolean(startDate && endDate) ||
     search.trim().length > 0 ||
-    statusFilter !== "all" ||
-    Boolean(teacherId);
+    Boolean(foodServedFilter);
 
   const updateSearch = useCallback((value: string) => {
     setPage(1);
@@ -265,35 +242,18 @@ export function useFeedingProgram({
   const updateDatePreset = useCallback((value: DatePreset) => {
     setPage(1);
     setDatePreset(value);
-    setStartDate("");
-    setEndDate("");
   }, []);
 
-  const updateStatusFilter = useCallback((value: FeedingStatusFilter) => {
+  const updateFoodServedFilter = useCallback((value: string) => {
     setPage(1);
-    setStatusFilter(value);
-  }, []);
-
-  const updateTeacherFilter = useCallback((value: string) => {
-    setPage(1);
-    setTeacherId(value);
-  }, []);
-
-  const updateDateRange = useCallback((nextStart: string, nextEnd: string) => {
-    setPage(1);
-    setDatePreset("all");
-    setStartDate(nextStart);
-    setEndDate(nextEnd);
+    setFoodServedFilter(value);
   }, []);
 
   const clearFilters = useCallback(() => {
     setPage(1);
     setSearch("");
     setDatePreset("all");
-    setStartDate("");
-    setEndDate("");
-    setStatusFilter("all");
-    setTeacherId("");
+    setFoodServedFilter("");
   }, []);
 
   const updateFeedingStatus = useCallback(
@@ -314,14 +274,12 @@ export function useFeedingProgram({
     rows,
     search,
     datePreset,
-    startDate,
-    endDate,
-    statusFilter,
-    teacherId,
+    foodServedFilter,
+    foodOptions,
     page,
     limit,
     totalPages,
-    isLoading,
+    isLoading: isLoading || isFetching,
     error,
     rangeLabel,
     hasActiveFilters,
@@ -329,9 +287,7 @@ export function useFeedingProgram({
     setLimit,
     updateSearch,
     updateDatePreset,
-    updateDateRange,
-    updateStatusFilter,
-    updateTeacherFilter,
+    updateFoodServedFilter,
     clearFilters,
     updateFeedingStatus,
     deleteFeeding,

@@ -1,10 +1,10 @@
-import { Eye, Mail, Pencil, MoreVertical, XCircle } from "lucide-react";
+import { Eye, Pencil, MoreVertical } from "lucide-react";
 import { useState } from "react";
 import type { User } from "@/api/authentication.api";
 import { TableSkeleton } from "@/components/ui/TableSkeleton";
 
 type UserTableProps = {
-  activeTab: "barangay_captain" | "teacher" | "parent";
+  activeTab: "teacher" | "parent";
   isLoading: boolean;
   usersLength: number;
   filteredUsersLength: number;
@@ -14,8 +14,6 @@ type UserTableProps = {
   onCloseMenu: () => void;
   onViewUser: (user: User) => void;
   onEditUser: (user: User) => void;
-  onResendInvitation: (user: User) => void;
-  onRevokeInvitation: (user: User) => void;
   paginationRangeLabel: string;
   safeCurrentPage: number;
   totalPages: number;
@@ -33,8 +31,6 @@ export const UserTable = ({
   onCloseMenu,
   onViewUser,
   onEditUser,
-  onResendInvitation,
-  onRevokeInvitation,
   paginationRangeLabel,
   safeCurrentPage,
   totalPages,
@@ -134,12 +130,6 @@ export const UserTable = ({
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex flex-wrap items-center gap-1.5">
-                    {user.captainOnboardingStatus === "invitation_pending" ? (
-                      <>
-                        <button onClick={() => onResendInvitation(user)} className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-100"><Mail size={14} />Resend</button>
-                        <button onClick={() => onRevokeInvitation(user)} className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100"><XCircle size={14} />Revoke</button>
-                      </>
-                    ) : null}
                     <button
                       onClick={() => onViewUser(user)}
                       className="group inline-flex items-center gap-1.5 rounded-lg border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-100 hover:shadow focus:outline-none focus:ring-2 focus:ring-teal-500/30 dark:border-teal-900/50 dark:bg-teal-900/20 dark:text-teal-300 dark:hover:bg-teal-900/40 cursor-pointer"

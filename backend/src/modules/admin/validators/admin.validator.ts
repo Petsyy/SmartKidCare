@@ -104,44 +104,6 @@ const createTeacherSchema = z.object({
   daycareCenterId: objectIdSchema.optional(),
 });
 
-const captainNameSchema = (label: string) =>
-  z
-    .string()
-    .trim()
-    .min(2, `${label} must contain at least 2 characters.`)
-    .max(50, `${label} cannot exceed 50 characters.`)
-    .regex(/^[A-Za-z][A-Za-z .'-]*$/, `${label} contains invalid characters.`);
-
-const createCaptainSchema = z.object({
-  username: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .regex(
-      /^[a-z0-9]{4,30}$/,
-      "Username must contain 4-30 letters or numbers without spaces.",
-    ),
-  firstName: captainNameSchema("First name"),
-  middleName: z
-    .string()
-    .trim()
-    .max(50, "Middle name cannot exceed 50 characters.")
-    .refine(
-      (value) => value.length === 0 || /^[A-Za-z][A-Za-z .'-]*$/.test(value),
-      "Middle name contains invalid characters.",
-    )
-    .optional(),
-  lastName: captainNameSchema("Last name"),
-  email: emailSchema,
-  phone: z
-    .string()
-    .trim()
-    .regex(/^09\d{9}$/, "Phone number must use the format 09XXXXXXXXX."),
-  replaceCaptainId: objectIdSchema.optional(),
-});
-
-const captainIdParamsSchema = z.object({ id: objectIdSchema });
-
 const updateUserProfileSchema = z.object({
   firstName: nonEmptyString,
   middleName: nonEmptyString,
@@ -157,9 +119,4 @@ export const validateGetDaycareCentersQuery = validate(
   "query",
 );
 export const validateCreateTeacher = validate(createTeacherSchema);
-export const validateCreateCaptain = validate(createCaptainSchema);
-export const validateCaptainIdParams = validate(
-  captainIdParamsSchema,
-  "params",
-);
 export const validateUpdateUserProfile = validate(updateUserProfileSchema);

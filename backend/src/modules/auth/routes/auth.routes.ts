@@ -14,6 +14,8 @@ import {
   resetForgotPassword,
   requestChangePasswordOtp,
   changePassword,
+  completeCaptainPasswordSetup,
+  resendCaptainPasswordSetupOtp,
 } from "../controllers/password-otp.controller";
 import {
   validateAdminMfaResend,
@@ -29,6 +31,8 @@ import {
   validateLogin,
   validateOtpVerify,
   validatePasswordSetup,
+  validateCaptainPasswordSetup,
+  validateCaptainPasswordSetupResend,
   validateCaptainActivation,
   validateCaptainInvitationToken,
   validateResendOtp,
@@ -46,6 +50,9 @@ import {
   otpResendCooldownLimiter,
   otpSendLimiter,
   otpVerifyLimiter,
+  passwordSetupResendCooldownLimiter,
+  passwordSetupSendLimiter,
+  passwordSetupVerifyLimiter,
 } from "../../../shared/lib/rate-limit";
 
 const router = Router();
@@ -57,6 +64,8 @@ router.post("/login", loginLimiter, validateLogin, login);
 router.post("/admin/login", loginLimiter, validateLogin, login);
 router.post("/admin/mfa/verify", validateAdminMfaVerify, adminMfaVerifyLimiter, verifyAdminLoginMfa);
 router.post("/admin/mfa/resend", validateAdminMfaResend, adminMfaSendLimiter, adminMfaResendCooldownLimiter, resendAdminLoginMfa);
+router.post("/captain/password/setup", passwordSetupVerifyLimiter, validateCaptainPasswordSetup, completeCaptainPasswordSetup);
+router.post("/captain/password/setup/resend", passwordSetupSendLimiter, passwordSetupResendCooldownLimiter, validateCaptainPasswordSetupResend, resendCaptainPasswordSetupOtp);
 router.post("/captain-invitation/validate", captainInvitationLimiter, validateCaptainInvitationToken, validateCaptainInvitation);
 router.post("/captain-invitation/activate", captainInvitationLimiter, validateCaptainActivation, activateCaptainInvitation);
 router.post("/password-otp/verify", validateOtpVerify, otpVerifyLimiter, verifyTeacherPasswordOtp);
@@ -79,7 +88,7 @@ router.post("/logout", authenticateToken, logout);
 /**
  * Admin-Only Auth Routes
  */
-router.patch("/me/preferences", authenticateToken, requireRole("system_admin", "barangay_captain"), validateAdminPreferences, updateAdminPreferences);
-router.get("/users", authenticateToken, requireRole("system_admin"), validateGetUsersQuery, getAllUsers);
+router.patch("/me/preferences", authenticateToken, requireRole("barangay_captain"), validateAdminPreferences, updateAdminPreferences);
+router.get("/users", authenticateToken, requireRole("barangay_captain"), validateGetUsersQuery, getAllUsers);
 
 export default router;

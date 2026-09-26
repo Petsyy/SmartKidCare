@@ -184,6 +184,8 @@ const getFeedingHistoryOperation = async (
     }
   }
 
+  const baseQuery = { ...query };
+
   if (startDate && endDate) {
     const startRange = dependencies.support.parseDayRange(startDate);
     const endRange = dependencies.support.parseDayRange(endDate);
@@ -218,7 +220,10 @@ const getFeedingHistoryOperation = async (
     return [];
   }
 
-  const feeding = await dependencies.findHistory(query);
+  const [feeding, rawFoodOptions] = await Promise.all([
+    dependencies.findHistory(query),
+    dependencies.feedingRepository.distinct("foodServed", baseQuery),
+  ]);
   let scoped = feeding;
   if (validUser.role === "parent") {
     const allowedChildIds = new Set(parentChildIds);
@@ -241,13 +246,16 @@ const getFeedingHistoryOperation = async (
 
   if (!shouldPaginate(queryInput)) return scoped;
 
-  const { page, limit, search, status } = queryInput;
+  const { page, limit, search, status, foodServed } = queryInput;
   const currentPage = parsePositiveInt(page, 1);
   const currentLimit = parsePositiveInt(limit, 25);
   const normalizedSearch = String(search || "")
     .trim()
     .toLowerCase();
   const normalizedStatus = String(status || "")
+    .trim()
+    .toLowerCase();
+  const normalizedFoodServed = String(foodServed || "")
     .trim()
     .toLowerCase();
 
@@ -296,10 +304,26 @@ const getFeedingHistoryOperation = async (
       })
     : flatRows;
 
+  const foodOptions = Array.from(
+    new Set(
+      rawFoodOptions
+        .map((f: any) => String(f || "").trim())
+        .filter(Boolean),
+    ),
+  ).sort((left, right) => left.localeCompare(right));
+
+  const foodFilteredRows = normalizedFoodServed
+    ? filteredRows.filter(
+        (row: any) =>
+          String(row.foodServed || "").trim().toLowerCase() ===
+          normalizedFoodServed,
+      )
+    : filteredRows;
+
   const statusFilteredRows =
     normalizedStatus === "completed" || normalizedStatus === "missed"
-      ? filteredRows.filter((row: any) => row.status === normalizedStatus)
-      : filteredRows;
+      ? foodFilteredRows.filter((row: any) => row.status === normalizedStatus)
+      : foodFilteredRows;
 
   const total = statusFilteredRows.length;
   const totalPages = total > 0 ? Math.ceil(total / currentLimit) : 0;
@@ -310,6 +334,7 @@ const getFeedingHistoryOperation = async (
 
   return {
     data,
+    foodOptions,
     pagination: {
       page: safePage,
       limit: currentLimit,

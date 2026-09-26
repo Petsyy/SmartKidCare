@@ -3,9 +3,6 @@ import { authenticateToken } from "../../../shared/middleware/auth.middleware";
 import { requireRole } from "../../../shared/middleware/role.middleware";
 import {
   createTeacher,
-  createCaptain,
-  resendCaptainInvitation,
-  revokeCaptainInvitation,
   getSystemOverview,
   resetPassword,
   toggleUserStatus,
@@ -23,21 +20,16 @@ import {
   validateUpdateDaycareCenter,
   validateGetDaycareCentersQuery,
   validateCreateTeacher,
-  validateCreateCaptain,
-  validateCaptainIdParams,
   validateUpdateUserProfile,
 } from "../validators/admin.validator";
 
 const router = Router();
 
-// All routes in admin module require Admin authentication and role
-router.use(authenticateToken, requireRole("system_admin"));
+// Administrative operations are owned by the Barangay Captain.
+router.use(authenticateToken, requireRole("barangay_captain"));
 
 // Teacher Account Creation
 router.post("/teachers", validateCreateTeacher, createTeacher);
-router.post("/captains", validateCreateCaptain, createCaptain);
-router.post("/captains/:id/invitation/resend", validateCaptainIdParams, resendCaptainInvitation);
-router.delete("/captains/:id/invitation", validateCaptainIdParams, revokeCaptainInvitation);
 router.get("/system-overview", getSystemOverview);
 
 // User Management (Teachers & Parents)

@@ -3,7 +3,6 @@ import { getRecordDateKey, getLocalDateKey } from "./helpers";
 
 export function computeChartData(
   weekAttendanceArray: any[],
-  weekFeedingArray: any[],
   today: Date
 ): ChartDataPoint[] {
   const dayMap = new Map<
@@ -11,32 +10,18 @@ export function computeChartData(
     {
       attendanceTotal: number;
       attendancePresent: number;
-      feedingTotal: number;
-      feedingCompleted: number;
     }
   >();
 
   weekAttendanceArray.forEach((entry: any) => {
     const key = getRecordDateKey(entry.date);
     if (!dayMap.has(key)) {
-      dayMap.set(key, { attendanceTotal: 0, attendancePresent: 0, feedingTotal: 0, feedingCompleted: 0 });
+      dayMap.set(key, { attendanceTotal: 0, attendancePresent: 0 });
     }
     const bucket = dayMap.get(key)!;
     entry.records?.forEach((record: any) => {
       bucket.attendanceTotal += 1;
       if (record.status === "present") bucket.attendancePresent += 1;
-    });
-  });
-
-  weekFeedingArray.forEach((entry: any) => {
-    const key = getRecordDateKey(entry.date);
-    if (!dayMap.has(key)) {
-      dayMap.set(key, { attendanceTotal: 0, attendancePresent: 0, feedingTotal: 0, feedingCompleted: 0 });
-    }
-    const bucket = dayMap.get(key)!;
-    entry.records?.forEach((record: any) => {
-      bucket.feedingTotal += 1;
-      if (record.status === "completed") bucket.feedingCompleted += 1;
     });
   });
 
@@ -50,18 +35,14 @@ export function computeChartData(
     const key = getLocalDateKey(d);
 
     const data = dayMap.get(key) || {
-      attendanceTotal: 0, attendancePresent: 0, feedingTotal: 0, feedingCompleted: 0,
+      attendanceTotal: 0, attendancePresent: 0,
     };
 
     const attendanceRate = data.attendanceTotal
       ? Math.round((data.attendancePresent / data.attendanceTotal) * 100)
       : 0;
-    const feedingRate = data.feedingTotal
-      ? Math.round((data.feedingCompleted / data.feedingTotal) * 100)
-      : 0;
-
     const dayName = days[d.getDay()] || `Day ${i}`;
-    chartPoints.push({ day: dayName, attendance: attendanceRate, feeding: feedingRate });
+    chartPoints.push({ day: dayName, attendance: attendanceRate });
   }
 
   return chartPoints;
@@ -75,7 +56,7 @@ export function computePieData(stats: DashboardStats): PieDataPoint[] {
       color: "#38bdf8",
     },
     {
-      name: "Child Development Workers",
+      name: "Child Development Worker",
       value: stats.childDevelopmentWorkers,
       color: "#14b8a6",
     },

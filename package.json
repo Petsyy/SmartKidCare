@@ -7,10 +7,14 @@
     "dev:backend": "cd backend && npm run dev",
     "dev:web": "cd web && npm run dev",
     "dev:mobile": "cd mobile && npx expo start --localhost --clear",
-    "build": "npm run build:backend && npm run build:web && npm run build:mobile",
+    "build": "npm run build:backend && npm run build:web && npm run typecheck:mobile",
     "build:backend": "cd backend && npm run build",
     "build:web": "cd web && npm run build",
-    "build:mobile": "cd mobile && npm run build"
+    "typecheck:mobile": "cd mobile && npm run typecheck",
+    "test:backend": "cd backend && npm test",
+    "lint": "npm run lint:web && npm run lint:mobile",
+    "lint:web": "cd web && npm run lint",
+    "lint:mobile": "cd mobile && npm run lint"
   },
   "keywords": [],
   "author": "",

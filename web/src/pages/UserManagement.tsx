@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus } from "lucide-react";
 import Layout from "@/components/layout/Layout";
@@ -8,8 +7,6 @@ import { UserTabs } from "@/features/users/components/UserTabs";
 import { ViewUserModal } from "@/features/users/components/ViewUserModal";
 import { UserActionMenu } from "@/features/users/components/UserActionMenu";
 import AddTeacherModal from "@/features/users/components/AddTeacherModal";
-import AddCaptainModal from "@/features/users/components/AddCaptainModal";
-import { resendCaptainInvitation, revokeCaptainInvitation } from "@/api/admin.api";
 import EditUserModal from "@/features/users/components/EditUserModal";
 import { UserFilters } from "@/features/users/components/UserFilters";
 import { UserTable } from "@/features/users/components/UserTable";
@@ -17,7 +14,6 @@ import { useUserManagement } from "@/features/users/hooks/useUserManagement";
 
 export default function UserManagement() {
   const navigate = useNavigate();
-  const [showAddCaptainModal, setShowAddCaptainModal] = useState(false);
   const {
     activeTab,
     showAddTeacherModal,
@@ -58,37 +54,17 @@ export default function UserManagement() {
     handleResetPassword,
     handleToggleStatus,
   } = useUserManagement();
-  const activeCaptain = users.find(
-    (user) => user.role === "barangay_captain" && user.isActive !== false,
-  );
-  const handleResendCaptain = async (user: (typeof users)[number]) => {
-    try {
-      await resendCaptainInvitation(user._id);
-      await fetchUsers();
-    } catch (error) {
-      window.alert(error instanceof Error ? error.message : "Unable to resend invitation.");
-    }
-  };
-  const handleRevokeCaptain = async (user: (typeof users)[number]) => {
-    if (!window.confirm(`Revoke the invitation for ${user.firstName} ${user.lastName}?`)) return;
-    try {
-      await revokeCaptainInvitation(user._id);
-      await fetchUsers();
-    } catch (error) {
-      window.alert(error instanceof Error ? error.message : "Unable to revoke invitation.");
-    }
-  };
 
   return (
     <Layout
-      activeItem="system/users"
-      breadcrumbs={["System Admin", "User Management"]}
+      activeItem="monitoring/users"
+      breadcrumbs={["Barangay Captain", "User Management"]}
       onNavigate={(path) => navigate(`/${path}`)}
     >
       <div className="space-y-6 p-8">
         <PageHeader
           title="User Management"
-          subtitle="Manage Barangay Captain, teacher, and parent accounts"
+          subtitle="Manage teacher and parent accounts"
         />
 
         <UserTabs activeTab={activeTab} onTabChange={setActiveTab} />
@@ -100,7 +76,7 @@ export default function UserManagement() {
           <div className="flex flex-col gap-4 border-b border-gray-200 p-6 dark:border-slate-800">
             <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
-                {activeTab === "barangay_captain" ? "Barangay Captain Accounts" : activeTab === "teacher" ? "Teacher Accounts" : "Parent Accounts"}
+                {activeTab === "teacher" ? "Teacher Accounts" : "Parent Accounts"}
               </h2>
               {activeTab === "teacher" && (
                 <button
@@ -109,11 +85,6 @@ export default function UserManagement() {
                 >
                   <Plus size={16} />
                   Add Teacher
-                </button>
-              )}
-              {activeTab === "barangay_captain" && (
-                <button onClick={() => setShowAddCaptainModal(true)} className="inline-flex items-center justify-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-teal-700 cursor-pointer">
-                  <Plus size={16} /> {activeCaptain ? "Replace Captain" : "Invite Captain"}
                 </button>
               )}
             </div>
@@ -143,8 +114,6 @@ export default function UserManagement() {
             onCloseMenu={closeMenu}
             onViewUser={handleViewUser}
             onEditUser={handleEditUser}
-            onResendInvitation={handleResendCaptain}
-            onRevokeInvitation={handleRevokeCaptain}
             paginationRangeLabel={paginationRangeLabel}
             safeCurrentPage={safeCurrentPage}
             totalPages={totalPages}
@@ -189,7 +158,6 @@ export default function UserManagement() {
           }}
         />
       )}
-      {showAddCaptainModal && <AddCaptainModal activeCaptain={activeCaptain} onClose={() => setShowAddCaptainModal(false)} onCreated={async () => { await fetchUsers(); }} />}
     </Layout>
   );
 }

@@ -28,7 +28,7 @@ export class AuthUserRepository extends BaseRepository<IUser> {
 
     if (isAdminRoute) {
       return this.model.findOne({
-        role: { $in: ["system_admin", "barangay_captain"] },
+        role: "barangay_captain",
         $or: [
           {
             email: {

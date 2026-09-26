@@ -22,6 +22,7 @@ export type FeedingResult = {
 
 export type PaginatedResult<T> = {
   data: T[];
+  foodOptions?: string[];
   pagination: {
     page: number;
     limit: number;

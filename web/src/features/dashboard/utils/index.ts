@@ -10,8 +10,7 @@ import { computeChartData, computePieData } from "./charts";
 export function processDashboardData(
   childrenPayload: any,
   usersPayload: any,
-  attendancePayload: any,
-  feedingPayload: any
+  attendancePayload: any
 ) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -29,22 +28,18 @@ export function processDashboardData(
   const childrenArray = Array.isArray(childrenPayload) ? childrenPayload : [];
   const usersArray = Array.isArray((usersPayload as any)?.users) ? (usersPayload as any).users : [];
   const attendanceArray = Array.isArray(attendancePayload) ? attendancePayload : [];
-  const feedingArray = Array.isArray(feedingPayload) ? feedingPayload : [];
 
   const latestAttendanceKey = getLatestDateKey(attendanceArray);
-  const latestFeedingKey = getLatestDateKey(feedingArray);
   
   const dateMeta: DashboardDateMeta = {
     todayKey,
     attendanceKey: latestAttendanceKey || todayKey,
-    feedingKey: latestFeedingKey || todayKey,
   };
 
   const weekAttendanceArray = attendanceArray.filter((entry: any) => weekKeys.has(getRecordDateKey(entry.date)));
-  const weekFeedingArray = feedingArray.filter((entry: any) => weekKeys.has(getRecordDateKey(entry.date)));
   
-  const stats = computeStats(childrenArray, usersArray, attendanceArray, feedingArray);
-  const chartData = computeChartData(weekAttendanceArray, weekFeedingArray, today);
+  const stats = computeStats(childrenArray, usersArray, attendanceArray);
+  const chartData = computeChartData(weekAttendanceArray, today);
   const pieData = computePieData(stats);
 
   return { stats, chartData, pieData, dateMeta };

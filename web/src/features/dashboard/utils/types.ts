@@ -8,11 +8,8 @@ export type DashboardStats = {
   activeChildren: number;
   totalTeachers: number;
   todayAttendanceRate: number | null;
-  todayFeedingRate: number | null;
   hasTodayAttendance: boolean;
-  hasTodayFeeding: boolean;
   todayAbsentCount: number;
-  todayMissedCount: number;
   todayExceptions: number;
   underweightCount: number;
   severelyUnderweightCount: number;
@@ -24,7 +21,6 @@ export type DashboardStats = {
 export type ChartDataPoint = {
   day: string;
   attendance: number | null;
-  feeding: number | null;
 };
 
 export type PieDataPoint = {
@@ -37,7 +33,6 @@ export type PieDataPoint = {
 export type DashboardDateMeta = {
   todayKey: string;
   attendanceKey: string;
-  feedingKey: string;
 };
 
 export const DEFAULT_STATS: DashboardStats = {
@@ -50,11 +45,8 @@ export const DEFAULT_STATS: DashboardStats = {
   activeChildren: 0,
   totalTeachers: 0,
   todayAttendanceRate: null,
-  todayFeedingRate: null,
   hasTodayAttendance: false,
-  hasTodayFeeding: false,
   todayAbsentCount: 0,
-  todayMissedCount: 0,
   todayExceptions: 0,
   underweightCount: 0,
   severelyUnderweightCount: 0,
@@ -66,5 +58,4 @@ export const DEFAULT_STATS: DashboardStats = {
 export const DEFAULT_DATE_META: DashboardDateMeta = {
   todayKey: "",
   attendanceKey: "",
-  feedingKey: "",
 };

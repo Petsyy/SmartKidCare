@@ -8,6 +8,9 @@ const otpKeyGenerator = (req: any) =>
 const mfaKeyGenerator = (req: any) =>
   `${ipKeyGenerator(req.ip)}:${String(req.body?.mfaToken || "").trim()}`;
 
+const passwordSetupKeyGenerator = (req: any) =>
+  `${ipKeyGenerator(req.ip)}:${String(req.body?.passwordSetupToken || "").trim()}`;
+
 const authenticatedUserKeyGenerator = (req: any) =>
   `${ipKeyGenerator(req.ip)}:${String(req.user?.id || "anonymous")}`;
 
@@ -100,6 +103,35 @@ export const adminMfaResendCooldownLimiter = rateLimit({
   message: {
     message: "Please wait 1 minute before requesting another admin OTP.",
   },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+export const passwordSetupVerifyLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 10,
+  keyGenerator: passwordSetupKeyGenerator,
+  message: {
+    message: "Too many password setup attempts. Please try again after 5 minutes.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+export const passwordSetupSendLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 5,
+  keyGenerator: passwordSetupKeyGenerator,
+  message: { message: "Too many OTP requests. Please try again after 5 minutes." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+export const passwordSetupResendCooldownLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 1,
+  keyGenerator: passwordSetupKeyGenerator,
+  message: { message: "Please wait 1 minute before requesting another OTP." },
   standardHeaders: true,
   legacyHeaders: false,
 });

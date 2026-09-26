@@ -196,8 +196,7 @@ export function PrintableReportSection({
               SMART KIDCARE MONITORING SYSTEM
             </h2>
             <p className="mt-1 text-sm text-gray-600 dark:text-slate-400">
-              Student demographics, attendance and feeding trends, and
-              enrollment roster.
+              Student demographics, attendance trends, and enrollment roster.
             </p>
           </div>
           <div className="text-sm text-gray-600 dark:text-slate-400">
@@ -229,14 +228,6 @@ export function PrintableReportSection({
             </p>
             <p className="mt-2 text-3xl font-semibold">
               {summary.attendanceRate}%
-            </p>
-          </div>
-          <div className="rounded-lg bg-violet-50 p-4 text-violet-900">
-            <p className="text-xs font-semibold uppercase tracking-wide">
-              Feeding Rate
-            </p>
-            <p className="mt-2 text-3xl font-semibold">
-              {summary.feedingRate}%
             </p>
           </div>
         </div>
@@ -366,7 +357,6 @@ export function PrintableReportSection({
     </section>
   );
 }
-
 
 
 

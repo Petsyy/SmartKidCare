@@ -37,7 +37,11 @@ export default function ProtectedLayout() {
     return <Navigate to="/login" replace />;
   }
 
-  if (user?.role !== "system_admin" && user?.role !== "barangay_captain") {
+  if (user?.role !== "barangay_captain") {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user.mustChangePassword) {
     return <Navigate to="/login" replace />;
   }
 

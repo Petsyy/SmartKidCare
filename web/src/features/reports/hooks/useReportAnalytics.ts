@@ -9,11 +9,8 @@ export type TrendPoint = {
   dateKey: string;
   label: string;
   attendanceRate: number;
-  feedingRate: number;
   present: number;
   absent: number;
-  completed: number;
-  missed: number;
 };
 
 export type ReportSummary = {
@@ -26,10 +23,7 @@ export type ReportSummary = {
   activeChildren: number;
   totalTeachers: number;
   attendanceRecords: number;
-  feedingRecords: number;
-  totalChecks: number;
   attendanceRate: number;
-  feedingRate: number;
 };
 
 export type ReportGenderBreakdown = {
@@ -106,10 +100,7 @@ const DEFAULT_SUMMARY: ReportSummary = {
   activeChildren: 0,
   totalTeachers: 0,
   attendanceRecords: 0,
-  feedingRecords: 0,
-  totalChecks: 0,
   attendanceRate: 0,
-  feedingRate: 0,
 };
 
 const DEFAULT_GENDER_BREAKDOWN: ReportGenderBreakdown = {
@@ -284,15 +275,13 @@ export function useReportAnalytics() {
       "Summary",
       "Metric,Value",
       `Bonuan Sabangan Daycare Center,${summary.totalChildDevelopmentCenters}`,
-      `Child Development Workers,${summary.childDevelopmentWorkers}`,
+      `Child Development Worker,${summary.childDevelopmentWorkers}`,
       `Total Enrolled Children,${summary.totalEnrolledChildren}`,
       `Active Children,${summary.activeChildren}`,
       `4P's Beneficiaries,${summary.fourPsBeneficiaries}`,
       `Regular Attendees,${summary.regularAttendees}`,
       `Attendance Records,${summary.attendanceRecords}`,
-      `Feeding Records,${summary.feedingRecords}`,
       `Attendance Rate,${summary.attendanceRate}%`,
-      `Feeding Rate,${summary.feedingRate}%`,
       "",
       "Student Demographics",
       "Metric,Value",
@@ -328,18 +317,15 @@ export function useReportAnalytics() {
       );
     });
 
-    lines.push("", "Recent Daily Summary", "Date,Attendance Rate,Feeding Rate,Present,Absent,Completed,Missed Meal");
+    lines.push("", "Recent Daily Summary", "Date,Attendance Rate,Present,Absent");
 
     recentDailyRows.forEach((row) => {
       lines.push(
         [
           toCsvCell(formatDateKey(row.dateKey)),
           toCsvCell(`${row.attendanceRate}%`),
-          toCsvCell(`${row.feedingRate}%`),
           toCsvCell(row.present),
           toCsvCell(row.absent),
-          toCsvCell(row.completed),
-          toCsvCell(row.missed),
         ].join(","),
       );
     });

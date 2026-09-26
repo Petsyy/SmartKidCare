@@ -73,7 +73,7 @@ export class AdminUserRepository extends BaseRepository<IUser> {
 
   async getSystemOverview(): Promise<Record<string, number>> {
     const counts: Record<string, number> = {};
-    for (const role of ["barangay_captain", "teacher", "parent"] as const) {
+    for (const role of ["teacher", "parent"] as const) {
       counts[`${role}Active`] = await this.model.countDocuments({ role, isActive: { $ne: false } });
       counts[`${role}Inactive`] = await this.model.countDocuments({ role, isActive: false });
     }

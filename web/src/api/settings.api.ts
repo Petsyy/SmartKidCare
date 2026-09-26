@@ -8,7 +8,7 @@ export type AdminSettingsUser = {
   lastName: string;
   email: string;
   phone?: string;
-  role: "system_admin" | "barangay_captain" | "teacher" | "parent";
+  role: "barangay_captain" | "teacher" | "parent";
   adminMfaEnabled?: boolean;
   adminNotifySecurityEvents?: boolean;
   adminNotifySystemUpdates?: boolean;

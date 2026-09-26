@@ -1,16 +1,30 @@
 import { UserIcon, Lock, AlertCircle } from "lucide-react";
+import { useState } from "react";
 import { useAdminLogin } from "@/features/auth/hooks/useAdminLogin";
 import { useSystemSettings } from "@/context/SystemSettingsContext";
+import { PasswordVisibilityButton } from "@/components/ui/PasswordVisibilityButton";
+import {
+  AUTH_PASSWORD_MAX_LENGTH,
+  AUTH_LOGIN_IDENTIFIER_MAX_LENGTH,
+  sanitizeNoWhitespace,
+} from "@/features/auth/validations/auth.validation";
 
 export default function AdminLogin() {
   const { settings } = useSystemSettings();
+  const [visiblePasswords, setVisiblePasswords] = useState({
+    login: false,
+    newPassword: false,
+    confirmPassword: false,
+  });
   const {
     mfaToken,
     mfaEmail,
+    passwordSetupToken,
     info,
     error,
     isLoading,
     isResendingOtp,
+    formErrors,
     otp,
     otpInputRefs,
     register,
@@ -21,6 +35,16 @@ export default function AdminLogin() {
     handleOtpPaste,
     handleResendOtp,
   } = useAdminLogin();
+  const isPasswordSetup = Boolean(passwordSetupToken);
+  const preventWhitespaceInput = (event: React.FormEvent<HTMLInputElement>) => {
+    event.currentTarget.value = sanitizeNoWhitespace(event.currentTarget.value);
+  };
+  const togglePasswordVisibility = (field: keyof typeof visiblePasswords) => {
+    setVisiblePasswords((previous) => ({
+      ...previous,
+      [field]: !previous[field],
+    }));
+  };
 
   const inputClassName =
     "w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-500 dark:disabled:bg-slate-900";
@@ -55,41 +79,60 @@ export default function AdminLogin() {
                 <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-slate-100">
                   {settings?.schoolName || "Smart KidCare"}
                 </h1>
-                <p className="text-sm text-slate-500 dark:text-slate-400">Admin Portal</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Admin Portal
+                </p>
               </div>
             </div>
 
             <div className="flex-1 px-8 py-8 md:px-10">
               <div className="mb-6">
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                  {mfaToken ? "Verify Your Login" : "Admin Sign In"}
+                  {isPasswordSetup
+                    ? "Create Your Password"
+                    : mfaToken
+                      ? "Verify Your Login"
+                      : "Sign In"}
                 </h2>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  {mfaToken
-                    ? `Enter the OTP sent to ${mfaEmail || "your email"}`
-                    : "Sign in to continue to your admin dashboard."}
-                </p>
+                {!isPasswordSetup && (
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    {mfaToken
+                      ? `Enter the OTP sent to ${mfaEmail || "your email"}`
+                      : "to continue to your admin dashboard."}
+                  </p>
+                )}
               </div>
 
               {error && (
                 <div className="mb-5 flex gap-3 rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-500/40 dark:bg-red-500/10">
-                  <AlertCircle className="shrink-0 text-red-600 dark:text-red-300" size={20} />
-                  <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+                  <AlertCircle
+                    className="shrink-0 text-red-600 dark:text-red-300"
+                    size={20}
+                  />
+                  <p className="text-sm text-red-700 dark:text-red-300">
+                    {error}
+                  </p>
                 </div>
               )}
 
               {info && (
                 <div className="mb-5 rounded-xl border border-teal-200 bg-teal-50 p-4 dark:border-teal-500/40 dark:bg-teal-500/10">
-                  <p className="text-sm text-teal-700 dark:text-teal-300">{info}</p>
+                  <p className="text-sm text-teal-700 dark:text-teal-300">
+                    {info}
+                  </p>
                 </div>
               )}
 
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-                {!mfaToken && (
+              <form
+                onSubmit={handleSubmit(onSubmit)}
+                className="space-y-5"
+                noValidate
+              >
+                {!mfaToken && !isPasswordSetup && (
                   <>
                     <div>
                       <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
-                        Username
+                        Username or Email
                       </label>
                       <div className="relative">
                         <UserIcon
@@ -98,13 +141,21 @@ export default function AdminLogin() {
                         />
                         <input
                           type="text"
-                          placeholder="Enter your username"
+                          placeholder="Enter your username or email"
                           className={`${inputClassName} pl-11`}
                           disabled={isLoading}
                           autoComplete="username"
+                          maxLength={AUTH_LOGIN_IDENTIFIER_MAX_LENGTH}
+                          onInput={preventWhitespaceInput}
+                          aria-invalid={Boolean(formErrors.username)}
                           {...register("username")}
                         />
                       </div>
+                      {formErrors.username?.message && (
+                        <p className="mt-1 text-xs text-red-600">
+                          {formErrors.username.message}
+                        </p>
+                      )}
                     </div>
 
                     <div>
@@ -117,19 +168,102 @@ export default function AdminLogin() {
                           className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
                         />
                         <input
-                          type="password"
+                          id="admin-login-password"
+                          type={visiblePasswords.login ? "text" : "password"}
                           placeholder="Enter your password"
-                          className={`${inputClassName} pl-11`}
+                          className={`${inputClassName} pl-11 pr-12`}
                           disabled={isLoading}
                           autoComplete="current-password"
+                          maxLength={AUTH_PASSWORD_MAX_LENGTH}
+                          onInput={preventWhitespaceInput}
+                          aria-invalid={Boolean(formErrors.password)}
                           {...register("password")}
                         />
+                        <PasswordVisibilityButton
+                          visible={visiblePasswords.login}
+                          onToggle={() => togglePasswordVisibility("login")}
+                          inputId="admin-login-password"
+                          label="password"
+                          disabled={isLoading}
+                        />
                       </div>
+                      {formErrors.password?.message && (
+                        <p className="mt-1 text-xs text-red-600">
+                          {formErrors.password.message}
+                        </p>
+                      )}
                     </div>
                   </>
                 )}
 
-                {mfaToken && (
+                {isPasswordSetup && (
+                  <>
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
+                        New Password
+                      </label>
+                      <div className="relative">
+                        <input
+                          id="captain-new-password"
+                          type={visiblePasswords.newPassword ? "text" : "password"}
+                          placeholder="Create a new password"
+                          className={`${inputClassName} pr-12`}
+                          disabled={isLoading}
+                          autoComplete="new-password"
+                          maxLength={AUTH_PASSWORD_MAX_LENGTH}
+                          onInput={preventWhitespaceInput}
+                          aria-invalid={Boolean(formErrors.newPassword)}
+                          {...register("newPassword")}
+                        />
+                        <PasswordVisibilityButton
+                          visible={visiblePasswords.newPassword}
+                          onToggle={() => togglePasswordVisibility("newPassword")}
+                          inputId="captain-new-password"
+                          label="new password"
+                          disabled={isLoading}
+                        />
+                      </div>
+                      {formErrors.newPassword?.message && (
+                        <p className="mt-1 text-xs text-red-600">
+                          {formErrors.newPassword.message}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
+                        Confirm Password
+                      </label>
+                      <div className="relative">
+                        <input
+                          id="captain-confirm-password"
+                          type={visiblePasswords.confirmPassword ? "text" : "password"}
+                          placeholder="Confirm your new password"
+                          className={`${inputClassName} pr-12`}
+                          disabled={isLoading}
+                          autoComplete="new-password"
+                          maxLength={AUTH_PASSWORD_MAX_LENGTH}
+                          onInput={preventWhitespaceInput}
+                          aria-invalid={Boolean(formErrors.confirmPassword)}
+                          {...register("confirmPassword")}
+                        />
+                        <PasswordVisibilityButton
+                          visible={visiblePasswords.confirmPassword}
+                          onToggle={() => togglePasswordVisibility("confirmPassword")}
+                          inputId="captain-confirm-password"
+                          label="password confirmation"
+                          disabled={isLoading}
+                        />
+                      </div>
+                      {formErrors.confirmPassword?.message && (
+                        <p className="mt-1 text-xs text-red-600">
+                          {formErrors.confirmPassword.message}
+                        </p>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                {(mfaToken || isPasswordSetup) && (
                   <div>
                     <div className="mb-2 flex items-center justify-between gap-3">
                       <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
@@ -144,7 +278,7 @@ export default function AdminLogin() {
                         {isResendingOtp ? "Sending..." : "Resend OTP"}
                       </button>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       {Array.from({ length: 6 }).map((_, index) => (
                         <input
                           key={index}
@@ -160,15 +294,21 @@ export default function AdminLogin() {
                           onPaste={(event) => handleOtpPaste(index, event)}
                           inputMode="numeric"
                           maxLength={1}
-                          className="h-12 w-12 rounded-xl border border-slate-300 bg-white text-center text-lg font-semibold text-slate-900 shadow-sm transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100 dark:disabled:bg-slate-900"
+                          className="h-12 w-12 shrink-0 rounded-xl border border-slate-300 bg-white text-center text-lg font-semibold text-slate-900 shadow-sm transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100 dark:disabled:bg-slate-900"
                           disabled={isLoading}
                           aria-label={`OTP digit ${index + 1}`}
+                          aria-invalid={Boolean(formErrors.otp)}
                         />
                       ))}
                     </div>
                     <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
                       Check your inbox and enter the one-time code to continue.
                     </p>
+                    {formErrors.otp?.message && (
+                      <p className="mt-1 text-xs text-red-600">
+                        {formErrors.otp.message}
+                      </p>
+                    )}
                   </div>
                 )}
 
@@ -180,8 +320,14 @@ export default function AdminLogin() {
                   {isLoading ? (
                     <>
                       <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                      {mfaToken ? "Verifying..." : "Signing in..."}
+                      {isPasswordSetup
+                        ? "Setting password..."
+                        : mfaToken
+                          ? "Verifying..."
+                          : "Signing in..."}
                     </>
+                  ) : isPasswordSetup ? (
+                    "Set Password & Continue"
                   ) : mfaToken ? (
                     "Verify & Sign In"
                   ) : (
@@ -193,7 +339,8 @@ export default function AdminLogin() {
 
             <div className="border-t border-slate-200 bg-slate-50 px-8 py-5 dark:border-slate-800 dark:bg-slate-900 md:px-10">
               <p className="text-center text-xs text-slate-500 dark:text-slate-400">
-                &copy; 2026 {settings?.schoolName || "Smart KidCare"}. All rights reserved.
+                &copy; 2026 {settings?.schoolName || "Smart KidCare"}. All
+                rights reserved.
               </p>
             </div>
           </section>

@@ -28,9 +28,6 @@ export function ChildrenTable({
         <thead>
           <tr className="border-b border-gray-200 bg-gray-50 dark:border-slate-800 dark:bg-slate-900">
             <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
-              Student ID
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
               Child Name
             </th>
             <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
@@ -38,9 +35,6 @@ export function ChildrenTable({
             </th>
             <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
               Gender
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
-              School Year
             </th>
             <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
               Status
@@ -57,11 +51,11 @@ export function ChildrenTable({
 
         <tbody className="">
           {isLoading ? (
-            <TableSkeleton columns={9} />
+            <TableSkeleton columns={6} />
           ) : children.length === 0 ? (
             <tr>
               <td
-                colSpan={9}
+                colSpan={6}
                 className="px-6 py-10 text-center text-sm text-gray-500 dark:text-slate-400"
               >
                 No children records found.
@@ -70,7 +64,7 @@ export function ChildrenTable({
           ) : filteredChildren.length === 0 ? (
             <tr>
               <td
-                colSpan={9}
+                colSpan={6}
                 className="px-6 py-10 text-center text-sm text-gray-500 dark:text-slate-400"
               >
                 No students match your search.
@@ -82,9 +76,6 @@ export function ChildrenTable({
                 key={child._id}
                 className="border-none transition-colors hover:bg-gray-50 dark:hover:bg-slate-800/60"
               >
-                <td className="px-6 py-4 font-mono text-sm text-gray-900 dark:text-slate-100">
-                  {child.studentId}
-                </td>
                 <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-300">
                   {formatConfidentialName({
                     lastName: child.lastName,
@@ -97,9 +88,6 @@ export function ChildrenTable({
                 </td>
                 <td className="px-6 py-4 text-sm capitalize text-gray-700 dark:text-slate-300">
                   {child.gender}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-300">
-                  {child.schoolYear}
                 </td>
                 <td className="px-6 py-4">
                   <span

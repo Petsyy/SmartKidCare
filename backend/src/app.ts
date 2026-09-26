@@ -18,6 +18,7 @@ import nutritionRoutes from "./modules/nutrition/routes/nutrition.routes";
 import reportsRoutes from "./modules/reports/routes/reports.routes";
 import settingsRoutes from "./modules/settings/routes/settings.routes";
 import pickupRoutes from "./modules/pickup/routes/pickup.routes";
+import searchRoutes from "./modules/search/routes/search.routes";
 import { corsErrorHandler, corsOptions } from "./shared/config/cors";
 import { globalApiLimiter } from "./shared/lib/global-api-rate-limit";
 import { globalErrorHandler } from "./shared/middleware/error-handler.middleware";
@@ -54,6 +55,7 @@ app.use("/api/competencies", competencyRoutes);
 app.use("/api/concerns", concernRoutes);
 app.use("/api/nutrition", nutritionRoutes);
 app.use("/api/pickup", pickupRoutes);
+app.use("/api/search", searchRoutes);
 
 app.use(corsErrorHandler);
 app.use((_req, res) => {

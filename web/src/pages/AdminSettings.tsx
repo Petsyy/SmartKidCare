@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {Bell,ShieldCheck,UserCog,Building2,type LucideIcon} from "lucide-react";
 import Layout from "../components/layout/Layout";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -16,6 +17,7 @@ import { SecuritySection } from "@/features/settings/components/SecuritySection"
 import { PreferencesSection } from "@/features/settings/components/PreferencesSection";
 import { SystemSection } from "@/features/settings/components/SystemSection";
 import { Skeleton, SkeletonText } from "@/components/ui/Skeleton";
+import { passwordChangeFormSchema } from "@/features/auth/validations/auth.validation";
 
 type SettingsSectionId = "profile" | "security" | "preferences" | "system";
 
@@ -76,7 +78,6 @@ export default function AdminSettings() {
     preferences,
     setPreferences,
     isAdmin,
-    role,
     isLoading,
     loadError,
     loadSettings,
@@ -88,9 +89,7 @@ export default function AdminSettings() {
 
   const [activeSection, setActiveSection] =
     useState<SettingsSectionId>("profile");
-  const visibleSections = role === "system_admin"
-    ? SETTINGS_SECTIONS
-    : SETTINGS_SECTIONS.filter((section) => section.id !== "system");
+  const visibleSections = SETTINGS_SECTIONS;
   const [isProfileEditing, setIsProfileEditing] = useState(false);
   const [profileSnapshot, setProfileSnapshot] =
     useState<AdminProfileForm | null>(null);
@@ -143,14 +142,16 @@ export default function AdminSettings() {
   const {
     reset: resetProfileForm,
     getValues: getProfileValues,
-    watch: watchProfileForm,
   } = profileForm;
 
   const passwordForm = useForm<PasswordForm>({
+    resolver: zodResolver(passwordChangeFormSchema),
     defaultValues: DEFAULT_PASSWORD_FORM,
+    mode: "onSubmit",
+    reValidateMode: "onChange",
   });
 
-  const { watch: watchPasswordForm, reset: resetPasswordForm } = passwordForm;
+  const { reset: resetPasswordForm } = passwordForm;
 
   const validateProfileField = (
     key: keyof AdminProfileForm,
@@ -288,8 +289,20 @@ export default function AdminSettings() {
     setProfileState({ saving: false, success: null, error: null });
   };
 
-  const profileFormValues = watchProfileForm();
-  const passwordFormValues = watchPasswordForm();
+  const profileFormValues = useWatch({
+    control: profileForm.control,
+    defaultValue: profile,
+  });
+  const watchedPasswordFormValues = useWatch({
+    control: passwordForm.control,
+    defaultValue: DEFAULT_PASSWORD_FORM,
+  });
+  const passwordFormValues: PasswordForm = {
+    currentPassword: watchedPasswordFormValues.currentPassword ?? "",
+    newPassword: watchedPasswordFormValues.newPassword ?? "",
+    confirmPassword: watchedPasswordFormValues.confirmPassword ?? "",
+    otp: watchedPasswordFormValues.otp ?? "",
+  };
   const passwordPolicyChecks = getPasswordPolicyChecks(passwordFormValues);
   const canRequestPasswordOtpValue = canRequestPasswordOtp(passwordFormValues);
   const canSubmitPasswordChangeValue =
@@ -302,7 +315,7 @@ export default function AdminSettings() {
     profileFormValues.lastName,
     profileFormValues.email,
     profileFormValues.phone,
-  ].filter((value) => value.trim().length > 0).length;
+  ].filter((value) => (value ?? "").trim().length > 0).length;
   const profileCompletion = Math.round((requiredProfileCount / 6) * 100);
 
   const enabledPreferenceCount = [preferences.adminMfaEnabled].filter(
@@ -323,8 +336,8 @@ export default function AdminSettings() {
 
   return (
     <Layout
-      activeItem={role === "system_admin" ? "system/settings" : "monitoring/settings"}
-      breadcrumbs={[role === "system_admin" ? "System Admin" : "Barangay Captain", "Settings"]}
+      activeItem="monitoring/settings"
+      breadcrumbs={["Barangay Captain", "Settings"]}
       onNavigate={(path) => navigate(`/${path}`)}
     >
       <div className="space-y-6 p-8">
@@ -460,7 +473,7 @@ export default function AdminSettings() {
                 />
               )}
 
-              {activeSection === "system" && role === "system_admin" && <SystemSection />}
+              {activeSection === "system" && <SystemSection />}
 
               {activeSection === "security" && (
                 <SecuritySection

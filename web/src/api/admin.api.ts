@@ -27,35 +27,6 @@ export const toggleUserStatus = async (userId: string) => {
   );
 };
 
-export const createCaptain = async (payload: {
-  username: string; firstName: string; middleName?: string; lastName: string;
-  email: string; phone: string; replaceCaptainId?: string;
-}) => apiRequestOrThrow<{
-  captain: { _id: string; firstName: string; lastName: string; email: string };
-  assignedCenter: { _id: string; name: string };
-  invitation: {
-    status: "invitation_pending";
-    expiresAt: string;
-    delivery: { sent: boolean; message?: string };
-  };
-}>(
-  "/admin/captains", "Failed to create Barangay Captain", { method: "POST", body: payload },
-);
-
-export const resendCaptainInvitation = (captainId: string) =>
-  apiRequestOrThrow<{ expiresAt: string; delivery: { sent: boolean } }>(
-    `/admin/captains/${captainId}/invitation/resend`,
-    "Failed to resend invitation",
-    { method: "POST" },
-  );
-
-export const revokeCaptainInvitation = (captainId: string) =>
-  apiRequestOrThrow<void>(
-    `/admin/captains/${captainId}/invitation`,
-    "Failed to revoke invitation",
-    { method: "DELETE" },
-  );
-
 export const validateCaptainInvitation = (token: string) =>
   apiRequestOrThrow<{ firstName: string; email: string; expiresAt: string }>(
     "/auth/captain-invitation/validate",

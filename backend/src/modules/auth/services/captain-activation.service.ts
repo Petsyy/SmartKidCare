@@ -38,7 +38,7 @@ export class CaptainActivationService {
       !captain.captainInvitationExpiresAt ||
       captain.captainInvitationExpiresAt.getTime() <= this.deps.now().getTime()
     ) {
-      throw new UnauthorizedError("Invitation has expired. Ask the System Administrator to resend it.");
+      throw new UnauthorizedError("Invitation has expired. Contact the system owner for assistance.");
     }
     return captain;
   }

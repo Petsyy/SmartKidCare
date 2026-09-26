@@ -85,14 +85,13 @@ export const authenticateToken = async (
 
       const path = String(req.path || "");
       const isAllowedDuringForcedChange =
-        path === "/change-password/otp/request" ||
-        path === "/change-password" ||
         path === "/logout" ||
         path === "/me" ||
         path === "/csrf";
 
       if (authenticatedUser.mustChangePassword && !isAllowedDuringForcedChange) {
         res.status(403).json({
+          code: "PASSWORD_CHANGE_REQUIRED",
           requiresPasswordChange: true,
           message: "Password change required before accessing this resource.",
         });

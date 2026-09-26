@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { signAuthToken, maybeRequireParentPasswordChange, maybeRequireTeacherPasswordChange } from "./password-otp.service";
+import { signAuthToken, maybeRequireCaptainPasswordChange, maybeRequireParentPasswordChange, maybeRequireTeacherPasswordChange } from "./password-otp.service";
 import { issueAdminLoginOtp, mapOtpDeliveryError, maskEmail, setAdminAuthCookie, } from "./admin-login-mfa.service";
 import { Response } from "express";
 import { authUserRepository as defaultAuthUserRepository, authChildRepository as defaultAuthChildRepository, } from "../repositories/auth.repository";
@@ -119,9 +119,12 @@ export class SessionService {
     if (await maybeRequireParentPasswordChange(user, res)) {
       return null;
     }
+    if (await maybeRequireCaptainPasswordChange(user, res)) {
+      return null;
+    }
 
     // Handle admin login with MFA
-    if (user.role === "system_admin" || user.role === "barangay_captain") {
+    if (user.role === "barangay_captain") {
       return await this.handleAdminLogin(user, res);
     }
 
@@ -157,7 +160,7 @@ export class SessionService {
 
     // Update username (admin only)
     if (payload.username !== undefined) {
-      if (user.role !== "system_admin" && user.role !== "barangay_captain") {
+      if (user.role !== "barangay_captain") {
         throw new Error("Only web accounts can update username.");
       }
 
@@ -223,7 +226,7 @@ export class SessionService {
   ): Promise<any> {
     const user = await this.authUserRepository.findById(userId);
 
-    if (!user || !["system_admin", "barangay_captain"].includes(user.role)) {
+    if (!user || user.role !== "barangay_captain") {
       throw new Error("Web administrator account not found.");
     }
 
@@ -231,11 +234,11 @@ export class SessionService {
       user.adminMfaEnabled = payload.adminMfaEnabled;
     }
 
-    if (user.role === "system_admin" && typeof payload.adminNotifySecurityEvents === "boolean") {
+    if (typeof payload.adminNotifySecurityEvents === "boolean") {
       user.adminNotifySecurityEvents = payload.adminNotifySecurityEvents;
     }
 
-    if (user.role === "system_admin" && typeof payload.adminNotifySystemUpdates === "boolean") {
+    if (typeof payload.adminNotifySystemUpdates === "boolean") {
       user.adminNotifySystemUpdates = payload.adminNotifySystemUpdates;
     }
 

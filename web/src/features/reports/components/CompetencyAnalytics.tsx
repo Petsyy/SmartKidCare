@@ -35,11 +35,18 @@ export function CompetencyAnalytics() {
     period,
     setPeriod,
     schoolYear,
-    setSchoolYear,
+
   } = useCompetencyAnalytics();
 
   const competencies = data?.competencies ?? [];
   const hasData = (data?.totalStudents ?? 0) > 0;
+
+  const displayYear =
+    schoolYear !== "all"
+      ? schoolYear
+      : data?.filters.schoolYear && data?.filters.schoolYear !== "all"
+        ? data.filters.schoolYear
+        : data?.schoolYears?.[0] ?? "";
 
   const downloadCsv = () => {
     if (!data) return;
@@ -75,33 +82,24 @@ export function CompetencyAnalytics() {
       <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div>
-            <h2
-              id="competency-analytics-title"
-              className="text-xl font-semibold text-gray-900 dark:text-slate-50"
-            >
-              Student Competency Analytics
-            </h2>
+            <div className="flex items-center gap-3">
+              <h2
+                id="competency-analytics-title"
+                className="text-xl font-semibold text-gray-900 dark:text-slate-50"
+              >
+                Student Competency Analytics
+              </h2>
+              {displayYear && (
+                <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                  {displayYear}
+                </span>
+              )}
+            </div>
             <p className="mt-1 text-sm text-gray-600 dark:text-slate-400">
               Overall rating distribution from submitted evaluations. Drafts are excluded.
             </p>
           </div>
           <div className="flex flex-wrap items-end gap-2">
-            <label className="space-y-1">
-              <span className="block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
-                School year
-              </span>
-              <SelectFilter
-                value={schoolYear}
-                onChange={setSchoolYear}
-                options={[
-                  { value: "all", label: "All school years" },
-                  ...(data?.schoolYears ?? []).map((value) => ({
-                    value,
-                    label: value,
-                  })),
-                ]}
-              />
-            </label>
             <label className="space-y-1">
               <span className="block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
                 Period

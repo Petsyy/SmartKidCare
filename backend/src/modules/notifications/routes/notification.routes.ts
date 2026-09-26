@@ -33,7 +33,7 @@ router.post(
 // Admin-only Push Testing
 router.post(
   "/send-test",
-  requireRole("system_admin"),
+  requireRole("barangay_captain"),
   validateSendTestPush,
   sendTestPushNotification,
 );

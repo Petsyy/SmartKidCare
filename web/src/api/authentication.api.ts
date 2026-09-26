@@ -8,7 +8,7 @@ export interface User {
   lastName: string;
   email: string;
   phone: string;                // teacher/parent
-  role: "system_admin" | "barangay_captain" | "teacher" | "parent";
+  role: "barangay_captain" | "teacher" | "parent";
   daycareCenter?: {
     _id: string;
     name: string;
@@ -39,7 +39,7 @@ export interface User {
 }
 
 export interface GetUsersParams {
-  role?: "teacher" | "parent" | "barangay_captain";
+  role?: "teacher" | "parent";
 }
 
 export const getUsers = async (

@@ -3,8 +3,7 @@ import type { DashboardStats } from "./types";
 export function computeStats(
   childrenArray: any[],
   usersArray: any[],
-  attendanceArray: any[],
-  feedingArray: any[]
+  attendanceArray: any[]
 ): DashboardStats {
   const totalChildren = childrenArray.length;
   const activeChildren = childrenArray.filter(
@@ -54,23 +53,10 @@ export function computeStats(
     });
   });
 
-  let allFeedTotal = 0;
-  let allFeedCompleted = 0;
-  feedingArray.forEach((entry: any) => {
-    entry.records?.forEach((record: any) => {
-      allFeedTotal += 1;
-      if (record.status === "completed") allFeedCompleted += 1;
-    });
-  });
-
   const todayAttendanceRate = allAttTotal
     ? Math.round((allAttPresent / allAttTotal) * 100)
     : null;
-  const todayFeedingRate = allFeedTotal
-    ? Math.round((allFeedCompleted / allFeedTotal) * 100)
-    : null;
-  const todayExceptions =
-    allAttTotal - allAttPresent + (allFeedTotal - allFeedCompleted);
+  const todayExceptions = allAttTotal - allAttPresent;
 
   return {
     totalChildDevelopmentCenters: 1,
@@ -82,11 +68,8 @@ export function computeStats(
     activeChildren,
     totalTeachers,
     todayAttendanceRate,
-    todayFeedingRate,
     hasTodayAttendance: allAttTotal > 0,
-    hasTodayFeeding: allFeedTotal > 0,
     todayAbsentCount: allAttTotal - allAttPresent,
-    todayMissedCount: allFeedTotal - allFeedCompleted,
     todayExceptions,
     underweightCount,
     severelyUnderweightCount,

@@ -76,7 +76,7 @@ export default function ReportAnalytics() {
         <div className="no-print">
           <PageHeader
             title="Reports & Analytics"
-            subtitle="Attendance, feeding, enrollment, competency, and printable student reports."
+            subtitle="Attendance, enrollment, competency, and printable student reports."
           />
         </div>
 

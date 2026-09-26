@@ -30,13 +30,7 @@ export const ReportsDailySummaryTable = ({ recentDailyRows }: { recentDailyRows:
                   Attendance Rate
                 </th>
                 <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
-                  Feeding Rate
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
                   Present / Absent
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
-                  Completed / Missed
                 </th>
               </tr>
             </thead>
@@ -57,14 +51,8 @@ export const ReportsDailySummaryTable = ({ recentDailyRows }: { recentDailyRows:
                   <td className="px-4 py-3 text-right text-teal-700 dark:text-teal-400">
                     {row.attendanceRate}%
                   </td>
-                  <td className="px-4 py-3 text-right text-emerald-700 dark:text-emerald-400">
-                    {row.feedingRate}%
-                  </td>
                   <td className="px-4 py-3 text-right text-gray-700 dark:text-slate-300">
                     {formatNumber(row.present)} / {formatNumber(row.absent)}
-                  </td>
-                  <td className="px-4 py-3 text-right text-gray-700 dark:text-slate-300">
-                    {formatNumber(row.completed)} / {formatNumber(row.missed)}
                   </td>
                 </tr>
               ))}

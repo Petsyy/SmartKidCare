@@ -1,6 +1,14 @@
 import { KeyRound } from "lucide-react";
+import { useState, type FormEvent } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import type { PasswordForm } from "@/features/settings/hooks/useAdminPassword2FA";
+import { PasswordVisibilityButton } from "@/components/ui/PasswordVisibilityButton";
+import {
+  AUTH_OTP_LENGTH,
+  AUTH_PASSWORD_MAX_LENGTH,
+  sanitizeNoWhitespace,
+  sanitizeOtp,
+} from "@/features/auth/validations/auth.validation";
 
 const LABEL_CLASS_NAME =
   "mb-2 block text-sm font-semibold tracking-wide text-slate-800 dark:text-slate-200 ml-1";
@@ -32,56 +40,112 @@ export const SecuritySection = ({
   onPasswordInputChange,
   onRequestOtp,
 }: SecuritySectionProps) => {
-  const { register, handleSubmit, setValue, watch } = form;
+  const [visiblePasswords, setVisiblePasswords] = useState({
+    currentPassword: false,
+    newPassword: false,
+    confirmPassword: false,
+  });
+  const { register, handleSubmit, setValue, watch, formState } = form;
+  const preventWhitespaceInput = (event: FormEvent<HTMLInputElement>) => {
+    event.currentTarget.value = sanitizeNoWhitespace(event.currentTarget.value);
+  };
+
+  const fieldError = (field: keyof PasswordForm) =>
+    formState.errors[field]?.message || passwordFieldErrors[field];
+  const togglePasswordVisibility = (field: keyof typeof visiblePasswords) => {
+    setVisiblePasswords((previous) => ({
+      ...previous,
+      [field]: !previous[field],
+    }));
+  };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       <div className="grid gap-4 lg:grid-cols-3">
         <div>
           <label className={LABEL_CLASS_NAME}>Current Password</label>
-          <input
-            type="password"
-            className={INPUT_CLASS_NAME}
-            placeholder="Current password"
-            {...register("currentPassword", {
-              onChange: () => onPasswordInputChange("currentPassword"),
-            })}
-          />
-          {passwordFieldErrors.currentPassword && (
+          <div className="relative">
+            <input
+              id="settings-current-password"
+              type={visiblePasswords.currentPassword ? "text" : "password"}
+              className={`${INPUT_CLASS_NAME} pr-12`}
+              placeholder="Current password"
+              maxLength={AUTH_PASSWORD_MAX_LENGTH}
+              onInput={preventWhitespaceInput}
+              aria-invalid={Boolean(fieldError("currentPassword"))}
+              {...register("currentPassword", {
+                onChange: () => onPasswordInputChange("currentPassword"),
+              })}
+            />
+            <PasswordVisibilityButton
+              visible={visiblePasswords.currentPassword}
+              onToggle={() => togglePasswordVisibility("currentPassword")}
+              inputId="settings-current-password"
+              label="current password"
+              disabled={passwordState.saving}
+            />
+          </div>
+          {fieldError("currentPassword") && (
             <p className="mt-1 text-xs text-red-600">
-              {passwordFieldErrors.currentPassword}
+              {fieldError("currentPassword")}
             </p>
           )}
         </div>
         <div>
           <label className={LABEL_CLASS_NAME}>New Password</label>
-          <input
-            type="password"
-            className={INPUT_CLASS_NAME}
-            placeholder="New password"
-            {...register("newPassword", {
-              onChange: () => onPasswordInputChange("newPassword"),
-            })}
-          />
-          {passwordFieldErrors.newPassword && (
+          <div className="relative">
+            <input
+              id="settings-new-password"
+              type={visiblePasswords.newPassword ? "text" : "password"}
+              className={`${INPUT_CLASS_NAME} pr-12`}
+              placeholder="New password"
+              maxLength={AUTH_PASSWORD_MAX_LENGTH}
+              onInput={preventWhitespaceInput}
+              aria-invalid={Boolean(fieldError("newPassword"))}
+              {...register("newPassword", {
+                onChange: () => onPasswordInputChange("newPassword"),
+              })}
+            />
+            <PasswordVisibilityButton
+              visible={visiblePasswords.newPassword}
+              onToggle={() => togglePasswordVisibility("newPassword")}
+              inputId="settings-new-password"
+              label="new password"
+              disabled={passwordState.saving}
+            />
+          </div>
+          {fieldError("newPassword") && (
             <p className="mt-1 text-xs text-red-600">
-              {passwordFieldErrors.newPassword}
+              {fieldError("newPassword")}
             </p>
           )}
         </div>
         <div>
           <label className={LABEL_CLASS_NAME}>Confirm Password</label>
-          <input
-            type="password"
-            className={INPUT_CLASS_NAME}
-            placeholder="Confirm password"
-            {...register("confirmPassword", {
-              onChange: () => onPasswordInputChange("confirmPassword"),
-            })}
-          />
-          {passwordFieldErrors.confirmPassword && (
+          <div className="relative">
+            <input
+              id="settings-confirm-password"
+              type={visiblePasswords.confirmPassword ? "text" : "password"}
+              className={`${INPUT_CLASS_NAME} pr-12`}
+              placeholder="Confirm password"
+              maxLength={AUTH_PASSWORD_MAX_LENGTH}
+              onInput={preventWhitespaceInput}
+              aria-invalid={Boolean(fieldError("confirmPassword"))}
+              {...register("confirmPassword", {
+                onChange: () => onPasswordInputChange("confirmPassword"),
+              })}
+            />
+            <PasswordVisibilityButton
+              visible={visiblePasswords.confirmPassword}
+              onToggle={() => togglePasswordVisibility("confirmPassword")}
+              inputId="settings-confirm-password"
+              label="password confirmation"
+              disabled={passwordState.saving}
+            />
+          </div>
+          {fieldError("confirmPassword") && (
             <p className="mt-1 text-xs text-red-600">
-              {passwordFieldErrors.confirmPassword}
+              {fieldError("confirmPassword")}
             </p>
           )}
         </div>
@@ -121,6 +185,24 @@ export const SecuritySection = ({
           </li>
           <li
             className={
+              passwordPolicyChecks.hasLowercase
+                ? "text-teal-700"
+                : "text-slate-400"
+            }
+          >
+            Includes at least one lowercase letter
+          </li>
+          <li
+            className={
+              passwordPolicyChecks.hasNumber
+                ? "text-teal-700"
+                : "text-slate-400"
+            }
+          >
+            Includes at least one number
+          </li>
+          <li
+            className={
               passwordPolicyChecks.differsFromCurrent
                 ? "text-teal-700"
                 : "text-slate-400"
@@ -148,15 +230,14 @@ export const SecuritySection = ({
             className={INPUT_CLASS_NAME}
             placeholder="Enter 6-digit code from email"
             inputMode="numeric"
-            maxLength={6}
+            maxLength={AUTH_OTP_LENGTH}
+            aria-invalid={Boolean(fieldError("otp"))}
             {...register("otp", {
               onChange: (event) => {
-                const nextValue = String(event.target.value || "").replace(
-                  /\D/g,
-                  "",
-                );
+                const nextValue = sanitizeOtp(String(event.target.value || ""));
                 setValue("otp", nextValue, {
                   shouldDirty: true,
+                  shouldValidate: true,
                 });
                 onPasswordInputChange("otp");
               },
@@ -165,9 +246,9 @@ export const SecuritySection = ({
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
             Enter the OTP sent to your admin email to confirm password change.
           </p>
-          {passwordFieldErrors.otp && (
+          {fieldError("otp") && (
             <p className="mt-1 text-xs text-red-600">
-              {passwordFieldErrors.otp}
+              {fieldError("otp")}
             </p>
           )}
         </div>

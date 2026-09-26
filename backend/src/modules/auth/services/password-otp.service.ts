@@ -11,6 +11,7 @@ const RESET_TOKEN_TTL = "15m";
 
 export const TEACHER_PASSWORD_SETUP_PURPOSE = "teacher_password_setup";
 export const PARENT_PASSWORD_SETUP_PURPOSE = "parent_password_setup";
+export const CAPTAIN_PASSWORD_SETUP_PURPOSE = "captain_password_setup";
 export const FORGOT_PASSWORD_OTP_PURPOSE = "forgot_password_otp";
 export const FORGOT_PASSWORD_RESET_TOKEN_PURPOSE = "forgot_password_reset";
 export const CHANGE_PASSWORD_OTP_PURPOSE = "change_password_otp";
@@ -178,6 +179,45 @@ export const maybeRequireParentPasswordChange = async (
     email: user.email,
     passwordSetupToken,
     message: "Please set a new password to continue.",
+  });
+  return true;
+};
+
+export const maybeRequireCaptainPasswordChange = async (
+  user: IUser,
+  res: Response,
+): Promise<boolean> => {
+  if (user.role !== "barangay_captain" || !user.mustChangePassword) {
+    return false;
+  }
+
+  try {
+    await issuePasswordOtp(
+      user,
+      CAPTAIN_PASSWORD_SETUP_PURPOSE,
+      "SmartKidCare captain password setup OTP",
+      "Use this OTP to create your private SmartKidCare password:",
+    );
+  } catch (error: unknown) {
+    res.status(500).json({ message: mapOtpDeliveryError(error) });
+    return true;
+  }
+
+  const passwordSetupToken = buildPasswordSetupToken(
+    String(user._id),
+    CAPTAIN_PASSWORD_SETUP_PURPOSE,
+  );
+  const [localPart = "", domainPart = ""] = String(user.email).split("@");
+  const maskedEmail = domainPart && localPart.length >= 2
+    ? `${localPart[0]}${"*".repeat(Math.max(localPart.length - 2, 1))}${localPart.slice(-1)}@${domainPart}`
+    : user.email;
+
+  res.json({
+    requiresPasswordChange: true,
+    requiresOtp: true,
+    passwordSetupToken,
+    email: maskedEmail,
+    message: "Create a new password to continue. An OTP was sent to your email.",
   });
   return true;
 };

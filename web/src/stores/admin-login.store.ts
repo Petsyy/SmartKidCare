@@ -6,6 +6,8 @@ type AdminLoginState = {
   otp: string;
   mfaToken: string | null;
   mfaEmail: string | null;
+  passwordSetupToken: string | null;
+  passwordSetupEmail: string | null;
   info: string | null;
   error: string | null;
   setUsername: (value: string) => void;
@@ -13,9 +15,12 @@ type AdminLoginState = {
   setOtp: (value: string) => void;
   setMfaToken: (value: string | null) => void;
   setMfaEmail: (value: string | null) => void;
+  setPasswordSetupToken: (value: string | null) => void;
+  setPasswordSetupEmail: (value: string | null) => void;
   setInfo: (value: string | null) => void;
   setError: (value: string | null) => void;
   resetMessages: () => void;
+  resetLoginFlow: () => void;
 };
 
 export const useAdminLoginStore = create<AdminLoginState>((set) => ({
@@ -24,6 +29,8 @@ export const useAdminLoginStore = create<AdminLoginState>((set) => ({
   otp: "",
   mfaToken: null,
   mfaEmail: null,
+  passwordSetupToken: null,
+  passwordSetupEmail: null,
   info: null,
   error: null,
   setUsername: (value) => set({ username: value }),
@@ -31,7 +38,20 @@ export const useAdminLoginStore = create<AdminLoginState>((set) => ({
   setOtp: (value) => set({ otp: value }),
   setMfaToken: (value) => set({ mfaToken: value }),
   setMfaEmail: (value) => set({ mfaEmail: value }),
+  setPasswordSetupToken: (value) => set({ passwordSetupToken: value }),
+  setPasswordSetupEmail: (value) => set({ passwordSetupEmail: value }),
   setInfo: (value) => set({ info: value }),
   setError: (value) => set({ error: value }),
   resetMessages: () => set({ info: null, error: null }),
+  resetLoginFlow: () => set({
+    username: "",
+    password: "",
+    otp: "",
+    mfaToken: null,
+    mfaEmail: null,
+    passwordSetupToken: null,
+    passwordSetupEmail: null,
+    info: null,
+    error: null,
+  }),
 }));

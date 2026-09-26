@@ -12,14 +12,6 @@ type FeedingTableProps = {
   readOnly?: boolean;
 };
 
-const formatDate = (value: string) =>
-  new Date(value).toLocaleDateString("en-PH", {
-    month: "numeric",
-    day: "2-digit",
-    year: "numeric",
-    timeZone: "Asia/Manila",
-  });
-
 const formatDateTime = (value?: string) =>
   value
     ? new Date(value).toLocaleString("en-PH", {
@@ -42,26 +34,14 @@ export function FeedingTable({
 }: FeedingTableProps) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-205 border-collapse lg:min-w-0">
+      <table className="w-full border-collapse">
         <thead className="border-b border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-900/50">
           <tr>
-            <th className="whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
-              Child ID
-            </th>
             <th className="whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
               Child Name
             </th>
             <th className="whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
-              Date
-            </th>
-            <th className="whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
-              Food Served
-            </th>
-            <th className="whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
               Feeding Status
-            </th>
-            <th className="whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
-              Recorded By
             </th>
             <th className="whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
               Submitted At
@@ -73,11 +53,11 @@ export function FeedingTable({
         </thead>
         <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
           {isLoading ? (
-            <TableSkeleton columns={8} />
+            <TableSkeleton columns={4} />
           ) : rows.length === 0 ? (
             <tr>
               <td
-                colSpan={8}
+                colSpan={4}
                 className="px-6 py-10 text-center text-sm text-gray-500 dark:text-slate-400"
               >
                 No feeding records found.
@@ -89,23 +69,11 @@ export function FeedingTable({
                 key={row.id}
                 className="transition-colors hover:bg-gray-50 dark:hover:bg-slate-700/50"
               >
-                <td className="px-6 py-4 font-mono text-sm text-gray-900 dark:text-slate-100">
-                  {row.studentId || "-"}
-                </td>
                 <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-300">
                   {row.childName || "-"}
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-900 dark:text-slate-100">
-                  {formatDate(row.date)}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-300">
-                  {row.foodServed || "-"}
-                </td>
                 <td className="px-6 py-4">
                   <FeedingStatusBadge status={row.status} />
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-300">
-                  {row.teacherName}
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-700 dark:text-slate-300">
                   {formatDateTime(row.submittedAt)}

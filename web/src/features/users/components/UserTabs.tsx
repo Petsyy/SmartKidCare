@@ -1,17 +1,11 @@
 type UserTabsProps = {
-  activeTab: "barangay_captain" | "teacher" | "parent";
-  onTabChange: (tab: "barangay_captain" | "teacher" | "parent") => void;
+  activeTab: "teacher" | "parent";
+  onTabChange: (tab: "teacher" | "parent") => void;
 };
 
 export function UserTabs({ activeTab, onTabChange }: UserTabsProps) {
   return (
     <div className="flex gap-2">
-      <button
-        onClick={() => onTabChange("barangay_captain")}
-        className={`px-4 py-2 rounded-lg text-sm font-medium transition ${activeTab === "barangay_captain" ? "border border-teal-200 bg-teal-50 text-teal-700 shadow-sm dark:border-teal-700 dark:bg-teal-900/40 dark:text-teal-200" : "border border-transparent text-gray-600 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800/60 cursor-pointer"}`}
-      >
-        Captain Accounts
-      </button>
       <button
         onClick={() => onTabChange("teacher")}
         className={`px-4 py-2 rounded-lg text-sm font-medium transition ${

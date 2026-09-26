@@ -301,7 +301,7 @@ export class AdminUserManagementService {
     if (!existingUser) {
       throw new Error("User not found.");
     }
-    if (existingUser.role === "system_admin") throw new Error("System administrator accounts cannot be managed here.");
+    if (existingUser.role === "barangay_captain") throw new Error("Barangay Captain accounts cannot be managed here.");
     
     let normalizedEmail: string | undefined;
     if (email) {
@@ -330,7 +330,7 @@ export class AdminUserManagementService {
   async resetPassword(userId: string) {
     const user = await adminUserRepository.findById(userId);
     if (!user) throw new Error("User not found.");
-    if (user.role === "system_admin") throw new Error("System administrator accounts cannot be managed here.");
+    if (user.role === "barangay_captain") throw new Error("Barangay Captain accounts cannot be managed here.");
 
     const tempPassword = generateTempPassword();
     user.password = await bcrypt.hash(tempPassword, 10);
@@ -354,7 +354,7 @@ export class AdminUserManagementService {
   async toggleUserStatus(userId: string) {
     const user = await adminUserRepository.findById(userId);
     if (!user) throw new Error("User not found.");
-    if (user.role === "system_admin") throw new Error("System administrator accounts cannot be managed here.");
+    if (user.role === "barangay_captain") throw new Error("Barangay Captain accounts cannot be managed here.");
 
     user.isActive = !user.isActive;
     await user.save();
@@ -365,7 +365,7 @@ export class AdminUserManagementService {
   async deleteUser(userId: string) {
     const user = await adminUserRepository.findByIdSelect(userId, "role email");
     if (!user) throw new Error("User not found.");
-    if (user.role === "system_admin") throw new Error("System administrator accounts cannot be managed here.");
+    if (user.role === "barangay_captain") throw new Error("Barangay Captain accounts cannot be managed here.");
 
     if (user.role === "parent") {
       await adminChildRepository.unlinkParent(String(user._id));

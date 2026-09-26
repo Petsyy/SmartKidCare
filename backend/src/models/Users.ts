@@ -17,7 +17,7 @@ export interface IUser extends Document {
   lastName: string;
   email: string;
   password: string;
-  role: "system_admin" | "barangay_captain" | "teacher" | "parent";
+  role: "barangay_captain" | "teacher" | "parent";
   phone?: string; // required for teacher/parent
   adminMfaEnabled?: boolean; // admin only
   adminNotifySecurityEvents?: boolean; // admin only
@@ -75,32 +75,26 @@ const UserSchema: Schema = new Schema(
       unique: true,
     },
 
-    phone: {
-      type: String,
-      required: function (this: { role?: string }): boolean {
-        return this.role !== "system_admin";
-      },
-      trim: true,
-    },
+    phone: { type: String, required: true, trim: true },
 
     adminMfaEnabled: {
       type: Boolean,
       default: function (this: { role?: string }): boolean {
-        return this.role === "system_admin"; 
+        return this.role === "barangay_captain";
       },
     },
 
     adminNotifySecurityEvents: {
       type: Boolean,
       default: function (this: { role?: string }): boolean {
-        return this.role === "system_admin";
+        return this.role === "barangay_captain";
       },
     },
 
     adminNotifySystemUpdates: {
       type: Boolean,
       default: function (this: { role?: string }): boolean {
-        return this.role === "system_admin";
+        return this.role === "barangay_captain";
       },
     },
 
@@ -143,7 +137,7 @@ const UserSchema: Schema = new Schema(
 
     role: {
       type: String,
-      enum: ["system_admin", "barangay_captain", "teacher", "parent"],
+      enum: ["barangay_captain", "teacher", "parent"],
       required: true,
     },
 

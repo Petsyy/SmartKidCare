@@ -19,6 +19,16 @@ import { getChildBlockchainProof, getChildDocumentUrl } from "@/api/child.api";
 import type {Child,ChildBlockchainProof,ChildDocumentType} from "@/types/child";
 import { useAuthSession } from "@/components/auth/useAuthSession";
 
+const getCurrentSchoolYear = () => {
+  const currentYear = Number(
+    new Intl.DateTimeFormat("en", {
+      year: "numeric",
+      timeZone: "Asia/Manila",
+    }).format(new Date()),
+  );
+  return `${currentYear}-${currentYear + 1}`;
+};
+
 export default function ChildrenManagement() {
   const navigate = useNavigate();
   const { user } = useAuthSession();
@@ -56,14 +66,11 @@ export default function ChildrenManagement() {
     assignmentFilter,
     setAssignmentFilter,
 
-    schoolYearFilter,
-    setSchoolYearFilter,
     page: safePage,
     setPage,
     limit,
     setLimit,
 
-    schoolYearOptions,
     totalPages,
     rangeLabel,
     pagedChildren,
@@ -233,6 +240,9 @@ export default function ChildrenManagement() {
               <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
                 Child Directory
               </h2>
+              <span className="rounded-full bg-teal-50 px-3 py-1 text-sm font-medium text-teal-700 dark:bg-teal-900/30 dark:text-teal-300">
+                SY {getCurrentSchoolYear()}
+              </span>
             </div>
 
             <div className="flex flex-col gap-3 md:flex-row md:items-center">
@@ -280,21 +290,6 @@ export default function ChildrenManagement() {
                   <option value="unassigned">Unassigned</option>
                 </select>
 
-                <select
-                  value={schoolYearFilter}
-                  onChange={(e) => {
-                    setPage(1);
-                    setSchoolYearFilter(e.target.value);
-                  }}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/30 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-                >
-                  <option value="all">All Years</option>
-                  {schoolYearOptions.map((year) => (
-                    <option key={year} value={year}>
-                      {year}
-                    </option>
-                  ))}
-                </select>
                 <button
                   type="button"
                   disabled={!hasActiveFilters}

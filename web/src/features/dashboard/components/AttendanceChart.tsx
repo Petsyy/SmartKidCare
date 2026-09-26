@@ -1,4 +1,4 @@
-import {LineChart,Line,XAxis,YAxis,CartesianGrid,Tooltip,Legend,ResponsiveContainer} from "recharts";
+import {LineChart,Line,XAxis,YAxis,CartesianGrid,Tooltip,ResponsiveContainer} from "recharts";
 import type { ChartDataPoint } from "../hooks/useAdminDashboard";
 
 type AttendanceChartProps = {
@@ -11,10 +11,10 @@ export function AttendanceChart({ data }: AttendanceChartProps) {
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
-            Weekly Attendance &amp; Feeding Trend
+            Weekly Attendance Trend
           </h3>
           <p className="text-sm text-gray-500 dark:text-slate-400">
-            Attendance and feeding rates for the past 7 days
+            Attendance rates for the past 7 days
           </p>
         </div>
         <div className="flex items-center gap-4 text-sm">
@@ -22,12 +22,6 @@ export function AttendanceChart({ data }: AttendanceChartProps) {
             <div className="h-3 w-3 rounded-full bg-teal-500"></div>
             <span className="text-gray-600 dark:text-slate-300">
               Attendance Rate
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="h-3 w-3 rounded-full bg-emerald-500"></div>
-            <span className="text-gray-600 dark:text-slate-300">
-              Feeding Rate
             </span>
           </div>
         </div>
@@ -59,7 +53,6 @@ export function AttendanceChart({ data }: AttendanceChartProps) {
               "Rate",
             ]}
           />
-          <Legend wrapperStyle={{ fontSize: "12px" }} />
           <Line
             type="monotone"
             dataKey="attendance"
@@ -68,15 +61,6 @@ export function AttendanceChart({ data }: AttendanceChartProps) {
             name="Attendance Rate"
             connectNulls={false}
             dot={{ fill: "#14b8a6", r: 4 }}
-          />
-          <Line
-            type="monotone"
-            dataKey="feeding"
-            stroke="#10b981"
-            strokeWidth={3}
-            name="Feeding Rate"
-            connectNulls={false}
-            dot={{ fill: "#10b981", r: 3 }}
           />
         </LineChart>
       </ResponsiveContainer>

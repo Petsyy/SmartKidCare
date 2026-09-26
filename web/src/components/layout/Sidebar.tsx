@@ -8,7 +8,6 @@ import {
   MessagesSquare,
 } from "lucide-react";
 import { useSystemSettings } from "../../context/SystemSettingsContext";
-import { useAuthSession } from "../auth/useAuthSession";
 
 type NavItem = {
   icon: React.ElementType;
@@ -33,13 +32,14 @@ const captainNavGroups: NavGroup[] = [
   },
   {
     groupName: "INSIGHTS",
-    items: [{ icon: BarChart3, label: "Reports & Analytics", path: "monitoring/reports" }],
+    items: [
+      { icon: BarChart3, label: "Reports & Analytics", path: "monitoring/reports" },
+    ],
   },
-];
-
-const systemAdminNavGroups: NavGroup[] = [
-  { groupName: "SYSTEM", items: [{ icon: LayoutDashboard, label: "Dashboard", path: "system/dashboard" }] },
-  { groupName: "MANAGEMENT", items: [{ icon: UserCog, label: "User Management", path: "system/users" }] },
+  {
+    groupName: "MANAGEMENT",
+    items: [{ icon: UserCog, label: "User Management", path: "monitoring/users" }],
+  },
 ];
 
 type SidebarProps = {
@@ -52,13 +52,11 @@ export default function Sidebar({
   onNavigate,
 }: SidebarProps) {
   const { settings, loading } = useSystemSettings();
-  const { user } = useAuthSession();
-  const isSystemAdmin = user?.role === "system_admin";
-  const navGroups = isSystemAdmin ? systemAdminNavGroups : captainNavGroups;
+  const navGroups = captainNavGroups;
   const systemItem: NavItem = {
     icon: Settings,
-    label: isSystemAdmin ? "Settings" : "Profile / Settings",
-    path: isSystemAdmin ? "system/settings" : "monitoring/settings",
+    label: "Profile / Settings",
+    path: "monitoring/settings",
   };
 
   return (
@@ -79,7 +77,7 @@ export default function Sidebar({
               {loading ? "Loading..." : settings?.schoolName || "Smart KidCare"}
             </h1>
             <p className="text-[10px] font-bold text-teal-400/80 uppercase tracking-widest mt-1">
-              {isSystemAdmin ? "System Administration" : "Captain Monitoring"}
+              Captain Administration
             </p>
           </div>
         </div>

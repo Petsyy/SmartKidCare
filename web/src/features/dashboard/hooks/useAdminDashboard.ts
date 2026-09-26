@@ -22,16 +22,12 @@ type DashboardReport = {
     regularAttendees: number;
     activeChildren: number;
     attendanceRate: number;
-    feedingRate: number;
   };
   recentDailyRows: Array<{
     dateKey: string;
     attendanceRate: number;
-    feedingRate: number;
     present: number;
     absent: number;
-    completed: number;
-    missed: number;
   }>;
   lastUpdatedAt: string;
 };
@@ -68,9 +64,7 @@ export function useAdminDashboard() {
         (row) => row.dateKey === todayKey,
       );
       const todayAttendanceTotal = (today?.present ?? 0) + (today?.absent ?? 0);
-      const todayFeedingTotal = (today?.completed ?? 0) + (today?.missed ?? 0);
       const hasTodayAttendance = todayAttendanceTotal > 0;
-      const hasTodayFeeding = todayFeedingTotal > 0;
       const stats: DashboardStats = {
         ...DEFAULT_STATS,
         totalChildDevelopmentCenters: report.summary.totalChildDevelopmentCenters,
@@ -82,12 +76,9 @@ export function useAdminDashboard() {
         fourPsBeneficiaries: report.summary.fourPsBeneficiaries,
         regularAttendees: report.summary.regularAttendees,
         todayAttendanceRate: hasTodayAttendance ? today?.attendanceRate ?? null : null,
-        todayFeedingRate: hasTodayFeeding ? today?.feedingRate ?? null : null,
         hasTodayAttendance,
-        hasTodayFeeding,
         todayAbsentCount: today?.absent ?? 0,
-        todayMissedCount: today?.missed ?? 0,
-        todayExceptions: (today?.absent ?? 0) + (today?.missed ?? 0),
+        todayExceptions: today?.absent ?? 0,
         underweightCount: nutrition.underweightCount,
         severelyUnderweightCount: nutrition.severelyUnderweightCount,
         normalCount: nutrition.normalCount,
@@ -102,11 +93,9 @@ export function useAdminDashboard() {
         const dateKey = shiftDateKey(todayKey, index - 6);
         const row = rowsByDate.get(dateKey);
         const attendanceTotal = (row?.present ?? 0) + (row?.absent ?? 0);
-        const feedingTotal = (row?.completed ?? 0) + (row?.missed ?? 0);
         return {
           day: dayLabel(dateKey),
           attendance: attendanceTotal > 0 ? row?.attendanceRate ?? null : null,
-          feeding: feedingTotal > 0 ? row?.feedingRate ?? null : null,
         };
       });
 
@@ -117,7 +106,6 @@ export function useAdminDashboard() {
         dateMeta: {
           todayKey,
           attendanceKey: hasTodayAttendance ? todayKey : "",
-          feedingKey: hasTodayFeeding ? todayKey : "",
         },
         serverUpdatedAt: report.lastUpdatedAt,
       };

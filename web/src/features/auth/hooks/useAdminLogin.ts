@@ -1,29 +1,44 @@
 import { useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { API_BASE } from "@/api/config";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAdminLoginStore } from "@/stores/admin-login.store";
 import { useAuthSession } from "@/components/auth/useAuthSession";
 import { webQueryKeys } from "@/lib/query-keys";
+import {
+  adminLoginFormSchema,
+  sanitizeOtp,
+  type AdminLoginFormValues,
+} from "@/features/auth/validations/auth.validation";
 
 type ApiResponse = {
   status: number;
-  data: any;
+  data: AuthApiData | null;
 };
 
-export type AdminLoginFormValues = {
-  username: string;
-  password: string;
-  otp: string;
+type AuthApiData = {
+  message?: string;
+  error?: string;
+  requiresPasswordChange?: boolean;
+  requiresMfa?: boolean;
+  passwordSetupToken?: string;
+  mfaToken?: string;
+  email?: string;
 };
+
+const getErrorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error ? error.message : fallback;
 
 const parseApiResponse = async (response: Response): Promise<ApiResponse> => {
   const raw = await response.text();
-  let data: any = null;
+  let data: AuthApiData | null = null;
 
   try {
-    data = raw ? JSON.parse(raw) : null;
+    const parsed: unknown = raw ? JSON.parse(raw) : null;
+    data =
+      parsed && typeof parsed === "object" ? (parsed as AuthApiData) : null;
   } catch {
     data = null;
   }
@@ -39,30 +54,60 @@ export function useAdminLogin() {
   const queryClient = useQueryClient();
   const { isAuthenticated, user, isChecking } = useAuthSession();
 
-  useEffect(() => {
-    if (!isChecking && isAuthenticated && (user?.role === "system_admin" || user?.role === "barangay_captain")) {
-      navigate(user.role === "system_admin" ? "/system/dashboard" : user.mustChangePassword ? "/monitoring/settings" : "/monitoring/dashboard", { replace: true });
-    }
-  }, [isAuthenticated, isChecking, user, navigate]);
-
   const {
     mfaToken,
     mfaEmail,
+    passwordSetupToken,
+    passwordSetupEmail,
     info,
     error,
     setMfaToken,
     setMfaEmail,
+    setPasswordSetupToken,
+    setPasswordSetupEmail,
     setInfo,
     setError,
     resetMessages,
+    resetLoginFlow,
   } = useAdminLoginStore();
 
-  const { register, handleSubmit, watch, setValue } =
+  useEffect(() => {
+    if (!isChecking && isAuthenticated && user?.role === "barangay_captain") {
+      if (user.mustChangePassword) {
+        void fetch(`${API_BASE}/auth/logout`, {
+          method: "POST",
+          credentials: "include",
+        }).finally(() => {
+          void queryClient.invalidateQueries({ queryKey: webQueryKeys.authSession() });
+          setInfo("Sign in again to create your private password.");
+        });
+        return;
+      }
+      navigate("/monitoring/dashboard", { replace: true });
+    }
+  }, [isAuthenticated, isChecking, user, navigate, queryClient, setInfo]);
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    clearErrors,
+    formState: { errors: formErrors },
+  } =
     useForm<AdminLoginFormValues>({
+      resolver: zodResolver(adminLoginFormSchema),
       defaultValues: {
+        flowMode: passwordSetupToken
+          ? "passwordSetup"
+          : mfaToken
+            ? "mfa"
+            : "credentials",
         username: "",
         password: "",
         otp: "",
+        newPassword: "",
+        confirmPassword: "",
       },
     });
 
@@ -133,15 +178,52 @@ export function useAdminLogin() {
     },
   });
 
-  const isLoading = loginMutation.isPending || verifyMutation.isPending;
-  const isResendingOtp = resendMutation.isPending;
+  const passwordSetupMutation = useMutation({
+    mutationFn: async (variables: {
+      passwordSetupToken: string;
+      newPassword: string;
+      confirmPassword: string;
+      otp: string;
+    }) => {
+      const response = await fetch(`${API_BASE}/auth/captain/password/setup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(variables),
+      });
+      const { status, data } = await parseApiResponse(response);
+      if (!response.ok) {
+        throw new Error(data?.message || `Password setup failed (HTTP ${status})`);
+      }
+      return data;
+    },
+  });
+
+  const passwordSetupResendMutation = useMutation({
+    mutationFn: async (variables: { passwordSetupToken: string }) => {
+      const response = await fetch(`${API_BASE}/auth/captain/password/setup/resend`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(variables),
+      });
+      const { status, data } = await parseApiResponse(response);
+      if (!response.ok) {
+        throw new Error(data?.message || `Failed to resend OTP (HTTP ${status})`);
+      }
+      return data;
+    },
+  });
+
+  const isLoading = loginMutation.isPending || verifyMutation.isPending || passwordSetupMutation.isPending;
+  const isResendingOtp = resendMutation.isPending || passwordSetupResendMutation.isPending;
 
   const getOtpDigits = () =>
     Array.from({ length: 6 }, (_, index) => otp[index] ?? "");
 
   const updateOtpWithDigits = (nextDigits: string[]) => {
-    setValue("otp", nextDigits.join("").replace(/\D/g, "").slice(0, 6), {
+    setValue("otp", sanitizeOtp(nextDigits.join("")), {
       shouldDirty: true,
+      shouldValidate: true,
     });
   };
 
@@ -229,14 +311,20 @@ export function useAdminLogin() {
   };
 
   const handleResendOtp = async () => {
-    if (!mfaToken || isResendingOtp) {
+    if ((!mfaToken && !passwordSetupToken) || isResendingOtp) {
       return;
     }
 
     resetMessages();
 
     try {
-      const data = await resendMutation.mutateAsync({ mfaToken });
+      if (passwordSetupToken) {
+        const data = await passwordSetupResendMutation.mutateAsync({ passwordSetupToken });
+        setInfo(data?.message || "A new OTP has been sent.");
+        return;
+      }
+
+      const data = await resendMutation.mutateAsync({ mfaToken: mfaToken! });
 
       if (data?.mfaToken) {
         setMfaToken(data.mfaToken);
@@ -246,8 +334,8 @@ export function useAdminLogin() {
       }
 
       setInfo(data?.message || "A new OTP has been sent.");
-    } catch (err: any) {
-      setError(err.message || "Failed to resend OTP.");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to resend OTP."));
     }
   };
 
@@ -255,14 +343,45 @@ export function useAdminLogin() {
     resetMessages();
 
     try {
+      if (passwordSetupToken) {
+        await passwordSetupMutation.mutateAsync({
+          passwordSetupToken,
+          newPassword: values.newPassword,
+          confirmPassword: values.confirmPassword,
+          otp: values.otp,
+        });
+        resetLoginFlow();
+        setValue("password", "");
+        setValue("newPassword", "");
+        setValue("confirmPassword", "");
+        setValue("otp", "");
+        await queryClient.invalidateQueries({ queryKey: webQueryKeys.authSession() });
+        navigate("/monitoring/dashboard", { replace: true });
+        return;
+      }
+
       if (!mfaToken) {
-        const username = values.username.trim();
+        const username = values.username;
         const password = values.password;
         if (!username || !password) {
           throw new Error("Please fill in all fields");
         }
 
         const data = await loginMutation.mutateAsync({ username, password });
+
+        if (data?.requiresPasswordChange) {
+          if (!data?.passwordSetupToken) {
+            throw new Error("Password setup could not be started. Please try again.");
+          }
+          setPasswordSetupToken(data.passwordSetupToken);
+          setPasswordSetupEmail(data.email || null);
+          setValue("flowMode", "passwordSetup");
+          clearErrors();
+          setValue("password", "");
+          setValue("otp", "");
+          setInfo(data?.message || "Create a new password to continue.");
+          return;
+        }
 
         if (data?.requiresMfa) {
           if (!data?.mfaToken) {
@@ -271,6 +390,8 @@ export function useAdminLogin() {
 
           setMfaToken(data.mfaToken);
           setMfaEmail(data.email || null);
+          setValue("flowMode", "mfa");
+          clearErrors();
           setValue("otp", "");
           setInfo(
             data?.message || "A verification code was sent to your email.",
@@ -279,40 +400,44 @@ export function useAdminLogin() {
         }
 
         await queryClient.invalidateQueries({ queryKey: webQueryKeys.authSession() });
-        navigate(data?.user?.role === "system_admin" ? "/system/dashboard" : data?.user?.mustChangePassword ? "/monitoring/settings" : "/monitoring/dashboard");
+        navigate("/monitoring/dashboard");
         return;
       }
 
-      const otp = values.otp.trim();
-      if (!otp) {
-        throw new Error("Please enter the verification code.");
-      }
+      const otp = values.otp;
 
-      const data = await verifyMutation.mutateAsync({ mfaToken, otp });
+      await verifyMutation.mutateAsync({ mfaToken, otp });
 
       await queryClient.invalidateQueries({ queryKey: webQueryKeys.authSession() });
       setMfaToken(null);
       setMfaEmail(null);
       setValue("otp", "");
-      navigate(
-        data?.user?.role === "system_admin"
-          ? "/system/dashboard"
-          : data?.user?.mustChangePassword
-            ? "/monitoring/settings"
-            : "/monitoring/dashboard",
-      );
-    } catch (err: any) {
-      setError(err.message || "Login failed. Please try again.");
+      navigate("/monitoring/dashboard");
+    } catch (err: unknown) {
+      const message = getErrorMessage(err, "Login failed. Please try again.");
+      if (passwordSetupToken && /invalid or expired password setup/i.test(message)) {
+        setPasswordSetupToken(null);
+        setPasswordSetupEmail(null);
+        setValue("flowMode", "credentials");
+        clearErrors();
+        setValue("newPassword", "");
+        setValue("confirmPassword", "");
+        setValue("otp", "");
+      }
+      setError(message);
     }
   };
 
   return {
     mfaToken,
     mfaEmail,
+    passwordSetupToken,
+    passwordSetupEmail,
     info,
     error,
     isLoading,
     isResendingOtp,
+    formErrors,
     otp,
     otpInputRefs,
     register,

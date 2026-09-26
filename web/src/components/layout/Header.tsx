@@ -1,10 +1,11 @@
 import { Search, Bell, ChevronRight, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { API_BASE } from "@/api/config";
 import { useAuthSession } from "../auth/useAuthSession";
 import { webQueryKeys } from "@/lib/query-keys";
+import { CommandPalette } from "../ui/CommandPalette";
 
 type HeaderProps = {
   breadcrumbs?: string[];
@@ -17,9 +18,23 @@ export default function Header({
   const queryClient = useQueryClient();
   const { user } = useAuthSession();
   const [showDropdown, setShowDropdown] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const closeSearch = useCallback(() => setIsSearchOpen(false), []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        setIsSearchOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
   const adminEmail = user?.email || "web@smartkidcare.com";
-  const roleLabel = user?.role === "system_admin" ? "System Administrator" : "Barangay Captain";
+  const roleLabel = "Barangay Captain";
   const displayName = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || roleLabel;
 
   useEffect(() => {
@@ -55,6 +70,7 @@ export default function Header({
   };
 
   return (
+    <>
     <header className="sticky top-0 z-40 border-b border-gray-200/60 bg-white/80 backdrop-blur-xl px-8 py-4 transition-colors dark:border-white/5 dark:bg-[#060913]/80 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
       <div className="flex items-center justify-between">
         {/* Left: Breadcrumbs */}
@@ -77,18 +93,20 @@ export default function Header({
 
         {/* Right: Search, Notifications, and Profile */}
         <div className="flex items-center gap-5">
-          {/* Search Bar */}
-          <div className="relative group">
+          {/* Search Bar — opens Command Palette */}
+          <button
+            onClick={() => setIsSearchOpen(true)}
+            className="group relative flex w-72 items-center gap-2 rounded-full border border-gray-200/80 bg-gray-50/50 py-2.5 pl-11 pr-4 text-sm text-gray-400 shadow-sm transition-all duration-300 ease-out hover:border-teal-500/50 hover:bg-white hover:shadow-md dark:border-white/5 dark:bg-white/5 dark:text-slate-500 dark:hover:border-teal-500/30 dark:hover:bg-[#0A101D]"
+          >
             <Search
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 transition-colors group-focus-within:text-teal-500 dark:text-slate-500 dark:group-focus-within:text-teal-400"
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 transition-colors group-hover:text-teal-500 dark:text-slate-500 dark:group-hover:text-teal-400"
               size={18}
             />
-            <input
-              type="text"
-              placeholder="Search anything..."
-              className="w-72 rounded-full border border-gray-200/80 bg-gray-50/50 py-2.5 pl-11 pr-4 text-sm text-gray-900 shadow-sm transition-all duration-300 ease-out placeholder:text-gray-400 focus:w-80 focus:border-teal-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-teal-500/10 dark:border-white/5 dark:bg-white/5 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-teal-500/50 dark:focus:bg-[#0A101D] dark:focus:ring-teal-500/20"
-            />
-          </div>
+            <span>Search anything...</span>
+            <kbd className="ml-auto hidden rounded-md border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 sm:inline-block dark:border-white/10 dark:bg-white/5 dark:text-slate-400">
+              Ctrl K
+            </kbd>
+          </button>
 
           <div className="h-6 w-px bg-gray-200 dark:bg-white/10" />
 
@@ -139,5 +157,8 @@ export default function Header({
         </div>
       </div>
     </header>
+
+      <CommandPalette isOpen={isSearchOpen} onClose={closeSearch} />
+    </>
   );
 }

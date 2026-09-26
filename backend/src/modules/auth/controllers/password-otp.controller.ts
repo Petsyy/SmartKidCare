@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../../../models/Users";
 import {
+  CAPTAIN_PASSWORD_SETUP_PURPOSE,
   CHANGE_PASSWORD_OTP_PURPOSE,
   FORGOT_PASSWORD_OTP_PURPOSE,
   FORGOT_PASSWORD_RESET_TOKEN_PURPOSE,
@@ -19,6 +20,7 @@ import {
   maybeRequireParentPasswordChange,
   maybeRequireTeacherPasswordChange,
 } from "../services/password-otp.service";
+import { setAdminAuthCookie } from "../services/admin-login-mfa.service";
 
 export {
   maybeRequireParentPasswordChange,
@@ -180,6 +182,147 @@ export const completeTeacherPasswordSetup = async (req: Request, res: Response) 
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+const verifyCaptainPasswordSetupToken = (token: unknown): string | null => {
+  try {
+    const decoded = jwt.verify(String(token || ""), getJwtSecret());
+    if (
+      typeof decoded === "string" ||
+      decoded.purpose !== CAPTAIN_PASSWORD_SETUP_PURPOSE ||
+      !decoded.id
+    ) {
+      return null;
+    }
+    return String(decoded.id);
+  } catch {
+    return null;
+  }
+};
+
+const clearPasswordSetupOtp = async (user: any) => {
+  user.passwordResetOtpHash = undefined;
+  user.passwordResetOtpExpiresAt = undefined;
+  user.passwordResetOtpPurpose = undefined;
+  await user.save();
+};
+
+export const completeCaptainPasswordSetup = async (
+  req: Request,
+  res: Response,
+) => {
+  try {
+    const { passwordSetupToken, newPassword, otp } = req.body;
+    const userId = verifyCaptainPasswordSetupToken(passwordSetupToken);
+    if (!userId) {
+      return res.status(401).json({
+        code: "PASSWORD_SETUP_TOKEN_INVALID",
+        message: "Invalid or expired password setup.",
+      });
+    }
+
+    const user = await User.findById(userId);
+    if (
+      !user ||
+      user.role !== "barangay_captain" ||
+      user.isActive === false ||
+      !user.mustChangePassword
+    ) {
+      return res.status(401).json({
+        code: "PASSWORD_SETUP_TOKEN_INVALID",
+        message: "Invalid or expired password setup.",
+      });
+    }
+
+    if (
+      user.passwordResetOtpPurpose !== CAPTAIN_PASSWORD_SETUP_PURPOSE ||
+      !user.passwordResetOtpHash ||
+      !user.passwordResetOtpExpiresAt
+    ) {
+      return res.status(400).json({
+        code: "PASSWORD_SETUP_OTP_REQUIRED",
+        message: "No OTP found. Request a new code.",
+      });
+    }
+
+    if (user.passwordResetOtpExpiresAt.getTime() < Date.now()) {
+      await clearPasswordSetupOtp(user);
+      return res.status(400).json({
+        code: "PASSWORD_SETUP_OTP_EXPIRED",
+        message: "OTP expired. Request a new code.",
+      });
+    }
+
+    if (hashOtp(String(otp).trim()) !== user.passwordResetOtpHash) {
+      return res.status(400).json({ message: "Invalid OTP." });
+    }
+
+    if (await bcrypt.compare(String(newPassword), user.password)) {
+      return res.status(400).json({
+        message: "New password must be different from the temporary password.",
+      });
+    }
+
+    user.password = await bcrypt.hash(String(newPassword), 12);
+    user.mustChangePassword = false;
+    user.passwordResetOtpHash = undefined;
+    user.passwordResetOtpExpiresAt = undefined;
+    user.passwordResetOtpPurpose = undefined;
+    user.latestTempPassword = undefined;
+    user.latestTempPasswordIssuedAt = undefined;
+    await user.save();
+
+    const token = signAuthToken(String(user._id), user.role);
+    setAdminAuthCookie(res, token);
+    const userResponse = user.toObject();
+    delete (userResponse as any).password;
+    delete (userResponse as any).latestTempPassword;
+
+    return res.json({
+      message: "Password created successfully.",
+      user: userResponse,
+    });
+  } catch {
+    return res.status(500).json({ message: "Unable to complete password setup." });
+  }
+};
+
+export const resendCaptainPasswordSetupOtp = async (
+  req: Request,
+  res: Response,
+) => {
+  try {
+    const userId = verifyCaptainPasswordSetupToken(req.body.passwordSetupToken);
+    if (!userId) {
+      return res.status(401).json({
+        code: "PASSWORD_SETUP_TOKEN_INVALID",
+        message: "Invalid or expired password setup.",
+      });
+    }
+
+    const user = await User.findById(userId);
+    if (
+      !user ||
+      user.role !== "barangay_captain" ||
+      user.isActive === false ||
+      !user.mustChangePassword
+    ) {
+      return res.status(401).json({
+        code: "PASSWORD_SETUP_TOKEN_INVALID",
+        message: "Invalid or expired password setup.",
+      });
+    }
+
+    await issuePasswordOtp(
+      user,
+      CAPTAIN_PASSWORD_SETUP_PURPOSE,
+      "SmartKidCare captain password setup OTP",
+      "Use this OTP to create your private SmartKidCare password:",
+    );
+    return res.json({ message: "A new OTP was sent to your email." });
+  } catch (error: unknown) {
+    return res.status(500).json({ message: mapOtpDeliveryError(error) });
   }
 };
 
@@ -348,7 +491,7 @@ export const requestChangePasswordOtp = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "User not found." });
     }
 
-    if (user.role !== "system_admin" && user.role !== "barangay_captain") {
+    if (user.role !== "barangay_captain") {
       return res.status(403).json({
         message: "Password confirmation is available for web accounts only.",
       });
@@ -396,7 +539,7 @@ export const changePassword = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "Current password is incorrect." });
     }
 
-    if (user.role === "system_admin" || user.role === "barangay_captain") {
+    if (user.role === "barangay_captain") {
       const normalizedOtp = String(otp || "").trim();
       if (!normalizedOtp) {
         return res.status(400).json({

@@ -10,7 +10,6 @@ export function useChildrenFilters({ childrenList }: UseChildrenFiltersProps) {
   const [statusFilter, setStatusFilter] = useState("all");
   const [assignmentFilter, setAssignmentFilter] = useState("all");
 
-  const [schoolYearFilter, setSchoolYearFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
 
@@ -26,16 +25,6 @@ export function useChildrenFilters({ childrenList }: UseChildrenFiltersProps) {
     });
   }, [childrenList, searchTerm]);
 
-
-
-  const schoolYearOptions = useMemo(() => {
-    const years = new Set<string>();
-    childrenList.forEach((child) => {
-      if (child.schoolYear) years.add(child.schoolYear);
-    });
-    return Array.from(years).sort().reverse();
-  }, [childrenList]);
-
   const filteredByControls = useMemo(() => {
     return filteredChildren.filter((child) => {
       if (statusFilter !== "all" && child.status !== statusFilter) {
@@ -46,17 +35,12 @@ export function useChildrenFilters({ childrenList }: UseChildrenFiltersProps) {
         if (assignmentFilter === "assigned" && !hasTeacher) return false;
         if (assignmentFilter === "unassigned" && hasTeacher) return false;
       }
-
-      if (schoolYearFilter !== "all" && child.schoolYear !== schoolYearFilter) {
-        return false;
-      }
       return true;
     });
   }, [
     assignmentFilter,
 
     filteredChildren,
-    schoolYearFilter,
     statusFilter,
   ]);
 
@@ -74,13 +58,11 @@ export function useChildrenFilters({ childrenList }: UseChildrenFiltersProps) {
 
   const hasActiveFilters =
     statusFilter !== "all" ||
-    assignmentFilter !== "all" ||
-    schoolYearFilter !== "all";
+    assignmentFilter !== "all";
 
   const clearFilters = () => {
     setStatusFilter("all");
     setAssignmentFilter("all");
-    setSchoolYearFilter("all");
     setPage(1);
   };
 
@@ -102,14 +84,11 @@ export function useChildrenFilters({ childrenList }: UseChildrenFiltersProps) {
     assignmentFilter,
     setAssignmentFilter,
 
-    schoolYearFilter,
-    setSchoolYearFilter,
     page: safePage,
     setPage,
     limit,
     setLimit,
 
-    schoolYearOptions,
     total,
     totalPages,
     rangeLabel,

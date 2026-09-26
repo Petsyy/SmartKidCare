@@ -313,7 +313,7 @@ export interface ViewUser {
   firstName: string;
   lastName: string;
   email: string;
-  role: "system_admin" | "barangay_captain" | "teacher" | "parent";
+  role: "barangay_captain" | "teacher" | "parent";
   isActive?: boolean;
 }
 

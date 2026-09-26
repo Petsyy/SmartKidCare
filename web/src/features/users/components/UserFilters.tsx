@@ -5,7 +5,7 @@ import type { AccountStatusFilter } from "../hooks/useUserManagement";
 import { PAGE_SIZE_OPTIONS } from "../hooks/useUserManagement";
 
 type UserFiltersProps = {
-  activeTab: "barangay_captain" | "teacher" | "parent";
+  activeTab: "teacher" | "parent";
   hasActiveFilters: boolean;
   resultCount: number;
   currentSearchQuery: string;
@@ -40,7 +40,7 @@ export const UserFilters = ({
       <SearchInput
         value={currentSearchQuery}
         onChange={onSearchChange}
-        placeholder={`Search ${activeTab === "barangay_captain" ? "captains" : activeTab === "teacher" ? "teachers" : "parents"}...`}
+        placeholder={`Search ${activeTab === "teacher" ? "teachers" : "parents"}...`}
         className="min-w-55 flex-1 sm:max-w-xs"
       />
       <SelectFilter

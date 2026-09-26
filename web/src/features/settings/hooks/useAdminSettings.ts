@@ -68,7 +68,7 @@ export function useAdminSettings() {
       setProfile(mappedProfile);
       setPreferences(mappedPreferences);
       return {
-        isAdmin: user.role === "system_admin" || user.role === "barangay_captain",
+        isAdmin: user.role === "barangay_captain",
         role: user.role,
         profile: mappedProfile,
         preferences: mappedPreferences,
