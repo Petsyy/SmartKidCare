@@ -15,6 +15,7 @@ export const useAuth = () => {
     authState: context.authState,
     lastOnlineVerifiedAt: context.lastOnlineVerifiedAt,
     offlineExpiresAt: context.offlineExpiresAt,
+    lockApp: context.lockApp,
     unlockOffline: context.unlockOffline,
   };
 };

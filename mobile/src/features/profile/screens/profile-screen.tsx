@@ -48,6 +48,7 @@ export default function ProfileScreen({
     passwordError,
     passwordLoading,
     isChangePasswordFormValid,
+    handleLockApp,
     handleLogout,
     handleChangePassword,
   } = useProfileScreen({ fetchProfile });
@@ -136,7 +137,9 @@ export default function ProfileScreen({
             <View className="flex-row items-center">
               <View className="h-2 w-2 rounded-full bg-emerald-300" />
               <Text className="ml-2 text-sm font-medium text-white">
-                {profile?.isActive === false ? "Inactive account" : "Active account"}
+                {profile?.isActive === false
+                  ? "Inactive account"
+                  : "Active account"}
               </Text>
             </View>
             {showAssignedCenter && profile?.employeeId ? (
@@ -279,6 +282,18 @@ export default function ProfileScreen({
         </View>
 
         <View className="mx-5">
+          <TouchableOpacity
+            onPress={handleLockApp}
+            accessibilityRole="button"
+            accessibilityLabel="Lock SmartKidCare"
+            accessibilityHint="Keeps encrypted local data and requires device verification to reopen the app"
+            className="mb-3 flex-row items-center justify-center rounded-2xl border border-teal-200 bg-teal-50 py-4"
+          >
+            <Icons.LockKeyhole size={20} color="#0F766E" />
+            <Text className="ml-2 text-base font-semibold text-teal-700">
+              Lock App
+            </Text>
+          </TouchableOpacity>
           <TouchableOpacity
             onPress={handleLogout}
             accessibilityRole="button"

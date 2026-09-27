@@ -22,7 +22,13 @@ export type UserProfile = {
   employeeId?: string;
   isActive?: boolean;
   daycareCenter?:
-    | { _id?: string; name?: string; barangay?: string; code?: string; isActive?: boolean }
+    | {
+        _id?: string;
+        name?: string;
+        barangay?: string;
+        code?: string;
+        isActive?: boolean;
+      }
     | string
     | null;
   assignedCenter?: string;
@@ -35,11 +41,13 @@ type Params = {
 export function useProfileScreen({ fetchProfile }: Params) {
   const router = useRouter();
   const pathname = usePathname();
-  const { logout, user } = useAuthContext();
+  const { lockApp, logout, user } = useAuthContext();
   const { isAuthenticated } = useAuth();
   const { localWorkCount } = useOffline();
-  
-  const profileRole: ProfileRole = pathname.includes("(teacher)") ? "teacher" : "parent";
+
+  const profileRole: ProfileRole = pathname.includes("(teacher)")
+    ? "teacher"
+    : "parent";
 
   const {
     data: profile = null,
@@ -57,7 +65,9 @@ export function useProfileScreen({ fetchProfile }: Params) {
 
   useFocusEffect(
     useMemo(
-      () => () => { void refetch(); },
+      () => () => {
+        void refetch();
+      },
       [refetch],
     ),
   );
@@ -68,9 +78,10 @@ export function useProfileScreen({ fetchProfile }: Params) {
       await logout();
       router.push("/(auth)/login");
     };
-    const message = localWorkCount > 0
-      ? `You have ${localWorkCount} unsynchronized draft or submission${localWorkCount === 1 ? "" : "s"}. Logging out will permanently delete this local work.`
-      : "Are you sure you want to logout?";
+    const message =
+      localWorkCount > 0
+        ? `You have ${localWorkCount} unsynchronized draft or submission${localWorkCount === 1 ? "" : "s"}. Logging out will permanently delete this local work.`
+        : "Are you sure you want to logout?";
     Alert.alert("Confirm Logout", message, [
       { text: "Cancel", onPress: () => {}, style: "cancel" },
       {
@@ -98,8 +109,29 @@ export function useProfileScreen({ fetchProfile }: Params) {
     ]);
   };
 
+  const handleLockApp = () => {
+    Alert.alert(
+      "Lock SmartKidCare?",
+      "Your encrypted cached data, drafts, and queued submissions will stay on this device. Use your device security to unlock the app.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Lock App",
+          onPress: () => void lockApp(),
+        },
+      ],
+    );
+  };
+
   return {
-    profile, loading, showPasswordModal, setShowPasswordModal,
-    showHelpModal, setShowHelpModal, handleLogout, ...passwordManager,
+    profile,
+    loading,
+    showPasswordModal,
+    setShowPasswordModal,
+    showHelpModal,
+    setShowHelpModal,
+    handleLockApp,
+    handleLogout,
+    ...passwordManager,
   };
 }

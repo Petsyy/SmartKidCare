@@ -16,6 +16,9 @@ import {
   saveLastOnlineVerifiedAt,
   getLastOnlineVerifiedAt,
   clearLastOnlineVerifiedAt,
+  saveAppLocked,
+  getAppLocked,
+  clearAppLocked,
 } from "@/src/utils/auth-storage";
 import { setAuthToken } from "@/src/api/client";
 import { queryClient } from "@/src/lib/query-client";
@@ -46,6 +49,7 @@ type AuthContextType = {
     | "reauthenticationRequired";
   lastOnlineVerifiedAt: string | null;
   offlineExpiresAt: string | null;
+  lockApp: () => Promise<void>;
   unlockOffline: () => Promise<boolean>;
   login: (user: User, token: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -84,8 +88,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [authState, setAuthState] = useState<AuthContextType["authState"]>("signedOut");
-  const [lastOnlineVerifiedAt, setLastOnlineVerifiedAt] = useState<string | null>(null);
+  const [authState, setAuthState] =
+    useState<AuthContextType["authState"]>("signedOut");
+  const [lastOnlineVerifiedAt, setLastOnlineVerifiedAt] = useState<
+    string | null
+  >(null);
   const expiryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Keep the module-level token in the API client in sync.
@@ -124,19 +131,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }
         }
 
-        const storedVerifiedAt = await getLastOnlineVerifiedAt();
+        const [storedVerifiedAt, isAppLocked] = await Promise.all([
+          getLastOnlineVerifiedAt(),
+          getAppLocked(),
+        ]);
         setLastOnlineVerifiedAt(storedVerifiedAt);
 
         if (storedToken && storedUser) {
           const expiresAt = decodeJwtExpMs(storedToken);
           setUser(storedUser);
-          if (!expiresAt || expiresAt > Date.now()) {
+          const offlineAccessValid =
+            storedVerifiedAt &&
+            Date.parse(storedVerifiedAt) + 7 * 24 * 60 * 60 * 1000 > Date.now();
+          if (isAppLocked) {
+            setToken(null);
+            setAuthState(
+              offlineAccessValid ? "offlineLocked" : "reauthenticationRequired",
+            );
+          } else if (!expiresAt || expiresAt > Date.now()) {
             setToken(storedToken);
             setAuthState("onlineAuthenticated");
-          } else if (
-            storedVerifiedAt &&
-            Date.parse(storedVerifiedAt) + 7 * 24 * 60 * 60 * 1000 > Date.now()
-          ) {
+          } else if (offlineAccessValid) {
             setToken(null);
             setAuthState("offlineLocked");
           } else {
@@ -185,7 +200,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const stillEligible =
         lastOnlineVerifiedAt &&
         Date.parse(lastOnlineVerifiedAt) + 7 * 24 * 60 * 60 * 1000 > Date.now();
-      setAuthState(stillEligible ? "offlineLocked" : "reauthenticationRequired");
+      setAuthState(
+        stillEligible ? "offlineLocked" : "reauthenticationRequired",
+      );
     };
 
     if (msUntilExpiry <= 0) {
@@ -208,7 +225,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       saveToken(authToken),
       saveUser(userData),
       saveLastOnlineVerifiedAt(verifiedAt),
+      clearAppLocked(),
     ]);
+  };
+
+  const lockApp = async () => {
+    if (
+      !user ||
+      !offlineExpiresAt ||
+      // Eligibility must be checked at the moment the user requests a lock.
+      // eslint-disable-next-line react-hooks/purity
+      Date.parse(offlineExpiresAt) <= Date.now()
+    ) {
+      setToken(null);
+      setAuthState("reauthenticationRequired");
+      queryClient.clear();
+      return;
+    }
+
+    await saveAppLocked();
+    setToken(null);
+    setAuthState("offlineLocked");
+    queryClient.clear();
   };
 
   const logout = async () => {
@@ -221,6 +259,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     await Promise.all([
       clearSession(),
       clearLastOnlineVerifiedAt(),
+      clearAppLocked(),
       AsyncStorage.removeItem("token"),
       AsyncStorage.removeItem("user"),
     ]);
@@ -247,12 +286,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return false;
     }
     const result = await LocalAuthentication.authenticateAsync({
-      promptMessage: "Unlock SmartKidCare offline mode",
+      promptMessage: "Unlock SmartKidCare",
       cancelLabel: "Cancel",
       disableDeviceFallback: false,
     });
     if (!result.success) return false;
-    setAuthState("offlineAuthenticated");
+
+    const storedToken = await getToken();
+    const expiresAt = storedToken ? decodeJwtExpMs(storedToken) : null;
+    if (storedToken && (!expiresAt || expiresAt > Date.now())) {
+      setToken(storedToken);
+      setAuthState("onlineAuthenticated");
+    } else {
+      setToken(null);
+      setAuthState("offlineAuthenticated");
+    }
+    await clearAppLocked();
     return true;
   };
 
@@ -266,6 +315,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         authState,
         lastOnlineVerifiedAt,
         offlineExpiresAt,
+        lockApp,
         unlockOffline,
         login,
         logout,

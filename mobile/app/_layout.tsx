@@ -64,20 +64,20 @@ function LayoutContent() {
         >
           <View className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6">
             <Text className="text-center text-2xl font-bold text-gray-900">
-              Unlock Offline Mode
+              Unlock SmartKidCare
             </Text>
             <Text className="mt-3 text-center text-base text-gray-600">
               Verify with your device security before viewing protected cached
-              information.
+              information and local work.
             </Text>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Unlock offline mode"
+              accessibilityLabel="Unlock SmartKidCare"
               className="mt-6 min-h-12 items-center justify-center rounded-xl bg-teal-600 px-4"
               onPress={() => void unlockOffline()}
             >
               <Text className="font-semibold text-white">
-                Unlock Offline Mode
+                Unlock SmartKidCare
               </Text>
             </Pressable>
           </View>

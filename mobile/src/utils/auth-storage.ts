@@ -3,6 +3,7 @@ import * as SecureStore from "expo-secure-store";
 const TOKEN_KEY = "authToken";
 const USER_KEY = "authUser";
 const LAST_VERIFIED_KEY = "lastOnlineVerifiedAt";
+const APP_LOCKED_KEY = "appLocked";
 
 export const saveToken = async (token: string) => {
   await SecureStore.setItemAsync(TOKEN_KEY, token);
@@ -53,3 +54,12 @@ export const getLastOnlineVerifiedAt = async () =>
 
 export const clearLastOnlineVerifiedAt = async () =>
   SecureStore.deleteItemAsync(LAST_VERIFIED_KEY);
+
+export const saveAppLocked = async () =>
+  SecureStore.setItemAsync(APP_LOCKED_KEY, "true");
+
+export const getAppLocked = async () =>
+  (await SecureStore.getItemAsync(APP_LOCKED_KEY)) === "true";
+
+export const clearAppLocked = async () =>
+  SecureStore.deleteItemAsync(APP_LOCKED_KEY);
