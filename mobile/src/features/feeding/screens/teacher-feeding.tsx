@@ -484,15 +484,28 @@ export default function RecordFeeding() {
 
       <View className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white/95 px-6 py-4">
         <View className="gap-2">
-        <Pressable
-          onPress={() => void submitBeforeLeaving()}
-          disabled={isSubmitting || isReadOnly}
-          accessibilityRole="button"
-          accessibilityLabel="Save feeding draft and leave"
-          className="min-h-12 items-center justify-center rounded-xl border border-teal-600 bg-white px-4"
-        >
-          <Text className="font-semibold text-teal-700">Save Draft &amp; Leave</Text>
-        </Pressable>
+        {!isReadOnly ? (
+          <Pressable
+            onPress={() => void submitBeforeLeaving()}
+            disabled={isSubmitting}
+            accessibilityRole="button"
+            accessibilityLabel="Save feeding draft and leave"
+            accessibilityState={{ disabled: isSubmitting }}
+            className={`min-h-14 items-center justify-center rounded-2xl border px-4 py-4 shadow-md ${
+              isSubmitting
+                ? "border-gray-300 bg-gray-100"
+                : "border-teal-600 bg-white active:bg-teal-50"
+            }`}
+          >
+            <Text
+              className={`text-xl font-bold ${
+                isSubmitting ? "text-gray-400" : "text-teal-700"
+              }`}
+            >
+              Save Draft &amp; Leave
+            </Text>
+          </Pressable>
+        ) : null}
         <Pressable
           onPress={() => {
             Alert.alert(

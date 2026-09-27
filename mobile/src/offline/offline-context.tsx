@@ -22,10 +22,7 @@ import {
   hydrateAllowedQueries,
   persistAllowedQueries,
 } from "./offline-query-cache";
-import {
-  listOutboxOperations,
-  updateOutboxStatus,
-} from "./offline-store";
+import { listOutboxOperations, updateOutboxStatus } from "./offline-store";
 
 type SyncState = "idle" | "syncing" | "paused" | "error";
 
@@ -44,7 +41,11 @@ const OfflineContext = createContext<OfflineContextValue | null>(null);
 const retryableStatus = (error: unknown) =>
   !(error instanceof ApiError) || error.status >= 500 || error.status === 408;
 
-export const OfflineProvider = ({ children }: { children: React.ReactNode }) => {
+export const OfflineProvider = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
   const { user, token, authState } = useAuthContext();
   const queryClient = useQueryClient();
   const [isConnected, setIsConnected] = useState(true);
@@ -213,6 +214,7 @@ export const OfflineProvider = ({ children }: { children: React.ReactNode }) => 
 
 export const useOffline = () => {
   const context = useContext(OfflineContext);
-  if (!context) throw new Error("useOffline must be used within OfflineProvider");
+  if (!context)
+    throw new Error("useOffline must be used within OfflineProvider");
   return context;
 };

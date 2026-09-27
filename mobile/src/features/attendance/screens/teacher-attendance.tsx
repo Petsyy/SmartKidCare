@@ -4,12 +4,11 @@ import {
   Pressable,
   ActivityIndicator,
   ScrollView,
-  Modal,
   Alert,
 } from "react-native";
 import { CheckCircle2, XCircle, Users } from "lucide-react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTeacherAttendance } from "@/src/features/attendance/hooks";
+import { AttendanceDatePicker } from "@/src/features/attendance/components/attendance-date-picker";
 import {
   ScreenHeader,
   ScreenLoadingState,
@@ -19,7 +18,6 @@ import {
 } from "@/src/components/ui";
 
 export default function RecordAttendance() {
-  const insets = useSafeAreaInsets();
   const {
     router,
     children,
@@ -27,7 +25,9 @@ export default function RecordAttendance() {
     attendance,
     searchQuery,
     setSearchQuery,
+    selectedDateKey,
     selectedDateLabel,
+    setSelectedDateKey,
     isReadOnly,
     filteredChildren,
     stats,
@@ -70,8 +70,14 @@ export default function RecordAttendance() {
       />
 
       <ScrollView className="flex-1" keyboardDismissMode="on-drag">
+        <AttendanceDatePicker
+          dateKey={selectedDateKey}
+          dateLabel={selectedDateLabel}
+          onDateChange={setSelectedDateKey}
+        />
+
         {/* Attendance Overview */}
-        <View className="px-6 pb-5 pt-4">
+        <View className="px-6 pb-5 pt-2">
           <View className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
             <View className="flex-row items-start justify-between">
               <View className="flex-1 pr-4">
@@ -320,15 +326,28 @@ export default function RecordAttendance() {
           </View>
         ) : (
           <View className="gap-2">
-          <Pressable
-            onPress={() => void saveDraftAndLeave()}
-            disabled={isSubmitting || isReadOnly}
-            accessibilityRole="button"
-            accessibilityLabel="Save attendance draft and leave"
-            className="min-h-12 items-center justify-center rounded-xl border border-teal-600 bg-white px-4"
-          >
-            <Text className="font-semibold text-teal-700">Save Draft &amp; Leave</Text>
-          </Pressable>
+          {!isReadOnly ? (
+            <Pressable
+              onPress={() => void saveDraftAndLeave()}
+              disabled={isSubmitting}
+              accessibilityRole="button"
+              accessibilityLabel="Save attendance draft and leave"
+              accessibilityState={{ disabled: isSubmitting }}
+              className={`min-h-14 items-center justify-center rounded-2xl border px-4 py-4 shadow-md ${
+                isSubmitting
+                  ? "border-gray-300 bg-gray-100"
+                  : "border-teal-600 bg-white active:bg-teal-50"
+              }`}
+            >
+              <Text
+                className={`text-xl font-bold ${
+                  isSubmitting ? "text-gray-400" : "text-teal-700"
+                }`}
+              >
+                Save Draft &amp; Leave
+              </Text>
+            </Pressable>
+          ) : null}
           <Pressable
             onPress={() => {
               Alert.alert(

@@ -3,7 +3,7 @@ import { Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/src/hooks/use-auth";
 import { getChildren } from "@/src/api/teacher.api";
-import { getTodayAttendance } from "@/src/api/records.api";
+import { getAttendanceForDate } from "@/src/api/records.api";
 import type { Child } from "@/src/api/api.types";
 import {
   formatManilaDateLabel,
@@ -33,7 +33,9 @@ export const useTeacherAttendance = () => {
     setAttendanceSearchQuery: setSearchQuery,
   } = useTeacherUi();
 
-  const selectedDateKey = useMemo(() => getManilaDateKey(), []);
+  const [selectedDateKey, setSelectedDateKey] = useState(() =>
+    getManilaDateKey(),
+  );
   const selectedDateLabel = useMemo(
     () => formatManilaDateLabel(selectedDateKey),
     [selectedDateKey],
@@ -42,11 +44,11 @@ export const useTeacherAttendance = () => {
     queryKey: mobileQueryKeys.teacherAttendanceSetup(selectedDateKey),
     enabled: isAuthenticated,
     queryFn: async () => {
-      const [childrenData, todayRecord] = await Promise.all([
+      const [childrenData, attendanceRecord] = await Promise.all([
         getChildren(),
-        getTodayAttendance(),
+        getAttendanceForDate(selectedDateKey),
       ]);
-      return { childrenData, todayRecord };
+      return { childrenData, attendanceRecord };
     },
   });
   const children = useMemo<Child[]>(
@@ -56,12 +58,12 @@ export const useTeacherAttendance = () => {
 
   useEffect(() => {
     if (!data) return;
-    if (data.todayRecord) {
+    if (data.attendanceRecord) {
       // Query completion intentionally hydrates the editable attendance draft.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsReadOnly(true);
       const existingAttendance: Record<string, boolean> = {};
-      data.todayRecord.records.forEach((record: any) => {
+      data.attendanceRecord.records.forEach((record: any) => {
         existingAttendance[record.child._id || record.child] =
           record.status === "present";
       });
@@ -291,6 +293,7 @@ export const useTeacherAttendance = () => {
     searchQuery,
     setSearchQuery,
     selectedDateKey,
+    setSelectedDateKey,
     selectedDateLabel,
     isReadOnly,
     setIsReadOnly,

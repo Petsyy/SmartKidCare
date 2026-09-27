@@ -1,12 +1,25 @@
 import "@/global.css";
 import { Stack } from "expo-router";
 import Constants, { ExecutionEnvironment } from "expo-constants";
-import { ActivityIndicator, LogBox, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  LogBox,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { AuthProvider } from "@/src/context/auth-context";
 import { useAuth } from "@/src/hooks/use-auth";
 import { SystemSettingsProvider } from "@/src/context/system-settings-context";
-import { SafeAreaProvider } from "react-native-safe-area-context";
-import {configureReanimatedLogger,ReanimatedLogLevel} from "react-native-reanimated";
+import {
+  SafeAreaProvider,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
+import {
+  configureReanimatedLogger,
+  ReanimatedLogLevel,
+} from "react-native-reanimated";
 import { useEffect } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/src/lib/query-client";
@@ -23,8 +36,6 @@ cssInterop(LinearGradient, { className: "style" });
 const isExpoGo =
   Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
-// NativeWind's Babel interop currently breaks the React Native 0.86 LogBox UI.
-// Keep Expo Go usable while retaining LogBox in custom development builds.
 if (__DEV__ && isExpoGo) {
   LogBox.ignoreAllLogs(true);
 }
@@ -36,13 +47,19 @@ configureReanimatedLogger({
 
 function LayoutContent() {
   const { loading, authState, unlockOffline } = useAuth();
-  const { isConnected, isInternetReachable, pendingCount, syncState } = useOffline();
+  const { isConnected, isInternetReachable, pendingCount, syncState } =
+    useOffline();
+  const insets = useSafeAreaInsets();
   const isOffline = !isConnected || !isInternetReachable;
   return (
     <>
       <Stack screenOptions={{ headerShown: false }} />
       {(isOffline || pendingCount > 0) && authState !== "signedOut" ? (
-        <View className="absolute left-3 right-3 top-12 z-40 rounded-xl bg-gray-900 px-4 py-3">
+        <View
+          pointerEvents="none"
+          style={{ paddingTop: insets.top }}
+          className="absolute left-0 right-0 top-0 z-40 bg-gray-900 px-4 pb-2"
+        >
           <Text className="text-center text-sm font-semibold text-white">
             {isOffline
               ? pendingCount > 0
@@ -74,7 +91,8 @@ function LayoutContent() {
               Unlock Offline Mode
             </Text>
             <Text className="mt-3 text-center text-base text-gray-600">
-              Verify with your device security before viewing protected cached information.
+              Verify with your device security before viewing protected cached
+              information.
             </Text>
             <Pressable
               accessibilityRole="button"
@@ -82,7 +100,9 @@ function LayoutContent() {
               className="mt-6 min-h-12 items-center justify-center rounded-xl bg-teal-600 px-4"
               onPress={() => void unlockOffline()}
             >
-              <Text className="font-semibold text-white">Unlock Offline Mode</Text>
+              <Text className="font-semibold text-white">
+                Unlock Offline Mode
+              </Text>
             </Pressable>
           </View>
         </View>
