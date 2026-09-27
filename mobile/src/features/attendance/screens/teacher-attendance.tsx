@@ -236,20 +236,22 @@ export default function RecordAttendance() {
                 accessibilityRole="button"
                 accessibilityLabel={`${item.lastName}, ${item.firstName}${
                   item.middleName ? ` ${item.middleName}` : ""
-                }, ${attendance[item._id] ? "Present" : "Absent"}`}
+                }, ${attendance[item._id] === "present" ? "Present" : "Absent"}`}
                 accessibilityHint={
                   isReadOnly
                     ? "Submitted attendance cannot be changed"
                     : `Double tap to mark ${
-                        attendance[item._id] ? "Absent" : "Present"
+                        attendance[item._id] === "present"
+                          ? "Absent"
+                          : "Present"
                       }`
                 }
                 accessibilityState={{
                   disabled: isReadOnly,
-                  selected: attendance[item._id],
+                  selected: attendance[item._id] === "present",
                 }}
                 className={`mb-3 overflow-hidden rounded-2xl border shadow-sm ${
-                  attendance[item._id]
+                  attendance[item._id] === "present"
                     ? "border-teal-200 bg-teal-50"
                     : "border-red-200 bg-red-50"
                 } ${isReadOnly ? "opacity-90" : ""}`}
@@ -257,7 +259,9 @@ export default function RecordAttendance() {
                 <View className="flex-row items-center p-4">
                   <View
                     className={`h-12 w-12 items-center justify-center rounded-full ${
-                      attendance[item._id] ? "bg-teal-600" : "bg-red-500"
+                      attendance[item._id] === "present"
+                        ? "bg-teal-600"
+                        : "bg-red-500"
                     }`}
                   >
                     <Text className="text-xl font-bold text-white">
@@ -276,23 +280,27 @@ export default function RecordAttendance() {
                     </Text>
                     <View
                       className={`mt-2 self-start rounded-full px-2.5 py-1 ${
-                        attendance[item._id] ? "bg-teal-100" : "bg-red-100"
+                        attendance[item._id] === "present"
+                          ? "bg-teal-100"
+                          : "bg-red-100"
                       }`}
                     >
                       <Text
                         className={`text-sm font-semibold ${
-                          attendance[item._id]
+                          attendance[item._id] === "present"
                             ? "text-teal-700"
                             : "text-red-700"
                         }`}
                       >
-                        {attendance[item._id] ? "Present" : "Absent"}
+                        {attendance[item._id] === "present"
+                          ? "Present"
+                          : "Absent"}
                       </Text>
                     </View>
                   </View>
 
                   <View className="items-center">
-                    {attendance[item._id] ? (
+                    {attendance[item._id] === "present" ? (
                       <CheckCircle2 size={30} color="#0F766E" />
                     ) : (
                       <XCircle size={30} color="#B91C1C" />
@@ -326,91 +334,94 @@ export default function RecordAttendance() {
           </View>
         ) : (
           <View className="gap-2">
-          {!isReadOnly ? (
-            <Pressable
-              onPress={() => void saveDraftAndLeave()}
-              disabled={isSubmitting}
-              accessibilityRole="button"
-              accessibilityLabel="Save attendance draft and leave"
-              accessibilityState={{ disabled: isSubmitting }}
-              className={`min-h-14 items-center justify-center rounded-2xl border px-4 py-4 shadow-md ${
-                isSubmitting
-                  ? "border-gray-300 bg-gray-100"
-                  : "border-teal-600 bg-white active:bg-teal-50"
-              }`}
-            >
-              <Text
-                className={`text-xl font-bold ${
-                  isSubmitting ? "text-gray-400" : "text-teal-700"
+            {!isReadOnly ? (
+              <Pressable
+                onPress={() => void saveDraftAndLeave()}
+                disabled={isSubmitting}
+                accessibilityRole="button"
+                accessibilityLabel="Save attendance draft and leave"
+                accessibilityState={{ disabled: isSubmitting }}
+                className={`min-h-14 items-center justify-center rounded-2xl border px-4 py-4 shadow-md ${
+                  isSubmitting
+                    ? "border-gray-300 bg-gray-100"
+                    : "border-teal-600 bg-white active:bg-teal-50"
                 }`}
               >
-                Save Draft &amp; Leave
-              </Text>
-            </Pressable>
-          ) : null}
-          <Pressable
-            onPress={() => {
-              Alert.alert(
-                "Submit Attendance",
-                "Are you sure you want to submit the attendance record?",
-                [
-                  { text: "Cancel", style: "cancel" },
-                  { text: isOffline ? "Submit Offline" : "Submit", onPress: handleSubmit },
-                ]
-              );
-            }}
-            disabled={isSubmitting || isReadOnly}
-            accessibilityRole="button"
-            accessibilityLabel={
-              isReadOnly
-                ? "Attendance submitted"
-                : isSubmitting
-                  ? "Submitting attendance"
-                  : "Submit attendance"
-            }
-            accessibilityHint={
-              isReadOnly
-                ? "Attendance has already been submitted"
-                : "Submits today's attendance record"
-            }
-            accessibilityState={{
-              disabled: isSubmitting || isReadOnly,
-              busy: isSubmitting,
-            }}
-            android_ripple={{ color: "transparent" }}
-            className={`min-h-14 flex-row items-center justify-center rounded-2xl py-4 shadow-md ${
-              isSubmitting || isReadOnly
-                ? "bg-emerald-400"
-                : "bg-emerald-600 active:opacity-90"
-            }`}
-          >
-            {isSubmitting ? (
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <ActivityIndicator
-                  size="small"
-                  color="#FFFFFF"
-                  style={{ marginRight: 8 }}
-                />
-                <Text className="text-xl font-bold text-white">
-                  Submitting...
+                <Text
+                  className={`text-xl font-bold ${
+                    isSubmitting ? "text-gray-400" : "text-teal-700"
+                  }`}
+                >
+                  Save Draft &amp; Leave
                 </Text>
-              </View>
-            ) : (
-              <Text className="text-xl font-bold text-white">
-                {isReadOnly
-                  ? "Attendance Finalized"
-                  : isOffline
-                    ? "Submit Offline"
-                    : "Submit Attendance"}
-              </Text>
-            )}
-          </Pressable>
+              </Pressable>
+            ) : null}
+            <Pressable
+              onPress={() => {
+                Alert.alert(
+                  "Submit Attendance",
+                  "Are you sure you want to submit the attendance record?",
+                  [
+                    { text: "Cancel", style: "cancel" },
+                    {
+                      text: isOffline ? "Submit Offline" : "Submit",
+                      onPress: handleSubmit,
+                    },
+                  ],
+                );
+              }}
+              disabled={isSubmitting || isReadOnly}
+              accessibilityRole="button"
+              accessibilityLabel={
+                isReadOnly
+                  ? "Attendance submitted"
+                  : isSubmitting
+                    ? "Submitting attendance"
+                    : "Submit attendance"
+              }
+              accessibilityHint={
+                isReadOnly
+                  ? "Attendance has already been submitted"
+                  : "Submits today's attendance record"
+              }
+              accessibilityState={{
+                disabled: isSubmitting || isReadOnly,
+                busy: isSubmitting,
+              }}
+              android_ripple={{ color: "transparent" }}
+              className={`min-h-14 flex-row items-center justify-center rounded-2xl py-4 shadow-md ${
+                isSubmitting || isReadOnly
+                  ? "bg-emerald-400"
+                  : "bg-emerald-600 active:opacity-90"
+              }`}
+            >
+              {isSubmitting ? (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <ActivityIndicator
+                    size="small"
+                    color="#FFFFFF"
+                    style={{ marginRight: 8 }}
+                  />
+                  <Text className="text-xl font-bold text-white">
+                    Submitting...
+                  </Text>
+                </View>
+              ) : (
+                <Text className="text-xl font-bold text-white">
+                  {isReadOnly
+                    ? "Attendance Finalized"
+                    : isOffline
+                      ? "Submit Offline"
+                      : "Submit Attendance"}
+                </Text>
+              )}
+            </Pressable>
           </View>
         )}
       </View>

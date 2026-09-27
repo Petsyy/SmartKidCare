@@ -21,11 +21,16 @@ import {
 } from "@/src/offline/offline-store";
 import type { AttendanceDraftPayload } from "@/src/offline/offline.types";
 
+type AttendanceChildStatus = "present" | "absent";
+
 export const useTeacherAttendance = () => {
   const router = useRouter();
   const { isAuthenticated, user } = useAuth();
-  const { isConnected, isInternetReachable, synchronize, refreshPendingCount } = useOffline();
-  const [attendance, setAttendance] = useState<Record<string, boolean | undefined>>({});
+  const { isConnected, isInternetReachable, synchronize, refreshPendingCount } =
+    useOffline();
+  const [attendance, setAttendance] = useState<
+    Record<string, AttendanceChildStatus | undefined>
+  >({});
   const [isReadOnly, setIsReadOnly] = useState(false);
   const [showSuccessFeedback, setShowSuccessFeedback] = useState(false);
   const {
@@ -62,15 +67,17 @@ export const useTeacherAttendance = () => {
       // Query completion intentionally hydrates the editable attendance draft.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsReadOnly(true);
-      const existingAttendance: Record<string, boolean> = {};
+      const existingAttendance: Record<string, AttendanceChildStatus> = {};
       data.attendanceRecord.records.forEach((record: any) => {
-        existingAttendance[record.child._id || record.child] =
-          record.status === "present";
+        existingAttendance[record.child._id || record.child] = record.status;
       });
       setAttendance(existingAttendance);
     } else {
       setIsReadOnly(false);
-      const initialAttendance: Record<string, boolean | undefined> = {};
+      const initialAttendance: Record<
+        string,
+        AttendanceChildStatus | undefined
+      > = {};
       data.childrenData.forEach((child) => {
         initialAttendance[child._id] = undefined;
       });
@@ -82,8 +89,7 @@ export const useTeacherAttendance = () => {
           const payload = draft.payload as AttendanceDraftPayload;
           data.childrenData.forEach((child) => {
             const status = payload.records[child._id]?.status;
-            initialAttendance[child._id] =
-              status === "present" ? true : status === "absent" ? false : undefined;
+            initialAttendance[child._id] = status;
           });
         }
         setAttendance(initialAttendance);
@@ -95,11 +101,12 @@ export const useTeacherAttendance = () => {
     // Keep draft keys aligned when the assigned-child query changes.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setAttendance((currentAttendance) => {
-      const nextAttendance: Record<string, boolean | undefined> = {};
+      const nextAttendance: Record<string, AttendanceChildStatus | undefined> =
+        {};
 
       if (!isReadOnly) {
         children.forEach((child) => {
-          nextAttendance[child._id] = currentAttendance[child._id] ?? false;
+          nextAttendance[child._id] = currentAttendance[child._id] ?? "absent";
         });
         return nextAttendance;
       }
@@ -122,15 +129,10 @@ export const useTeacherAttendance = () => {
       const payload: AttendanceDraftPayload = {
         dateKey: selectedDateKey,
         records: Object.fromEntries(
-          Object.entries(attendance).map(([childId, isPresent]) => [
+          Object.entries(attendance).map(([childId, status]) => [
             childId,
             {
-              status:
-                isPresent === undefined
-                  ? undefined
-                  : isPresent
-                    ? "present"
-                    : "absent",
+              status,
             },
           ]),
         ),
@@ -154,7 +156,9 @@ export const useTeacherAttendance = () => {
   }, [children, searchQuery]);
 
   const stats = useMemo(() => {
-    const present = Object.values(attendance).filter(Boolean).length;
+    const present = Object.values(attendance).filter(
+      (status) => status === "present",
+    ).length;
     const absent = children.length - present;
     return { present, absent, total: children.length };
   }, [attendance, children.length]);
@@ -162,22 +166,22 @@ export const useTeacherAttendance = () => {
   const toggleAttendance = (childId: string) => {
     setAttendance((prev) => ({
       ...prev,
-      [childId]: prev[childId] === true ? false : true,
+      [childId]: prev[childId] === "present" ? "absent" : "present",
     }));
   };
 
   const markAllPresent = () => {
-    const allPresent: Record<string, boolean> = {};
+    const allPresent: Record<string, AttendanceChildStatus> = {};
     children.forEach((child) => {
-      allPresent[child._id] = true;
+      allPresent[child._id] = "present";
     });
     setAttendance(allPresent);
   };
 
   const markAllAbsent = () => {
-    const allAbsent: Record<string, boolean> = {};
+    const allAbsent: Record<string, AttendanceChildStatus> = {};
     children.forEach((child) => {
-      allAbsent[child._id] = false;
+      allAbsent[child._id] = "absent";
     });
     setAttendance(allAbsent);
   };
@@ -200,27 +204,25 @@ export const useTeacherAttendance = () => {
         return;
       }
 
-      const records = Object.entries(attendance).map(
-        ([childId, isPresent]) => ({
-          child: childId,
-          status: isPresent ? ("present" as const) : ("absent" as const),
-        }),
-      );
-      if (records.length === 0 || Object.values(attendance).some((value) => value === undefined)) {
-        throw new Error("Mark every child present or absent before submitting.");
+      const records = Object.entries(attendance).map(([childId, status]) => ({
+        child: childId,
+        status: status ?? "absent",
+      }));
+      if (
+        records.length === 0 ||
+        Object.values(attendance).some((value) => value === undefined)
+      ) {
+        throw new Error(
+          "Mark every child present or absent before submitting.",
+        );
       }
       const draftPayload: AttendanceDraftPayload = {
         dateKey: selectedDateKey,
         records: Object.fromEntries(
-          Object.entries(attendance).map(([childId, isPresent]) => [
+          Object.entries(attendance).map(([childId, status]) => [
             childId,
             {
-              status:
-                isPresent === undefined
-                  ? undefined
-                  : isPresent
-                    ? "present"
-                    : "absent",
+              status,
             },
           ]),
         ),
@@ -244,7 +246,9 @@ export const useTeacherAttendance = () => {
       );
       if (isConnected && isInternetReachable && isAuthenticated) {
         await synchronize();
-        if ((await getOutboxOperation(operation.clientOperationId)) === "synced") {
+        if (
+          (await getOutboxOperation(operation.clientOperationId)) === "synced"
+        ) {
           setShowSuccessFeedback(true);
         }
       }
@@ -262,15 +266,10 @@ export const useTeacherAttendance = () => {
     const payload: AttendanceDraftPayload = {
       dateKey: selectedDateKey,
       records: Object.fromEntries(
-        Object.entries(attendance).map(([childId, isPresent]) => [
+        Object.entries(attendance).map(([childId, status]) => [
           childId,
           {
-            status:
-              isPresent === undefined
-                ? undefined
-                : isPresent
-                  ? "present"
-                  : "absent",
+            status,
           },
         ]),
       ),
@@ -282,7 +281,10 @@ export const useTeacherAttendance = () => {
       payload,
     });
     await refreshPendingCount();
-    Alert.alert("Draft saved on this device");
+    Alert.alert(
+      "Draft saved on this device",
+      "You can return to this draft later on this device.",
+    );
     router.back();
   };
 

@@ -22,16 +22,54 @@ const initializeDatabase = async () => {
   const key = await getDatabaseKey();
   await database.execAsync(`PRAGMA key = '${key}';`);
   await database.execAsync("PRAGMA foreign_keys = ON;");
+
+  const draftColumns = await database.getAllAsync<{ name: string }>(
+    "PRAGMA table_info(offline_drafts)",
+  );
+  const hasLegacyDraftTable =
+    draftColumns.length > 0 &&
+    !draftColumns.some((column) => column.name === "draft_scope_key");
+
+  if (hasLegacyDraftTable) {
+    await database.withTransactionAsync(async () => {
+      await database.execAsync("DROP TABLE IF EXISTS offline_drafts_legacy;");
+      await database.execAsync(
+        "ALTER TABLE offline_drafts RENAME TO offline_drafts_legacy;",
+      );
+      await database.execAsync(`
+        CREATE TABLE offline_drafts (
+          draft_id TEXT PRIMARY KEY NOT NULL,
+          user_id TEXT NOT NULL,
+          record_type TEXT NOT NULL,
+          date_key TEXT NOT NULL,
+          draft_scope_key TEXT NOT NULL,
+          payload_json TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          UNIQUE(user_id, record_type, draft_scope_key)
+        );
+      `);
+      await database.execAsync(`
+        INSERT OR REPLACE INTO offline_drafts
+          (draft_id, user_id, record_type, date_key, draft_scope_key, payload_json, created_at, updated_at)
+        SELECT draft_id, user_id, record_type, date_key, date_key, payload_json, created_at, updated_at
+        FROM offline_drafts_legacy;
+      `);
+      await database.execAsync("DROP TABLE offline_drafts_legacy;");
+    });
+  }
+
   await database.execAsync(`
     CREATE TABLE IF NOT EXISTS offline_drafts (
       draft_id TEXT PRIMARY KEY NOT NULL,
       user_id TEXT NOT NULL,
       record_type TEXT NOT NULL,
       date_key TEXT NOT NULL,
+      draft_scope_key TEXT NOT NULL,
       payload_json TEXT NOT NULL,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
-      UNIQUE(user_id, record_type, date_key)
+      UNIQUE(user_id, record_type, draft_scope_key)
     );
     CREATE TABLE IF NOT EXISTS offline_outbox (
       operation_id TEXT PRIMARY KEY NOT NULL,
@@ -70,9 +108,18 @@ export const getOfflineDatabase = () => {
 export const clearOfflineDataForUser = async (userId: string) => {
   const database = await getOfflineDatabase();
   await database.withTransactionAsync(async () => {
-    await database.runAsync("DELETE FROM offline_drafts WHERE user_id = ?", userId);
-    await database.runAsync("DELETE FROM offline_outbox WHERE user_id = ?", userId);
-    await database.runAsync("DELETE FROM offline_query_cache WHERE user_id = ?", userId);
+    await database.runAsync(
+      "DELETE FROM offline_drafts WHERE user_id = ?",
+      userId,
+    );
+    await database.runAsync(
+      "DELETE FROM offline_outbox WHERE user_id = ?",
+      userId,
+    );
+    await database.runAsync(
+      "DELETE FROM offline_query_cache WHERE user_id = ?",
+      userId,
+    );
   });
 };
 

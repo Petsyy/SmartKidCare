@@ -39,6 +39,8 @@ export interface StudentNutritionCardProps {
   };
   period: NutritionPeriod;
   localInput?: { weight: string; height: string };
+  hasLocalDraft?: boolean;
+  isOffline?: boolean;
   errors?: NutritionAssessmentErrors;
   isPending?: boolean;
   isSubmitting?: boolean; // To know if THIS specific card is submitting
@@ -56,6 +58,8 @@ export const StudentNutritionCard: React.FC<StudentNutritionCardProps> = ({
   initialRecord,
   period,
   localInput,
+  hasLocalDraft = false,
+  isOffline = false,
   errors,
   isPending = false,
   isSubmitting = false,
@@ -128,7 +132,9 @@ export const StudentNutritionCard: React.FC<StudentNutritionCardProps> = ({
               </Text>
               <Text className="text-sm font-semibold text-gray-600">
                 Status:{" "}
-                <Text className="text-gray-900">{record.nutritionalStatus}</Text>
+                <Text className="text-gray-900">
+                  {record.nutritionalStatus}
+                </Text>
                 <Text className="text-gray-400">
                   {" "}
                   (BMI: {record.bmi.toFixed(2)})
@@ -231,6 +237,20 @@ export const StudentNutritionCard: React.FC<StudentNutritionCardProps> = ({
             </View>
           )}
 
+          {hasLocalDraft && (
+            <View className="mb-4 rounded-xl border border-teal-100 bg-teal-50 p-3">
+              <Text className="text-sm font-semibold text-teal-800">
+                Offline draft saved on this device
+              </Text>
+            </View>
+          )}
+
+          {isOffline && (
+            <Text className="mb-3 text-sm font-semibold text-gray-500">
+              Connect to the internet to submit this assessment.
+            </Text>
+          )}
+
           <View className="flex-row gap-3">
             <Pressable
               onPress={() => onSave(child._id, "draft")}
@@ -245,9 +265,9 @@ export const StudentNutritionCard: React.FC<StudentNutritionCardProps> = ({
             </Pressable>
             <Pressable
               onPress={() => onSave(child._id, "submit")}
-              disabled={isPending}
+              disabled={isPending || isOffline}
               className={`flex-1 flex-row items-center justify-center rounded-xl bg-teal-600 py-3 active:opacity-85 shadow-sm ${
-                isPending ? "opacity-50" : ""
+                isPending || isOffline ? "opacity-50" : ""
               }`}
             >
               {isSubmitting ? (

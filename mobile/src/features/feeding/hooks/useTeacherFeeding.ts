@@ -40,19 +40,24 @@ const foodMenuOptions = [
   "Other",
 ];
 
+type FeedingChildStatus = FeedingRecord["status"];
+
 const buildSnapshot = (
   childIds: string[],
   foodServed: string,
-  feedingStatus: Record<string, boolean>,
+  feedingStatus: Record<string, FeedingChildStatus>,
   feedingNotes: Record<string, string>,
 ) =>
   JSON.stringify({
     childIds: [...childIds].sort(),
     foodServed: foodServed.trim(),
-    feedingStatus: childIds.reduce<Record<string, boolean>>((acc, childId) => {
-      acc[childId] = Boolean(feedingStatus[childId]);
-      return acc;
-    }, {}),
+    feedingStatus: childIds.reduce<Record<string, FeedingChildStatus>>(
+      (acc, childId) => {
+        acc[childId] = feedingStatus[childId] ?? "missed";
+        return acc;
+      },
+      {},
+    ),
     feedingNotes: childIds.reduce<Record<string, string>>((acc, childId) => {
       acc[childId] = String(feedingNotes[childId] ?? "").trim();
       return acc;
@@ -63,12 +68,13 @@ export const useTeacherFeeding = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { isAuthenticated, user } = useAuth();
-  const { isConnected, isInternetReachable, synchronize, refreshPendingCount } = useOffline();
+  const { isConnected, isInternetReachable, synchronize, refreshPendingCount } =
+    useOffline();
 
   const [children, setChildren] = useState<Child[]>([]);
-  const [feedingStatus, setFeedingStatus] = useState<Record<string, boolean>>(
-    {},
-  );
+  const [feedingStatus, setFeedingStatus] = useState<
+    Record<string, FeedingChildStatus>
+  >({});
   const [feedingNotes, setFeedingNotes] = useState<Record<string, string>>({});
   const [foodServed, setFoodServed] = useState("");
   const [showMenuModal, setShowMenuModal] = useState(false);
@@ -151,12 +157,12 @@ export const useTeacherFeeding = () => {
         const childrenToShow = childrenData.filter((child) =>
           recordedChildIds.has(child._id),
         );
-        const existingStatus: Record<string, boolean> = {};
+        const existingStatus: Record<string, FeedingChildStatus> = {};
         const existingNotes: Record<string, string> = {};
 
         feedingRecord.records.forEach((record: any) => {
           const childId = String(record.child?._id || record.child);
-          existingStatus[childId] = record.status !== "completed";
+          existingStatus[childId] = record.status;
           existingNotes[childId] = String(record.notes || "");
         });
 
@@ -191,10 +197,10 @@ export const useTeacherFeeding = () => {
         }
       }
 
-      const initialStatus: Record<string, boolean> = {};
+      const initialStatus: Record<string, FeedingChildStatus> = {};
       const initialNotes: Record<string, string> = {};
       childrenToShow.forEach((child) => {
-        initialStatus[child._id] = true;
+        initialStatus[child._id] = "missed";
         initialNotes[child._id] = "";
       });
 
@@ -232,7 +238,7 @@ export const useTeacherFeeding = () => {
         Object.fromEntries(
           data.childrenToShow.map((child) => [
             child._id,
-            payload.records[child._id]?.status === "missed",
+            payload.records[child._id]?.status ?? "missed",
           ]),
         ),
       );
@@ -267,7 +273,9 @@ export const useTeacherFeeding = () => {
   }, [children, searchQuery]);
 
   const stats = useMemo(() => {
-    const missed = Object.values(feedingStatus).filter(Boolean).length;
+    const missed = Object.values(feedingStatus).filter(
+      (status) => status === "missed",
+    ).length;
     const fed = children.length - missed;
     return { fed, missed, total: children.length };
   }, [feedingStatus, children.length]);
@@ -299,10 +307,10 @@ export const useTeacherFeeding = () => {
         dateKey: attendanceDateKey,
         foodServed,
         records: Object.fromEntries(
-          Object.entries(feedingStatus).map(([childId, isMissed]) => [
+          Object.entries(feedingStatus).map(([childId, status]) => [
             childId,
             {
-              status: isMissed ? "missed" : "completed",
+              status,
               notes: feedingNotes[childId] ?? "",
             },
           ]),
@@ -327,7 +335,10 @@ export const useTeacherFeeding = () => {
   ]);
 
   const toggleChildFeeding = useCallback((childId: string) => {
-    setFeedingStatus((prev) => ({ ...prev, [childId]: !prev[childId] }));
+    setFeedingStatus((prev) => ({
+      ...prev,
+      [childId]: prev[childId] === "completed" ? "missed" : "completed",
+    }));
   }, []);
 
   const setChildNote = useCallback((childId: string, value: string) => {
@@ -335,17 +346,17 @@ export const useTeacherFeeding = () => {
   }, []);
 
   const markAllAsCompleted = useCallback(() => {
-    const allFed: Record<string, boolean> = {};
+    const allFed: Record<string, FeedingChildStatus> = {};
     children.forEach((child) => {
-      allFed[child._id] = false;
+      allFed[child._id] = "completed";
     });
     setFeedingStatus(allFed);
   }, [children]);
 
   const markAllAsMissed = useCallback(() => {
-    const allMissed: Record<string, boolean> = {};
+    const allMissed: Record<string, FeedingChildStatus> = {};
     children.forEach((child) => {
-      allMissed[child._id] = true;
+      allMissed[child._id] = "missed";
     });
     setFeedingStatus(allMissed);
   }, [children]);
@@ -370,9 +381,9 @@ export const useTeacherFeeding = () => {
     setIsSubmitting(true);
     try {
       const records: FeedingRecord[] = Object.entries(feedingStatus).map(
-        ([childId, isMissed]) => ({
+        ([childId, status]) => ({
           child: childId,
-          status: isMissed ? "missed" : "completed",
+          status,
           notes: String(feedingNotes[childId] || "").trim(),
         }),
       );
@@ -411,7 +422,9 @@ export const useTeacherFeeding = () => {
       );
       if (isConnected && isInternetReachable && isAuthenticated) {
         await synchronize();
-        if ((await getOutboxOperation(operation.clientOperationId)) === "synced") {
+        if (
+          (await getOutboxOperation(operation.clientOperationId)) === "synced"
+        ) {
           setShowSuccessFeedback(true);
         }
       }
@@ -458,10 +471,10 @@ export const useTeacherFeeding = () => {
       dateKey: attendanceDateKey,
       foodServed,
       records: Object.fromEntries(
-        Object.entries(feedingStatus).map(([childId, isMissed]) => [
+        Object.entries(feedingStatus).map(([childId, status]) => [
           childId,
           {
-            status: isMissed ? "missed" : "completed",
+            status,
             notes: feedingNotes[childId] ?? "",
           },
         ]),
@@ -474,8 +487,19 @@ export const useTeacherFeeding = () => {
       payload,
     });
     await refreshPendingCount();
-    Alert.alert("Draft saved on this device");
-  }, [attendanceDateKey, feedingNotes, feedingStatus, foodServed, isReadOnly, refreshPendingCount, user]);
+    Alert.alert(
+      "Draft saved on this device",
+      "You can return to this draft later on this device.",
+    );
+  }, [
+    attendanceDateKey,
+    feedingNotes,
+    feedingStatus,
+    foodServed,
+    isReadOnly,
+    refreshPendingCount,
+    user,
+  ]);
 
   return {
     router,

@@ -23,7 +23,10 @@ import { useUnsavedChangesGuard } from "../../../hooks/use-unsaved-changes-guard
 import { CompetencyDatePicker } from "../components/competency-date-picker";
 
 export default function CompetencyEvaluationScreen() {
-  const params = useLocalSearchParams<{ childId?: string; isParentView?: string }>();
+  const params = useLocalSearchParams<{
+    childId?: string;
+    isParentView?: string;
+  }>();
   const childId = typeof params.childId === "string" ? params.childId : null;
   const isParentView = params.isParentView === "true";
   const evaluation = useCompetencyEvaluation(childId, { isParentView });
@@ -66,14 +69,18 @@ export default function CompetencyEvaluationScreen() {
       ) : evaluation.error ? (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-center text-base text-red-600">
-            {evaluation.error.message}
+            {evaluation.isOffline
+              ? "This form is unavailable offline. Connect to the internet to load it first."
+              : evaluation.error.message}
           </Text>
-          <Pressable
-            onPress={() => evaluation.refetch()}
-            className="mt-4 rounded-xl bg-teal-600 px-5 py-3"
-          >
-            <Text className="font-bold text-white">Try Again</Text>
-          </Pressable>
+          {!evaluation.isOffline && (
+            <Pressable
+              onPress={() => evaluation.refetch()}
+              className="mt-4 rounded-xl bg-teal-600 px-5 py-3"
+            >
+              <Text className="font-bold text-white">Try Again</Text>
+            </Pressable>
+          )}
         </View>
       ) : evaluation.groupedDefinitions.length === 0 ? (
         <View className="flex-1 items-center justify-center px-6">
@@ -207,9 +214,17 @@ export default function CompetencyEvaluationScreen() {
           {evaluation.isReadOnly && (
             <View className="mb-4 rounded-xl bg-amber-50 p-3 border border-amber-200">
               <Text className="text-center text-sm font-semibold text-amber-800">
-                {isParentView 
-                  ? "This is a read-only view of your child's competency evaluation." 
+                {isParentView
+                  ? "This is a read-only view of your child's competency evaluation."
                   : "This evaluation has been submitted and is now read-only."}
+              </Text>
+            </View>
+          )}
+
+          {evaluation.hasLocalDraft && !evaluation.isReadOnly && (
+            <View className="mb-4 rounded-xl border border-teal-100 bg-teal-50 p-3">
+              <Text className="text-center text-sm font-semibold text-teal-800">
+                Offline draft saved on this device
               </Text>
             </View>
           )}
@@ -284,7 +299,7 @@ export default function CompetencyEvaluationScreen() {
               <Pressable
                 accessibilityRole="button"
                 disabled={evaluation.isSubmitting}
-                onPress={evaluation.saveDraft}
+                onPress={() => void evaluation.saveDraft()}
                 className={`min-h-14 items-center justify-center rounded-2xl border-2 ${evaluation.isSubmitting ? "border-gray-300 bg-gray-100" : "border-teal-600 bg-white"}`}
               >
                 <Text
@@ -297,16 +312,20 @@ export default function CompetencyEvaluationScreen() {
               <Pressable
                 accessibilityRole="button"
                 disabled={
-                  evaluation.isSubmitting || !evaluation.progress.isComplete
+                  evaluation.isSubmitting ||
+                  !evaluation.progress.isComplete ||
+                  evaluation.isOffline
                 }
-                onPress={evaluation.submitEvaluation}
-                className={`min-h-14 items-center justify-center rounded-2xl ${evaluation.isSubmitting || !evaluation.progress.isComplete ? "bg-gray-300" : "bg-teal-600"}`}
+                onPress={() => void evaluation.submitEvaluation()}
+                className={`min-h-14 items-center justify-center rounded-2xl ${evaluation.isSubmitting || !evaluation.progress.isComplete || evaluation.isOffline ? "bg-gray-300" : "bg-teal-600"}`}
               >
                 {evaluation.isSubmitting ? (
                   <ActivityIndicator color="#FFFFFF" />
                 ) : (
                   <Text className="text-lg font-bold text-white">
-                    Submit Evaluation
+                    {evaluation.isOffline
+                      ? "Connect to Submit"
+                      : "Submit Evaluation"}
                   </Text>
                 )}
               </Pressable>

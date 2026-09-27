@@ -27,6 +27,10 @@ const ALLOWED_QUERY_PREFIXES = new Set([
   "teacherChildDetails",
   "parentChildDetails",
   "competencyDefinitions",
+  "competencyScreen",
+  "competencyHistory",
+  "my-class-nutrition",
+  "child-nutrition",
 ]);
 
 export const persistAllowedQueries = async (

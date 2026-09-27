@@ -19,27 +19,41 @@ export const saveDraft = async (input: {
   recordType: OfflineRecordType;
   dateKey: string;
   payload: OfflineDraftPayload;
+}): Promise<OfflineDraft> =>
+  saveScopedDraft({ ...input, draftScopeKey: input.dateKey });
+
+export const saveScopedDraft = async (input: {
+  userId: string;
+  recordType: OfflineRecordType;
+  dateKey: string;
+  draftScopeKey: string;
+  payload: OfflineDraftPayload;
 }): Promise<OfflineDraft> => {
   const database = await getOfflineDatabase();
-  const existing = await database.getFirstAsync<{ draft_id: string; created_at: string }>(
-    "SELECT draft_id, created_at FROM offline_drafts WHERE user_id = ? AND record_type = ? AND date_key = ?",
+  const existing = await database.getFirstAsync<{
+    draft_id: string;
+    created_at: string;
+  }>(
+    "SELECT draft_id, created_at FROM offline_drafts WHERE user_id = ? AND record_type = ? AND draft_scope_key = ?",
     input.userId,
     input.recordType,
-    input.dateKey,
+    input.draftScopeKey,
   );
   const timestamp = nowIso();
   const draftId = existing?.draft_id ?? Crypto.randomUUID();
   const createdAt = existing?.created_at ?? timestamp;
   await database.runAsync(
     `INSERT INTO offline_drafts
-      (draft_id, user_id, record_type, date_key, payload_json, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?)
-     ON CONFLICT(user_id, record_type, date_key) DO UPDATE SET
+      (draft_id, user_id, record_type, date_key, draft_scope_key, payload_json, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(user_id, record_type, draft_scope_key) DO UPDATE SET
+      date_key = excluded.date_key,
       payload_json = excluded.payload_json, updated_at = excluded.updated_at`,
     draftId,
     input.userId,
     input.recordType,
     input.dateKey,
+    input.draftScopeKey,
     JSON.stringify(input.payload),
     createdAt,
     timestamp,
@@ -51,13 +65,19 @@ export const getDraft = async (
   userId: string,
   recordType: OfflineRecordType,
   dateKey: string,
+): Promise<OfflineDraft | null> => getScopedDraft(userId, recordType, dateKey);
+
+export const getScopedDraft = async (
+  userId: string,
+  recordType: OfflineRecordType,
+  draftScopeKey: string,
 ): Promise<OfflineDraft | null> => {
   const database = await getOfflineDatabase();
   const row = await database.getFirstAsync<any>(
-    "SELECT * FROM offline_drafts WHERE user_id = ? AND record_type = ? AND date_key = ?",
+    "SELECT * FROM offline_drafts WHERE user_id = ? AND record_type = ? AND draft_scope_key = ?",
     userId,
     recordType,
-    dateKey,
+    draftScopeKey,
   );
   if (!row) return null;
   return {
@@ -65,10 +85,25 @@ export const getDraft = async (
     userId: row.user_id,
     recordType: row.record_type,
     dateKey: row.date_key,
+    draftScopeKey: row.draft_scope_key,
     payload: JSON.parse(row.payload_json),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+};
+
+export const deleteScopedDraft = async (
+  userId: string,
+  recordType: OfflineRecordType,
+  draftScopeKey: string,
+) => {
+  const database = await getOfflineDatabase();
+  await database.runAsync(
+    "DELETE FROM offline_drafts WHERE user_id = ? AND record_type = ? AND draft_scope_key = ?",
+    userId,
+    recordType,
+    draftScopeKey,
+  );
 };
 
 const hashPayload = (payloadJson: string) =>
@@ -132,24 +167,22 @@ export const listOutboxOperations = async (userId: string) => {
        CASE operation_type WHEN 'attendance.create' THEN 0 ELSE 1 END ASC`,
     userId,
   );
-  return rows.map(
-    (row): OutboxOperation => ({
-      clientOperationId: row.operation_id,
-      sourceDraftId: row.source_draft_id,
-      userId: row.user_id,
-      operationType: row.operation_type,
-      dateKey: row.date_key,
-      frozenPayload: JSON.parse(row.payload_json),
-      payloadHash: row.payload_hash,
-      status: row.status,
-      attemptCount: row.attempt_count,
-      firstAttemptedAt: row.first_attempted_at ?? undefined,
-      lastAttemptedAt: row.last_attempted_at ?? undefined,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-      lastErrorCode: row.last_error_code ?? undefined,
-    }),
-  );
+  return rows.map((row): OutboxOperation => ({
+    clientOperationId: row.operation_id,
+    sourceDraftId: row.source_draft_id,
+    userId: row.user_id,
+    operationType: row.operation_type,
+    dateKey: row.date_key,
+    frozenPayload: JSON.parse(row.payload_json),
+    payloadHash: row.payload_hash,
+    status: row.status,
+    attemptCount: row.attempt_count,
+    firstAttemptedAt: row.first_attempted_at ?? undefined,
+    lastAttemptedAt: row.last_attempted_at ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    lastErrorCode: row.last_error_code ?? undefined,
+  }));
 };
 
 export const getOutboxOperation = async (operationId: string) => {
