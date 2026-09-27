@@ -11,7 +11,6 @@ const FeedingProgram = lazy(() => import("./pages/FeedingProgram"));
 const ReportAnalytics = lazy(() => import("./pages/Reports&Analytics"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminSettings = lazy(() => import("./pages/AdminSettings"));
-const CaptainConcerns = lazy(() => import("./pages/CaptainConcerns"));
 
 export default function App() {
   return (
@@ -28,7 +27,6 @@ export default function App() {
                 <Route path="/monitoring/users" element={<UserManagement />} />
                 <Route path="/monitoring/records" element={<ChildrenManagement />} />
                 <Route path="/monitoring/feeding" element={<FeedingProgram />} />
-                <Route path="/monitoring/concerns" element={<CaptainConcerns />} />
                 <Route path="/monitoring/reports/*" element={<ReportAnalytics />} />
                 <Route path="/monitoring/settings" element={<AdminSettings />} />
               </Route>

@@ -8,20 +8,25 @@ import {
 } from "../../../api/competency.api";
 import { getChildById } from "../../../api/parent.api";
 import { mobileQueryKeys } from "../../../lib/query-keys";
-import { getManilaDateKey } from "../../../utils/manila-date";
+import {
+  formatManilaDateLabel,
+  getManilaDateKey,
+  toManilaDateKey,
+} from "../../../utils/manila-date";
 import type { CompetencyDefinition, CompetencyLevel } from "../types";
 
-export type EvaluationPeriod = "initial" | "midyear" | "final";
+export type EvaluationPeriod = "quarterly" | "final";
 
 export function useCompetencyEvaluation(
   childId: string | null,
   options: { isParentView?: boolean } = {}
 ) {
   const queryClient = useQueryClient();
-  const [selectedPeriod, setSelectedPeriod] = useState<EvaluationPeriod>("initial");
+  const [selectedPeriod, setSelectedPeriod] = useState<EvaluationPeriod>("quarterly");
   const [levels, setLevels] = useState<Record<string, CompetencyLevel>>({});
   const [remarks, setRemarks] = useState<Record<string, string>>({});
   const [generalNotes, setGeneralNotes] = useState("");
+  const [evaluationDate, setEvaluationDate] = useState(() => getManilaDateKey());
   const [savedSnapshot, setSavedSnapshot] = useState("");
 
   const query = useQuery({
@@ -29,17 +34,16 @@ export function useCompetencyEvaluation(
     enabled: Boolean(childId),
     queryFn: async () => {
       if (!childId) throw new Error("Missing child ID.");
-      const [child, definitions, initial, midyear, final] = await Promise.all([
+      const [child, definitions, quarterly, final] = await Promise.all([
         getChildById(childId),
         getCompetencyDefinitions(),
-        getCompetencyEvaluationByPeriod(childId, "initial"),
-        getCompetencyEvaluationByPeriod(childId, "midyear"),
+        getCompetencyEvaluationByPeriod(childId, "quarterly"),
         getCompetencyEvaluationByPeriod(childId, "final"),
       ]);
       return {
         child,
         definitions,
-        evaluations: { initial, midyear, final },
+        evaluations: { quarterly, final },
       };
     },
   });
@@ -60,12 +64,16 @@ export function useCompetencyEvaluation(
       setLevels(newLevels);
       setRemarks(newRemarks);
       setGeneralNotes(selectedEvaluation.generalNotes || "");
-      setSavedSnapshot(createSnapshot(newLevels, newRemarks, selectedEvaluation.generalNotes || ""));
+      const savedEvaluationDate = toManilaDateKey(selectedEvaluation.evaluationDate) || getManilaDateKey();
+      setEvaluationDate(savedEvaluationDate);
+      setSavedSnapshot(createSnapshot(newLevels, newRemarks, selectedEvaluation.generalNotes || "", savedEvaluationDate));
     } else if (query.data) {
+      const today = getManilaDateKey();
       setLevels({});
       setRemarks({});
       setGeneralNotes("");
-      setSavedSnapshot(createSnapshot({}, {}, ""));
+      setEvaluationDate(today);
+      setSavedSnapshot(createSnapshot({}, {}, "", today));
     }
   }, [query.data, selectedEvaluation, selectedPeriod]);
 
@@ -92,24 +100,18 @@ export function useCompetencyEvaluation(
   }, [levels]);
 
   const periodStates = useMemo(() => {
-    const initialSubmitted = query.data?.evaluations.initial?.status === "submitted";
-    const midyearSubmitted = query.data?.evaluations.midyear?.status === "submitted";
+    const quarterlySubmitted = query.data?.evaluations.quarterly?.status === "submitted";
 
     return {
-      initial: {
+      quarterly: {
         isLocked: false,
-        isSubmitted: initialSubmitted,
+        isSubmitted: quarterlySubmitted,
         prerequisiteLabel: null,
       },
-      midyear: {
-        isLocked: !initialSubmitted,
-        isSubmitted: midyearSubmitted,
-        prerequisiteLabel: "Initial",
-      },
       final: {
-        isLocked: !midyearSubmitted,
+        isLocked: !quarterlySubmitted,
         isSubmitted: query.data?.evaluations.final?.status === "submitted",
-        prerequisiteLabel: "Mid-Year",
+        prerequisiteLabel: "Quarterly",
       },
     } satisfies Record<EvaluationPeriod, {
       isLocked: boolean;
@@ -123,7 +125,7 @@ export function useCompetencyEvaluation(
   const hasUnsavedChanges = Boolean(
     query.data &&
     !isReadOnly &&
-    createSnapshot(levels, remarks, generalNotes) !== savedSnapshot,
+    createSnapshot(levels, remarks, generalNotes, evaluationDate) !== savedSnapshot,
   );
 
   const mutation = useMutation({
@@ -149,7 +151,7 @@ export function useCompetencyEvaluation(
 
       return submitCompetencyEvaluation({
         childId,
-        evaluationDate: getManilaDateKey(),
+        evaluationDate,
         period: selectedPeriod,
         status,
         entries,
@@ -172,7 +174,7 @@ export function useCompetencyEvaluation(
     const nextPeriodState = periodStates[newPeriod];
     if (nextPeriodState.isLocked) {
       Alert.alert(
-        `${newPeriod === "midyear" ? "Mid-Year" : "Final"} Evaluation Locked`,
+        "Final Evaluation Locked",
         `Submit the ${nextPeriodState.prerequisiteLabel} evaluation first to unlock this period.`,
         [{ text: "Got It" }],
       );
@@ -198,6 +200,8 @@ export function useCompetencyEvaluation(
     groupedDefinitions,
     selectedPeriod,
     selectedPeriodState,
+    evaluationDate,
+    evaluationDateLabel: formatManilaDateLabel(evaluationDate),
     periodStates,
     handlePeriodChange,
     levels,
@@ -219,6 +223,10 @@ export function useCompetencyEvaluation(
       if (isReadOnly) return;
       setGeneralNotes(val);
     },
+    setEvaluationDate: (value: string) => {
+      if (isReadOnly) return;
+      setEvaluationDate(value);
+    },
     saveDraft: () => mutation.mutateAsync("draft"),
     submitEvaluation: () => mutation.mutate("submitted"),
     isSubmitting: mutation.isPending,
@@ -229,12 +237,13 @@ function createSnapshot(
   levels: Record<string, CompetencyLevel>,
   remarks: Record<string, string>,
   generalNotes: string,
+  evaluationDate: string,
 ) {
   const entries = Object.keys(levels)
     .sort()
     .map((id) => [id, levels[id], remarks[id]?.trim() || ""]);
 
-  return JSON.stringify({ entries, generalNotes: generalNotes.trim() });
+  return JSON.stringify({ entries, generalNotes: generalNotes.trim(), evaluationDate });
 }
 
 

@@ -19,6 +19,9 @@ const EVALUATION_POPULATE = [
   { path: "teacher", select: "firstName middleName lastName" },
 ];
 
+const periodFilter = (period: string) =>
+  period === "quarterly" ? { $in: ["quarterly", "midyear"] } : period;
+
 export class CompetencyDefinitionRepository extends BaseRepository<any> {
   constructor(model: Model<any> = CompetencyDefinition) {
     super(model);
@@ -75,7 +78,7 @@ export class CompetencyEvaluationRepository extends BaseRepository<any> {
     return this.model.findOne({
       child: childId,
       schoolYear,
-      period,
+      period: periodFilter(period),
     });
   }
 
@@ -85,7 +88,7 @@ export class CompetencyEvaluationRepository extends BaseRepository<any> {
     period: string,
   ): Promise<any | null> {
     return this.model
-      .findOne({ child: childId, schoolYear, period })
+      .findOne({ child: childId, schoolYear, period: periodFilter(period) })
       .populate(EVALUATION_POPULATE)
       .lean();
   }
@@ -95,7 +98,7 @@ export class CompetencyEvaluationRepository extends BaseRepository<any> {
     period: string,
   ): Promise<any | null> {
     return this.model
-      .findOne({ child: childId, period })
+      .findOne({ child: childId, period: periodFilter(period) })
       .sort({ updatedAt: -1 })
       .populate(EVALUATION_POPULATE)
       .lean();
@@ -125,7 +128,7 @@ export class CompetencyEvaluationRepository extends BaseRepository<any> {
     centerId?: string;
   }): Promise<any[]> {
     const match: Record<string, unknown> = { status: "submitted" };
-    if (filters.period) match.period = filters.period;
+    if (filters.period) match.period = periodFilter(filters.period);
     if (filters.schoolYear) match.schoolYear = filters.schoolYear;
     if (filters.centerId) {
       match.daycareCenter = new Types.ObjectId(filters.centerId);

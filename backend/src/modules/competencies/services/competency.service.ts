@@ -84,12 +84,7 @@ export class CompetencyService {
       );
     }
 
-    const prerequisitePeriod =
-      input.period === "midyear"
-        ? "initial"
-        : input.period === "final"
-          ? "midyear"
-          : null;
+    const prerequisitePeriod = input.period === "final" ? "quarterly" : null;
 
     if (prerequisitePeriod) {
       const prerequisite =
@@ -99,11 +94,8 @@ export class CompetencyService {
           prerequisitePeriod,
         );
       if (prerequisite?.status !== "submitted") {
-        const prerequisiteLabel =
-          prerequisitePeriod === "initial" ? "Initial" : "Mid-Year";
-        const periodLabel = input.period === "midyear" ? "Mid-Year" : "Final";
         throw new ConflictError(
-          `${periodLabel} evaluation is locked until the ${prerequisiteLabel} evaluation is submitted.`,
+          "Final evaluation is locked until the Quarterly evaluation is submitted.",
         );
       }
     }

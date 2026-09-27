@@ -14,7 +14,4 @@ export const webQueryKeys = {
   feedingTracking: (paramsKey: string) =>
     ["feedingTracking", paramsKey] as const,
   adminSettings: () => ["adminSettings"] as const,
-  concerns: (paramsKey: string) => ["concerns", paramsKey] as const,
-  concernsRoot: () => ["concerns"] as const,
-  concernDetail: (id: string) => ["concern", id] as const,
 };

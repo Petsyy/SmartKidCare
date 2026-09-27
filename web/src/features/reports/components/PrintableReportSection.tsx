@@ -291,8 +291,13 @@ export function PrintableReportSection({
 
       <div className="print-table-card print-card-padding mt-6 print-page-break print-card rounded-xl border border-gray-200 p-6 dark:border-slate-700">
         <div className="mb-3">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
+          <h3 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-slate-100">
             Student List
+            {studentList.length > 0 && (
+              <span className="rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-medium text-teal-700 dark:bg-teal-500/10 dark:text-teal-300">
+                SY {studentList[0].schoolYear}
+              </span>
+            )}
           </h3>
           <p className="text-sm text-gray-500 dark:text-slate-400">
             Enrollment roster for the selected range with demographic and
@@ -304,15 +309,12 @@ export function PrintableReportSection({
             <thead className="bg-gray-50 dark:bg-slate-800">
               <tr>
                 {[
-                  "Student ID",
                   "Name",
                   "Gender",
                   "Age",
                   "Status",
                   "Program",
-                  "School Year",
                   "Teacher",
-                  "Center",
                   "Enrolled",
                 ].map((heading) => (
                   <th key={heading} className="px-3 py-2 text-left font-semibold text-gray-600 dark:text-slate-300">
@@ -324,15 +326,12 @@ export function PrintableReportSection({
             <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
               {studentList.map((student) => (
                 <tr key={student.id}>
-                  <td className="px-3 py-2">{student.studentId}</td>
                   <td className="px-3 py-2 font-medium text-gray-900 dark:text-slate-100">{student.fullName}</td>
                   <td className="px-3 py-2 capitalize">{student.gender}</td>
                   <td className="px-3 py-2">{student.age}</td>
                   <td className="px-3 py-2">{student.status}</td>
                   <td className="px-3 py-2">{student.programType}</td>
-                  <td className="px-3 py-2">{student.schoolYear}</td>
                   <td className="px-3 py-2">{student.teacherName}</td>
-                  <td className="px-3 py-2">{student.centerName}</td>
                   <td className="px-3 py-2">
                     {student.enrollmentDate ? formatDateTime(student.enrollmentDate) : "-"}
                   </td>

@@ -17,8 +17,7 @@ import { useCompetencyAnalytics } from "../hooks/useCompetencyAnalytics";
 
 const PERIOD_OPTIONS = [
   { value: "all", label: "Latest period" },
-  { value: "initial", label: "Initial" },
-  { value: "midyear", label: "Midyear" },
+  { value: "quarterly", label: "Quarterly" },
   { value: "final", label: "Final" },
 ];
 
@@ -107,7 +106,7 @@ export function CompetencyAnalytics() {
               <SelectFilter
                 value={period}
                 onChange={(value) =>
-                  setPeriod(value as "all" | "initial" | "midyear" | "final")
+                  setPeriod(value as "all" | "quarterly" | "final")
                 }
                 options={PERIOD_OPTIONS}
               />

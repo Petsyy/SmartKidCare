@@ -29,6 +29,10 @@ export const profileQueryKeys = {
 };
 
 export const dashboardQueryKeys = {
+  parentChildrenList: () =>
+    ["parentChildrenList"] as const,
+  parentChildrenStatusOverview: () =>
+    ["parentChildrenStatusOverview"] as const,
   parentChildrenDashboard: () =>
     ["parentChildrenDashboard"] as const,
   parentDashboard: () =>
@@ -68,12 +72,6 @@ export const competencyQueryKeys = {
   competencyHistory: (childId: string | null) => ["competencyHistory", childId] as const,
 };
 
-export const concernQueryKeys = {
-  concerns: (page: number) => ["concerns", page] as const,
-  concernRoot: () => ["concerns"] as const,
-  concernDetail: (id: string) => ["concern", id] as const,
-};
-
 export const mobileQueryKeys = {
   ...attendanceQueryKeys,
   ...feedingQueryKeys,
@@ -83,5 +81,4 @@ export const mobileQueryKeys = {
   ...childrenQueryKeys,
   ...requestsQueryKeys,
   ...competencyQueryKeys,
-  ...concernQueryKeys,
 };

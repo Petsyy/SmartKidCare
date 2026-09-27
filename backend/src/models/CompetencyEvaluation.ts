@@ -24,7 +24,7 @@ const CompetencyEvaluationSchema = new mongoose.Schema(
     daycareCenter: { type: mongoose.Schema.Types.ObjectId, ref: "ChildDevelopmentCenter", default: null },
     evaluationDate: { type: Date, required: true },
     schoolYear: { type: String, required: true, trim: true },
-    period: { type: String, enum: ["initial", "midyear", "final"], default: "initial" },
+    period: { type: String, enum: ["quarterly", "final"], default: "quarterly" },
     status: { type: String, enum: ["draft", "submitted"], default: "submitted" },
     entries: { type: [CompetencyEntrySchema], required: true },
     generalNotes: { type: String, default: "", trim: true, maxlength: 1000 },

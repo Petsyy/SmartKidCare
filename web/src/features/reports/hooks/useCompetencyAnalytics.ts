@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { API_BASE } from "@/api/config";
 import { webQueryKeys } from "@/lib/query-keys";
 
-export type CompetencyPeriod = "all" | "initial" | "midyear" | "final";
+export type CompetencyPeriod = "all" | "quarterly" | "final";
 
 export type CompetencyAnalyticsItem = {
   competencyId: string;

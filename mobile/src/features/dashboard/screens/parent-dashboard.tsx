@@ -20,7 +20,6 @@ import {
   Clock3,
   KeyRound,
   MessageCircle,
-  MessagesSquare,
   RefreshCw,
   School,
   Utensils,
@@ -48,8 +47,6 @@ const PARENT_NOTICE_TONE: Record<
   missed_meal_alert: "orange",
   pickup_code_generated: "blue",
   child_released: "emerald",
-  concern_reply: "blue",
-  concern_status_changed: "emerald",
 };
 
 function getChildRecordStatus(record: any, childId?: string): string | null {
@@ -123,7 +120,7 @@ export default function ParentDashboardScreen() {
   );
 
   const scrollBottomPadding = useMemo(
-    () => Math.max(32, insets.bottom + 24),
+    () => Math.max(96, insets.bottom + 88),
     [insets.bottom],
   );
 
@@ -200,9 +197,9 @@ export default function ParentDashboardScreen() {
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={{
-        paddingTop: insets.top + 14,
+        paddingTop: insets.top + 10,
         paddingHorizontal: 20,
-        paddingBottom: 20,
+        paddingBottom: 16,
       }}
     >
       {/* Top Greeting Row */}
@@ -215,7 +212,7 @@ export default function ParentDashboardScreen() {
           >
             {greeting}
           </Text>
-          <Text className="mt-1 text-base text-emerald-50" numberOfLines={2}>
+          <Text className="mt-0.5 text-base text-emerald-50" numberOfLines={2}>
             Here&apos;s what&apos;s happening today.
           </Text>
         </View>
@@ -239,7 +236,7 @@ export default function ParentDashboardScreen() {
       </View>
 
       {/* Date & Center Info Pill */}
-      <View className="mt-4 flex-row items-center rounded-xl bg-white/15 px-3.5 py-2.5">
+      <View className="mt-3 flex-row items-center rounded-xl bg-white/15 px-3.5 py-2.5">
         <CalendarDays size={18} color="#D1FAE5" />
         <Text className="ml-2 text-sm font-semibold text-white">
           {dateLabel}
@@ -321,7 +318,7 @@ export default function ParentDashboardScreen() {
         className="flex-1"
         contentContainerStyle={{
           paddingHorizontal: 20,
-          paddingTop: 20,
+          paddingTop: 16,
           paddingBottom: scrollBottomPadding,
         }}
         showsVerticalScrollIndicator={false}
@@ -334,7 +331,7 @@ export default function ParentDashboardScreen() {
           accessibilityRole="button"
           accessibilityLabel={`${childFullName}. ${childDetails}. ${attendanceSummary}. ${mealSummary}. ${dailySummary}. View full profile.`}
           accessibilityHint="Opens your child's full profile"
-          className="mb-4 overflow-hidden rounded-3xl shadow-sm active:opacity-90"
+          className="mb-5 overflow-hidden rounded-3xl shadow-sm active:opacity-90"
         >
           <LinearGradient
             colors={BRAND_HEADER_GRADIENT}
@@ -390,54 +387,48 @@ export default function ParentDashboardScreen() {
 
             <View className="mt-4 flex-row items-center border-t border-white/20 pt-3">
               <Text className="flex-1 text-base font-extrabold text-white">
-                View full profile
+                {!attendanceStatus || !mealStatus
+                  ? "Check today's updates"
+                  : attendanceStatus === "absent" || mealStatus === "missed"
+                    ? "Review today's summary"
+                    : "View full profile"}
               </Text>
               <ChevronRight size={20} color="#FFFFFF" />
             </View>
           </LinearGradient>
         </Pressable>
 
-        <Pressable
-          onPress={() => router.push("/(parent)/chat")}
-          accessibilityRole="button"
-          accessibilityLabel="Ask KidCare AI"
-          accessibilityHint="Opens AI assistant chat for parents"
-          className="mb-6 min-h-14 flex-row items-center rounded-2xl bg-teal-700 px-4 py-3 shadow-sm active:opacity-85"
-        >
-          <View className="h-10 w-10 items-center justify-center rounded-xl bg-white/15">
-            <MessageCircle size={21} color="#FFFFFF" />
-          </View>
-          <View className="ml-3 flex-1">
-            <Text className="text-base font-extrabold text-white">
-              Ask KidCare
-            </Text>
-            <Text className="mt-0.5 text-sm text-emerald-50">
-              Get help with attendance and meal records
-            </Text>
-          </View>
-          <ChevronRight size={20} color="#FFFFFF" />
-        </Pressable>
+        <View className="mb-6">
+          <Text
+            className="mb-2 text-xl font-black text-gray-900"
+            accessibilityRole="header"
+          >
+            Need help?
+          </Text>
+          <View className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
+            <Pressable
+              onPress={() => router.push("/(parent)/chat")}
+              accessibilityRole="button"
+              accessibilityLabel="Ask KidCare AI"
+              accessibilityHint="Opens AI assistant chat for parents"
+              className="min-h-16 flex-row items-center px-4 py-3.5 active:bg-teal-50"
+            >
+              <View className="h-11 w-11 items-center justify-center rounded-2xl bg-teal-50">
+                <MessageCircle size={22} color="#0F766E" />
+              </View>
+              <View className="ml-3 flex-1">
+                <Text className="text-base font-extrabold text-gray-900">
+                  Ask KidCare
+                </Text>
+                <Text className="mt-0.5 text-sm leading-5 text-gray-600">
+                  Get help with attendance and meal records
+                </Text>
+              </View>
+              <ChevronRight size={20} color="#0F766E" />
+            </Pressable>
 
-        <Pressable
-          onPress={() => router.push("/(parent)/concerns")}
-          accessibilityRole="button"
-          accessibilityLabel="Concerns and Feedback"
-          accessibilityHint="Opens official concerns handled by the barangay captain"
-          className="mb-6 min-h-14 flex-row items-center rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 shadow-sm active:opacity-85"
-        >
-          <View className="h-10 w-10 items-center justify-center rounded-xl bg-sky-600">
-            <MessagesSquare size={21} color="#FFFFFF" />
           </View>
-          <View className="ml-3 flex-1">
-            <Text className="text-base font-extrabold text-gray-900">
-              Concerns &amp; Feedback
-            </Text>
-            <Text className="mt-0.5 text-sm text-gray-600">
-              Send and track an official message to the captain
-            </Text>
-          </View>
-          <ChevronRight size={20} color="#0369A1" />
-        </Pressable>
+        </View>
 
         {/* Section 1: Records and History */}
         <View className="mb-2.5 flex-row items-end justify-between">
@@ -460,11 +451,11 @@ export default function ParentDashboardScreen() {
               router.push("/(parent)/parent-view-record/attendance")
             }
             accessibilityRole="button"
-            accessibilityLabel={`See ${childFirstName}'s attendance records. ${attendanceStatus ? "Recorded today" : "No update today"}. ${stats.present} present and ${stats.absent} absent across all saved records.`}
+            accessibilityLabel={`See ${childFirstName}'s attendance records. Today: ${attendanceStatus ? "recorded" : "no update yet"}. History: ${stats.present} present and ${stats.absent} absent.`}
             accessibilityHint="Opens attendance history"
-            className="min-h-32 flex-row items-center rounded-3xl border border-sky-200 bg-sky-50 p-4 shadow-sm active:opacity-85"
+            className="min-h-28 flex-row items-center rounded-3xl border border-teal-200 bg-teal-50 p-4 shadow-sm active:opacity-85"
           >
-            <View className="h-14 w-14 items-center justify-center rounded-2xl bg-sky-600">
+            <View className="h-14 w-14 items-center justify-center rounded-2xl bg-teal-600">
               <ClipboardCheck size={27} color="#FFFFFF" />
             </View>
             <View className="ml-4 flex-1 py-0.5">
@@ -477,7 +468,7 @@ export default function ParentDashboardScreen() {
                 ) : attendanceStatus === "absent" ? (
                   <AlertCircle size={17} color="#BE123C" />
                 ) : (
-                  <Clock3 size={17} color="#0369A1" />
+                  <Clock3 size={17} color="#0F766E" />
                 )}
                 <Text
                   className={`ml-1.5 flex-1 text-sm font-bold leading-5 ${
@@ -485,20 +476,17 @@ export default function ParentDashboardScreen() {
                       ? "text-emerald-700"
                       : attendanceStatus === "absent"
                         ? "text-rose-600"
-                        : "text-sky-700"
+                        : "text-teal-700"
                   }`}
                 >
-                  {attendanceStatus ? "Recorded today" : "No update today"}
+                  Today: {attendanceStatus ? "Recorded" : "No update yet"}
                 </Text>
               </View>
               <Text className="mt-2 text-base font-semibold leading-5 text-gray-700">
                 {stats.present} present · {stats.absent} absent
               </Text>
-              <Text className="mt-0.5 text-sm leading-5 text-gray-500">
-                All saved records
-              </Text>
             </View>
-            <View className="ml-3 h-11 w-11 items-center justify-center rounded-full bg-sky-600 shadow-sm">
+            <View className="ml-3 h-11 w-11 items-center justify-center rounded-full bg-teal-600 shadow-sm">
               <ArrowUpRight size={21} color="#FFFFFF" />
             </View>
           </Pressable>
@@ -506,9 +494,9 @@ export default function ParentDashboardScreen() {
           <Pressable
             onPress={() => router.push("/(parent)/parent-view-record/feeding")}
             accessibilityRole="button"
-            accessibilityLabel={`See ${childFirstName}'s meal records. ${mealStatus ? "Recorded today" : "No update today"}. ${stats.mealsCompleted} finished and ${stats.mealsMissed} missed across all saved records.`}
+            accessibilityLabel={`See ${childFirstName}'s meal records. Today: ${mealStatus ? "recorded" : "no meal update yet"}. History: ${stats.mealsCompleted} finished${stats.mealsMissed > 0 ? ` and ${stats.mealsMissed} missed` : ""}.`}
             accessibilityHint="Opens meal history"
-            className="min-h-32 flex-row items-center rounded-3xl border border-orange-200 bg-orange-50 p-4 shadow-sm active:opacity-85"
+            className="min-h-28 flex-row items-center rounded-3xl border border-orange-200 bg-orange-50 p-4 shadow-sm active:opacity-85"
           >
             <View className="h-14 w-14 items-center justify-center rounded-2xl bg-orange-500">
               <Utensils size={27} color="#FFFFFF" />
@@ -532,14 +520,12 @@ export default function ParentDashboardScreen() {
                       : "text-orange-700"
                   }`}
                 >
-                  {mealStatus ? "Recorded today" : "No update today"}
+                  Today: {mealStatus ? "Recorded" : "No meal update yet"}
                 </Text>
               </View>
               <Text className="mt-2 text-base font-semibold leading-5 text-gray-700">
-                {stats.mealsCompleted} finished · {stats.mealsMissed} missed
-              </Text>
-              <Text className="mt-0.5 text-sm leading-5 text-gray-500">
-                All saved records
+                {stats.mealsCompleted} finished
+                {stats.mealsMissed > 0 ? ` · ${stats.mealsMissed} missed` : ""}
               </Text>
             </View>
             <View className="ml-3 h-11 w-11 items-center justify-center rounded-full bg-orange-500 shadow-sm">
@@ -569,7 +555,7 @@ export default function ParentDashboardScreen() {
               accessibilityLabel="View all notifications"
               className="min-h-11 flex-row items-center justify-center rounded-full border border-gray-100 bg-white px-4 shadow-sm active:opacity-75"
             >
-              <Text className="text-sm font-extrabold text-emerald-800">
+              <Text className="text-sm font-extrabold text-gray-700">
                 View all
               </Text>
             </Pressable>
@@ -625,8 +611,8 @@ export default function ParentDashboardScreen() {
           </View>
         ) : (
           <View className="items-center rounded-3xl border border-gray-100 bg-white px-5 py-5 shadow-sm">
-            <View className="h-11 w-11 items-center justify-center rounded-2xl border border-emerald-100 bg-emerald-50">
-              <Bell size={22} color="#0F766E" />
+            <View className="h-11 w-11 items-center justify-center rounded-2xl border border-gray-200 bg-gray-50">
+              <Bell size={22} color="#6B7280" />
             </View>
             <Text className="mt-2 text-lg font-extrabold text-gray-900">
               Quiet for now

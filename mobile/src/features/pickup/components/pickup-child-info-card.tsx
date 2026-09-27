@@ -27,9 +27,6 @@ export function PickupChildInfoCard({ child }: Props) {
           <Text className="text-2xl font-black text-gray-900">
             {child.firstName} {child.lastName}
           </Text>
-          <Text className="text-teal-700 font-bold text-base mt-0.5">
-            ID: {child.studentId}
-          </Text>
         </View>
       </View>
 

@@ -32,7 +32,7 @@ export const useParentChildrenData = () => {
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
 
   const { data, isLoading, isRefetching, error, refetch } = useQuery({
-    queryKey: mobileQueryKeys.parentChildrenDashboard(),
+    queryKey: mobileQueryKeys.parentChildrenStatusOverview(),
     enabled: isAuthenticated,
     queryFn: async () => {
       const [children, todayAttendance, todayFeeding] = await Promise.all([

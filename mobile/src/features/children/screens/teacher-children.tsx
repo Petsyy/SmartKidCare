@@ -110,8 +110,7 @@ export default function ChildScreen() {
     return result.filter((child) => {
       const fullName =
         `${child.firstName} ${child.middleName || ""} ${child.lastName}`.toLowerCase();
-      const studentId = child.studentId?.toLowerCase() || "";
-      return fullName.includes(query) || studentId.includes(query);
+      return fullName.includes(query);
     });
   }, [children, searchQuery, statusFilter]);
 
@@ -176,7 +175,7 @@ export default function ChildScreen() {
       <SearchBar
         value={searchQuery}
         onChangeText={setSearchQuery}
-        placeholder="Search by name or student ID..."
+        placeholder="Search by name..."
         containerClassName="px-5 pt-4 pb-2 bg-gray-50"
         iconSize={24}
         iconColor="#9CA3AF"

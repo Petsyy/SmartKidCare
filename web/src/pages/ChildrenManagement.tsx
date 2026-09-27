@@ -63,9 +63,6 @@ export default function ChildrenManagement() {
     setSearchTerm,
     statusFilter,
     setStatusFilter,
-    assignmentFilter,
-    setAssignmentFilter,
-
     page: safePage,
     setPage,
     limit,
@@ -273,21 +270,6 @@ export default function ChildrenManagement() {
                   <option value="all">All Status</option>
                   <option value="Active">Active</option>
                   <option value="Inactive">Inactive</option>
-                </select>
-
-                <select
-                  value={assignmentFilter}
-                  onChange={(e) => {
-                    setPage(1);
-                    setAssignmentFilter(
-                      e.target.value as typeof assignmentFilter,
-                    );
-                  }}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/30 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-                >
-                  <option value="all">All Assignment</option>
-                  <option value="assigned">Assigned</option>
-                  <option value="unassigned">Unassigned</option>
                 </select>
 
                 <button

@@ -109,10 +109,6 @@ export function getChildDisplayName(record: any): string | null {
     return child.name.trim();
   }
 
-  if (typeof child.studentId === "string" && child.studentId.trim()) {
-    return child.studentId.trim();
-  }
-
   return null;
 }
 

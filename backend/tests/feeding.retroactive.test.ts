@@ -34,20 +34,38 @@ const createService = (findByTeacherAndDay: () => Promise<any>) => {
   };
 };
 
+const getRecentManilaDate = () => {
+  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(yesterday);
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value;
+
+  return `${value("year")}-${value("month")}-${value("day")}`;
+};
+
 test("teacher can submit feeding for a past date", async () => {
   const harness = createService(async () => null);
+  const date = getRecentManilaDate();
 
   const result = await harness.service.submit(
     { id: "teacher-1", role: "teacher", daycareCenterId: "center-1" },
     {
-      date: "2026-09-12",
+      date,
       foodServed: "Rice with Chicken Adobo",
       records: [{ child: "child-1", status: "completed", notes: "" }],
     },
   );
 
   assert.equal(result.isUpdate, false);
-  assert.equal(harness.getCreatedData().date.toISOString(), "2026-09-11T16:00:00.000Z");
+  assert.equal(
+    harness.getCreatedData().date.toISOString(),
+    new Date(`${date}T00:00:00+08:00`).toISOString(),
+  );
   assert.equal(harness.getNotificationCount(), 1);
 });
 
@@ -61,11 +79,12 @@ test("teacher can resubmit an existing past feeding session", async () => {
     },
   };
   const harness = createService(async () => existing);
+  const date = getRecentManilaDate();
 
   const result = await harness.service.submit(
     { id: "teacher-1", role: "teacher", daycareCenterId: "center-1" },
     {
-      date: "2026-09-12",
+      date,
       foodServed: "Pork Sinigang",
       records: [{ child: "child-1", status: "missed", notes: "Late meal" }],
     },

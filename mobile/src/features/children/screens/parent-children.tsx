@@ -354,9 +354,6 @@ export default function ParentChildrenScreen() {
           label: "Enrollment Date",
           value: formatDate(selectedChild.enrollmentDate),
         },
-        ...(selectedChild.studentId
-          ? [{ label: "Student ID", value: selectedChild.studentId }]
-          : []),
         ...(selectedChild.homeAddress
           ? [{ label: "Home Address", value: selectedChild.homeAddress }]
           : []),

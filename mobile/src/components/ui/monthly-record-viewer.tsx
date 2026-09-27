@@ -5,6 +5,7 @@ import { ChevronDown, ChevronLeft, ChevronRight, Calendar as CalendarIcon, User 
 import type { Child } from "@/src/api/parent.api";
 import { BRAND_HEADER_GRADIENT } from "./screen-header.constants";
 import { ParentLoadingState } from "./parent-loading-state";
+import { ScreenHeader } from "./screen-header";
 
 type DayStatusStyles = {
   cellClass: string;
@@ -53,7 +54,6 @@ export function MonthlyRecordViewer<TDetails>({
   title,
   subtitle,
   loading,
-  insetsTop,
   onBack,
   childOptions,
   selectedChild,
@@ -154,28 +154,12 @@ export function MonthlyRecordViewer<TDetails>({
   };
 
   const headerSection = (
-    <LinearGradient
-      colors={BRAND_HEADER_GRADIENT}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={{ paddingTop: insetsTop + 12 }}
-      className="px-5 pb-5"
-    >
-      <View className="flex-row items-center">
-        <Pressable
-          onPress={onBack}
-          className="h-10 w-10 items-center justify-center rounded-full bg-white/20 mr-3 active:bg-white/30"
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-        >
-          <ChevronLeft size={22} color="white" />
-        </Pressable>
-        <View className="flex-1">
-          <Text className="text-3xl font-extrabold text-white">{title}</Text>
-          <Text className="text-sm font-medium text-teal-100 mt-0.5">{subtitle}</Text>
-        </View>
-      </View>
-    </LinearGradient>
+    <ScreenHeader
+      backgroundVariant="brandGradient"
+      title={title}
+      subtitle={subtitle}
+      onBack={onBack}
+    />
   );
 
   if (loading) {

@@ -1,5 +1,5 @@
 import "@/global.css";
-import { Stack, useRouter } from "expo-router";
+import { Stack } from "expo-router";
 import Constants, { ExecutionEnvironment } from "expo-constants";
 import { ActivityIndicator, LogBox, StyleSheet, View } from "react-native";
 import { AuthProvider } from "@/src/context/auth-context";
@@ -28,60 +28,13 @@ if (__DEV__ && isExpoGo) {
   LogBox.ignoreAllLogs(true);
 }
 
-type NotificationResponseLike = {
-  notification: {
-    request: {
-      content: {
-        data?: Record<string, unknown>;
-      };
-    };
-  };
-};
-
 configureReanimatedLogger({
   level: ReanimatedLogLevel.warn,
   strict: false,
 });
 
 function LayoutContent() {
-  const { loading, role } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (isExpoGo || loading || role !== "parent") return;
-
-    let active = true;
-    let removeListener: (() => void) | undefined;
-
-    void import("expo-notifications").then((Notifications) => {
-      if (!active) return;
-
-      const openConcern = (response: NotificationResponseLike | null) => {
-        const data = response?.notification.request.content.data;
-        const type = String(data?.type ?? "");
-        const concernId = String(data?.concernId ?? "");
-        if (
-          concernId &&
-          (type === "concern_reply" || type === "concern_status_changed")
-        ) {
-          router.push(`/(parent)/concerns/${concernId}`);
-        }
-      };
-
-      const subscription =
-        Notifications.addNotificationResponseReceivedListener(openConcern);
-      removeListener = () => subscription.remove();
-      void Notifications.getLastNotificationResponseAsync().then((response) => {
-        if (active) openConcern(response);
-      });
-    });
-
-    return () => {
-      active = false;
-      removeListener?.();
-    };
-  }, [loading, role, router]);
-
+  const { loading } = useAuth();
   return (
     <>
       <Stack screenOptions={{ headerShown: false }} />

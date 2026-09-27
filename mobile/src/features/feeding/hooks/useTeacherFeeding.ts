@@ -243,8 +243,7 @@ export const useTeacherFeeding = () => {
     return children.filter((child) => {
       const fullName =
         `${child.lastName}, ${child.firstName} ${child.middleName || ""}`.toLowerCase();
-      const studentId = String(child.studentId || "").toLowerCase();
-      return fullName.includes(query) || studentId.includes(query);
+      return fullName.includes(query);
     });
   }, [children, searchQuery]);
 

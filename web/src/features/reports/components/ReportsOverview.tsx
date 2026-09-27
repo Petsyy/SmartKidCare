@@ -199,9 +199,14 @@ export function ReportsOverview({
         <div className="p-6">
           <h2
             id="student-list-title"
-            className="text-lg font-semibold text-gray-900 dark:text-slate-50"
+            className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-slate-50"
           >
             Student List
+            {studentList.length > 0 && (
+              <span className="rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-medium text-teal-700 dark:bg-teal-500/10 dark:text-teal-300">
+                SY {studentList[0].schoolYear}
+              </span>
+            )}
           </h2>
           <p className="text-sm text-gray-500 dark:text-slate-400">
             Read-only enrollment roster for the selected range and center.
@@ -219,14 +224,11 @@ export function ReportsOverview({
                 <thead className="bg-gray-50 dark:bg-slate-800">
                   <tr>
                     {[
-                      "Student ID",
                       "Name",
                       "Gender",
                       "Age",
                       "Program",
-                      "School Year",
                       "Teacher",
-                      "Center",
                       "Enrolled",
                     ].map((heading) => (
                       <th
@@ -245,9 +247,6 @@ export function ReportsOverview({
                       key={student.id}
                       className="hover:bg-gray-50 dark:hover:bg-slate-800/60"
                     >
-                      <td className="whitespace-nowrap px-4 py-3 text-gray-600 dark:text-slate-300">
-                        {student.studentId}
-                      </td>
                       <th
                         scope="row"
                         className="whitespace-nowrap px-4 py-3 text-left font-medium text-gray-900 dark:text-slate-100"
@@ -264,13 +263,7 @@ export function ReportsOverview({
                         {student.programType}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-gray-600 dark:text-slate-300">
-                        {student.schoolYear}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-gray-600 dark:text-slate-300">
                         {student.teacherName}
-                      </td>
-                      <td className="min-w-64 px-4 py-3 text-gray-600 dark:text-slate-300">
-                        {student.centerName}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-gray-600 dark:text-slate-300">
                         {formatEnrollmentDate(student.enrollmentDate)}

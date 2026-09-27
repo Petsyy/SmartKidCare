@@ -22,7 +22,7 @@ export const getCompetencyHistory = (childId: string) =>
 export const submitCompetencyEvaluation = (payload: {
   childId: string;
   evaluationDate: string;
-  period: "initial" | "midyear" | "final";
+  period: "quarterly" | "final";
   status: "draft" | "submitted";
   entries: Array<{
     competencyId: string;

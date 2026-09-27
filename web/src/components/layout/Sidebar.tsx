@@ -5,7 +5,6 @@ import {
   UsersRound,
   UserCog,
   Utensils,
-  MessagesSquare,
 } from "lucide-react";
 import { useSystemSettings } from "../../context/SystemSettingsContext";
 
@@ -27,7 +26,6 @@ const captainNavGroups: NavGroup[] = [
       { icon: LayoutDashboard, label: "Dashboard", path: "monitoring/dashboard" },
       { icon: UsersRound, label: "Daycare Records", path: "monitoring/records" },
       { icon: Utensils, label: "Feeding Monitoring", path: "monitoring/feeding" },
-      { icon: MessagesSquare, label: "Parent Concerns", path: "monitoring/concerns" },
     ],
   },
   {

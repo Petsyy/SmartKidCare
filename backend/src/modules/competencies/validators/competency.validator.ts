@@ -11,7 +11,7 @@ const entry = z.object({
 export const competencyEvaluationSchema = z.object({
   childId: objectId,
   evaluationDate: z.string().trim().min(1),
-  period: z.enum(["initial", "midyear", "final"]),
+  period: z.enum(["quarterly", "final"]),
   status: z.enum(["draft", "submitted"]).default("submitted"),
   entries: z
     .array(entry)
@@ -43,13 +43,13 @@ export const competencyEvaluationSchema = z.object({
 });
 
 const childParams = z.object({ childId: objectId });
-const childAndPeriodParams = z.object({ childId: objectId, period: z.enum(["initial", "midyear", "final"]) });
+const childAndPeriodParams = z.object({ childId: objectId, period: z.enum(["quarterly", "final"]) });
 const historyQuery = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(50).default(10),
 });
 const analyticsQuery = z.object({
-  period: z.enum(["initial", "midyear", "final"]).optional(),
+  period: z.enum(["quarterly", "final"]).optional(),
   schoolYear: z.string().trim().min(1).max(20).optional(),
   centerId: objectId.optional(),
 });

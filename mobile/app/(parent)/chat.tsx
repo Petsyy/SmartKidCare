@@ -8,7 +8,7 @@ import { useAuth } from "@/src/hooks/use-auth";
 import { sendAIChat } from "@/src/api/ai.api";
 import { getMyChildren, type Child } from "@/src/api/parent.api";
 import { extractAIBulletText, extractAIRiskLevel, getAIRiskBadgeStyle, isAISectionLine, removeAIRiskLevelLine } from "@/src/components/ai/ai-chat";
-import { BRAND_HEADER_GRADIENT } from "@/src/components/ui";
+import { BRAND_HEADER_GRADIENT, ScreenHeader } from "@/src/components/ui";
 
 const SUGGESTIONS = [
   "Was my child present today?",
@@ -241,24 +241,10 @@ export default function ParentChatScreen() {
 
     return (
       <View
-        className={`mb-5 flex-row ${isUser ? "justify-end pl-10" : "justify-start pr-10"}`}
+        className={`mb-4 flex-row ${isUser ? "justify-end pl-10" : "justify-start pr-10"}`}
       >
-        {!isUser && (
-          <View
-            className="mr-3 h-9 w-9 items-center justify-center rounded-full bg-teal-100"
-            style={{
-              shadowColor: "#0D9488",
-              shadowOpacity: 0.2,
-              shadowRadius: 4,
-              shadowOffset: { width: 0, height: 1 },
-              elevation: 2,
-            }}
-          >
-            <Icons.Bot size={18} color="#0D9488" />
-          </View>
-        )}
         <View
-          className={`max-w-[80%] rounded-2xl px-4 py-3.5 ${
+          className={`max-w-[86%] rounded-2xl px-4 py-3.5 ${
             isUser
               ? "rounded-br-sm bg-teal-600"
               : "rounded-bl-sm border border-gray-100 bg-white"
@@ -326,69 +312,27 @@ export default function ParentChatScreen() {
             </>
           )}
         </View>
-        {isUser && (
-          <View
-            className="ml-3 h-9 w-9 items-center justify-center rounded-full bg-teal-600"
-            style={{
-              shadowColor: "#0D9488",
-              shadowOpacity: 0.3,
-              shadowRadius: 4,
-              shadowOffset: { width: 0, height: 1 },
-              elevation: 2,
-            }}
-          >
-            <Icons.User size={18} color="white" />
-          </View>
-        )}
       </View>
     );
   };
 
-  const listHeader = (
-    <View className="px-1 pt-1 pb-6">
-      <View
-        className="flex-row items-center gap-4 rounded-3xl border border-teal-100 bg-white p-5"
-        style={{
-          shadowColor: "#0D9488",
-          shadowOpacity: 0.08,
-          shadowRadius: 16,
-          shadowOffset: { width: 0, height: 4 },
-          elevation: 3,
-        }}
-      >
-        <View className="h-12 w-12 items-center justify-center rounded-2xl bg-teal-500">
-          <Icons.Bot size={26} color="white" />
-        </View>
-        <View className="flex-1">
-          <Text className="text-lg font-bold text-gray-900">
-            Smart KidCare Assistant
-          </Text>
-          <Text className="mt-0.5 text-sm text-gray-500">
-            Ask about your child&apos;s attendance and feeding.
-          </Text>
-        </View>
-        {contextLoading && <ActivityIndicator size="small" color="#14B8A6" />}
-      </View>
-    </View>
-  );
-
   const listEmpty = (
-    <View className="flex-1 items-center px-2 pt-8">
-      <View className="h-20 w-20 items-center justify-center rounded-full bg-gray-100">
+    <View className="flex-1 px-2 pt-3">
+      <View className="mx-auto mb-4 h-14 w-14 items-center justify-center rounded-2xl bg-teal-50">
         {contextError || (!contextLoading && !selectedChild) ? (
-          <Icons.AlertCircle size={40} color="#F97316" />
+          <Icons.AlertCircle size={28} color="#F97316" />
         ) : (
-          <Icons.MessageCircle size={40} color="#9CA3AF" />
+          <Icons.MessageCircle size={28} color="#0F766E" />
         )}
       </View>
-      <Text className="mt-5 text-center text-base font-semibold text-gray-700">
+      <Text className="text-center text-2xl font-extrabold text-gray-900">
         {contextError
           ? "Couldn't load child context"
           : !contextLoading && !selectedChild
             ? "No child linked yet"
             : "How can I help?"}
       </Text>
-      <Text className="mt-2 max-w-[260px] text-center text-sm text-gray-500">
+      <Text className="mx-auto mt-2 max-w-[300px] text-center text-base leading-6 text-gray-500">
         {contextError
           ? "Please try again so I can answer using the right child records."
           : !contextLoading && !selectedChild
@@ -413,7 +357,10 @@ export default function ParentChatScreen() {
           </Text>
         </Pressable>
       ) : null}
-      <View className="mt-6 w-full max-w-[320px] gap-3">
+      <Text className="mt-6 text-sm font-bold uppercase tracking-wide text-gray-500">
+        Try asking
+      </Text>
+      <View className="mt-2.5 w-full gap-2.5">
         {SUGGESTIONS.map((s) => (
           <Pressable
             key={s}
@@ -421,17 +368,10 @@ export default function ParentChatScreen() {
             disabled={contextLoading || !selectedChild}
             accessibilityRole="button"
             accessibilityLabel={`Use suggested question: ${s}`}
-            className="rounded-2xl border border-gray-200 bg-white px-4 py-3.5 active:opacity-80"
-            style={{
-              shadowColor: "#000",
-              shadowOpacity: 0.04,
-              shadowRadius: 8,
-              shadowOffset: { width: 0, height: 2 },
-              elevation: 2,
-            }}
+            className="rounded-2xl border border-gray-200 bg-white px-4 py-3 active:bg-teal-50"
           >
             <Text
-              className="text-center text-sm font-medium text-gray-700"
+              className="text-base font-semibold leading-6 text-gray-700"
               numberOfLines={2}
             >
               {s}
@@ -443,38 +383,15 @@ export default function ParentChatScreen() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={["top"]}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor="#0D9488"
-        translucent={false}
-      />
+    <SafeAreaView className="flex-1 bg-gray-50" edges={["left", "right", "bottom"]}>
+      <StatusBar barStyle="light-content" backgroundColor="#0D9488" />
       <View className="flex-1">
-        {/* Header */}
-        <LinearGradient
-          colors={BRAND_HEADER_GRADIENT}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          className="border-b border-teal-700/30"
-        >
-          <View className="flex-row items-center px-4 pt-4 pb-5">
-            <Pressable
-              onPress={() => router.back()}
-              className="mr-3 h-10 w-10 items-center justify-center rounded-full active:bg-white/20"
-              hitSlop={10}
-            >
-              <Icons.ChevronLeft size={26} color="white" />
-            </Pressable>
-            <View className="flex-1">
-              <Text className="text-[22px] font-semibold text-white">
-                AI Assistant
-              </Text>
-              <Text className="mt-0.5 text-[14px] text-teal-100">
-                Based on your child&apos;s attendance & feeding
-              </Text>
-            </View>
-          </View>
-        </LinearGradient>
+        <ScreenHeader
+          backgroundVariant="brandGradient"
+          title="AI Assistant"
+          subtitle="Ask about attendance and meals"
+          onBack={() => router.back()}
+        />
 
         {children.length > 1 ? (
           <View className="border-b border-gray-200 bg-white px-4 py-3">
@@ -521,12 +438,11 @@ export default function ParentChatScreen() {
           data={messages}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          ListHeaderComponent={messages.length === 0 ? listHeader : null}
           ListEmptyComponent={listEmpty}
           contentContainerStyle={{
             flexGrow: 1,
             paddingHorizontal: 16,
-            paddingTop: 16,
+            paddingTop: messages.length === 0 ? 20 : 16,
             paddingBottom: 20,
           }}
           showsVerticalScrollIndicator={false}
@@ -565,7 +481,7 @@ export default function ParentChatScreen() {
             disabled={!canSend}
             accessibilityRole="button"
             accessibilityLabel="Send message to AI assistant"
-            className="h-12 w-12 items-center justify-center rounded-full bg-teal-600 active:opacity-90 disabled:opacity-50"
+            className="h-12 w-12 overflow-hidden rounded-full active:opacity-90 disabled:opacity-50"
             style={{
               shadowColor: "#0D9488",
               shadowOpacity: 0.35,
@@ -574,11 +490,18 @@ export default function ParentChatScreen() {
               elevation: 4,
             }}
           >
-            {loading ? (
-              <ActivityIndicator size="small" color="white" />
-            ) : (
-              <Icons.Send size={20} color="white" />
-            )}
+            <LinearGradient
+              colors={BRAND_HEADER_GRADIENT}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              className="h-full w-full items-center justify-center"
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <Icons.Send size={20} color="white" />
+              )}
+            </LinearGradient>
           </Pressable>
         </View>
       </View>

@@ -45,9 +45,6 @@ export function PickupEligibleChildCard({ child, onPress }: Props) {
                 >
                   {child.firstName} {child.lastName}
                 </Text>
-                <Text className="text-base font-bold text-gray-500 mt-0.5">
-                  ID: {child.studentId}
-                </Text>
               </View>
             </View>
             <ChevronRight size={24} color="#94A3B8" />

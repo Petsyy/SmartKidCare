@@ -7,7 +7,7 @@ export type CompetencyAuthUser = {
 export type CompetencyEvaluationInput = {
   childId: string;
   evaluationDate: string;
-  period: "initial" | "midyear" | "final";
+  period: "quarterly" | "final";
   status: "draft" | "submitted";
   entries: Array<{ competencyId: string; level: string; remarks?: string }>;
   generalNotes?: string;

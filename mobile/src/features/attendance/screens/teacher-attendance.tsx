@@ -191,7 +191,7 @@ export default function RecordAttendance() {
         <SearchBar
           value={searchQuery}
           onChangeText={setSearchQuery}
-          placeholder="Search by child name or student ID"
+          placeholder="Search by child name"
         />
 
         {/* Children List */}
@@ -205,7 +205,7 @@ export default function RecordAttendance() {
                     No children found
                   </Text>
                   <Text className="mt-1 text-center text-sm text-gray-400">
-                    Try a different name or student ID
+                    Try a different name
                   </Text>
                 </>
               ) : (
@@ -228,9 +228,7 @@ export default function RecordAttendance() {
                 accessibilityRole="button"
                 accessibilityLabel={`${item.lastName}, ${item.firstName}${
                   item.middleName ? ` ${item.middleName}` : ""
-                }, student ID ${item.studentId}, ${
-                  attendance[item._id] ? "Present" : "Absent"
-                }`}
+                }, ${attendance[item._id] ? "Present" : "Absent"}`}
                 accessibilityHint={
                   isReadOnly
                     ? "Submitted attendance cannot be changed"
@@ -266,7 +264,7 @@ export default function RecordAttendance() {
                       {item.middleName ? ` ${item.middleName}` : ""}
                     </Text>
                     <Text className="mt-0.5 text-base text-gray-600">
-                      {item.studentId}
+                      {item.age} years old - {item.gender}
                     </Text>
                     <View
                       className={`mt-2 self-start rounded-full px-2.5 py-1 ${

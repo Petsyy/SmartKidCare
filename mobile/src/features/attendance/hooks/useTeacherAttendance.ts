@@ -114,10 +114,7 @@ export const useTeacherAttendance = () => {
     return children.filter((child) => {
       const fullName =
         `${child.lastName}, ${child.firstName} ${child.middleName || ""}`.toLowerCase();
-      return (
-        fullName.includes(searchQuery.toLowerCase()) ||
-        child.studentId.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      return fullName.includes(searchQuery.toLowerCase());
     });
   }, [children, searchQuery]);
 

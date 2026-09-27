@@ -102,10 +102,10 @@ test("captain analytics access requires the configured center assignment", () =>
   );
 });
 
-test("system admin cannot access operational child records", () => {
-  const systemAdmin = { id: "system-1", role: "system_admin" as const, daycareCenterId: null };
-  assert.throws(() => buildChildAccessFilter(systemAdmin), /forbidden/i);
-  assert.equal(canAccessChild(systemAdmin, { daycareCenter: "center-1" }), false);
+test("unsupported roles cannot access operational child records", () => {
+  const unsupportedUser = { id: "unsupported-1", role: "unsupported" as const, daycareCenterId: null };
+  assert.throws(() => buildChildAccessFilter(unsupportedUser), /forbidden/i);
+  assert.equal(canAccessChild(unsupportedUser, { daycareCenter: "center-1" }), false);
 });
 
 test("teacher without a center cannot build an access filter", () => {

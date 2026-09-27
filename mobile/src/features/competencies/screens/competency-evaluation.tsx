@@ -20,6 +20,7 @@ import {
   type EvaluationPeriod,
 } from "../hooks/useCompetencyEvaluation";
 import { useUnsavedChangesGuard } from "../../../hooks/use-unsaved-changes-guard";
+import { CompetencyDatePicker } from "../components/competency-date-picker";
 
 export default function CompetencyEvaluationScreen() {
   const params = useLocalSearchParams<{ childId?: string; isParentView?: string }>();
@@ -35,8 +36,7 @@ export default function CompetencyEvaluationScreen() {
   });
 
   const periods: { value: EvaluationPeriod; label: string }[] = [
-    { value: "initial", label: "Initial" },
-    { value: "midyear", label: "Mid-Year" },
+    { value: "quarterly", label: "Quarterly" },
     { value: "final", label: "Final" },
   ];
 
@@ -165,6 +165,13 @@ export default function CompetencyEvaluationScreen() {
               })}
             </View>
           </View>
+
+          <CompetencyDatePicker
+            dateKey={evaluation.evaluationDate}
+            dateLabel={evaluation.evaluationDateLabel}
+            disabled={evaluation.isSubmitting || evaluation.isReadOnly}
+            onDateChange={evaluation.setEvaluationDate}
+          />
 
           {evaluation.selectedPeriodState.isLocked && (
             <View className="mb-4 flex-row rounded-2xl border border-amber-200 bg-amber-50 p-4">

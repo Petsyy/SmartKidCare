@@ -59,8 +59,7 @@ export function TeacherPickupScreen() {
     const query = searchQuery.toLowerCase();
     return eligibleChildren.filter((child) => {
       const fullName = `${child.firstName} ${child.lastName}`.toLowerCase();
-      const studentId = child.studentId.toLowerCase();
-      return fullName.includes(query) || studentId.includes(query);
+      return fullName.includes(query);
     });
   }, [eligibleChildren, searchQuery]);
 
@@ -134,7 +133,7 @@ export function TeacherPickupScreen() {
       <SearchBar
         value={searchQuery}
         onChangeText={setSearchQuery}
-        placeholder="Search by name or student ID..."
+        placeholder="Search by name..."
         containerClassName="px-5 pt-4 pb-2 bg-gray-50"
         iconSize={24}
         iconColor="#9CA3AF"

@@ -306,9 +306,6 @@ export default function TeacherChildDetailsScreen() {
             >
               {fullName}
             </Text>
-            <Text className="text-base text-teal-100 mt-0.5">
-              Student ID: {child.studentId}
-            </Text>
           </View>
         </View>
       </LinearGradient>

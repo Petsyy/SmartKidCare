@@ -11,7 +11,7 @@ type Props = {
 export default function ParentGate({ children }: Props) {
   const { isAuthenticated } = useAuth();
   const { isLoading: loading } = useQuery({
-    queryKey: mobileQueryKeys.parentChildrenDashboard(),
+    queryKey: mobileQueryKeys.parentChildrenList(),
     queryFn: getMyChildren,
     enabled: isAuthenticated,
     retry: false,

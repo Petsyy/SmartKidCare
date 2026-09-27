@@ -16,7 +16,7 @@ export type CompetencyDefinition = {
 export type CompetencyEvaluation = {
   _id: string;
   evaluationDate: string;
-  period: "initial" | "midyear" | "final";
+  period: "quarterly" | "final";
   status: "draft" | "submitted";
   entries: Array<{
     competency: CompetencyDefinition;

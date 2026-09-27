@@ -85,9 +85,7 @@ export default function RecordFeeding() {
           accessibilityRole="button"
           accessibilityLabel={`${child.lastName}, ${child.firstName}${
             child.middleName ? ` ${child.middleName}` : ""
-          }, ${child.studentId ? `student ID ${child.studentId}, ` : ""}${
-            feedingStatus[child._id] ? "Missed" : "Completed"
-          }`}
+          }, ${feedingStatus[child._id] ? "Missed" : "Completed"}`}
           accessibilityHint={
             interactionDisabled
               ? "Submitted feeding records cannot be changed"
@@ -118,7 +116,7 @@ export default function RecordFeeding() {
                 {child.middleName ? ` ${child.middleName}` : ""}
               </Text>
               <Text className="mt-0.5 text-base text-gray-600">
-                {child.studentId || `${child.age} years old - ${child.gender}`}
+                {child.age} years old - {child.gender}
               </Text>
               <View
                 className={`mt-2 self-start rounded-full px-2.5 py-1 ${
@@ -322,7 +320,7 @@ export default function RecordFeeding() {
       <SearchBar
         value={searchQuery}
         onChangeText={setSearchQuery}
-        placeholder="Search by child name or student ID"
+        placeholder="Search by child name"
       />
     </>
   );
