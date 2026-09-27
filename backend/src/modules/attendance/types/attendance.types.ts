@@ -10,12 +10,14 @@ export type AttendanceAuthUser = {
 export type AuthUser = AttendanceAuthUser;
 
 export type SubmitAttendanceInput = {
+  clientOperationId: string;
   date: unknown;
   records: unknown;
 };
 
 export type AttendanceResult = {
   isUpdate: boolean;
+  replayed: boolean;
   attendance: any;
 };
 

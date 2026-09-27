@@ -19,6 +19,17 @@ interface RequestOptions {
   authenticated?: boolean;
 }
 
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+    public readonly code?: string,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 const getApiErrorMessage = (
   data: unknown,
   raw: string,
@@ -82,8 +93,10 @@ export async function apiClient<T>(
   }
 
   if (!response.ok) {
-    throw new Error(
+    throw new ApiError(
       getApiErrorMessage(data, raw, `Request failed: ${method} ${path}`),
+      response.status,
+      typeof data?.code === "string" ? data.code : undefined,
     );
   }
 

@@ -1,7 +1,7 @@
 import "@/global.css";
 import { Stack } from "expo-router";
 import Constants, { ExecutionEnvironment } from "expo-constants";
-import { ActivityIndicator, LogBox, StyleSheet, View } from "react-native";
+import { ActivityIndicator, LogBox, Pressable, StyleSheet, Text, View } from "react-native";
 import { AuthProvider } from "@/src/context/auth-context";
 import { useAuth } from "@/src/hooks/use-auth";
 import { SystemSettingsProvider } from "@/src/context/system-settings-context";
@@ -14,6 +14,7 @@ import { ErrorBoundary } from "@/src/components/ui/error-boundary";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { LinearGradient } from "expo-linear-gradient";
 import { cssInterop } from "nativewind";
+import { OfflineProvider, useOffline } from "@/src/offline/offline-context";
 
 // Expo SDK 57's LinearGradient is a third-party native component, so NativeWind
 // needs an explicit mapping before gradient layout classes can reach `style`.
@@ -34,10 +35,25 @@ configureReanimatedLogger({
 });
 
 function LayoutContent() {
-  const { loading } = useAuth();
+  const { loading, authState, unlockOffline } = useAuth();
+  const { isConnected, isInternetReachable, pendingCount, syncState } = useOffline();
+  const isOffline = !isConnected || !isInternetReachable;
   return (
     <>
       <Stack screenOptions={{ headerShown: false }} />
+      {(isOffline || pendingCount > 0) && authState !== "signedOut" ? (
+        <View className="absolute left-3 right-3 top-12 z-40 rounded-xl bg-gray-900 px-4 py-3">
+          <Text className="text-center text-sm font-semibold text-white">
+            {isOffline
+              ? pendingCount > 0
+                ? `Offline • ${pendingCount} queued for synchronization`
+                : "Offline • showing securely cached information"
+              : syncState === "syncing"
+                ? `Synchronizing ${pendingCount} submission${pendingCount === 1 ? "" : "s"}…`
+                : `${pendingCount} submission${pendingCount === 1 ? "" : "s"} waiting to synchronize`}
+          </Text>
+        </View>
+      ) : null}
       {loading ? (
         <View
           pointerEvents="auto"
@@ -45,6 +61,30 @@ function LayoutContent() {
           className="z-50 items-center justify-center bg-white"
         >
           <ActivityIndicator size="large" />
+        </View>
+      ) : null}
+      {!loading && authState === "offlineLocked" ? (
+        <View
+          pointerEvents="auto"
+          style={StyleSheet.absoluteFill}
+          className="z-50 items-center justify-center bg-gray-50 px-6"
+        >
+          <View className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6">
+            <Text className="text-center text-2xl font-bold text-gray-900">
+              Unlock Offline Mode
+            </Text>
+            <Text className="mt-3 text-center text-base text-gray-600">
+              Verify with your device security before viewing protected cached information.
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Unlock offline mode"
+              className="mt-6 min-h-12 items-center justify-center rounded-xl bg-teal-600 px-4"
+              onPress={() => void unlockOffline()}
+            >
+              <Text className="font-semibold text-white">Unlock Offline Mode</Text>
+            </Pressable>
+          </View>
         </View>
       ) : null}
     </>
@@ -78,9 +118,11 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <SafeAreaProvider>
             <AuthProvider>
-              <SystemSettingsProvider>
-                <LayoutContent />
-              </SystemSettingsProvider>
+              <OfflineProvider>
+                <SystemSettingsProvider>
+                  <LayoutContent />
+                </SystemSettingsProvider>
+              </OfflineProvider>
             </AuthProvider>
           </SafeAreaProvider>
         </QueryClientProvider>

@@ -3,7 +3,12 @@ import {
   ValidationError,
   ForbiddenError,
   NotFoundError,
+  ConflictError,
 } from "../../../shared/errors/app-error";
+import {
+  hashFeedingPayload,
+  isMongoDuplicateKeyError,
+} from "../../../shared/utils/record-idempotency";
 import {
   childRepository,
   feedingRepository,
@@ -30,7 +35,7 @@ const submitFeedingOperation = async (
   input: SubmitFeedingInput,
   dependencies: FeedingServiceDependencies,
 ): Promise<FeedingResult> => {
-  const { date, foodServed, records } = input;
+  const { clientOperationId, date, foodServed, records } = input;
   const daycareCenterId = assertTeacherCenter(user as any);
 
   const normalizedRecords = (records as any[]).map((record: any) => ({
@@ -68,23 +73,6 @@ const submitFeedingOperation = async (
     );
   }
 
-  const manilaNow = new Date(Date.now() + 8 * 60 * 60 * 1000);
-  const todayStartMs =
-    Date.UTC(
-      manilaNow.getUTCFullYear(),
-      manilaNow.getUTCMonth(),
-      manilaNow.getUTCDate(),
-    ) -
-    8 * 60 * 60 * 1000;
-  const earliestAllowedStart = new Date(
-    todayStartMs - 6 * 24 * 60 * 60 * 1000,
-  );
-  if (dayRange.start < earliestAllowedStart || dayRange.start > new Date(todayStartMs + 24 * 60 * 60 * 1000 - 1)) {
-    throw new ValidationError(
-      "Feeding records can only be submitted within the last 7 days.",
-    );
-  }
-
   const assignedIds = await dependencies.childRepository.findAssignedChildIds(
     childIds,
     user.id,
@@ -102,6 +90,32 @@ const submitFeedingOperation = async (
   }
 
   const feedingDate = dayRange.start;
+  const canonicalDate = feedingDate.toISOString();
+  const normalizedFoodServed = String(foodServed).trim();
+  const payloadHash = hashFeedingPayload({
+    date: canonicalDate,
+    foodServed: normalizedFoodServed,
+    records: normalizedRecords,
+  });
+
+  const operationRecord = await dependencies.feedingRepository.findByOperationId(
+    clientOperationId,
+  );
+  if (operationRecord) {
+    if (String(operationRecord.teacher) !== String(user.id)) {
+      throw new ConflictError(
+        "Submission operation is already in use.",
+        "RECORD_ALREADY_EXISTS",
+      );
+    }
+    if (operationRecord.payloadHash !== payloadHash) {
+      throw new ConflictError(
+        "Submission operation does not match the original payload.",
+        "OPERATION_PAYLOAD_MISMATCH",
+      );
+    }
+    return { isUpdate: false, replayed: true, feeding: operationRecord };
+  }
   const existing = await dependencies.feedingRepository.findByTeacherAndDay(
     user.id,
     dayRange,
@@ -109,40 +123,46 @@ const submitFeedingOperation = async (
   );
 
   if (existing) {
-    existing.foodServed = String(foodServed);
-    existing.records = normalizedRecords as any;
-    existing.daycareCenter = daycareCenterId as any;
-    await existing.save();
-
-    void dependencies
-      .notifySubmitted({
-        date: existing.date || feedingDate,
-        foodServed: String(foodServed),
-        records: normalizedRecords as Array<{
-          child: unknown;
-          status: "completed" | "missed";
-          notes?: string;
-        }>,
-      })
-      .catch((error) =>
-        console.error("Feeding notification dispatch failed:", error),
-      );
-
-    return { isUpdate: true, feeding: existing };
+    throw new ConflictError(
+      "Feeding has already been submitted for this date.",
+      "RECORD_ALREADY_EXISTS",
+    );
   }
 
-  const feeding = await dependencies.feedingRepository.create({
-    date: feedingDate,
-    teacher: user.id,
-    daycareCenter: daycareCenterId,
-    foodServed: String(foodServed),
-    records: normalizedRecords,
-  });
+  let feeding: any;
+  try {
+    feeding = await dependencies.feedingRepository.create({
+      date: feedingDate,
+      teacher: user.id,
+      daycareCenter: daycareCenterId,
+      clientOperationId,
+      payloadHash,
+      foodServed: normalizedFoodServed,
+      records: normalizedRecords,
+    });
+  } catch (error) {
+    if (!isMongoDuplicateKeyError(error)) throw error;
+    const concurrentOperation =
+      await dependencies.feedingRepository.findByOperationId(
+        clientOperationId,
+      );
+    if (
+      concurrentOperation &&
+      String(concurrentOperation.teacher) === String(user.id) &&
+      concurrentOperation.payloadHash === payloadHash
+    ) {
+      return { isUpdate: false, replayed: true, feeding: concurrentOperation };
+    }
+    throw new ConflictError(
+      "Feeding has already been submitted for this date.",
+      "RECORD_ALREADY_EXISTS",
+    );
+  }
 
   void dependencies
     .notifySubmitted({
       date: feedingDate,
-      foodServed: String(foodServed),
+      foodServed: normalizedFoodServed,
       records: normalizedRecords as Array<{
         child: unknown;
         status: "completed" | "missed";
@@ -153,7 +173,7 @@ const submitFeedingOperation = async (
       console.error("Feeding notification dispatch failed:", error),
     );
 
-  return { isUpdate: false, feeding };
+  return { isUpdate: false, replayed: false, feeding };
 };
 
 const getFeedingHistoryOperation = async (

@@ -36,6 +36,5 @@
     "node_modules",
     "build",
     ".expo"
-  ],
-  "extends": "expo/tsconfig.base"
+  ]
 }

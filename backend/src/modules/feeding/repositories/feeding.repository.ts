@@ -51,6 +51,10 @@ export class FeedingRepository extends BaseRepository<any> {
     });
   }
 
+  async findByOperationId(clientOperationId: string) {
+    return this.model.findOne({ clientOperationId });
+  }
+
   async findHistory(query: Record<string, unknown>) {
     return this.model.find(query)
       .populate("teacher", "firstName lastName email phone")

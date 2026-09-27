@@ -16,11 +16,13 @@ export const submitFeeding = asyncHandler(async (req: Request, res: Response) =>
     req.user as { id: string; role: string },
     req.body ?? {},
   );
-  const statusCode = result.isUpdate ? 200 : 201;
-  const message = result.isUpdate
+  const statusCode = result.isUpdate || result.replayed ? 200 : 201;
+  const message = result.replayed
+    ? "Feeding submission confirmed"
+    : result.isUpdate
     ? "Feeding updated successfully"
     : "Feeding submitted successfully";
-  res.status(statusCode).json({ message, feeding: result.feeding });
+  res.status(statusCode).json({ message, feeding: result.feeding, replayed: result.replayed });
 });
 
 export const getFeedingHistory = asyncHandler(async (req: Request, res: Response) => {

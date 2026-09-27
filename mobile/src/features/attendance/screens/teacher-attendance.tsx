@@ -35,6 +35,8 @@ export default function RecordAttendance() {
     markAllPresent,
     markAllAbsent,
     handleSubmit,
+    saveDraftAndLeave,
+    isOffline,
     isSubmitting,
     showSuccessFeedback,
     dismissSuccessFeedback,
@@ -317,6 +319,16 @@ export default function RecordAttendance() {
             </Text>
           </View>
         ) : (
+          <View className="gap-2">
+          <Pressable
+            onPress={() => void saveDraftAndLeave()}
+            disabled={isSubmitting || isReadOnly}
+            accessibilityRole="button"
+            accessibilityLabel="Save attendance draft and leave"
+            className="min-h-12 items-center justify-center rounded-xl border border-teal-600 bg-white px-4"
+          >
+            <Text className="font-semibold text-teal-700">Save Draft &amp; Leave</Text>
+          </Pressable>
           <Pressable
             onPress={() => {
               Alert.alert(
@@ -324,7 +336,7 @@ export default function RecordAttendance() {
                 "Are you sure you want to submit the attendance record?",
                 [
                   { text: "Cancel", style: "cancel" },
-                  { text: "Submit", onPress: handleSubmit },
+                  { text: isOffline ? "Submit Offline" : "Submit", onPress: handleSubmit },
                 ]
               );
             }}
@@ -372,10 +384,15 @@ export default function RecordAttendance() {
               </View>
             ) : (
               <Text className="text-xl font-bold text-white">
-                {isReadOnly ? "Attendance Submitted" : "Submit Attendance"}
+                {isReadOnly
+                  ? "Attendance Finalized"
+                  : isOffline
+                    ? "Submit Offline"
+                    : "Submit Attendance"}
               </Text>
             )}
           </Pressable>
+          </View>
         )}
       </View>
     </ScreenShell>

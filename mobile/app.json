@@ -39,6 +39,13 @@
         }
       ],
       "expo-secure-store",
+      "expo-local-authentication",
+      [
+        "expo-sqlite",
+        {
+          "useSQLCipher": true
+        }
+      ],
       "expo-notifications",
       "@react-native-community/datetimepicker",
       "expo-font",

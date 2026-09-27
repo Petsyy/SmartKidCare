@@ -13,6 +13,7 @@ const feedingRecordItemSchema = z.object({
 });
 
 const submitFeedingSchema = z.object({
+  clientOperationId: z.string().uuid("Invalid operation ID."),
   date: nonEmptyString,
   foodServed: nonEmptyString,
   records: z

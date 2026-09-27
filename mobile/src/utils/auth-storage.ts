@@ -2,6 +2,7 @@ import * as SecureStore from "expo-secure-store";
 
 const TOKEN_KEY = "authToken";
 const USER_KEY = "authUser";
+const LAST_VERIFIED_KEY = "lastOnlineVerifiedAt";
 
 export const saveToken = async (token: string) => {
   await SecureStore.setItemAsync(TOKEN_KEY, token);
@@ -42,3 +43,13 @@ export const clearSession = async () => {
     SecureStore.deleteItemAsync(USER_KEY),
   ]);
 };
+
+export const saveLastOnlineVerifiedAt = async (value: string) => {
+  await SecureStore.setItemAsync(LAST_VERIFIED_KEY, value);
+};
+
+export const getLastOnlineVerifiedAt = async () =>
+  SecureStore.getItemAsync(LAST_VERIFIED_KEY);
+
+export const clearLastOnlineVerifiedAt = async () =>
+  SecureStore.deleteItemAsync(LAST_VERIFIED_KEY);

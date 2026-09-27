@@ -10,6 +10,7 @@ export type FeedingAuthUser = {
 export type AuthUser = FeedingAuthUser;
 
 export type SubmitFeedingInput = {
+  clientOperationId: string;
   date: unknown;
   foodServed: unknown;
   records: unknown;
@@ -17,6 +18,7 @@ export type SubmitFeedingInput = {
 
 export type FeedingResult = {
   isUpdate: boolean;
+  replayed: boolean;
   feeding: any;
 };
 

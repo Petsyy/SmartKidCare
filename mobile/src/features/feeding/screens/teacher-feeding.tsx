@@ -57,6 +57,7 @@ export default function RecordFeeding() {
     handleSubmit,
     submitBeforeLeaving,
     foodMenuOptions,
+    isOffline,
   } = useTeacherFeeding();
   const completedPercentage =
     stats.total > 0 ? Math.round((stats.fed / stats.total) * 100) : 0;
@@ -65,9 +66,9 @@ export default function RecordFeeding() {
     hasUnsavedChanges,
     isSaving: isSubmitting,
     onSave: submitBeforeLeaving,
-    saveLabel: "Submit Record",
+    saveLabel: "Save Draft",
     message:
-      "You have unsaved feeding progress. Submit it to the focal person before leaving?",
+      "You have unsaved feeding progress. Save it securely as a draft before leaving?",
   });
 
   const renderChildCard = useCallback(
@@ -482,6 +483,16 @@ export default function RecordFeeding() {
       </Modal>
 
       <View className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white/95 px-6 py-4">
+        <View className="gap-2">
+        <Pressable
+          onPress={() => void submitBeforeLeaving()}
+          disabled={isSubmitting || isReadOnly}
+          accessibilityRole="button"
+          accessibilityLabel="Save feeding draft and leave"
+          className="min-h-12 items-center justify-center rounded-xl border border-teal-600 bg-white px-4"
+        >
+          <Text className="font-semibold text-teal-700">Save Draft &amp; Leave</Text>
+        </Pressable>
         <Pressable
           onPress={() => {
             Alert.alert(
@@ -489,7 +500,7 @@ export default function RecordFeeding() {
               "Are you sure you want to submit the feeding record?",
               [
                 { text: "Cancel", style: "cancel" },
-                { text: "Submit", onPress: handleSubmit },
+                { text: isOffline ? "Submit Offline" : "Submit", onPress: handleSubmit },
               ]
             );
           }}
@@ -537,10 +548,13 @@ export default function RecordFeeding() {
                 ? "Feeding Record Submitted"
                 : isSubmitting
                   ? "Submitting..."
-                  : "Submit Feeding Record"}
+                  : isOffline
+                    ? "Submit Offline"
+                    : "Submit Feeding Record"}
             </Text>
           </View>
         </Pressable>
+        </View>
       </View>
     </ScreenShell>
   );

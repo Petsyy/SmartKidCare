@@ -231,15 +231,18 @@ export interface OnChainData {
 
 export interface SubmitResponse {
   message: string;
+  replayed?: boolean;
   onChain?: OnChainData;
 }
 
 export interface SubmitAttendanceData {
+  clientOperationId?: string;
   date: string;
   records: AttendanceRecord[];
 }
 
 export interface SubmitFeedingData {
+  clientOperationId?: string;
   date: string;
   foodServed: string;
   records: FeedingRecord[];

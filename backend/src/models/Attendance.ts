@@ -30,12 +30,27 @@ const AttendanceSchema = new mongoose.Schema(
       default: null,
       index: true,
     },
+    clientOperationId: {
+      type: String,
+      trim: true,
+    },
+    payloadHash: {
+      type: String,
+      trim: true,
+    },
     records: [AttendanceRecordSchema],
   },
   { timestamps: true }
 );
 
 AttendanceSchema.index({ date: 1, teacher: 1 }, { unique: true });
+AttendanceSchema.index(
+  { clientOperationId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { clientOperationId: { $type: "string" } },
+  },
+);
 AttendanceSchema.index({ daycareCenter: 1, date: -1, teacher: 1 });
 
 export default mongoose.model("Attendance", AttendanceSchema);

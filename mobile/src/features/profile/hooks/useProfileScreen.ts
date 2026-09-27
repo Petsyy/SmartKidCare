@@ -6,6 +6,8 @@ import { useAuth } from "@/src/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { useChangePassword } from "./useChangePassword";
+import { useOffline } from "@/src/offline/offline-context";
+import { clearOfflineDataForUser } from "@/src/offline/offline-database";
 
 export type ProfileRole = "parent" | "teacher";
 
@@ -33,8 +35,9 @@ type Params = {
 export function useProfileScreen({ fetchProfile }: Params) {
   const router = useRouter();
   const pathname = usePathname();
-  const { logout } = useAuthContext();
+  const { logout, user } = useAuthContext();
   const { isAuthenticated } = useAuth();
+  const { localWorkCount } = useOffline();
   
   const profileRole: ProfileRole = pathname.includes("(teacher)") ? "teacher" : "parent";
 
@@ -60,13 +63,35 @@ export function useProfileScreen({ fetchProfile }: Params) {
   );
 
   const handleLogout = () => {
-    Alert.alert("Confirm Logout", "Are you sure you want to logout?", [
+    const performLogout = async () => {
+      if (user?.id) await clearOfflineDataForUser(user.id);
+      await logout();
+      router.push("/(auth)/login");
+    };
+    const message = localWorkCount > 0
+      ? `You have ${localWorkCount} unsynchronized draft or submission${localWorkCount === 1 ? "" : "s"}. Logging out will permanently delete this local work.`
+      : "Are you sure you want to logout?";
+    Alert.alert("Confirm Logout", message, [
       { text: "Cancel", onPress: () => {}, style: "cancel" },
       {
-        text: "Logout",
+        text: localWorkCount > 0 ? "Delete Work & Logout" : "Logout",
         onPress: async () => {
-          logout();
-          router.push("/(auth)/login");
+          if (localWorkCount > 0) {
+            Alert.alert(
+              "Permanently Delete Local Work?",
+              "This cannot be undone. Unsynchronized records will not reach the server.",
+              [
+                { text: "Keep My Work", style: "cancel" },
+                {
+                  text: "Delete & Logout",
+                  style: "destructive",
+                  onPress: () => void performLogout(),
+                },
+              ],
+            );
+            return;
+          }
+          await performLogout();
         },
         style: "destructive",
       },

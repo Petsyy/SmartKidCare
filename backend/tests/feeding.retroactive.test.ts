@@ -13,6 +13,7 @@ const createService = (findByTeacherAndDay: () => Promise<any>) => {
       findAssignedChildIds: async () => ["child-1"],
     } as any,
     feedingRepository: {
+      findByOperationId: async () => null,
       findByTeacherAndDay,
       create: async (data: any) => {
         createdData = data;
@@ -55,6 +56,7 @@ test("teacher can submit feeding for a past date", async () => {
   const result = await harness.service.submit(
     { id: "teacher-1", role: "teacher", daycareCenterId: "center-1" },
     {
+      clientOperationId: "11111111-1111-4111-8111-111111111111",
       date,
       foodServed: "Rice with Chicken Adobo",
       records: [{ child: "child-1", status: "completed", notes: "" }],
@@ -69,31 +71,29 @@ test("teacher can submit feeding for a past date", async () => {
   assert.equal(harness.getNotificationCount(), 1);
 });
 
-test("teacher can resubmit an existing past feeding session", async () => {
-  let saved = false;
+test("teacher cannot replace an existing past feeding session", async () => {
   const existing = {
+    teacher: "teacher-1",
     foodServed: "Old menu",
     records: [],
-    save: async () => {
-      saved = true;
-    },
   };
   const harness = createService(async () => existing);
   const date = getRecentManilaDate();
 
-  const result = await harness.service.submit(
-    { id: "teacher-1", role: "teacher", daycareCenterId: "center-1" },
-    {
-      date,
-      foodServed: "Pork Sinigang",
-      records: [{ child: "child-1", status: "missed", notes: "Late meal" }],
-    },
+  await assert.rejects(
+    () =>
+      harness.service.submit(
+        { id: "teacher-1", role: "teacher", daycareCenterId: "center-1" },
+        {
+          clientOperationId: "22222222-2222-4222-8222-222222222222",
+          date,
+          foodServed: "Pork Sinigang",
+          records: [
+            { child: "child-1", status: "missed", notes: "Late meal" },
+          ],
+        },
+      ),
+    (error: any) =>
+      error?.statusCode === 409 && error?.code === "RECORD_ALREADY_EXISTS",
   );
-
-  assert.equal(result.isUpdate, true);
-  assert.equal(existing.foodServed, "Pork Sinigang");
-  assert.deepEqual(existing.records, [
-    { child: "child-1", status: "missed", notes: "Late meal" },
-  ]);
-  assert.equal(saved, true);
 });

@@ -13,6 +13,7 @@ const attendanceRecordItemSchema = z.object({
 });
 
 const submitAttendanceSchema = z.object({
+  clientOperationId: z.string().uuid("Invalid operation ID."),
   date: nonEmptyString,
   records: z
     .array(attendanceRecordItemSchema)

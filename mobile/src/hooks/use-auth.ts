@@ -1,7 +1,8 @@
 import { useAuthContext } from "@/src/context/auth-context";
 
 export const useAuth = () => {
-  const { user, token, role, loading, login, logout } = useAuthContext();
+  const context = useAuthContext();
+  const { user, token, role, loading, login, logout } = context;
 
   return {
     user,
@@ -11,5 +12,9 @@ export const useAuth = () => {
     isAuthenticated: !!user && !!token,
     login,
     logout,
+    authState: context.authState,
+    lastOnlineVerifiedAt: context.lastOnlineVerifiedAt,
+    offlineExpiresAt: context.offlineExpiresAt,
+    unlockOffline: context.unlockOffline,
   };
 };

@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/src/hooks/use-auth";
 import { getChildren } from "@/src/api/teacher.api";
 import {
-  submitFeeding,
   getAttendanceForDate,
   getFeedingForDate,
   type FeedingRecord,
@@ -18,6 +17,14 @@ import {
 } from "@/src/utils/manila-date";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { useTeacherUi } from "@/src/context/teacher-ui-context";
+import { useOffline } from "@/src/offline/offline-context";
+import {
+  finalizeDraft,
+  getDraft,
+  getOutboxOperation,
+  saveDraft,
+} from "@/src/offline/offline-store";
+import type { FeedingDraftPayload } from "@/src/offline/offline.types";
 
 const foodMenuOptions = [
   "Sinigang, Adobo",
@@ -55,8 +62,8 @@ const buildSnapshot = (
 export const useTeacherFeeding = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { isAuthenticated } = useAuth();
-  const queryClient = useQueryClient();
+  const { isAuthenticated, user } = useAuth();
+  const { isConnected, isInternetReachable, synchronize, refreshPendingCount } = useOffline();
 
   const [children, setChildren] = useState<Child[]>([]);
   const [feedingStatus, setFeedingStatus] = useState<Record<string, boolean>>(
@@ -201,20 +208,6 @@ export const useTeacherFeeding = () => {
     },
   });
 
-  const submitFeedingMutation = useMutation({
-    mutationFn: async (payload: {
-      date: string;
-      foodServed: string;
-      records: FeedingRecord[];
-    }) => submitFeeding(payload),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["teacherFeedingSetup"] });
-      void queryClient.invalidateQueries({ queryKey: ["teacherDashboard"] });
-      void queryClient.invalidateQueries({ queryKey: ["teacherChildrenOverview"] });
-      void queryClient.invalidateQueries({ queryKey: ["teacherChildDetails"] });
-    },
-  });
-
   useEffect(() => {
     if (!data) return;
 
@@ -223,9 +216,35 @@ export const useTeacherFeeding = () => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setChildren(data.childrenToShow);
     setIsReadOnly(data.isReadOnly);
-    setFoodServed(data.foodServed);
-    setFeedingStatus(data.feedingStatus);
-    setFeedingNotes(data.feedingNotes);
+    void (async () => {
+      const draft = user?.id
+        ? await getDraft(user.id, "feeding", attendanceDateKey)
+        : null;
+      if (!draft) {
+        setFoodServed(data.foodServed);
+        setFeedingStatus(data.feedingStatus);
+        setFeedingNotes(data.feedingNotes);
+        return;
+      }
+      const payload = draft.payload as FeedingDraftPayload;
+      setFoodServed(payload.foodServed ?? "");
+      setFeedingStatus(
+        Object.fromEntries(
+          data.childrenToShow.map((child) => [
+            child._id,
+            payload.records[child._id]?.status === "missed",
+          ]),
+        ),
+      );
+      setFeedingNotes(
+        Object.fromEntries(
+          data.childrenToShow.map((child) => [
+            child._id,
+            payload.records[child._id]?.notes ?? "",
+          ]),
+        ),
+      );
+    })();
     setSavedSnapshot(
       buildSnapshot(
         childIds,
@@ -234,7 +253,7 @@ export const useTeacherFeeding = () => {
         data.feedingNotes,
       ),
     );
-  }, [data]);
+  }, [attendanceDateKey, data, user?.id]);
 
   const filteredChildren = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -273,6 +292,40 @@ export const useTeacherFeeding = () => {
     savedSnapshot,
   ]);
 
+  useEffect(() => {
+    if (!user?.id || isReadOnly || children.length === 0) return;
+    const timeout = setTimeout(() => {
+      const payload: FeedingDraftPayload = {
+        dateKey: attendanceDateKey,
+        foodServed,
+        records: Object.fromEntries(
+          Object.entries(feedingStatus).map(([childId, isMissed]) => [
+            childId,
+            {
+              status: isMissed ? "missed" : "completed",
+              notes: feedingNotes[childId] ?? "",
+            },
+          ]),
+        ),
+      };
+      void saveDraft({
+        userId: user.id,
+        recordType: "feeding",
+        dateKey: attendanceDateKey,
+        payload,
+      });
+    }, 600);
+    return () => clearTimeout(timeout);
+  }, [
+    attendanceDateKey,
+    children.length,
+    feedingNotes,
+    feedingStatus,
+    foodServed,
+    isReadOnly,
+    user,
+  ]);
+
   const toggleChildFeeding = useCallback((childId: string) => {
     setFeedingStatus((prev) => ({ ...prev, [childId]: !prev[childId] }));
   }, []);
@@ -300,7 +353,7 @@ export const useTeacherFeeding = () => {
   const submitFeedingRecord = useCallback(async () => {
     if (isSubmitting) return;
     if (isReadOnly) return;
-    if (!isAuthenticated) {
+    if (!user?.id) {
       throw new Error("You must be logged in to submit feeding records.");
     }
     if (!foodServed.trim()) {
@@ -324,14 +377,44 @@ export const useTeacherFeeding = () => {
         }),
       );
 
-      await submitFeedingMutation.mutateAsync({
-        date: attendanceDateKey,
+      const draftPayload: FeedingDraftPayload = {
+        dateKey: attendanceDateKey,
         foodServed: foodServed.trim(),
-        records,
+        records: Object.fromEntries(
+          records.map((record) => [
+            record.child,
+            { status: record.status, notes: record.notes },
+          ]),
+        ),
+      };
+      const draft = await saveDraft({
+        userId: user.id,
+        recordType: "feeding",
+        dateKey: attendanceDateKey,
+        payload: draftPayload,
       });
-
+      const operation = await finalizeDraft({
+        draft,
+        operationType: "feeding.create",
+        completePayload: {
+          date: attendanceDateKey,
+          foodServed: foodServed.trim(),
+          records,
+        },
+      });
+      await refreshPendingCount();
       setSavedSnapshot(snapshot);
       setIsReadOnly(true);
+      Alert.alert(
+        "Queued for synchronization",
+        "Feeding is securely queued and will synchronize when SmartKidCare is open and connected.",
+      );
+      if (isConnected && isInternetReachable && isAuthenticated) {
+        await synchronize();
+        if ((await getOutboxOperation(operation.clientOperationId)) === "synced") {
+          setShowSuccessFeedback(true);
+        }
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -344,7 +427,11 @@ export const useTeacherFeeding = () => {
     isAuthenticated,
     isReadOnly,
     isSubmitting,
-    submitFeedingMutation,
+    user?.id,
+    refreshPendingCount,
+    isConnected,
+    isInternetReachable,
+    synchronize,
   ]);
 
   const handleSubmit = useCallback(async () => {
@@ -355,7 +442,6 @@ export const useTeacherFeeding = () => {
 
     try {
       await submitFeedingRecord();
-      setShowSuccessFeedback(true);
     } catch (error) {
       const message =
         error instanceof Error
@@ -367,18 +453,29 @@ export const useTeacherFeeding = () => {
   }, [isReadOnly, router, submitFeedingRecord]);
 
   const submitBeforeLeaving = useCallback(async () => {
-    try {
-      await submitFeedingRecord();
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Failed to submit feeding records. Please try again.";
-      Alert.alert("Unable to Submit", message);
-      console.error("Feeding save-before-leave error:", error);
-      throw error;
-    }
-  }, [submitFeedingRecord]);
+    if (!user?.id || isReadOnly) return;
+    const payload: FeedingDraftPayload = {
+      dateKey: attendanceDateKey,
+      foodServed,
+      records: Object.fromEntries(
+        Object.entries(feedingStatus).map(([childId, isMissed]) => [
+          childId,
+          {
+            status: isMissed ? "missed" : "completed",
+            notes: feedingNotes[childId] ?? "",
+          },
+        ]),
+      ),
+    };
+    await saveDraft({
+      userId: user.id,
+      recordType: "feeding",
+      dateKey: attendanceDateKey,
+      payload,
+    });
+    await refreshPendingCount();
+    Alert.alert("Draft saved on this device");
+  }, [attendanceDateKey, feedingNotes, feedingStatus, foodServed, isReadOnly, refreshPendingCount, user]);
 
   return {
     router,
@@ -412,5 +509,6 @@ export const useTeacherFeeding = () => {
     handleSubmit,
     submitBeforeLeaving,
     foodMenuOptions,
+    isOffline: !isConnected || !isInternetReachable,
   };
 };

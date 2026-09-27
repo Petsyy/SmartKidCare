@@ -2,7 +2,12 @@ import type { Request } from "express";
 import {
   ValidationError,
   ForbiddenError,
+  ConflictError,
 } from "../../../shared/errors/app-error";
+import {
+  hashAttendancePayload,
+  isMongoDuplicateKeyError,
+} from "../../../shared/utils/record-idempotency";
 import {
   childRepository,
   attendanceRepository,
@@ -35,7 +40,7 @@ const submitAttendanceOperation = async (
   input: SubmitAttendanceInput,
   dependencies: AttendanceServiceDependencies,
 ): Promise<AttendanceResult> => {
-  const { date, records } = input;
+  const { clientOperationId, date, records } = input;
   const daycareCenterId = assertTeacherCenter(user as any);
 
   const normalizedRecords = (records as any[]).map((record: any) => ({
@@ -89,6 +94,31 @@ const submitAttendanceOperation = async (
   }
 
   const attendanceDate = dayRange.start;
+  const canonicalDate = attendanceDate.toISOString();
+  const payloadHash = hashAttendancePayload({
+    date: canonicalDate,
+    records: normalizedRecords,
+  });
+
+  const operationRecord =
+    await dependencies.attendanceRepository.findByOperationId(
+      clientOperationId,
+    );
+  if (operationRecord) {
+    if (String(operationRecord.teacher) !== String(user.id)) {
+      throw new ConflictError(
+        "Submission operation is already in use.",
+        "RECORD_ALREADY_EXISTS",
+      );
+    }
+    if (operationRecord.payloadHash !== payloadHash) {
+      throw new ConflictError(
+        "Submission operation does not match the original payload.",
+        "OPERATION_PAYLOAD_MISMATCH",
+      );
+    }
+    return { isUpdate: false, replayed: true, attendance: operationRecord };
+  }
 
   const existing = await dependencies.attendanceRepository.findByTeacherAndDay(
     user.id,
@@ -97,31 +127,44 @@ const submitAttendanceOperation = async (
   );
 
   if (existing) {
-    existing.records = normalizedRecords as any;
-    existing.daycareCenter = daycareCenterId as any;
-    await existing.save();
-
-    void dependencies
-      .notifySubmitted({
-        date: existing.date || attendanceDate,
-        records: normalizedRecords as Array<{
-          child: unknown;
-          status: "present" | "absent";
-        }>,
-      })
-      .catch((error) =>
-        console.error("Attendance notification dispatch failed:", error),
-      );
-
-    return { isUpdate: true, attendance: existing };
+    throw new ConflictError(
+      "Attendance has already been submitted for this date.",
+      "RECORD_ALREADY_EXISTS",
+    );
   }
 
-  const attendance = await dependencies.attendanceRepository.create({
-    date: attendanceDate,
-    teacher: user.id,
-    daycareCenter: daycareCenterId,
-    records: normalizedRecords,
-  });
+  let attendance: any;
+  try {
+    attendance = await dependencies.attendanceRepository.create({
+      date: attendanceDate,
+      teacher: user.id,
+      daycareCenter: daycareCenterId,
+      clientOperationId,
+      payloadHash,
+      records: normalizedRecords,
+    });
+  } catch (error) {
+    if (!isMongoDuplicateKeyError(error)) throw error;
+    const concurrentOperation =
+      await dependencies.attendanceRepository.findByOperationId(
+        clientOperationId,
+      );
+    if (
+      concurrentOperation &&
+      String(concurrentOperation.teacher) === String(user.id) &&
+      concurrentOperation.payloadHash === payloadHash
+    ) {
+      return {
+        isUpdate: false,
+        replayed: true,
+        attendance: concurrentOperation,
+      };
+    }
+    throw new ConflictError(
+      "Attendance has already been submitted for this date.",
+      "RECORD_ALREADY_EXISTS",
+    );
+  }
 
   void dependencies
     .notifySubmitted({
@@ -135,7 +178,7 @@ const submitAttendanceOperation = async (
       console.error("Attendance notification dispatch failed:", error),
     );
 
-  return { isUpdate: false, attendance };
+  return { isUpdate: false, replayed: false, attendance };
 };
 
 const getAttendanceHistoryOperation = async (

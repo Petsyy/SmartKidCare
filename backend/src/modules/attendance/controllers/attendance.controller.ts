@@ -14,15 +14,16 @@ export const submitAttendance = asyncHandler(async (req: Request, res: Response)
     req.user as { id: string; role: string },
     req.body ?? {},
   );
-  const statusCode = result.isUpdate ? 200 : 201;
-  const message = result.isUpdate
+  const statusCode = result.isUpdate || result.replayed ? 200 : 201;
+  const message = result.replayed
+    ? "Attendance submission confirmed"
+    : result.isUpdate
     ? "Attendance updated successfully"
     : "Attendance submitted successfully";
-  res.status(statusCode).json({ message, attendance: result.attendance });
+  res.status(statusCode).json({ message, attendance: result.attendance, replayed: result.replayed });
 });
 
 export const getAttendanceHistory = asyncHandler(async (req: Request, res: Response) => {
   const result = await getAttendanceHistorySvc(req.user, req.query);
   res.json(result);
 });
-

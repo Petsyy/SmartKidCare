@@ -3,21 +3,29 @@ import { Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/src/hooks/use-auth";
 import { getChildren } from "@/src/api/teacher.api";
-import { submitAttendance, getTodayAttendance } from "@/src/api/records.api";
+import { getTodayAttendance } from "@/src/api/records.api";
 import type { Child } from "@/src/api/api.types";
 import {
   formatManilaDateLabel,
   getManilaDateKey,
 } from "@/src/utils/manila-date";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { useTeacherUi } from "@/src/context/teacher-ui-context";
+import { useOffline } from "@/src/offline/offline-context";
+import {
+  finalizeDraft,
+  getDraft,
+  getOutboxOperation,
+  saveDraft,
+} from "@/src/offline/offline-store";
+import type { AttendanceDraftPayload } from "@/src/offline/offline.types";
 
 export const useTeacherAttendance = () => {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
-  const queryClient = useQueryClient();
-  const [attendance, setAttendance] = useState<Record<string, boolean>>({});
+  const { isAuthenticated, user } = useAuth();
+  const { isConnected, isInternetReachable, synchronize, refreshPendingCount } = useOffline();
+  const [attendance, setAttendance] = useState<Record<string, boolean | undefined>>({});
   const [isReadOnly, setIsReadOnly] = useState(false);
   const [showSuccessFeedback, setShowSuccessFeedback] = useState(false);
   const {
@@ -41,23 +49,6 @@ export const useTeacherAttendance = () => {
       return { childrenData, todayRecord };
     },
   });
-  const submitAttendanceMutation = useMutation({
-    mutationFn: async (payload: {
-      date: string;
-      records: { child: string; status: "present" | "absent" }[];
-    }) => {
-      return submitAttendance(payload);
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: ["teacherAttendanceSetup"],
-      });
-      void queryClient.invalidateQueries({ queryKey: ["teacherFeedingSetup"] });
-      void queryClient.invalidateQueries({ queryKey: ["teacherDashboard"] });
-      void queryClient.invalidateQueries({ queryKey: ["teacherChildrenOverview"] });
-      void queryClient.invalidateQueries({ queryKey: ["teacherChildDetails"] });
-    },
-  });
   const children = useMemo<Child[]>(
     () => data?.childrenData || [],
     [data?.childrenData],
@@ -77,19 +68,32 @@ export const useTeacherAttendance = () => {
       setAttendance(existingAttendance);
     } else {
       setIsReadOnly(false);
-      const initialAttendance: Record<string, boolean> = {};
+      const initialAttendance: Record<string, boolean | undefined> = {};
       data.childrenData.forEach((child) => {
-        initialAttendance[child._id] = false;
+        initialAttendance[child._id] = undefined;
       });
-      setAttendance(initialAttendance);
+      void (async () => {
+        const draft = user?.id
+          ? await getDraft(user.id, "attendance", selectedDateKey)
+          : null;
+        if (draft) {
+          const payload = draft.payload as AttendanceDraftPayload;
+          data.childrenData.forEach((child) => {
+            const status = payload.records[child._id]?.status;
+            initialAttendance[child._id] =
+              status === "present" ? true : status === "absent" ? false : undefined;
+          });
+        }
+        setAttendance(initialAttendance);
+      })();
     }
-  }, [data]);
+  }, [data, selectedDateKey, user?.id]);
 
   useEffect(() => {
     // Keep draft keys aligned when the assigned-child query changes.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setAttendance((currentAttendance) => {
-      const nextAttendance: Record<string, boolean> = {};
+      const nextAttendance: Record<string, boolean | undefined> = {};
 
       if (!isReadOnly) {
         children.forEach((child) => {
@@ -110,6 +114,35 @@ export const useTeacherAttendance = () => {
     });
   }, [children, isReadOnly]);
 
+  useEffect(() => {
+    if (!user?.id || isReadOnly || children.length === 0) return;
+    const timeout = setTimeout(() => {
+      const payload: AttendanceDraftPayload = {
+        dateKey: selectedDateKey,
+        records: Object.fromEntries(
+          Object.entries(attendance).map(([childId, isPresent]) => [
+            childId,
+            {
+              status:
+                isPresent === undefined
+                  ? undefined
+                  : isPresent
+                    ? "present"
+                    : "absent",
+            },
+          ]),
+        ),
+      };
+      void saveDraft({
+        userId: user.id,
+        recordType: "attendance",
+        dateKey: selectedDateKey,
+        payload,
+      });
+    }, 600);
+    return () => clearTimeout(timeout);
+  }, [attendance, children.length, isReadOnly, selectedDateKey, user]);
+
   const filteredChildren = useMemo(() => {
     return children.filter((child) => {
       const fullName =
@@ -127,7 +160,7 @@ export const useTeacherAttendance = () => {
   const toggleAttendance = (childId: string) => {
     setAttendance((prev) => ({
       ...prev,
-      [childId]: !prev[childId],
+      [childId]: prev[childId] === true ? false : true,
     }));
   };
 
@@ -148,9 +181,7 @@ export const useTeacherAttendance = () => {
   };
 
   const handleSubmit = async () => {
-    if (submitAttendanceMutation.isPending) return;
-
-    if (!isAuthenticated) {
+    if (!user?.id) {
       Alert.alert(
         "Unable to Submit",
         "Please sign in again before submitting attendance.",
@@ -173,14 +204,48 @@ export const useTeacherAttendance = () => {
           status: isPresent ? ("present" as const) : ("absent" as const),
         }),
       );
-
-      await submitAttendanceMutation.mutateAsync({
-        date: selectedDateKey,
-        records,
+      if (records.length === 0 || Object.values(attendance).some((value) => value === undefined)) {
+        throw new Error("Mark every child present or absent before submitting.");
+      }
+      const draftPayload: AttendanceDraftPayload = {
+        dateKey: selectedDateKey,
+        records: Object.fromEntries(
+          Object.entries(attendance).map(([childId, isPresent]) => [
+            childId,
+            {
+              status:
+                isPresent === undefined
+                  ? undefined
+                  : isPresent
+                    ? "present"
+                    : "absent",
+            },
+          ]),
+        ),
+      };
+      const draft = await saveDraft({
+        userId: user.id,
+        recordType: "attendance",
+        dateKey: selectedDateKey,
+        payload: draftPayload,
       });
-
+      const operation = await finalizeDraft({
+        draft,
+        operationType: "attendance.create",
+        completePayload: { date: selectedDateKey, records },
+      });
+      await refreshPendingCount();
       setIsReadOnly(true);
-      setShowSuccessFeedback(true);
+      Alert.alert(
+        "Queued for synchronization",
+        "Attendance is securely queued and will synchronize when SmartKidCare is open and connected.",
+      );
+      if (isConnected && isInternetReachable && isAuthenticated) {
+        await synchronize();
+        if ((await getOutboxOperation(operation.clientOperationId)) === "synced") {
+          setShowSuccessFeedback(true);
+        }
+      }
     } catch (error: any) {
       console.error("Failed to submit attendance:", error);
       Alert.alert(
@@ -188,6 +253,35 @@ export const useTeacherAttendance = () => {
         error.message || "Attendance could not be submitted. Please try again.",
       );
     }
+  };
+
+  const saveDraftAndLeave = async () => {
+    if (!user?.id || isReadOnly) return;
+    const payload: AttendanceDraftPayload = {
+      dateKey: selectedDateKey,
+      records: Object.fromEntries(
+        Object.entries(attendance).map(([childId, isPresent]) => [
+          childId,
+          {
+            status:
+              isPresent === undefined
+                ? undefined
+                : isPresent
+                  ? "present"
+                  : "absent",
+          },
+        ]),
+      ),
+    };
+    await saveDraft({
+      userId: user.id,
+      recordType: "attendance",
+      dateKey: selectedDateKey,
+      payload,
+    });
+    await refreshPendingCount();
+    Alert.alert("Draft saved on this device");
+    router.back();
   };
 
   return {
@@ -206,7 +300,9 @@ export const useTeacherAttendance = () => {
     markAllPresent,
     markAllAbsent,
     handleSubmit,
-    isSubmitting: submitAttendanceMutation.isPending,
+    saveDraftAndLeave,
+    isOffline: !isConnected || !isInternetReachable,
+    isSubmitting: false,
     showSuccessFeedback,
     dismissSuccessFeedback: () => setShowSuccessFeedback(false),
     router,
