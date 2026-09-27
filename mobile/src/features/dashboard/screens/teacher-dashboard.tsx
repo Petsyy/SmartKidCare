@@ -26,6 +26,7 @@ import {
   ScreenShell,
   TEACHER_HEADER_GRADIENT,
   RefreshableScrollView,
+  OfflineStatusBanner,
 } from "@/src/components/ui";
 import { useSystemSettings } from "@/src/context/system-settings-context";
 import { getDaycareCenterDisplay } from "@/src/utils/daycare-center-format";
@@ -146,63 +147,66 @@ export default function TeacherDashboardScreen() {
   ]);
 
   const dashboardHero = (
-    <LinearGradient
-      colors={TEACHER_HEADER_GRADIENT}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={{
-        paddingTop: insets.top + 14,
-        paddingHorizontal: 20,
-        paddingBottom: 20,
-      }}
-    >
-      <View className="flex-row items-start justify-between">
-        <View className="flex-1 pr-4">
-          <Text
-            className="text-3xl font-extrabold text-white"
-            accessibilityRole="header"
-            numberOfLines={2}
+    <>
+      <LinearGradient
+        colors={TEACHER_HEADER_GRADIENT}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          paddingTop: insets.top + 14,
+          paddingHorizontal: 20,
+          paddingBottom: 20,
+        }}
+      >
+        <View className="flex-row items-start justify-between">
+          <View className="flex-1 pr-4">
+            <Text
+              className="text-3xl font-extrabold text-white"
+              accessibilityRole="header"
+              numberOfLines={2}
+            >
+              Good day, {teacherName}
+            </Text>
+            <Text className="mt-1 text-base text-emerald-50" numberOfLines={2}>
+              Keep today&apos;s class moving forward.
+            </Text>
+          </View>
+
+          <Pressable
+            onPress={() => router.push("/(teacher)/notifications")}
+            accessibilityRole="button"
+            accessibilityLabel="Open notifications"
+            accessibilityHint="Shows teacher alerts and reminders"
+            className="relative h-12 w-12 items-center justify-center rounded-2xl bg-white/20 active:bg-white/30"
           >
-            Good day, {teacherName}
-          </Text>
-          <Text className="mt-1 text-base text-emerald-50" numberOfLines={2}>
-            Keep today&apos;s class moving forward.
-          </Text>
+            <Bell size={26} color="#FFFFFF" />
+            {actionableNotifications.length > 0 ? (
+              <View
+                className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full border-2 border-teal-700 bg-orange-300"
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+              />
+            ) : null}
+          </Pressable>
         </View>
 
-        <Pressable
-          onPress={() => router.push("/(teacher)/notifications")}
-          accessibilityRole="button"
-          accessibilityLabel="Open notifications"
-          accessibilityHint="Shows teacher alerts and reminders"
-          className="relative h-12 w-12 items-center justify-center rounded-2xl bg-white/20 active:bg-white/30"
-        >
-          <Bell size={26} color="#FFFFFF" />
-          {actionableNotifications.length > 0 ? (
-            <View
-              className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full border-2 border-teal-700 bg-orange-300"
-              accessibilityElementsHidden
-              importantForAccessibility="no-hide-descendants"
-            />
-          ) : null}
-        </Pressable>
-      </View>
-
-      <View className="mt-3.5 flex-row items-center rounded-xl bg-white/15 px-3.5 py-2.5">
-        <CalendarDays size={18} color="#D1FAE5" />
-        <Text className="ml-2 text-sm font-semibold text-white">
-          {dateLabel}
-        </Text>
-        <View className="mx-2.5 h-4 w-px bg-white/30" />
-        <School size={18} color="#D1FAE5" />
-        <Text
-          className="ml-2 flex-1 text-sm font-medium text-emerald-50"
-          numberOfLines={1}
-        >
-          {centerName}
-        </Text>
-      </View>
-    </LinearGradient>
+        <View className="mt-3.5 flex-row items-center rounded-xl bg-white/15 px-3.5 py-2.5">
+          <CalendarDays size={18} color="#D1FAE5" />
+          <Text className="ml-2 text-sm font-semibold text-white">
+            {dateLabel}
+          </Text>
+          <View className="mx-2.5 h-4 w-px bg-white/30" />
+          <School size={18} color="#D1FAE5" />
+          <Text
+            className="ml-2 flex-1 text-sm font-medium text-emerald-50"
+            numberOfLines={1}
+          >
+            {centerName}
+          </Text>
+        </View>
+      </LinearGradient>
+      <OfflineStatusBanner />
+    </>
   );
 
   if (loading) {
@@ -391,7 +395,7 @@ export default function TeacherDashboardScreen() {
           <View className="mt-3 flex-row gap-3">
             <TeacherOverviewStatCard
               icon={HeartPulse}
-              value={(underweightCount + severelyUnderweightCount) || "--"}
+              value={underweightCount + severelyUnderweightCount || "--"}
               label="Underweight"
               caption="Latest health metrics"
               tone="rose"
@@ -403,7 +407,7 @@ export default function TeacherDashboardScreen() {
             />
             <TeacherOverviewStatCard
               icon={HeartPulse}
-              value={(overweightCount + obeseCount) || "--"}
+              value={overweightCount + obeseCount || "--"}
               label="Overweight / Obese"
               caption="Latest health metrics"
               tone="orange"

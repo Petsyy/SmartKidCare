@@ -4,11 +4,10 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft } from "lucide-react-native";
 import { BRAND_HEADER_GRADIENT } from "./screen-header.constants";
+import { OfflineStatusBanner } from "./offline-status-banner";
 
 export type ScreenHeaderBackgroundVariant =
-  | "solid"
-  | "brandGradient"
-  | "teacherGradient";
+  "solid" | "brandGradient" | "teacherGradient";
 
 interface ScreenHeaderProps {
   title: string;
@@ -59,24 +58,30 @@ export function ScreenHeader({
 
   if (backgroundVariant !== "solid") {
     return (
-      <LinearGradient
-        colors={BRAND_HEADER_GRADIENT}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ paddingTop: insets.top + 12 }}
-        className="px-5 pb-5"
-      >
-        {content}
-      </LinearGradient>
+      <>
+        <LinearGradient
+          colors={BRAND_HEADER_GRADIENT}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ paddingTop: insets.top + 12 }}
+          className="px-5 pb-5"
+        >
+          {content}
+        </LinearGradient>
+        <OfflineStatusBanner />
+      </>
     );
   }
 
   return (
-    <View
-      style={{ paddingTop: insets.top + 12 }}
-      className="bg-teal-600 px-5 pb-5"
-    >
-      {content}
-    </View>
+    <>
+      <View
+        style={{ paddingTop: insets.top + 12 }}
+        className="bg-teal-600 px-5 pb-5"
+      >
+        {content}
+      </View>
+      <OfflineStatusBanner />
+    </>
   );
 }

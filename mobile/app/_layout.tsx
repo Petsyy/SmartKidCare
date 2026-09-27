@@ -12,10 +12,7 @@ import {
 import { AuthProvider } from "@/src/context/auth-context";
 import { useAuth } from "@/src/hooks/use-auth";
 import { SystemSettingsProvider } from "@/src/context/system-settings-context";
-import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import {
   configureReanimatedLogger,
   ReanimatedLogLevel,
@@ -27,7 +24,7 @@ import { ErrorBoundary } from "@/src/components/ui/error-boundary";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { LinearGradient } from "expo-linear-gradient";
 import { cssInterop } from "nativewind";
-import { OfflineProvider, useOffline } from "@/src/offline/offline-context";
+import { OfflineProvider } from "@/src/offline/offline-context";
 
 // Expo SDK 57's LinearGradient is a third-party native component, so NativeWind
 // needs an explicit mapping before gradient layout classes can reach `style`.
@@ -47,30 +44,9 @@ configureReanimatedLogger({
 
 function LayoutContent() {
   const { loading, authState, unlockOffline } = useAuth();
-  const { isConnected, isInternetReachable, pendingCount, syncState } =
-    useOffline();
-  const insets = useSafeAreaInsets();
-  const isOffline = !isConnected || !isInternetReachable;
   return (
     <>
       <Stack screenOptions={{ headerShown: false }} />
-      {(isOffline || pendingCount > 0) && authState !== "signedOut" ? (
-        <View
-          pointerEvents="none"
-          style={{ paddingTop: insets.top }}
-          className="absolute left-0 right-0 top-0 z-40 bg-gray-900 px-4 pb-2"
-        >
-          <Text className="text-center text-sm font-semibold text-white">
-            {isOffline
-              ? pendingCount > 0
-                ? `Offline • ${pendingCount} queued for synchronization`
-                : "Offline • showing securely cached information"
-              : syncState === "syncing"
-                ? `Synchronizing ${pendingCount} submission${pendingCount === 1 ? "" : "s"}…`
-                : `${pendingCount} submission${pendingCount === 1 ? "" : "s"} waiting to synchronize`}
-          </Text>
-        </View>
-      ) : null}
       {loading ? (
         <View
           pointerEvents="auto"

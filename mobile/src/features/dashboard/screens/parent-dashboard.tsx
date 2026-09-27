@@ -1,24 +1,17 @@
 import React, { useMemo } from "react";
 import { useRouter } from "expo-router";
-import {
-  ActivityIndicator,
-  Pressable,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   AlertCircle,
   ArrowUpRight,
-  Award,
   Bell,
   CalendarDays,
   CheckCircle2,
   ChevronRight,
   ClipboardCheck,
   Clock3,
-  KeyRound,
   MessageCircle,
   RefreshCw,
   School,
@@ -32,6 +25,7 @@ import {
   ParentLoadingState,
   ScreenShell,
   RefreshableScrollView,
+  OfflineStatusBanner,
 } from "@/src/components/ui";
 import { useSystemSettings } from "@/src/context/system-settings-context";
 import { getDaycareCenterDisplay } from "@/src/utils/daycare-center-format";
@@ -192,65 +186,71 @@ export default function ParentDashboardScreen() {
             : "No concerns reported today";
 
   const dashboardHero = (
-    <LinearGradient
-      colors={BRAND_HEADER_GRADIENT}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={{
-        paddingTop: insets.top + 10,
-        paddingHorizontal: 20,
-        paddingBottom: 16,
-      }}
-    >
-      {/* Top Greeting Row */}
-      <View className="flex-row items-start justify-between">
-        <View className="flex-1 pr-4">
-          <Text
-            className="text-3xl font-extrabold text-white"
-            accessibilityRole="header"
-            numberOfLines={2}
+    <>
+      <LinearGradient
+        colors={BRAND_HEADER_GRADIENT}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          paddingTop: insets.top + 10,
+          paddingHorizontal: 20,
+          paddingBottom: 16,
+        }}
+      >
+        {/* Top Greeting Row */}
+        <View className="flex-row items-start justify-between">
+          <View className="flex-1 pr-4">
+            <Text
+              className="text-3xl font-extrabold text-white"
+              accessibilityRole="header"
+              numberOfLines={2}
+            >
+              {greeting}
+            </Text>
+            <Text
+              className="mt-0.5 text-base text-emerald-50"
+              numberOfLines={2}
+            >
+              Here&apos;s what&apos;s happening today.
+            </Text>
+          </View>
+
+          <Pressable
+            onPress={() => router.push("/(parent)/notifications")}
+            accessibilityRole="button"
+            accessibilityLabel="Open notifications"
+            accessibilityHint="Shows parent alerts and daily updates"
+            className="relative h-12 w-12 items-center justify-center rounded-2xl bg-white/20 active:bg-white/30"
           >
-            {greeting}
-          </Text>
-          <Text className="mt-0.5 text-base text-emerald-50" numberOfLines={2}>
-            Here&apos;s what&apos;s happening today.
-          </Text>
+            <Bell size={26} color="#FFFFFF" />
+            {recentNotifications.length > 0 ? (
+              <View
+                className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full border-2 border-teal-700 bg-orange-300"
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+              />
+            ) : null}
+          </Pressable>
         </View>
 
-        <Pressable
-          onPress={() => router.push("/(parent)/notifications")}
-          accessibilityRole="button"
-          accessibilityLabel="Open notifications"
-          accessibilityHint="Shows parent alerts and daily updates"
-          className="relative h-12 w-12 items-center justify-center rounded-2xl bg-white/20 active:bg-white/30"
-        >
-          <Bell size={26} color="#FFFFFF" />
-          {recentNotifications.length > 0 ? (
-            <View
-              className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full border-2 border-teal-700 bg-orange-300"
-              accessibilityElementsHidden
-              importantForAccessibility="no-hide-descendants"
-            />
-          ) : null}
-        </Pressable>
-      </View>
-
-      {/* Date & Center Info Pill */}
-      <View className="mt-3 flex-row items-center rounded-xl bg-white/15 px-3.5 py-2.5">
-        <CalendarDays size={18} color="#D1FAE5" />
-        <Text className="ml-2 text-sm font-semibold text-white">
-          {dateLabel}
-        </Text>
-        <View className="mx-2.5 h-4 w-px bg-white/30" />
-        <School size={18} color="#D1FAE5" />
-        <Text
-          className="ml-2 flex-1 text-sm font-medium text-emerald-50"
-          numberOfLines={1}
-        >
-          {centerName}
-        </Text>
-      </View>
-    </LinearGradient>
+        {/* Date & Center Info Pill */}
+        <View className="mt-3 flex-row items-center rounded-xl bg-white/15 px-3.5 py-2.5">
+          <CalendarDays size={18} color="#D1FAE5" />
+          <Text className="ml-2 text-sm font-semibold text-white">
+            {dateLabel}
+          </Text>
+          <View className="mx-2.5 h-4 w-px bg-white/30" />
+          <School size={18} color="#D1FAE5" />
+          <Text
+            className="ml-2 flex-1 text-sm font-medium text-emerald-50"
+            numberOfLines={1}
+          >
+            {centerName}
+          </Text>
+        </View>
+      </LinearGradient>
+      <OfflineStatusBanner />
+    </>
   );
 
   if (loading) {
@@ -426,7 +426,6 @@ export default function ParentDashboardScreen() {
               </View>
               <ChevronRight size={20} color="#0F766E" />
             </Pressable>
-
           </View>
         </View>
 
@@ -532,7 +531,6 @@ export default function ParentDashboardScreen() {
               <ArrowUpRight size={21} color="#FFFFFF" />
             </View>
           </Pressable>
-
         </View>
 
         {/* Section 2: Recent Updates (Notifications Feed) */}
