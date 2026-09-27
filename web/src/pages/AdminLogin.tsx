@@ -17,8 +17,6 @@ export default function AdminLogin() {
     confirmPassword: false,
   });
   const {
-    mfaToken,
-    mfaEmail,
     passwordSetupToken,
     info,
     error,
@@ -90,15 +88,11 @@ export default function AdminLogin() {
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
                   {isPasswordSetup
                     ? "Create Your Password"
-                    : mfaToken
-                      ? "Verify Your Login"
-                      : "Sign In"}
+                    : "Sign In"}
                 </h2>
                 {!isPasswordSetup && (
                   <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    {mfaToken
-                      ? `Enter the OTP sent to ${mfaEmail || "your email"}`
-                      : "to continue to your admin dashboard."}
+                    to continue to your admin dashboard.
                   </p>
                 )}
               </div>
@@ -128,7 +122,7 @@ export default function AdminLogin() {
                 className="space-y-5"
                 noValidate
               >
-                {!mfaToken && !isPasswordSetup && (
+                {!isPasswordSetup && (
                   <>
                     <div>
                       <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
@@ -263,7 +257,7 @@ export default function AdminLogin() {
                   </>
                 )}
 
-                {(mfaToken || isPasswordSetup) && (
+                {isPasswordSetup && (
                   <div>
                     <div className="mb-2 flex items-center justify-between gap-3">
                       <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
@@ -322,14 +316,10 @@ export default function AdminLogin() {
                       <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
                       {isPasswordSetup
                         ? "Setting password..."
-                        : mfaToken
-                          ? "Verifying..."
-                          : "Signing in..."}
+                        : "Signing in..."}
                     </>
                   ) : isPasswordSetup ? (
                     "Set Password & Continue"
-                  ) : mfaToken ? (
-                    "Verify & Sign In"
                   ) : (
                     "Sign In"
                   )}

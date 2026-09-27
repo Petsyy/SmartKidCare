@@ -11,18 +11,9 @@ import {
 } from "recharts";
 import { Button } from "@/components/ui/Button";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
-import { SelectFilter } from "@/components/ui/SelectFilter";
 import { useCompetencyAnalytics } from "../hooks/useCompetencyAnalytics";
-
-
-const PERIOD_OPTIONS = [
-  { value: "all", label: "Latest period" },
-  { value: "quarterly", label: "Quarterly" },
-  { value: "final", label: "Final" },
-];
-
-const csvCell = (value: string | number) =>
-  `"${String(value).replace(/"/g, '""')}"`;
+import { downloadCsvFile, todayFileKey } from "../utils/csv-export";
+import { buildCompetencyCsvRows } from "../utils/report-csv-builders";
 
 export function CompetencyAnalytics() {
   const {
@@ -31,8 +22,6 @@ export function CompetencyAnalytics() {
     isFetching,
     errorMessage,
     refetch,
-    period,
-    setPeriod,
     schoolYear,
 
   } = useCompetencyAnalytics();
@@ -49,31 +38,10 @@ export function CompetencyAnalytics() {
 
   const downloadCsv = () => {
     if (!data) return;
-    const rows = [
-      ["Competency", "Category", "Achieved", "Developing", "Emerging", "Not Yet", "Total Evaluated", "Achieved Rate"],
-      ...data.competencies.map((item) => [
-        item.name,
-        item.category,
-        item.distribution.achieved,
-        item.distribution.developing,
-        item.distribution.emerging,
-        item.distribution.not_demonstrated,
-        item.totalEvaluated,
-        `${item.achievedRate}%`,
-      ]),
-    ];
-    const blob = new Blob(
-      [rows.map((row) => row.map(csvCell).join(",")).join("\n")],
-      { type: "text/csv;charset=utf-8;" },
+    downloadCsvFile(
+      `smartkidcare-competencies-${schoolYear}-${todayFileKey()}.csv`,
+      buildCompetencyCsvRows(data, new Date().toLocaleString("en-PH")),
     );
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `smartkidcare-competencies-${schoolYear}-${period}.csv`;
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
-    URL.revokeObjectURL(url);
   };
 
   return (
@@ -99,18 +67,6 @@ export function CompetencyAnalytics() {
             </p>
           </div>
           <div className="flex flex-wrap items-end gap-2">
-            <label className="space-y-1">
-              <span className="block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
-                Period
-              </span>
-              <SelectFilter
-                value={period}
-                onChange={(value) =>
-                  setPeriod(value as "all" | "quarterly" | "final")
-                }
-                options={PERIOD_OPTIONS}
-              />
-            </label>
             <Button
               onClick={() => void refetch()}
               disabled={isFetching}
@@ -140,7 +96,7 @@ export function CompetencyAnalytics() {
               No submitted competency evaluations found.
             </p>
             <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
-              Try another school year or period, or submit a teacher evaluation first.
+              Try another school year or submit a teacher evaluation first.
             </p>
           </div>
         ) : (

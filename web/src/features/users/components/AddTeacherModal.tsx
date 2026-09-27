@@ -9,6 +9,14 @@ import {
 } from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
+import {
+  sanitizeUserEmailInput,
+  sanitizeUserNameInput,
+  sanitizeUserPhoneInput,
+  USER_EMAIL_MAX_LENGTH,
+  USER_NAME_MAX_LENGTH,
+  USER_PHONE_MAX_LENGTH,
+} from "../validations/user-fields.validation";
 
 type Props = {
   onClose: () => void;
@@ -26,6 +34,15 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
     register,
     formState: { errors },
   } = form;
+  const preventInvalidNameInput = (event: React.FormEvent<HTMLInputElement>) => {
+    event.currentTarget.value = sanitizeUserNameInput(event.currentTarget.value);
+  };
+  const preventInvalidEmailInput = (event: React.FormEvent<HTMLInputElement>) => {
+    event.currentTarget.value = sanitizeUserEmailInput(event.currentTarget.value);
+  };
+  const preventInvalidPhoneInput = (event: React.FormEvent<HTMLInputElement>) => {
+    event.currentTarget.value = sanitizeUserPhoneInput(event.currentTarget.value);
+  };
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
@@ -72,8 +89,9 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
                   name="firstName"
                   label="First Name"
                   placeholder="Enter first name"
-                  maxLength={50}
+                  maxLength={USER_NAME_MAX_LENGTH}
                   autoComplete="given-name"
+                  onInput={preventInvalidNameInput}
                   required
                   registration={register("firstName")}
                   error={errors.firstName?.message}
@@ -82,8 +100,9 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
                   name="middleName"
                   label="Middle Name"
                   placeholder="Enter middle name"
-                  maxLength={50}
+                  maxLength={USER_NAME_MAX_LENGTH}
                   autoComplete="additional-name"
+                  onInput={preventInvalidNameInput}
                   required
                   registration={register("middleName")}
                   error={errors.middleName?.message}
@@ -92,8 +111,9 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
                   name="lastName"
                   label="Last Name"
                   placeholder="Enter last name"
-                  maxLength={50}
+                  maxLength={USER_NAME_MAX_LENGTH}
                   autoComplete="family-name"
+                  onInput={preventInvalidNameInput}
                   required
                   registration={register("lastName")}
                   error={errors.lastName?.message}
@@ -106,9 +126,9 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
                   label="Email Address"
                   type="email"
                   placeholder="teacher@gmail.com"
-                  maxLength={254}
+                  maxLength={USER_EMAIL_MAX_LENGTH}
                   autoComplete="email"
-                  onInput={(event) => { event.currentTarget.value = event.currentTarget.value.replace(/\s/g, ""); }}
+                  onInput={preventInvalidEmailInput}
                   hint="We will send the teacher's login details here. Gmail, Yahoo, or Outlook works best."
                   required
                   registration={register("email")}
@@ -119,10 +139,10 @@ export default function AddTeacherModal({ onClose, onCreated }: Props) {
                   label="Phone Number"
                   type="tel"
                   placeholder="09XXXXXXXXX"
-                  maxLength={11}
+                  maxLength={USER_PHONE_MAX_LENGTH}
                   inputMode="numeric"
                   autoComplete="tel"
-                  onInput={(event) => { event.currentTarget.value = event.currentTarget.value.replace(/\D/g, "").slice(0, 11); }}
+                  onInput={preventInvalidPhoneInput}
                   hint="Enter 11 digits beginning with 09."
                   required
                   registration={register("phone")}

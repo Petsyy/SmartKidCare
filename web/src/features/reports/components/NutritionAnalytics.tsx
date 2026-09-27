@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { RefreshCw } from "lucide-react";
+import { Download, RefreshCw } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -15,6 +15,8 @@ import { getNutritionAnalytics } from "../../../api/nutrition.api";
 import { Button } from "@/components/ui/Button";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { webQueryKeys } from "@/lib/query-keys";
+import { downloadCsvFile, todayFileKey } from "../utils/csv-export";
+import { buildNutritionCsvRows } from "../utils/report-csv-builders";
 
 const STATUS_COLORS: Record<string, string> = {
   "Severely Underweight": "#e11d48",
@@ -98,6 +100,14 @@ export function NutritionAnalytics() {
       ? selectedSchoolYear
       : data?.filters.schoolYear ?? "";
 
+  const downloadCsv = () => {
+    if (!data) return;
+    downloadCsvFile(
+      `smartkidcare-nutrition-${displayYear || "latest"}-${todayFileKey()}.csv`,
+      buildNutritionCsvRows(data, new Date().toLocaleString("en-PH")),
+    );
+  };
+
   return (
     <section className="space-y-4" aria-labelledby="nutrition-analytics-title">
       <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
@@ -131,6 +141,13 @@ export function NutritionAnalytics() {
               }
             >
               Refresh
+            </Button>
+            <Button
+              onClick={downloadCsv}
+              disabled={!hasData}
+              icon={<Download className="h-4 w-4" />}
+            >
+              Export CSV
             </Button>
           </div>
         </div>

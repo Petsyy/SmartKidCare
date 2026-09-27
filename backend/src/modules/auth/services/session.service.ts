@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { signAuthToken, maybeRequireCaptainPasswordChange, maybeRequireParentPasswordChange, maybeRequireTeacherPasswordChange } from "./password-otp.service";
-import { issueAdminLoginOtp, mapOtpDeliveryError, maskEmail, setAdminAuthCookie, } from "./admin-login-mfa.service";
+import { setAdminAuthCookie } from "./admin-login-mfa.service";
 import { Response } from "express";
 import { authUserRepository as defaultAuthUserRepository, authChildRepository as defaultAuthChildRepository, } from "../repositories/auth.repository";
 import type { LoginCredentials, UpdateUserPayload, AdminPreferencesPayload, LinkedChild, UserWithChildren } from "../types/session.types";
@@ -49,31 +49,12 @@ export class SessionService {
   }
 
   /**
-   * Handle admin login flow with MFA
+   * Handle admin login flow
    */
   public async handleAdminLogin(user: any, res: Response) {
-    if (user.adminMfaEnabled === false) {
-      const token = signAuthToken(String(user._id), user.role);
-      setAdminAuthCookie(res, token);
-      return { user: this.sanitizeUserResponse(user) };
-    }
-
-    try {
-      const mfaToken = await issueAdminLoginOtp(user);
-      return {
-        requiresMfa: true,
-        mfaToken,
-        email: maskEmail(user.email),
-        message: "OTP sent to your account email.",
-      };
-    } catch (error: any) {
-      console.error("Admin login OTP send failed:", {
-        email: user.email,
-        code: error?.code,
-        message: error?.message,
-      });
-      throw new Error(mapOtpDeliveryError(error));
-    }
+    const token = signAuthToken(String(user._id), user.role);
+    setAdminAuthCookie(res, token);
+    return { user: this.sanitizeUserResponse(user) };
   }
 
   /**
@@ -123,7 +104,7 @@ export class SessionService {
       return null;
     }
 
-    // Handle admin login with MFA
+    // Handle admin login
     if (user.role === "barangay_captain") {
       return await this.handleAdminLogin(user, res);
     }

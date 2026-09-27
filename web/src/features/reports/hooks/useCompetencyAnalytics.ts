@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { API_BASE } from "@/api/config";
 import { webQueryKeys } from "@/lib/query-keys";
@@ -31,17 +30,15 @@ export type CompetencyAnalyticsPayload = {
 };
 
 export function useCompetencyAnalytics() {
-  const [period, setPeriod] = useState<CompetencyPeriod>("all");
-  const [schoolYear, setSchoolYear] = useState("all");
+  const schoolYear = "all";
 
   const query = useQuery({
     queryKey: webQueryKeys.competencyAnalytics(
-      period,
+      "all",
       schoolYear,
     ),
     queryFn: async () => {
       const params = new URLSearchParams();
-      if (period !== "all") params.set("period", period);
       if (schoolYear !== "all") params.set("schoolYear", schoolYear);
       const suffix = params.size ? `?${params.toString()}` : "";
       const response = await fetch(
@@ -64,10 +61,7 @@ export function useCompetencyAnalytics() {
 
   return {
     ...query,
-    period,
-    setPeriod,
     schoolYear,
-    setSchoolYear,
     errorMessage:
       query.error instanceof Error
         ? query.error.message

@@ -38,8 +38,6 @@ const ChildSchema = new mongoose.Schema(
       default: "Active",
     },
 
-    studentId: { type: String, unique: true },
-
     parent: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

@@ -8,6 +8,14 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/Dialog";
+import {
+  sanitizeUserEmailInput,
+  sanitizeUserNameInput,
+  sanitizeUserPhoneInput,
+  USER_EMAIL_MAX_LENGTH,
+  USER_NAME_MAX_LENGTH,
+  USER_PHONE_MAX_LENGTH,
+} from "../validations/user-fields.validation";
 
 type Props = {
   user: User;
@@ -27,6 +35,15 @@ export default function EditUserModal({ user, onClose, onUpdated }: Props) {
     register,
     formState: { errors },
   } = form;
+  const preventInvalidNameInput = (event: React.FormEvent<HTMLInputElement>) => {
+    event.currentTarget.value = sanitizeUserNameInput(event.currentTarget.value);
+  };
+  const preventInvalidEmailInput = (event: React.FormEvent<HTMLInputElement>) => {
+    event.currentTarget.value = sanitizeUserEmailInput(event.currentTarget.value);
+  };
+  const preventInvalidPhoneInput = (event: React.FormEvent<HTMLInputElement>) => {
+    event.currentTarget.value = sanitizeUserPhoneInput(event.currentTarget.value);
+  };
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
@@ -72,6 +89,9 @@ export default function EditUserModal({ user, onClose, onUpdated }: Props) {
                 <InputField
                   label="First Name"
                   placeholder="Enter first name"
+                  maxLength={USER_NAME_MAX_LENGTH}
+                  autoComplete="given-name"
+                  onInput={preventInvalidNameInput}
                   required
                   registration={register("firstName")}
                   error={errors.firstName?.message}
@@ -79,6 +99,9 @@ export default function EditUserModal({ user, onClose, onUpdated }: Props) {
                 <InputField
                   label="Middle Name"
                   placeholder="Enter middle name"
+                  maxLength={USER_NAME_MAX_LENGTH}
+                  autoComplete="additional-name"
+                  onInput={preventInvalidNameInput}
                   required
                   registration={register("middleName")}
                   error={errors.middleName?.message}
@@ -87,6 +110,9 @@ export default function EditUserModal({ user, onClose, onUpdated }: Props) {
                   <InputField
                     label="Last Name"
                     placeholder="Enter last name"
+                    maxLength={USER_NAME_MAX_LENGTH}
+                    autoComplete="family-name"
+                    onInput={preventInvalidNameInput}
                     required
                     registration={register("lastName")}
                     error={errors.lastName?.message}
@@ -98,6 +124,9 @@ export default function EditUserModal({ user, onClose, onUpdated }: Props) {
                 type="email"
                 label="Email"
                 placeholder="user@email.com"
+                maxLength={USER_EMAIL_MAX_LENGTH}
+                autoComplete="email"
+                onInput={preventInvalidEmailInput}
                 required
                 registration={register("email")}
                 error={errors.email?.message}
@@ -107,6 +136,10 @@ export default function EditUserModal({ user, onClose, onUpdated }: Props) {
                 type="tel"
                 label="Phone Number"
                 placeholder="Enter phone number"
+                maxLength={USER_PHONE_MAX_LENGTH}
+                inputMode="numeric"
+                autoComplete="tel"
+                onInput={preventInvalidPhoneInput}
                 required
                 registration={register("phone")}
                 error={errors.phone?.message}

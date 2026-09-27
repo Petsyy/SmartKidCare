@@ -1,6 +1,9 @@
 import { z } from "zod";
 
 const NAME_REGEX = /^[A-Za-z][A-Za-z .'-]*$/;
+export const USER_NAME_MAX_LENGTH = 50;
+export const USER_EMAIL_MAX_LENGTH = 254;
+export const USER_PHONE_MAX_LENGTH = 11;
 const STRICT_EMAIL_REGEX = /^[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}$/;
 const ACCEPTED_EMAIL_DOMAINS = [
   "aol.com",
@@ -75,3 +78,12 @@ export const userPhoneSchema = (label = "Phone") =>
       const digitsOnly = value.replace(/\D/g, "");
       return /^09\d{9}$/.test(digitsOnly) || /^639\d{9}$/.test(digitsOnly);
     }, `${label} is invalid.`);
+
+export const sanitizeUserNameInput = (value: string) =>
+  value.replace(/[^A-Za-z .'-]/g, "").slice(0, USER_NAME_MAX_LENGTH);
+
+export const sanitizeUserEmailInput = (value: string) =>
+  value.replace(/\s/g, "").slice(0, USER_EMAIL_MAX_LENGTH);
+
+export const sanitizeUserPhoneInput = (value: string) =>
+  value.replace(/\D/g, "").slice(0, USER_PHONE_MAX_LENGTH);

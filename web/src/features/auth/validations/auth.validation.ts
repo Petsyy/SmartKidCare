@@ -90,8 +90,6 @@ export const loginCredentialsSchema = z.object({
   password: loginPasswordSchema,
 });
 
-export const loginMfaSchema = z.object({ otp: otpSchema });
-
 export const captainPasswordSetupSchema = z
   .object({
     newPassword: newPasswordSchema,
@@ -152,7 +150,7 @@ export const passwordChangeFormSchema = z
 
 export const adminLoginFormSchema = z
   .object({
-    flowMode: z.enum(["credentials", "mfa", "passwordSetup"]),
+    flowMode: z.enum(["credentials", "passwordSetup"]),
     username: z.string(),
     password: z.string(),
     otp: z.string(),
@@ -163,9 +161,7 @@ export const adminLoginFormSchema = z
     const result =
       values.flowMode === "credentials"
         ? loginCredentialsSchema.safeParse(values)
-        : values.flowMode === "mfa"
-          ? loginMfaSchema.safeParse(values)
-          : captainPasswordSetupSchema.safeParse(values);
+        : captainPasswordSetupSchema.safeParse(values);
 
     if (!result.success) {
       result.error.issues.forEach((issue) => {

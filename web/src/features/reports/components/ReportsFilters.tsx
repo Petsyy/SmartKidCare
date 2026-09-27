@@ -1,4 +1,4 @@
-import { Clock, RefreshCw, Download, Printer } from "lucide-react";
+import { Clock, Download, RefreshCw, Printer } from "lucide-react";
 import type { ReportDatePreset } from "@/features/reports/hooks/useReportAnalytics";
 
 
@@ -122,36 +122,38 @@ export const ReportsFilters = ({
         </div>
       )}
 
-      {showDateRangeControls && (
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={onRefresh}
-            className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Refresh Data
-          </button>
-          <button
-            type="button"
-            onClick={onExport}
-            disabled={!hasData || !activeRange.isValid}
-            className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-teal-600 px-3.5 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <Download className="h-4 w-4" />
-            Export CSV
-          </button>
-          <button
-            type="button"
-            onClick={onPrint}
-            disabled={!hasData || !activeRange.isValid}
-            className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
-          >
-            <Printer className="h-4 w-4" />
-            Print Report
-          </button>
-        </div>
-      )}
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        {showDateRangeControls && (
+          <>
+            <button
+              type="button"
+              onClick={onRefresh}
+              className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Refresh Data
+            </button>
+            <button
+              type="button"
+              onClick={onExport}
+              disabled={!hasData || !activeRange.isValid}
+              className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-teal-600 px-3.5 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Download className="h-4 w-4" />
+              Export CSV
+            </button>
+            <button
+              type="button"
+              onClick={onPrint}
+              disabled={!hasData || !activeRange.isValid}
+              className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
+            >
+              <Printer className="h-4 w-4" />
+              Print Report
+            </button>
+          </>
+        )}
+      </div>
     </div>
   );
 };

@@ -22,9 +22,7 @@ type AuthApiData = {
   message?: string;
   error?: string;
   requiresPasswordChange?: boolean;
-  requiresMfa?: boolean;
   passwordSetupToken?: string;
-  mfaToken?: string;
   email?: string;
 };
 
@@ -55,14 +53,10 @@ export function useAdminLogin() {
   const { isAuthenticated, user, isChecking } = useAuthSession();
 
   const {
-    mfaToken,
-    mfaEmail,
     passwordSetupToken,
     passwordSetupEmail,
     info,
     error,
-    setMfaToken,
-    setMfaEmail,
     setPasswordSetupToken,
     setPasswordSetupEmail,
     setInfo,
@@ -98,11 +92,7 @@ export function useAdminLogin() {
     useForm<AdminLoginFormValues>({
       resolver: zodResolver(adminLoginFormSchema),
       defaultValues: {
-        flowMode: passwordSetupToken
-          ? "passwordSetup"
-          : mfaToken
-            ? "mfa"
-            : "credentials",
+        flowMode: passwordSetupToken ? "passwordSetup" : "credentials",
         username: "",
         password: "",
         otp: "",
@@ -128,50 +118,6 @@ export function useAdminLogin() {
       if (!response.ok) {
         throw new Error(
           data?.message || data?.error || `Login failed (HTTP ${status})`,
-        );
-      }
-      return data;
-    },
-  });
-
-  const verifyMutation = useMutation({
-    mutationFn: async (variables: { mfaToken: string; otp: string }) => {
-      const response = await fetch(`${API_BASE}/auth/admin/mfa/verify`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(variables),
-      });
-      const { status, data } = await parseApiResponse(response);
-      if (!response.ok) {
-        throw new Error(
-          data?.message ||
-            data?.error ||
-            `OTP verification failed (HTTP ${status})`,
-        );
-      }
-      return data;
-    },
-  });
-
-  const resendMutation = useMutation({
-    mutationFn: async (variables: { mfaToken: string }) => {
-      const response = await fetch(`${API_BASE}/auth/admin/mfa/resend`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(variables),
-      });
-      const { status, data } = await parseApiResponse(response);
-      if (!response.ok) {
-        throw new Error(
-          data?.message ||
-            data?.error ||
-            `Failed to resend OTP (HTTP ${status})`,
         );
       }
       return data;
@@ -214,8 +160,8 @@ export function useAdminLogin() {
     },
   });
 
-  const isLoading = loginMutation.isPending || verifyMutation.isPending || passwordSetupMutation.isPending;
-  const isResendingOtp = resendMutation.isPending || passwordSetupResendMutation.isPending;
+  const isLoading = loginMutation.isPending || passwordSetupMutation.isPending;
+  const isResendingOtp = passwordSetupResendMutation.isPending;
 
   const getOtpDigits = () =>
     Array.from({ length: 6 }, (_, index) => otp[index] ?? "");
@@ -311,28 +257,14 @@ export function useAdminLogin() {
   };
 
   const handleResendOtp = async () => {
-    if ((!mfaToken && !passwordSetupToken) || isResendingOtp) {
+    if (!passwordSetupToken || isResendingOtp) {
       return;
     }
 
     resetMessages();
 
     try {
-      if (passwordSetupToken) {
-        const data = await passwordSetupResendMutation.mutateAsync({ passwordSetupToken });
-        setInfo(data?.message || "A new OTP has been sent.");
-        return;
-      }
-
-      const data = await resendMutation.mutateAsync({ mfaToken: mfaToken! });
-
-      if (data?.mfaToken) {
-        setMfaToken(data.mfaToken);
-      }
-      if (data?.email) {
-        setMfaEmail(data.email);
-      }
-
+      const data = await passwordSetupResendMutation.mutateAsync({ passwordSetupToken });
       setInfo(data?.message || "A new OTP has been sent.");
     } catch (err: unknown) {
       setError(getErrorMessage(err, "Failed to resend OTP."));
@@ -360,58 +292,29 @@ export function useAdminLogin() {
         return;
       }
 
-      if (!mfaToken) {
-        const username = values.username;
-        const password = values.password;
-        if (!username || !password) {
-          throw new Error("Please fill in all fields");
+      const username = values.username;
+      const password = values.password;
+      if (!username || !password) {
+        throw new Error("Please fill in all fields");
+      }
+
+      const data = await loginMutation.mutateAsync({ username, password });
+
+      if (data?.requiresPasswordChange) {
+        if (!data?.passwordSetupToken) {
+          throw new Error("Password setup could not be started. Please try again.");
         }
-
-        const data = await loginMutation.mutateAsync({ username, password });
-
-        if (data?.requiresPasswordChange) {
-          if (!data?.passwordSetupToken) {
-            throw new Error("Password setup could not be started. Please try again.");
-          }
-          setPasswordSetupToken(data.passwordSetupToken);
-          setPasswordSetupEmail(data.email || null);
-          setValue("flowMode", "passwordSetup");
-          clearErrors();
-          setValue("password", "");
-          setValue("otp", "");
-          setInfo(data?.message || "Create a new password to continue.");
-          return;
-        }
-
-        if (data?.requiresMfa) {
-          if (!data?.mfaToken) {
-            throw new Error("MFA challenge is missing. Please try again.");
-          }
-
-          setMfaToken(data.mfaToken);
-          setMfaEmail(data.email || null);
-          setValue("flowMode", "mfa");
-          clearErrors();
-          setValue("otp", "");
-          setInfo(
-            data?.message || "A verification code was sent to your email.",
-          );
-          return;
-        }
-
-        await queryClient.invalidateQueries({ queryKey: webQueryKeys.authSession() });
-        navigate("/monitoring/dashboard");
+        setPasswordSetupToken(data.passwordSetupToken);
+        setPasswordSetupEmail(data.email || null);
+        setValue("flowMode", "passwordSetup");
+        clearErrors();
+        setValue("password", "");
+        setValue("otp", "");
+        setInfo(data?.message || "Create a new password to continue.");
         return;
       }
 
-      const otp = values.otp;
-
-      await verifyMutation.mutateAsync({ mfaToken, otp });
-
       await queryClient.invalidateQueries({ queryKey: webQueryKeys.authSession() });
-      setMfaToken(null);
-      setMfaEmail(null);
-      setValue("otp", "");
       navigate("/monitoring/dashboard");
     } catch (err: unknown) {
       const message = getErrorMessage(err, "Login failed. Please try again.");
@@ -429,8 +332,6 @@ export function useAdminLogin() {
   };
 
   return {
-    mfaToken,
-    mfaEmail,
     passwordSetupToken,
     passwordSetupEmail,
     info,

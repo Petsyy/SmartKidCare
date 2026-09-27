@@ -95,7 +95,7 @@ export class ReportsService {
     return {
       childId,
       name: `${child.firstName} ${child.lastName}`,
-      studentId: child.studentId || "--",
+      studentId: "--",
       summary: {
         attendance: {
           present: presentDays,

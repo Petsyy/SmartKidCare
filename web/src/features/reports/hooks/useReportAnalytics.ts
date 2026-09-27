@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { API_BASE } from "@/api/config";
 import { webQueryKeys } from "@/lib/query-keys";
+import { downloadCsvFile, todayFileKey, type CsvRow } from "../utils/csv-export";
 
 export type ReportDatePreset = "7d" | "30d" | "90d" | "all" | "custom";
 
@@ -142,11 +143,6 @@ export const formatDateTime = (value?: string) =>
       })
     : "-";
 
-const toCsvCell = (value: string | number) => {
-  const text = String(value);
-  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
-};
-
 export function useReportAnalytics() {
   const [datePreset, setDatePreset] = useState<ReportDatePreset>("30d");
   const [customStartDate, setCustomStartDate] = useState("");
@@ -266,82 +262,63 @@ export function useReportAnalytics() {
     if (activeRange.isValid) await refetch();
   }, [activeRange.isValid, refetch]);
 
-  const downloadCsv = useCallback(() => {
-    const lines: string[] = [
-      "Smart KidCare - Printable Reports",
-      `Range,${toCsvCell(activeRange.label)}`,
-      `Generated At,${toCsvCell(formatDateTime(new Date().toISOString()))}`,
-      "",
-      "Summary",
-      "Metric,Value",
-      `Bonuan Sabangan Daycare Center,${summary.totalChildDevelopmentCenters}`,
-      `Child Development Worker,${summary.childDevelopmentWorkers}`,
-      `Total Enrolled Children,${summary.totalEnrolledChildren}`,
-      `Active Children,${summary.activeChildren}`,
-      `4P's Beneficiaries,${summary.fourPsBeneficiaries}`,
-      `Regular Attendees,${summary.regularAttendees}`,
-      `Attendance Records,${summary.attendanceRecords}`,
-      `Attendance Rate,${summary.attendanceRate}%`,
-      "",
-      "Student Demographics",
-      "Metric,Value",
-      `Male,${genderBreakdown.male}`,
-      `Female,${genderBreakdown.female}`,
-      `Male Ratio,${genderBreakdown.malePercentage}%`,
-      `Female Ratio,${genderBreakdown.femalePercentage}%`,
-      "",
-      "Age Distribution",
-      "Age,Students",
+  const overviewCsvRows = useMemo<CsvRow[]>(() => {
+    const generatedAt = formatDateTime(new Date().toISOString());
+    const rows: CsvRow[] = [
+      [
+        "Record Type",
+        "Section",
+        "Metric",
+        "Value",
+        "Unit",
+        "Date",
+        "Attendance Rate",
+        "Present",
+        "Absent",
+        "Student ID",
+        "Name",
+        "Gender",
+        "Age",
+        "Status",
+        "Program Type",
+        "School Year",
+        "Teacher",
+        "Enrollment Date",
+        "Date Range",
+        "Generated At",
+      ],
+      ["Metric", "Summary", "Bonuan Sabangan Daycare Center", summary.totalChildDevelopmentCenters, "Centers", "", "", "", "", "", "", "", "", "", "", "", "", "", activeRange.label, generatedAt],
+      ["Metric", "Summary", "Child Development Worker", summary.childDevelopmentWorkers, "Workers", "", "", "", "", "", "", "", "", "", "", "", "", "", activeRange.label, generatedAt],
+      ["Metric", "Summary", "Total Enrolled Children", summary.totalEnrolledChildren, "Children", "", "", "", "", "", "", "", "", "", "", "", "", "", activeRange.label, generatedAt],
+      ["Metric", "Summary", "Active Children", summary.activeChildren, "Children", "", "", "", "", "", "", "", "", "", "", "", "", "", activeRange.label, generatedAt],
+      ["Metric", "Summary", "4P's Beneficiaries", summary.fourPsBeneficiaries, "Children", "", "", "", "", "", "", "", "", "", "", "", "", "", activeRange.label, generatedAt],
+      ["Metric", "Summary", "Regular Attendees", summary.regularAttendees, "Children", "", "", "", "", "", "", "", "", "", "", "", "", "", activeRange.label, generatedAt],
+      ["Metric", "Summary", "Attendance Records", summary.attendanceRecords, "Records", "", "", "", "", "", "", "", "", "", "", "", "", "", activeRange.label, generatedAt],
+      ["Metric", "Summary", "Attendance Rate", summary.attendanceRate, "Percent", "", "", "", "", "", "", "", "", "", "", "", "", "", activeRange.label, generatedAt],
+      ["Metric", "Demographics", "Male", genderBreakdown.male, "Children", "", "", "", "", "", "", "", "", "", "", "", "", "", activeRange.label, generatedAt],
+      ["Metric", "Demographics", "Female", genderBreakdown.female, "Children", "", "", "", "", "", "", "", "", "", "", "", "", "", activeRange.label, generatedAt],
+      ["Metric", "Demographics", "Male Ratio", genderBreakdown.malePercentage, "Percent", "", "", "", "", "", "", "", "", "", "", "", "", "", activeRange.label, generatedAt],
+      ["Metric", "Demographics", "Female Ratio", genderBreakdown.femalePercentage, "Percent", "", "", "", "", "", "", "", "", "", "", "", "", "", activeRange.label, generatedAt],
     ];
 
     ageBreakdown.forEach((row) => {
-      lines.push([toCsvCell(row.age), toCsvCell(row.count)].join(","));
+      rows.push(["Metric", "Age Distribution", `Age ${row.age}`, row.count, "Children", "", "", "", "", "", "", "", "", "", "", "", "", "", activeRange.label, generatedAt]);
     });
-
-    lines.push("", "Student List", "Student ID,Name,Gender,Age,Status,Program Type,School Year,Teacher,Enrollment Date");
-
-    studentList.forEach((student) => {
-      lines.push(
-        [
-          toCsvCell(student.studentId),
-          toCsvCell(student.fullName),
-          toCsvCell(student.gender),
-          toCsvCell(student.age),
-          toCsvCell(student.status),
-          toCsvCell(student.programType),
-          toCsvCell(student.schoolYear),
-          toCsvCell(student.teacherName),
-
-          toCsvCell(student.enrollmentDate ? formatDateTime(student.enrollmentDate) : "-"),
-        ].join(","),
-      );
-    });
-
-    lines.push("", "Recent Daily Summary", "Date,Attendance Rate,Present,Absent");
 
     recentDailyRows.forEach((row) => {
-      lines.push(
-        [
-          toCsvCell(formatDateKey(row.dateKey)),
-          toCsvCell(`${row.attendanceRate}%`),
-          toCsvCell(row.present),
-          toCsvCell(row.absent),
-        ].join(","),
-      );
+      rows.push(["Daily Attendance", "Attendance", "", "", "", formatDateKey(row.dateKey), row.attendanceRate, row.present, row.absent, "", "", "", "", "", "", "", "", "", activeRange.label, generatedAt]);
     });
 
-    const blob = new Blob([lines.join("\n")], {
-      type: "text/csv;charset=utf-8;",
+    studentList.forEach((student) => {
+      rows.push(["Student", "Student List", "", "", "", "", "", "", "", student.studentId, student.fullName, student.gender, student.age, student.status, student.programType, student.schoolYear, student.teacherName, student.enrollmentDate ? formatDateTime(student.enrollmentDate) : "-", activeRange.label, generatedAt]);
     });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `smartkidcare-report-${new Date().toISOString().split("T")[0]}.csv`;
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
-    URL.revokeObjectURL(url);
+
+    return rows;
   }, [activeRange.label, ageBreakdown, genderBreakdown, recentDailyRows, studentList, summary]);
+
+  const downloadCsv = useCallback(() => {
+    downloadCsvFile(`smartkidcare-overview-${todayFileKey()}.csv`, overviewCsvRows);
+  }, [overviewCsvRows]);
 
   const printReport = useCallback(() => {
     window.print();
