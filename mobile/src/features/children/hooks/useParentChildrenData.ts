@@ -6,6 +6,9 @@ import { useAuth } from "@/src/hooks/use-auth";
 import { getMyChildren, type Child } from "@/src/api/parent.api";
 import { getTodayAttendance, getTodayFeeding } from "@/src/api/records.api";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
+import { useOffline } from "@/src/offline/offline-context";
+import { onlineWithOfflineFallback, readOfflineRecordForDate, readOfflineResource } from "@/src/offline/offline-read";
+import { getManilaDateKey } from "@/src/utils/manila-date";
 
 /**
  * Derives a specific child's record status from a batch record.
@@ -27,7 +30,8 @@ function getChildRecordStatus(
 }
 
 export const useParentChildrenData = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const { isConnected, isInternetReachable } = useOffline();
   const tabBarHeight = useBottomTabBarHeight();
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
 
@@ -35,10 +39,13 @@ export const useParentChildrenData = () => {
     queryKey: mobileQueryKeys.parentChildrenStatusOverview(),
     enabled: isAuthenticated,
     queryFn: async () => {
+      if (!user?.id) return { children: [], todayAttendance: null, todayFeeding: null };
+      const offline = !isConnected || !isInternetReachable;
+      const today = getManilaDateKey();
       const [children, todayAttendance, todayFeeding] = await Promise.all([
-        getMyChildren(),
-        getTodayAttendance().catch(() => null),
-        getTodayFeeding().catch(() => null),
+        onlineWithOfflineFallback(offline, getMyChildren, () => readOfflineResource<Child>(user.id, "children")),
+        onlineWithOfflineFallback(offline, () => getTodayAttendance(), () => readOfflineRecordForDate<any>(user.id, "attendance", today)),
+        onlineWithOfflineFallback(offline, () => getTodayFeeding(), () => readOfflineRecordForDate<any>(user.id, "feeding", today)),
       ]);
       return { children, todayAttendance, todayFeeding };
     },

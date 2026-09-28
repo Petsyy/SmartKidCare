@@ -6,6 +6,8 @@ import { getMyChildren, type Child } from "@/src/api/parent.api";
 import { getAttendanceHistory } from "@/src/api/records.api";
 import { useQuery } from "@tanstack/react-query";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
+import { useOffline } from "@/src/offline/offline-context";
+import { onlineWithOfflineFallback, readOfflineMonth, readOfflineResource } from "@/src/offline/offline-read";
 
 export type AttendanceStatus = "Present" | "Absent" | null;
 
@@ -21,7 +23,9 @@ const EMPTY_CHILDREN: Child[] = [];
 export const useParentAttendance = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const { isConnected, isInternetReachable } = useOffline();
+  const isOffline = !isConnected || !isInternetReachable;
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
   const [showChildDropdown, setShowChildDropdown] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -40,7 +44,8 @@ export const useParentAttendance = () => {
     queryKey: mobileQueryKeys.parentAttendanceChildren(),
     enabled: isAuthenticated,
     queryFn: async () => {
-      return getMyChildren();
+      if (!user?.id) return [];
+      return onlineWithOfflineFallback(isOffline, getMyChildren, () => readOfflineResource<Child>(user.id, "children"));
     },
   });
 
@@ -70,7 +75,11 @@ export const useParentAttendance = () => {
       const month = currentDate.getMonth();
       const startDate = new Date(year, month, 1);
       const endDate = new Date(year, month + 1, 0, 23, 59, 59, 999);
-      const history = await getAttendanceHistory(startDate.toISOString(), endDate.toISOString());
+      const history = !user?.id ? [] : await onlineWithOfflineFallback(
+        isOffline,
+        () => getAttendanceHistory(startDate.toISOString(), endDate.toISOString()),
+        () => readOfflineMonth<any>(user.id, "attendance", monthKey),
+      );
       const byDay = new Map<number, AttendanceDay>();
       history.forEach((record: any) => {
         const recordDate = new Date(record.date);

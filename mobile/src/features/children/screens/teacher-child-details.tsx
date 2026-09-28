@@ -52,13 +52,17 @@ import {
 } from "../hooks/useArchiveChild";
 import type { Guardian } from "@/src/api/api.types";
 import { useAndroidBackRoute } from "@/src/hooks/use-android-back-route";
+import { useOffline } from "@/src/offline/offline-context";
+import { onlineWithOfflineFallback, readOfflineRecordForDate, readOfflineResource } from "@/src/offline/offline-read";
+import { getManilaDateKey } from "@/src/utils/manila-date";
 
 export default function TeacherChildDetailsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   useAndroidBackRoute("/(teacher)/children");
   const { id } = useLocalSearchParams();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const { isConnected, isInternetReachable } = useOffline();
   const childId = typeof id === "string" ? id : null;
   const [isGuardiansSheetOpen, setIsGuardiansSheetOpen] = useState(false);
   const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
@@ -145,10 +149,19 @@ export default function TeacherChildDetailsScreen() {
       if (!childId) {
         throw new Error("Missing required data");
       }
+      const offline = !isConnected || !isInternetReachable;
+      if (!user?.id) throw new Error("Please sign in again.");
+      const localChild = async () => {
+        const children = await readOfflineResource<Child>(user.id, "children");
+        const found = children.find((entry) => entry._id === childId);
+        if (!found) throw new Error("This child is unavailable offline.");
+        return found;
+      };
+      const today = getManilaDateKey();
       const [child, attendanceRecord, feedingRecord] = await Promise.all([
-        getChildById(childId),
-        getTodayAttendance().catch(() => null),
-        getTodayFeeding().catch(() => null),
+        onlineWithOfflineFallback(offline, () => getChildById(childId), localChild),
+        onlineWithOfflineFallback(offline, () => getTodayAttendance(), () => readOfflineRecordForDate<any>(user.id, "attendance", today)),
+        onlineWithOfflineFallback(offline, () => getTodayFeeding(), () => readOfflineRecordForDate<any>(user.id, "feeding", today)),
       ]);
       return { child, attendanceRecord, feedingRecord };
     },

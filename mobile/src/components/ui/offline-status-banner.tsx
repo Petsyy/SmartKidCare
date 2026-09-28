@@ -4,18 +4,40 @@ import { useOffline } from "@/src/offline/offline-context";
 
 export function OfflineStatusBanner() {
   const { authState } = useAuth();
-  const { isConnected, isInternetReachable, pendingCount, syncState } =
-    useOffline();
+  const {
+    isConnected,
+    isInternetReachable,
+    pendingCount,
+    syncState,
+    offlineDataState,
+    recordSyncProgress,
+  } = useOffline();
   const isOffline = !isConnected || !isInternetReachable;
 
-  if (authState === "signedOut" || (!isOffline && pendingCount === 0)) {
+  const showRecordStatus =
+    offlineDataState === "downloading" ||
+    offlineDataState === "failed" ||
+    offlineDataState === "partiallyAvailable";
+
+  if (
+    authState === "signedOut" ||
+    (!isOffline && pendingCount === 0 && !showRecordStatus)
+  ) {
     return null;
   }
 
   const message = isOffline
     ? pendingCount > 0
       ? `Offline \u2022 ${pendingCount} queued for synchronization`
-      : "Offline \u2022 showing securely cached information"
+      : offlineDataState === "ready" || offlineDataState === "partiallyAvailable"
+        ? "Offline \u2022 showing securely downloaded records"
+        : "Offline records are not ready \u2022 connect to synchronize"
+    : offlineDataState === "downloading"
+      ? `Preparing offline records \u2022 ${recordSyncProgress.downloadedItems}/${recordSyncProgress.expectedItems}`
+      : offlineDataState === "failed"
+        ? "Offline records are incomplete \u2022 reconnect to retry"
+        : offlineDataState === "partiallyAvailable"
+          ? "Showing previous offline records \u2022 refresh incomplete"
     : syncState === "syncing"
       ? `Synchronizing ${pendingCount} submission${pendingCount === 1 ? "" : "s"}\u2026`
       : `${pendingCount} submission${pendingCount === 1 ? "" : "s"} waiting to synchronize`;

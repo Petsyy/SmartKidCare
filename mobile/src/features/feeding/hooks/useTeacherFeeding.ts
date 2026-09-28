@@ -23,8 +23,14 @@ import {
   getDraft,
   getOutboxOperation,
   saveDraft,
+  getPendingOutboxByDate,
 } from "@/src/offline/offline-store";
 import type { FeedingDraftPayload } from "@/src/offline/offline.types";
+import {
+  onlineWithOfflineFallback,
+  readOfflineRecordForDate,
+  readOfflineResource,
+} from "@/src/offline/offline-read";
 
 const foodMenuOptions = [
   "Sinigang, Adobo",
@@ -143,10 +149,32 @@ export const useTeacherFeeding = () => {
     ),
     enabled: isAuthenticated,
     queryFn: async () => {
-      const [childrenData, feedingRecord] = await Promise.all([
-        getChildren(),
-        getFeedingForDate(attendanceDateKey),
-      ]);
+      if (!user?.id) throw new Error("Please sign in again.");
+      const offline = !isConnected || !isInternetReachable;
+      const [childrenData, serverFeedingRecord, pendingOperation] =
+        await Promise.all([
+          onlineWithOfflineFallback(offline, getChildren, () =>
+            readOfflineResource<Child>(user.id, "children"),
+          ),
+          onlineWithOfflineFallback(
+            offline,
+            () => getFeedingForDate(attendanceDateKey),
+            () =>
+              readOfflineRecordForDate<any>(
+                user.id,
+                "feeding",
+                attendanceDateKey,
+              ),
+          ),
+          getPendingOutboxByDate(user.id, "feeding.create", attendanceDateKey),
+        ]);
+      const feedingRecord = pendingOperation
+        ? {
+            date: attendanceDateKey,
+            ...(pendingOperation.frozenPayload as any),
+            localPending: true,
+          }
+        : serverFeedingRecord;
 
       if (feedingRecord) {
         const recordedChildIds = new Set(
@@ -168,7 +196,7 @@ export const useTeacherFeeding = () => {
 
         return {
           childrenToShow,
-          isReadOnly: !isHistoricalDate,
+          isReadOnly: true,
           foodServed: String(feedingRecord.foodServed || ""),
           feedingStatus: existingStatus,
           feedingNotes: existingNotes,
@@ -182,7 +210,16 @@ export const useTeacherFeeding = () => {
           presentIds.has(child._id),
         );
       } else {
-        const attendanceRecord = await getAttendanceForDate(attendanceDateKey);
+        const attendanceRecord = await onlineWithOfflineFallback(
+          offline,
+          () => getAttendanceForDate(attendanceDateKey),
+          () =>
+            readOfflineRecordForDate<any>(
+              user.id,
+              "attendance",
+              attendanceDateKey,
+            ),
+        );
         if (attendanceRecord?.records) {
           const presentIds = new Set(
             attendanceRecord.records

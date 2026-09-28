@@ -6,6 +6,12 @@ import { getMyChildren, type Child } from "@/src/api/parent.api";
 import { getFeedingHistory } from "@/src/api/records.api";
 import { useQuery } from "@tanstack/react-query";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
+import { useOffline } from "@/src/offline/offline-context";
+import {
+  onlineWithOfflineFallback,
+  readOfflineMonth,
+  readOfflineResource,
+} from "@/src/offline/offline-read";
 
 export type FeedingStatus = "Completed" | "Missed" | null;
 
@@ -22,7 +28,9 @@ const EMPTY_CHILDREN: Child[] = [];
 export const useParentFeeding = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const { isConnected, isInternetReachable } = useOffline();
+  const isOffline = !isConnected || !isInternetReachable;
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
   const [showChildDropdown, setShowChildDropdown] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -32,11 +40,17 @@ export const useParentFeeding = () => {
     currentDate.getMonth() + 1,
   ).padStart(2, "0")}`;
 
-  const { data: childrenData = EMPTY_CHILDREN, isLoading: isLoadingChildren } = useQuery({
-    queryKey: mobileQueryKeys.parentFeedingChildren(),
-    enabled: isAuthenticated,
-    queryFn: () => getMyChildren(),
-  });
+  const { data: childrenData = EMPTY_CHILDREN, isLoading: isLoadingChildren } =
+    useQuery({
+      queryKey: mobileQueryKeys.parentFeedingChildren(),
+      enabled: isAuthenticated,
+      queryFn: () =>
+        !user?.id
+          ? Promise.resolve([])
+          : onlineWithOfflineFallback(isOffline, getMyChildren, () =>
+              readOfflineResource<Child>(user.id, "children"),
+            ),
+    });
 
   const children = childrenData;
   const selectedChild = useMemo(
@@ -48,7 +62,10 @@ export const useParentFeeding = () => {
   );
 
   const { data: feedingData = [], isLoading: isLoadingFeeding } = useQuery({
-    queryKey: mobileQueryKeys.parentFeedingHistory(selectedChild?._id ?? null, monthKey),
+    queryKey: mobileQueryKeys.parentFeedingHistory(
+      selectedChild?._id ?? null,
+      monthKey,
+    ),
     enabled: isAuthenticated && Boolean(selectedChild),
     queryFn: async () => {
       if (!selectedChild) return [];
@@ -56,7 +73,14 @@ export const useParentFeeding = () => {
       const month = currentDate.getMonth();
       const startDate = new Date(year, month, 1);
       const endDate = new Date(year, month + 1, 0, 23, 59, 59, 999);
-      const history = await getFeedingHistory(startDate.toISOString(), endDate.toISOString());
+      const history = !user?.id
+        ? []
+        : await onlineWithOfflineFallback(
+            isOffline,
+            () =>
+              getFeedingHistory(startDate.toISOString(), endDate.toISOString()),
+            () => readOfflineMonth<any>(user.id, "feeding", monthKey),
+          );
       const byDay = new Map<number, FeedingDay>();
       history.forEach((record: any) => {
         const recordDate = new Date(record.date);
@@ -64,12 +88,22 @@ export const useParentFeeding = () => {
           (r: any) => (r.child?._id || r.child) === selectedChild._id,
         );
         if (entry) {
-          const status: FeedingStatus = entry.status === "completed" ? "Completed" : "Missed";
+          const status: FeedingStatus =
+            entry.status === "completed" ? "Completed" : "Missed";
           const teacher = record.teacher;
-          const teacherName = teacher ? `${teacher.firstName} ${teacher.lastName}` : "Not available";
-          const recordedAt = record.updatedAt || record.createdAt || record.date || null;
+          const teacherName = teacher
+            ? `${teacher.firstName} ${teacher.lastName}`
+            : "Not available";
+          const recordedAt =
+            record.updatedAt || record.createdAt || record.date || null;
           const foodServed = record.foodServed || "Not specified";
-          byDay.set(recordDate.getDate(), { day: recordDate.getDate(), status, teacherName, recordedAt, foodServed });
+          byDay.set(recordDate.getDate(), {
+            day: recordDate.getDate(),
+            status,
+            teacherName,
+            recordedAt,
+            foodServed,
+          });
         }
       });
       return Array.from(byDay.values());
@@ -86,20 +120,28 @@ export const useParentFeeding = () => {
   };
 
   const getMonthName = (date: Date) =>
-    date.toLocaleDateString("en-PH", { month: "long", year: "numeric", timeZone: "Asia/Manila" });
+    date.toLocaleDateString("en-PH", {
+      month: "long",
+      year: "numeric",
+      timeZone: "Asia/Manila",
+    });
 
   const getStatusForDay = (day: number): FeedingStatus => {
     const dayData = feedingData.find((d) => d.day === day);
     return dayData ? dayData.status : null;
   };
 
-  const getDetailsForDay = (day: number) => feedingData.find((d) => d.day === day) || null;
+  const getDetailsForDay = (day: number) =>
+    feedingData.find((d) => d.day === day) || null;
 
   const getStatusColor = (status: FeedingStatus) => {
     switch (status) {
-      case "Completed": return "bg-green-500";
-      case "Missed": return "bg-red-500";
-      default: return "bg-transparent";
+      case "Completed":
+        return "bg-green-500";
+      case "Missed":
+        return "bg-red-500";
+      default:
+        return "bg-transparent";
     }
   };
 
@@ -133,11 +175,28 @@ export const useParentFeeding = () => {
   };
 
   return {
-    router, insets, children, selectedChild,
-    setSelectedChild: (child: Child) => setSelectedChildId(child._id), loading,
-    showChildDropdown, setShowChildDropdown, currentDate, feedingData,
-    selectedDay, setSelectedDay, showDayModal, setShowDayModal,
-    getDaysInMonth, getMonthName, getStatusForDay, getDetailsForDay,
-    getStatusColor, calculateMonthlySummary, calculateFeedingRate, navigateMonth, jumpToToday,
+    router,
+    insets,
+    children,
+    selectedChild,
+    setSelectedChild: (child: Child) => setSelectedChildId(child._id),
+    loading,
+    showChildDropdown,
+    setShowChildDropdown,
+    currentDate,
+    feedingData,
+    selectedDay,
+    setSelectedDay,
+    showDayModal,
+    setShowDayModal,
+    getDaysInMonth,
+    getMonthName,
+    getStatusForDay,
+    getDetailsForDay,
+    getStatusColor,
+    calculateMonthlySummary,
+    calculateFeedingRate,
+    navigateMonth,
+    jumpToToday,
   };
 };

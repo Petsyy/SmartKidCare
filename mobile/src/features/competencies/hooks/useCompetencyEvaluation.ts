@@ -21,7 +21,25 @@ import {
   saveScopedDraft,
 } from "@/src/offline/offline-store";
 import type { CompetencyDraftPayload } from "@/src/offline/offline.types";
-import type { CompetencyDefinition, CompetencyLevel } from "../types";
+import type {
+  CompetencyDefinition,
+  CompetencyEvaluation,
+  CompetencyLevel,
+} from "../types";
+import {
+  onlineWithOfflineFallback,
+  readOfflineResource,
+} from "@/src/offline/offline-read";
+import type { Child } from "@/src/api/parent.api";
+
+type OfflineCompetencyEvaluation = Omit<CompetencyEvaluation, "entries"> & {
+  child: string;
+  entries: {
+    competency: string | CompetencyDefinition;
+    level: CompetencyLevel;
+    remarks?: string;
+  }[];
+};
 
 export type EvaluationPeriod = "quarterly" | "final";
 
@@ -53,17 +71,77 @@ export function useCompetencyEvaluation(
     enabled: Boolean(childId),
     queryFn: async () => {
       if (!childId) throw new Error("Missing child ID.");
-      const [child, definitions, quarterly, final] = await Promise.all([
-        getChildById(childId),
-        getCompetencyDefinitions(),
-        getCompetencyEvaluationByPeriod(childId, "quarterly"),
-        getCompetencyEvaluationByPeriod(childId, "final"),
-      ]);
-      return {
-        child,
-        definitions,
-        evaluations: { quarterly, final },
+      if (!user?.id) throw new Error("Please sign in again.");
+      const localRead = async () => {
+        const [children, definitions, evaluations] = await Promise.all([
+          readOfflineResource<Child>(user.id, "children"),
+          readOfflineResource<CompetencyDefinition>(
+            user.id,
+            "competencyDefinitions",
+          ),
+          readOfflineResource<OfflineCompetencyEvaluation>(
+            user.id,
+            "competencyEvaluations",
+          ),
+        ]);
+        const child = children.find((entry) => entry._id === childId);
+        if (!child) throw new Error("This child is unavailable offline.");
+        const definitionMap = new Map(
+          definitions.map((definition) => [definition._id, definition]),
+        );
+        const normalize = (
+          evaluation: OfflineCompetencyEvaluation | undefined,
+        ): CompetencyEvaluation | null =>
+          evaluation
+            ? {
+                ...evaluation,
+                entries: evaluation.entries.map((entry) => ({
+                  ...entry,
+                  competency:
+                    typeof entry.competency === "string"
+                      ? (definitionMap.get(entry.competency) ?? {
+                          _id: entry.competency,
+                          name: "Competency",
+                          category: "Fine Motor",
+                          description: "",
+                          displayOrder: 0,
+                          code: "",
+                        })
+                      : entry.competency,
+                })),
+              }
+            : null;
+        return {
+          child,
+          definitions,
+          evaluations: {
+            quarterly: normalize(
+              evaluations.find(
+                (entry) =>
+                  entry.child === childId && entry.period === "quarterly",
+              ),
+            ),
+            final: normalize(
+              evaluations.find(
+                (entry) => entry.child === childId && entry.period === "final",
+              ),
+            ),
+          },
+        };
       };
+      return onlineWithOfflineFallback(
+        isOffline,
+        async () => {
+          const [child, definitions, quarterly, final] = await Promise.all([
+            getChildById(childId),
+            getCompetencyDefinitions(),
+            getCompetencyEvaluationByPeriod(childId, "quarterly"),
+            getCompetencyEvaluationByPeriod(childId, "final"),
+          ]);
+          return { child, definitions, evaluations: { quarterly, final } };
+        },
+        localRead,
+      );
     },
   });
 

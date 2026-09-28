@@ -23,8 +23,11 @@ import {
   persistAllowedQueries,
 } from "./offline-query-cache";
 import { listOutboxOperations, updateOutboxStatus } from "./offline-store";
+import { synchronizeOfflineRecords, type RecordSyncProgress } from "./offline-record-sync";
+import { getRecordSyncMetadata } from "./offline-record-store";
 
 type SyncState = "idle" | "syncing" | "paused" | "error";
+type OfflineDataState = "notDownloaded" | "downloading" | "ready" | "partiallyAvailable" | "failed" | "authorizationExpired";
 
 type OfflineContextValue = {
   isConnected: boolean;
@@ -34,6 +37,10 @@ type OfflineContextValue = {
   localWorkCount: number;
   synchronize: () => Promise<void>;
   refreshPendingCount: () => Promise<void>;
+  offlineDataState: OfflineDataState;
+  recordSyncProgress: RecordSyncProgress;
+  lastCompleteRecordSyncAt: string | null;
+  synchronizeRecords: () => Promise<void>;
 };
 
 const OfflineContext = createContext<OfflineContextValue | null>(null);
@@ -54,6 +61,11 @@ export const OfflineProvider = ({
   const [pendingCount, setPendingCount] = useState(0);
   const [localWorkCount, setLocalWorkCount] = useState(0);
   const syncingRef = useRef(false);
+  const recordSyncingRef = useRef(false);
+  const [offlineDataState, setOfflineDataState] = useState<OfflineDataState>("notDownloaded");
+  const [recordSyncProgress, setRecordSyncProgress] = useState<RecordSyncProgress>({ downloadedItems: 0, expectedItems: 0 });
+  const [lastCompleteRecordSyncAt, setLastCompleteRecordSyncAt] = useState<string | null>(null);
+  const userId = user?.id;
 
   const refreshPendingCount = useCallback(async () => {
     if (!user?.id) {
@@ -134,6 +146,25 @@ export const OfflineProvider = ({
     user?.id,
   ]);
 
+  const synchronizeRecords = useCallback(async () => {
+    if (recordSyncingRef.current || !userId || !token || !isConnected || !isInternetReachable || authState !== "onlineAuthenticated") return;
+    recordSyncingRef.current = true;
+    setOfflineDataState("downloading");
+    try {
+      await synchronizeOfflineRecords(userId, setRecordSyncProgress);
+      const metadata = await getRecordSyncMetadata(userId);
+      setLastCompleteRecordSyncAt(metadata?.last_complete_sync_at ?? null);
+      setOfflineDataState("ready");
+      await queryClient.invalidateQueries();
+    } catch {
+      const metadata = await getRecordSyncMetadata(userId);
+      setLastCompleteRecordSyncAt(metadata?.last_complete_sync_at ?? null);
+      setOfflineDataState(metadata?.active_snapshot_id ? "partiallyAvailable" : "failed");
+    } finally {
+      recordSyncingRef.current = false;
+    }
+  }, [authState, isConnected, isInternetReachable, queryClient, token, userId]);
+
   useEffect(() => {
     void getOfflineDatabase();
     const unsubscribe = NetInfo.addEventListener((state) => {
@@ -150,6 +181,21 @@ export const OfflineProvider = ({
     const timeout = setTimeout(() => void refreshPendingCount(), 0);
     return () => clearTimeout(timeout);
   }, [refreshPendingCount]);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!userId) {
+        setOfflineDataState("notDownloaded");
+        setLastCompleteRecordSyncAt(null);
+        return;
+      }
+      void getRecordSyncMetadata(userId).then((metadata) => {
+        setLastCompleteRecordSyncAt(metadata?.last_complete_sync_at ?? null);
+        setOfflineDataState(metadata?.active_snapshot_id ? "ready" : "notDownloaded");
+      });
+    }, 0);
+    return () => clearTimeout(timeout);
+  }, [userId]);
 
   useEffect(() => {
     if (
@@ -175,16 +221,18 @@ export const OfflineProvider = ({
 
   useEffect(() => {
     if (!isConnected || !isInternetReachable) return;
-    const timeout = setTimeout(() => void synchronize(), 0);
+    const timeout = setTimeout(() => {
+      void synchronize().then(() => synchronizeRecords());
+    }, 0);
     return () => clearTimeout(timeout);
-  }, [isConnected, isInternetReachable, synchronize]);
+  }, [isConnected, isInternetReachable, synchronize, synchronizeRecords]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (state) => {
-      if (state === "active") void synchronize();
+      if (state === "active") void synchronize().then(() => synchronizeRecords());
     });
     return () => subscription.remove();
-  }, [synchronize]);
+  }, [synchronize, synchronizeRecords]);
 
   const value = useMemo(
     () => ({
@@ -195,6 +243,10 @@ export const OfflineProvider = ({
       localWorkCount,
       synchronize,
       refreshPendingCount,
+      offlineDataState,
+      recordSyncProgress,
+      lastCompleteRecordSyncAt,
+      synchronizeRecords,
     }),
     [
       isConnected,
@@ -204,6 +256,10 @@ export const OfflineProvider = ({
       refreshPendingCount,
       syncState,
       synchronize,
+      offlineDataState,
+      recordSyncProgress,
+      lastCompleteRecordSyncAt,
+      synchronizeRecords,
     ],
   );
 

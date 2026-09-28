@@ -18,6 +18,10 @@ import {
 } from "@/src/components/ui";
 import { SwipeableChildCard } from "@/src/components/ui/swipeable-child-card";
 import { AddGuardianBottomSheet } from "../components/add-guardian-bottom-sheet";
+import { useOffline } from "@/src/offline/offline-context";
+import { onlineWithOfflineFallback, readOfflineRecordForDate, readOfflineResource } from "@/src/offline/offline-read";
+import { getManilaDateKey } from "@/src/utils/manila-date";
+import type { Child } from "@/src/api/api.types";
 
 interface ChildStatus {
   attendance: "Present" | "Absent" | "Not Recorded";
@@ -27,7 +31,8 @@ interface ChildStatus {
 
 export default function ChildScreen() {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const { isConnected, isInternetReachable } = useOffline();
   
   const [selectedChildForGuardian, setSelectedChildForGuardian] = useState<{ id: string; name: string } | null>(null);
   const [statusFilter, setStatusFilter] = useState<"Active" | "All">("Active");
@@ -45,10 +50,13 @@ export default function ChildScreen() {
     queryKey: mobileQueryKeys.teacherChildrenOverview(),
     enabled: isAuthenticated,
     queryFn: async () => {
+      if (!user?.id) return { children: [], attendanceRecord: null, feedingRecord: null };
+      const offline = !isConnected || !isInternetReachable;
+      const today = getManilaDateKey();
       const [children, attendanceRecord, feedingRecord] = await Promise.all([
-        getChildren(),
-        getTodayAttendance().catch(() => null),
-        getTodayFeeding().catch(() => null),
+        onlineWithOfflineFallback(offline, getChildren, () => readOfflineResource<Child>(user.id, "children")),
+        onlineWithOfflineFallback(offline, () => getTodayAttendance(), () => readOfflineRecordForDate<any>(user.id, "attendance", today)),
+        onlineWithOfflineFallback(offline, () => getTodayFeeding(), () => readOfflineRecordForDate<any>(user.id, "feeding", today)),
       ]);
       return { children, attendanceRecord, feedingRecord };
     },

@@ -18,6 +18,7 @@ import reportsRoutes from "./modules/reports/routes/reports.routes";
 import settingsRoutes from "./modules/settings/routes/settings.routes";
 import pickupRoutes from "./modules/pickup/routes/pickup.routes";
 import searchRoutes from "./modules/search/routes/search.routes";
+import offlineSyncRoutes from "./modules/offline-sync/routes/offline-sync.routes";
 import { corsErrorHandler, corsOptions } from "./shared/config/cors";
 import { globalApiLimiter } from "./shared/lib/global-api-rate-limit";
 import { globalErrorHandler } from "./shared/middleware/error-handler.middleware";
@@ -54,6 +55,7 @@ app.use("/api/competencies", competencyRoutes);
 app.use("/api/nutrition", nutritionRoutes);
 app.use("/api/pickup", pickupRoutes);
 app.use("/api/search", searchRoutes);
+app.use("/api/offline-sync", offlineSyncRoutes);
 
 app.use(corsErrorHandler);
 app.use((_req, res) => {

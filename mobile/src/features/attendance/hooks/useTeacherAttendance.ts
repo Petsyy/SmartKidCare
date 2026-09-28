@@ -18,8 +18,10 @@ import {
   getDraft,
   getOutboxOperation,
   saveDraft,
+  getPendingOutboxByDate,
 } from "@/src/offline/offline-store";
 import type { AttendanceDraftPayload } from "@/src/offline/offline.types";
+import { onlineWithOfflineFallback, readOfflineRecordForDate, readOfflineResource } from "@/src/offline/offline-read";
 
 type AttendanceChildStatus = "present" | "absent";
 
@@ -49,10 +51,16 @@ export const useTeacherAttendance = () => {
     queryKey: mobileQueryKeys.teacherAttendanceSetup(selectedDateKey),
     enabled: isAuthenticated,
     queryFn: async () => {
-      const [childrenData, attendanceRecord] = await Promise.all([
-        getChildren(),
-        getAttendanceForDate(selectedDateKey),
+      if (!user?.id) return { childrenData: [], attendanceRecord: null };
+      const offline = !isConnected || !isInternetReachable;
+      const [childrenData, serverAttendanceRecord, pendingOperation] = await Promise.all([
+        onlineWithOfflineFallback(offline, getChildren, () => readOfflineResource<Child>(user.id, "children")),
+        onlineWithOfflineFallback(offline, () => getAttendanceForDate(selectedDateKey), () => readOfflineRecordForDate<any>(user.id, "attendance", selectedDateKey)),
+        getPendingOutboxByDate(user.id, "attendance.create", selectedDateKey),
       ]);
+      const attendanceRecord = pendingOperation
+        ? { date: selectedDateKey, records: (pendingOperation.frozenPayload as any).records, localPending: true }
+        : serverAttendanceRecord;
       return { childrenData, attendanceRecord };
     },
   });

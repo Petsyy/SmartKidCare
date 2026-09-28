@@ -93,10 +93,55 @@ const initializeDatabase = async () => {
       cache_json TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS offline_sync_metadata (
+      user_id TEXT PRIMARY KEY NOT NULL,
+      active_snapshot_id TEXT,
+      sync_status TEXT NOT NULL DEFAULT 'notDownloaded',
+      last_complete_sync_at TEXT,
+      last_error_code TEXT
+    );
+    CREATE TABLE IF NOT EXISTS offline_children (
+      user_id TEXT NOT NULL, server_id TEXT NOT NULL, snapshot_id TEXT NOT NULL,
+      child_id TEXT NOT NULL, server_updated_at TEXT, data_json TEXT NOT NULL,
+      PRIMARY KEY (user_id, server_id, snapshot_id)
+    );
+    CREATE TABLE IF NOT EXISTS offline_attendance (
+      user_id TEXT NOT NULL, server_id TEXT NOT NULL, snapshot_id TEXT NOT NULL,
+      date_key TEXT, server_updated_at TEXT, data_json TEXT NOT NULL,
+      PRIMARY KEY (user_id, server_id, snapshot_id)
+    );
+    CREATE TABLE IF NOT EXISTS offline_feeding (
+      user_id TEXT NOT NULL, server_id TEXT NOT NULL, snapshot_id TEXT NOT NULL,
+      date_key TEXT, server_updated_at TEXT, data_json TEXT NOT NULL,
+      PRIMARY KEY (user_id, server_id, snapshot_id)
+    );
+    CREATE TABLE IF NOT EXISTS offline_nutrition (
+      user_id TEXT NOT NULL, server_id TEXT NOT NULL, snapshot_id TEXT NOT NULL,
+      child_id TEXT, school_year TEXT, period TEXT, date_key TEXT,
+      server_updated_at TEXT, data_json TEXT NOT NULL,
+      PRIMARY KEY (user_id, server_id, snapshot_id)
+    );
+    CREATE TABLE IF NOT EXISTS offline_competency_definitions (
+      user_id TEXT NOT NULL, server_id TEXT NOT NULL, snapshot_id TEXT NOT NULL,
+      server_updated_at TEXT, data_json TEXT NOT NULL,
+      PRIMARY KEY (user_id, server_id, snapshot_id)
+    );
+    CREATE TABLE IF NOT EXISTS offline_competency_evaluations (
+      user_id TEXT NOT NULL, server_id TEXT NOT NULL, snapshot_id TEXT NOT NULL,
+      child_id TEXT, school_year TEXT, period TEXT, date_key TEXT,
+      server_updated_at TEXT, data_json TEXT NOT NULL,
+      PRIMARY KEY (user_id, server_id, snapshot_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_offline_children_active ON offline_children(user_id, snapshot_id, child_id);
+    CREATE INDEX IF NOT EXISTS idx_offline_attendance_date ON offline_attendance(user_id, snapshot_id, date_key);
+    CREATE INDEX IF NOT EXISTS idx_offline_feeding_date ON offline_feeding(user_id, snapshot_id, date_key);
+    CREATE INDEX IF NOT EXISTS idx_offline_nutrition_child ON offline_nutrition(user_id, snapshot_id, child_id, school_year, period);
+    CREATE INDEX IF NOT EXISTS idx_offline_competency_child ON offline_competency_evaluations(user_id, snapshot_id, child_id, school_year, period);
   `);
   await database.runAsync(
     "UPDATE offline_outbox SET status = 'failedRetryable' WHERE status = 'attempting'",
   );
+  await database.execAsync("PRAGMA user_version = 2;");
   return database;
 };
 
@@ -120,6 +165,17 @@ export const clearOfflineDataForUser = async (userId: string) => {
       "DELETE FROM offline_query_cache WHERE user_id = ?",
       userId,
     );
+    for (const table of [
+      "offline_children",
+      "offline_attendance",
+      "offline_feeding",
+      "offline_nutrition",
+      "offline_competency_definitions",
+      "offline_competency_evaluations",
+      "offline_sync_metadata",
+    ]) {
+      await database.runAsync(`DELETE FROM ${table} WHERE user_id = ?`, userId);
+    }
   });
 };
 

@@ -15,6 +15,12 @@ import { getManilaDateKey } from "@/src/utils/manila-date";
 import { useFocusEffect } from "expo-router";
 import { loadNotificationArchiveState } from "@/src/utils/notification-archive-storage";
 import type { DaycareCenterDisplayInput } from "@/src/utils/daycare-center-format";
+import { useOffline } from "@/src/offline/offline-context";
+import {
+  onlineWithOfflineFallback,
+  readOfflineRecordForDate,
+  readOfflineResource,
+} from "@/src/offline/offline-read";
 
 export interface TeacherDashboardData {
   children: Child[];
@@ -42,6 +48,7 @@ export interface TeacherDashboardData {
 
 export function useTeacherDashboard(): TeacherDashboardData {
   const { isAuthenticated, user } = useAuth();
+  const { isConnected, isInternetReachable } = useOffline();
   const todayDateKey = useMemo(() => getManilaDateKey(), []);
 
   const [archivedIds, setArchivedIds] = useState<Set<string>>(new Set());
@@ -64,7 +71,7 @@ export function useTeacherDashboard(): TeacherDashboardData {
       return () => {
         isMounted = false;
       };
-    }, [user])
+    }, [user]),
   );
 
   const {
@@ -77,34 +84,63 @@ export function useTeacherDashboard(): TeacherDashboardData {
     queryKey: mobileQueryKeys.teacherDashboard(todayDateKey),
     enabled: isAuthenticated,
     queryFn: async () => {
-      const [
-        children,
-        attendanceData,
-        feedingData,
-        profileData,
-        notificationsFeed,
-        pickupEligibleChildren,
-      ] = await Promise.all([
-        getChildren(),
-        getTodayAttendance(),
-        getTodayFeeding(),
-        getProfile(),
-        getTeacherNotificationsFeed({ date: todayDateKey }).catch(() => null),
-        getPickupEligibleChildren().catch(() => []),
-      ]);
-      return {
-        children,
-        attendanceData,
-        feedingData,
-        recentNotifications: notificationsFeed?.notifications || [],
-        teacherName: profileData?.firstName || "Teacher",
-        daycareCenter: profileData?.daycareCenter,
-        pendingPickups: pickupEligibleChildren?.length || 0,
-      };
+      if (!user?.id) throw new Error("Please sign in again.");
+      const offline = !isConnected || !isInternetReachable;
+      return onlineWithOfflineFallback(
+        offline,
+        async () => {
+          const [
+            children,
+            attendanceData,
+            feedingData,
+            profileData,
+            notificationsFeed,
+            pickupEligibleChildren,
+          ] = await Promise.all([
+            getChildren(),
+            getTodayAttendance(),
+            getTodayFeeding(),
+            getProfile(),
+            getTeacherNotificationsFeed({ date: todayDateKey }).catch(
+              () => null,
+            ),
+            getPickupEligibleChildren().catch(() => []),
+          ]);
+          return {
+            children,
+            attendanceData,
+            feedingData,
+            recentNotifications: notificationsFeed?.notifications || [],
+            teacherName: profileData?.firstName || "Teacher",
+            daycareCenter: profileData?.daycareCenter,
+            pendingPickups: pickupEligibleChildren?.length || 0,
+          };
+        },
+        async () => ({
+          children: await readOfflineResource<Child>(user.id, "children"),
+          attendanceData: await readOfflineRecordForDate<any>(
+            user.id,
+            "attendance",
+            todayDateKey,
+          ),
+          feedingData: await readOfflineRecordForDate<any>(
+            user.id,
+            "feeding",
+            todayDateKey,
+          ),
+          recentNotifications: [],
+          teacherName: user.firstName || "Teacher",
+          daycareCenter: undefined,
+          pendingPickups: 0,
+        }),
+      );
     },
   });
 
-  const children = useMemo<Child[]>(() => data?.children ?? [], [data?.children]);
+  const children = useMemo<Child[]>(
+    () => data?.children ?? [],
+    [data?.children],
+  );
   const attendanceData = data?.attendanceData ?? null;
   const feedingData = data?.feedingData ?? null;
   const recentNotificationsRaw = useMemo<TeacherNotificationFeedItem[]>(
@@ -117,7 +153,7 @@ export function useTeacherDashboard(): TeacherDashboardData {
 
   const recentNotifications = useMemo(() => {
     return recentNotificationsRaw.filter(
-      (item) => !archivedIds.has(item.id) && !deletedIds.has(item.id)
+      (item) => !archivedIds.has(item.id) && !deletedIds.has(item.id),
     );
   }, [recentNotificationsRaw, archivedIds, deletedIds]);
 

@@ -15,6 +15,13 @@ import { useQuery } from "@tanstack/react-query";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { useFocusEffect } from "expo-router";
 import { loadNotificationArchiveState } from "@/src/utils/notification-archive-storage";
+import { useOffline } from "@/src/offline/offline-context";
+import {
+  onlineWithOfflineFallback,
+  readOfflineRecordForDate,
+  readOfflineResource,
+} from "@/src/offline/offline-read";
+import { getManilaDateKey } from "@/src/utils/manila-date";
 
 export interface ChildStats {
   present: number;
@@ -43,6 +50,7 @@ export interface ParentDashboardData {
 
 export function useParentDashboard(): ParentDashboardData {
   const { isAuthenticated, user } = useAuth();
+  const { isConnected, isInternetReachable } = useOffline();
   const [archivedIds, setArchivedIds] = useState<Set<string>>(new Set());
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
 
@@ -63,26 +71,67 @@ export function useParentDashboard(): ParentDashboardData {
       return () => {
         isMounted = false;
       };
-    }, [user])
+    }, [user]),
   );
 
   const { data, isLoading, isRefetching, error, refetch } = useQuery({
     queryKey: mobileQueryKeys.parentDashboard(),
     enabled: isAuthenticated,
     queryFn: async () => {
-      const [children, attendanceRecords, feedingRecords, todayAttendanceRecord, todayFeedingRecord, parentNotifications] =
-        await Promise.all([
-          getMyChildren(),
-          getAttendanceHistory(),
-          getFeedingHistory(),
-          getTodayAttendance().catch(() => null),
-          getTodayFeeding().catch(() => null),
-          getParentNotificationsFeed().catch(() => null),
-        ]);
-      return {
-        children, attendanceRecords, feedingRecords, todayAttendanceRecord, todayFeedingRecord,
-        recentNotifications: parentNotifications?.notifications || [],
-      };
+      if (!user?.id) throw new Error("Please sign in again.");
+      const offline = !isConnected || !isInternetReachable;
+      return onlineWithOfflineFallback(
+        offline,
+        async () => {
+          const [
+            children,
+            attendanceRecords,
+            feedingRecords,
+            todayAttendanceRecord,
+            todayFeedingRecord,
+            parentNotifications,
+          ] = await Promise.all([
+            getMyChildren(),
+            getAttendanceHistory(),
+            getFeedingHistory(),
+            getTodayAttendance().catch(() => null),
+            getTodayFeeding().catch(() => null),
+            getParentNotificationsFeed().catch(() => null),
+          ]);
+          return {
+            children,
+            attendanceRecords,
+            feedingRecords,
+            todayAttendanceRecord,
+            todayFeedingRecord,
+            recentNotifications: parentNotifications?.notifications || [],
+          };
+        },
+        async () => {
+          const today = getManilaDateKey();
+          const [
+            children,
+            attendanceRecords,
+            feedingRecords,
+            todayAttendanceRecord,
+            todayFeedingRecord,
+          ] = await Promise.all([
+            readOfflineResource<Child>(user.id, "children"),
+            readOfflineResource<any>(user.id, "attendance"),
+            readOfflineResource<any>(user.id, "feeding"),
+            readOfflineRecordForDate<any>(user.id, "attendance", today),
+            readOfflineRecordForDate<any>(user.id, "feeding", today),
+          ]);
+          return {
+            children,
+            attendanceRecords,
+            feedingRecords,
+            todayAttendanceRecord,
+            todayFeedingRecord,
+            recentNotifications: [],
+          };
+        },
+      );
     },
   });
 
@@ -91,7 +140,8 @@ export function useParentDashboard(): ParentDashboardData {
   const feedingRecords = data?.feedingRecords ?? [];
   const todayAttendanceRecord = data?.todayAttendanceRecord ?? null;
   const todayFeedingRecord = data?.todayFeedingRecord ?? null;
-  const recentNotificationsRaw: ParentNotificationFeedItem[] = data?.recentNotifications ?? [];
+  const recentNotificationsRaw: ParentNotificationFeedItem[] =
+    data?.recentNotifications ?? [];
 
   const recentNotifications = useMemo(() => {
     return recentNotificationsRaw
@@ -102,8 +152,12 @@ export function useParentDashboard(): ParentDashboardData {
   const selectedChild = children[0] ?? null;
 
   const stats = useMemo(() => {
-    if (!selectedChild) return { present: 0, absent: 0, mealsCompleted: 0, mealsMissed: 0 };
-    let present = 0, absent = 0, mealsCompleted = 0, mealsMissed = 0;
+    if (!selectedChild)
+      return { present: 0, absent: 0, mealsCompleted: 0, mealsMissed: 0 };
+    let present = 0,
+      absent = 0,
+      mealsCompleted = 0,
+      mealsMissed = 0;
     attendanceRecords.forEach((record: any) => {
       if (record.records && Array.isArray(record.records)) {
         record.records.forEach((r: any) => {
@@ -130,39 +184,72 @@ export function useParentDashboard(): ParentDashboardData {
   }, [selectedChild, attendanceRecords, feedingRecords]);
 
   const presentToday = useMemo(() => {
-    if (!todayAttendanceRecord?.records || !Array.isArray(todayAttendanceRecord.records)) return 0;
+    if (
+      !todayAttendanceRecord?.records ||
+      !Array.isArray(todayAttendanceRecord.records)
+    )
+      return 0;
     const linkedChildIds = new Set(children.map((item) => item._id));
     return todayAttendanceRecord.records.filter((record: any) => {
-      const childId = typeof record?.child === "object" ? String(record?.child?._id) : String(record?.child);
+      const childId =
+        typeof record?.child === "object"
+          ? String(record?.child?._id)
+          : String(record?.child);
       return linkedChildIds.has(childId) && record?.status === "present";
     }).length;
   }, [todayAttendanceRecord, children]);
 
   const absentToday = useMemo(() => {
-    if (!todayAttendanceRecord?.records || !Array.isArray(todayAttendanceRecord.records)) return 0;
+    if (
+      !todayAttendanceRecord?.records ||
+      !Array.isArray(todayAttendanceRecord.records)
+    )
+      return 0;
     const linkedChildIds = new Set(children.map((item) => item._id));
     return todayAttendanceRecord.records.filter((record: any) => {
-      const childId = typeof record?.child === "object" ? String(record?.child?._id) : String(record?.child);
+      const childId =
+        typeof record?.child === "object"
+          ? String(record?.child?._id)
+          : String(record?.child);
       return linkedChildIds.has(childId) && record?.status === "absent";
     }).length;
   }, [todayAttendanceRecord, children]);
 
   const feedingDoneToday = useMemo(() => {
-    if (!todayFeedingRecord?.records || !Array.isArray(todayFeedingRecord.records)) return 0;
+    if (
+      !todayFeedingRecord?.records ||
+      !Array.isArray(todayFeedingRecord.records)
+    )
+      return 0;
     const linkedChildIds = new Set(children.map((item) => item._id));
     return todayFeedingRecord.records.filter((record: any) => {
-      const childId = typeof record?.child === "object" ? String(record?.child?._id) : String(record?.child);
+      const childId =
+        typeof record?.child === "object"
+          ? String(record?.child?._id)
+          : String(record?.child);
       return linkedChildIds.has(childId) && record?.status === "completed";
     }).length;
   }, [todayFeedingRecord, children]);
 
-  const onRefresh = () => { void refetch(); };
+  const onRefresh = () => {
+    void refetch();
+  };
 
   return {
-    children, selectedChild, attendanceRecords, feedingRecords,
-    todayAttendanceRecord, todayFeedingRecord, recentNotifications, stats,
-    presentToday, absentToday, feedingDoneToday,
-    loading: isLoading, refreshing: isRefetching,
-    error: error instanceof Error ? error.message : null, onRefresh,
+    children,
+    selectedChild,
+    attendanceRecords,
+    feedingRecords,
+    todayAttendanceRecord,
+    todayFeedingRecord,
+    recentNotifications,
+    stats,
+    presentToday,
+    absentToday,
+    feedingDoneToday,
+    loading: isLoading,
+    refreshing: isRefetching,
+    error: error instanceof Error ? error.message : null,
+    onRefresh,
   };
 }

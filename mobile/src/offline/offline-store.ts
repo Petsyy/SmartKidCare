@@ -185,6 +185,18 @@ export const listOutboxOperations = async (userId: string) => {
   }));
 };
 
+export const getPendingOutboxByDate = async (
+  userId: string,
+  operationType: OutboxOperation["operationType"],
+  dateKey: string,
+) => {
+  const operations = await listOutboxOperations(userId);
+  return operations.find(
+    (operation) =>
+      operation.operationType === operationType && operation.dateKey === dateKey,
+  ) ?? null;
+};
+
 export const getOutboxOperation = async (operationId: string) => {
   const database = await getOfflineDatabase();
   const row = await database.getFirstAsync<{ status: OutboxStatus }>(
