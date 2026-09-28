@@ -14,7 +14,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { MapPin, UserRound, UsersRound } from "lucide-react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import type { Child } from "@/src/api/api.types";
 
 import {
   editChildSchema,
@@ -39,12 +40,16 @@ import {
   ScreenLoadingState,
   ScreenShell,
 } from "@/src/components/ui";
+import { useOffline } from "@/src/offline/offline-context";
 
 export default function EditChildScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { id } = useLocalSearchParams();
   const childId = typeof id === "string" ? id : null;
+  const { isConnected, isInternetReachable } = useOffline();
+  const isOffline = !isConnected || !isInternetReachable;
 
   const {
     data: child,
@@ -52,7 +57,14 @@ export default function EditChildScreen() {
     error,
   } = useQuery({
     queryKey: mobileQueryKeys.teacherChildEdit(childId),
-    enabled: Boolean(childId),
+    enabled: Boolean(childId) && !isOffline,
+    initialData: () => {
+      if (!childId) return undefined;
+      const details = queryClient.getQueryData<{ child?: Child }>(
+        mobileQueryKeys.teacherChildDetails(childId),
+      );
+      return details?.child;
+    },
     queryFn: async () => {
       if (!childId) throw new Error("Missing child ID");
       return getChildById(childId);
@@ -136,6 +148,37 @@ export default function EditChildScreen() {
     });
   };
 
+  if (isOffline) {
+    return (
+      <ScreenShell withKeyboardAvoiding={false} edges={[]}>
+        <ScreenHeader
+          title="Edit Child"
+          subtitle="Internet connection required"
+          backgroundVariant="teacherGradient"
+          onBack={() => router.back()}
+        />
+        <View className="flex-1 items-center justify-center bg-gray-50 px-6">
+          <View className="w-full rounded-3xl border border-amber-200 bg-amber-50 p-6">
+            <Text className="text-center text-xl font-bold text-amber-900">
+              Child information is read-only offline
+            </Text>
+            <Text className="mt-3 text-center text-base leading-6 text-amber-800">
+              Connect to the internet to update this child’s personal or parent information.
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Return to child details"
+              onPress={() => router.back()}
+              className="mt-5 min-h-12 items-center justify-center rounded-2xl bg-teal-600 px-4"
+            >
+              <Text className="font-semibold text-white">Back to Child Details</Text>
+            </Pressable>
+          </View>
+        </View>
+      </ScreenShell>
+    );
+  }
+
   if (isLoading) {
     return (
       <ScreenShell withKeyboardAvoiding={false} edges={[]}>
@@ -150,7 +193,7 @@ export default function EditChildScreen() {
     );
   }
 
-  if (error || !child) {
+  if (!child) {
     return (
       <ScreenShell withKeyboardAvoiding={false} edges={[]}>
         <ScreenHeader

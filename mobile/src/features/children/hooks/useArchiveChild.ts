@@ -3,6 +3,7 @@ import { Alert } from "react-native";
 import { updateChildStatus } from "@/src/api/teacher.api";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { useRouter } from "expo-router";
+import { useOffline } from "@/src/offline/offline-context";
 
 type ChildStatus = "Active" | "Inactive";
 
@@ -29,10 +30,15 @@ function useChildStatusMutation(
   const queryClient = useQueryClient();
   const router = useRouter();
   const feedback = statusFeedback[nextStatus];
+  const { isConnected, isInternetReachable } = useOffline();
 
   return useMutation({
     mutationFn: async () => {
       if (!childId) throw new Error("Child ID is missing");
+      if (!isConnected || !isInternetReachable)
+        throw new Error(
+          "Connect to the internet to change the child’s status.",
+        );
       return updateChildStatus(childId, nextStatus);
     },
     onSuccess: () => {

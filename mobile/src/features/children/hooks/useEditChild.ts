@@ -4,13 +4,17 @@ import { updateChild } from "@/src/api/teacher.api";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 import type { Child } from "@/src/api/api.types";
 import type { EditChildFormValues } from "../validations/edit-child-validation";
+import { useOffline } from "@/src/offline/offline-context";
 
 export function useEditChild(childId: string | null) {
   const queryClient = useQueryClient();
+  const { isConnected, isInternetReachable } = useOffline();
 
   return useMutation({
     mutationFn: async (data: EditChildFormValues) => {
       if (!childId) throw new Error("Child ID is missing");
+      if (!isConnected || !isInternetReachable)
+        throw new Error("Connect to the internet to update child information.");
       return updateChild(childId, data);
     },
     onSuccess: (updatedChild: Child) => {

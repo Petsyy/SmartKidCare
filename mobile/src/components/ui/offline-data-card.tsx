@@ -73,7 +73,7 @@ export function OfflineDataCard() {
       </View>
       <Pressable
         disabled={!online || offlineDataState === "downloading"}
-        onPress={() => void synchronizeRecords()}
+        onPress={() => void synchronizeRecords(true)}
         accessibilityRole="button"
         accessibilityLabel="Update offline data"
         className={`mt-4 min-h-12 flex-row items-center justify-center rounded-2xl ${online ? "bg-teal-600" : "bg-gray-300"}`}

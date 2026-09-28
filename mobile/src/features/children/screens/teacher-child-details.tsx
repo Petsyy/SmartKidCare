@@ -63,6 +63,7 @@ export default function TeacherChildDetailsScreen() {
   const { id } = useLocalSearchParams();
   const { isAuthenticated, user } = useAuth();
   const { isConnected, isInternetReachable } = useOffline();
+  const isOffline = !isConnected || !isInternetReachable;
   const childId = typeof id === "string" ? id : null;
   const [isGuardiansSheetOpen, setIsGuardiansSheetOpen] = useState(false);
   const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
@@ -479,8 +480,19 @@ export default function TeacherChildDetailsScreen() {
           </Pressable>
           <Pressable
             accessibilityRole="button"
-            onPress={() => router.push(`/(teacher)/edit-child/${childId}`)}
-            className="flex-1 items-center justify-center bg-white rounded-3xl py-4 active:bg-gray-50"
+            onPress={() => {
+              if (isOffline) {
+                Alert.alert(
+                  "Connection required",
+                  "Connect to the internet to update child information.",
+                );
+                return;
+              }
+              router.push(`/(teacher)/edit-child/${childId}`);
+            }}
+            accessibilityLabel={isOffline ? "Edit child unavailable offline" : "Edit child information"}
+            accessibilityState={{ disabled: isOffline }}
+            className={`flex-1 items-center justify-center rounded-3xl py-4 ${isOffline ? "bg-gray-100" : "bg-white active:bg-gray-50"}`}
             style={{
               shadowColor: "#000",
               shadowOffset: { width: 0, height: 2 },
@@ -490,9 +502,9 @@ export default function TeacherChildDetailsScreen() {
             }}
           >
             <View className="h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 mb-2">
-              <Edit3 size={24} color="#4F46E5" />
+              <Edit3 size={24} color={isOffline ? "#9CA3AF" : "#4F46E5"} />
             </View>
-            <Text className="text-xs font-bold text-gray-700 text-center">Edit</Text>
+            <Text className={`text-xs font-bold text-center ${isOffline ? "text-gray-400" : "text-gray-700"}`}>Edit</Text>
           </Pressable>
 
           <Pressable
@@ -500,6 +512,13 @@ export default function TeacherChildDetailsScreen() {
             accessibilityLabel={isInactive ? "Unarchive child" : "Archive child"}
             disabled={isUpdatingStatus}
             onPress={() => {
+              if (isOffline) {
+                Alert.alert(
+                  "Connection required",
+                  "Connect to the internet to change the child’s status.",
+                );
+                return;
+              }
               Alert.alert(
                 isInactive ? "Unarchive Child" : "Archive Child",
                 isInactive
@@ -771,6 +790,7 @@ export default function TeacherChildDetailsScreen() {
         visible={isGuardiansSheetOpen}
         onClose={() => setIsGuardiansSheetOpen(false)}
         onEditGuardian={handleEditGuardian}
+        readOnly={isOffline}
       />
       <AddGuardianBottomSheet
         childId={childId}

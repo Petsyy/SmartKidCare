@@ -35,20 +35,21 @@ type OfflineContextValue = {
   syncState: SyncState;
   pendingCount: number;
   localWorkCount: number;
-  synchronize: () => Promise<void>;
+  synchronize: () => Promise<boolean>;
   refreshPendingCount: () => Promise<void>;
   offlineDataState: OfflineDataState;
   recordSyncProgress: RecordSyncProgress;
   lastCompleteRecordSyncAt: string | null;
   snapshotGeneratedAt: string | null;
   resourceStates: OfflineResourceState[];
-  synchronizeRecords: () => Promise<void>;
+  synchronizeRecords: (force?: boolean) => Promise<void>;
 };
 
 const OfflineContext = createContext<OfflineContextValue | null>(null);
 
 const retryableStatus = (error: unknown) =>
   !(error instanceof ApiError) || error.status >= 500 || error.status === 408;
+const AUTO_RECORD_REFRESH_INTERVAL_MS = 15 * 60 * 1000;
 
 export const OfflineProvider = ({
   children,
@@ -91,12 +92,13 @@ export const OfflineProvider = ({
       !isInternetReachable
     ) {
       if (user?.id && !token) setSyncState("paused");
-      return;
+      return false;
     }
 
     syncingRef.current = true;
     setSyncState("syncing");
     let terminalState: SyncState = "idle";
+    let didSynchronize = false;
     try {
       const operations = await listOutboxOperations(user.id);
       for (const operation of operations) {
@@ -115,6 +117,7 @@ export const OfflineProvider = ({
             });
           }
           await updateOutboxStatus(operation.clientOperationId, "synced");
+          didSynchronize = true;
           await queryClient.invalidateQueries();
         } catch (error) {
           if (error instanceof ApiError && error.status === 401) {
@@ -141,6 +144,7 @@ export const OfflineProvider = ({
       syncingRef.current = false;
       await refreshPendingCount();
     }
+    return didSynchronize;
   }, [
     isConnected,
     isInternetReachable,
@@ -150,8 +154,20 @@ export const OfflineProvider = ({
     user?.id,
   ]);
 
-  const synchronizeRecords = useCallback(async () => {
+  const synchronizeRecords = useCallback(async (force = false) => {
     if (recordSyncingRef.current || !userId || !token || !isConnected || !isInternetReachable || authState !== "onlineAuthenticated") return;
+    if (!force) {
+      const currentMetadata = await getRecordSyncMetadata(userId);
+      const lastCompletedAt = currentMetadata?.last_complete_sync_at
+        ? Date.parse(currentMetadata.last_complete_sync_at)
+        : Number.NaN;
+      const hasFreshCompleteSnapshot =
+        Boolean(currentMetadata?.active_snapshot_id) &&
+        !currentMetadata?.last_error_code &&
+        Number.isFinite(lastCompletedAt) &&
+        Date.now() - lastCompletedAt < AUTO_RECORD_REFRESH_INTERVAL_MS;
+      if (hasFreshCompleteSnapshot) return;
+    }
     recordSyncingRef.current = true;
     setOfflineDataState("downloading");
     try {
@@ -236,14 +252,15 @@ export const OfflineProvider = ({
   useEffect(() => {
     if (!isConnected || !isInternetReachable) return;
     const timeout = setTimeout(() => {
-      void synchronize().then(() => synchronizeRecords());
+      void synchronize().then((didSynchronize) => synchronizeRecords(didSynchronize));
     }, 0);
     return () => clearTimeout(timeout);
   }, [isConnected, isInternetReachable, synchronize, synchronizeRecords]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (state) => {
-      if (state === "active") void synchronize().then(() => synchronizeRecords());
+      if (state === "active")
+        void synchronize().then((didSynchronize) => synchronizeRecords(didSynchronize));
     });
     return () => subscription.remove();
   }, [synchronize, synchronizeRecords]);

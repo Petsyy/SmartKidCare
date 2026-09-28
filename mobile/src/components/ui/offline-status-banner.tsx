@@ -22,7 +22,7 @@ export function OfflineStatusBanner() {
 
   if (
     authState === "signedOut" ||
-    (!isOffline && pendingCount === 0 && !showRecordStatus && offlineDataState !== "ready")
+    (!isOffline && pendingCount === 0 && !showRecordStatus)
   ) {
     return null;
   }
@@ -44,9 +44,7 @@ export function OfflineStatusBanner() {
         ? `Update incomplete \u2022 showing data from ${updatedLabel ?? "the previous synchronization"}`
     : syncState === "syncing"
       ? `Synchronizing ${pendingCount} submission${pendingCount === 1 ? "" : "s"}\u2026`
-      : pendingCount > 0
-        ? `${pendingCount} submission${pendingCount === 1 ? "" : "s"} waiting to synchronize`
-        : `Available offline${updatedLabel ? ` \u2022 updated ${updatedLabel}` : ""}`;
+      : `${pendingCount} submission${pendingCount === 1 ? "" : "s"} waiting to synchronize`;
 
   return (
     <View
