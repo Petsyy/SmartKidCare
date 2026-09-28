@@ -14,7 +14,10 @@ import {
 } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { getChildById, type Child } from "@/src/api/parent.api";
-import { getChildParentCredentials, resetChildParentPassword } from "@/src/api/teacher.api";
+import {
+  getChildParentCredentials,
+  resetChildParentPassword,
+} from "@/src/api/teacher.api";
 import { getTodayAttendance, getTodayFeeding } from "@/src/api/records.api";
 import { useAuth } from "@/src/hooks/use-auth";
 import {
@@ -41,19 +44,21 @@ import { LinearGradient } from "expo-linear-gradient";
 import {
   ScreenLoadingState,
   TEACHER_HEADER_GRADIENT,
+  OfflineStatusBanner,
 } from "@/src/components/ui";
 import { ViewGuardiansBottomSheet } from "../components/view-guardians-bottom-sheet";
 import { AddGuardianBottomSheet } from "../components/add-guardian-bottom-sheet";
 import { ParentCredentialsModal } from "@/src/features/enrollment/components/ui/parent-credentials-modal";
 import { GrowthHistoryBottomSheet } from "@/src/features/nutrition/components/growth-history-bottom-sheet";
-import {
-  useArchiveChild,
-  useRestoreChild,
-} from "../hooks/useArchiveChild";
+import { useArchiveChild, useRestoreChild } from "../hooks/useArchiveChild";
 import type { Guardian } from "@/src/api/api.types";
 import { useAndroidBackRoute } from "@/src/hooks/use-android-back-route";
 import { useOffline } from "@/src/offline/offline-context";
-import { onlineWithOfflineFallback, readOfflineRecordForDate, readOfflineResource } from "@/src/offline/offline-read";
+import {
+  onlineWithOfflineFallback,
+  readOfflineRecordForDate,
+  readOfflineResource,
+} from "@/src/offline/offline-read";
 import { getManilaDateKey } from "@/src/utils/manila-date";
 
 export default function TeacherChildDetailsScreen() {
@@ -74,12 +79,25 @@ export default function TeacherChildDetailsScreen() {
     useRestoreChild(childId);
   const [editGuardian, setEditGuardian] = useState<Guardian | null>(null);
   const [editIndex, setEditIndex] = useState<number | null>(null);
-  const [credentialsModal, setCredentialsModal] = useState<{ visible: boolean; email: string; tempPassword?: string | null } | null>(null);
+  const [credentialsModal, setCredentialsModal] = useState<{
+    visible: boolean;
+    email: string;
+    tempPassword?: string | null;
+  } | null>(null);
   const [isLoadingCredentials, setIsLoadingCredentials] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const showOfflineActionMessage = (actionName: string) =>
+    Alert.alert(
+      "Connection required",
+      `Connect to the internet to ${actionName}.`,
+    );
 
   const handleViewCredentials = async () => {
     if (!childId) return;
+    if (isOffline) {
+      showOfflineActionMessage("view parent credentials");
+      return;
+    }
     try {
       setIsLoadingCredentials(true);
       const credentials = await getChildParentCredentials(childId);
@@ -97,6 +115,10 @@ export default function TeacherChildDetailsScreen() {
 
   const handleResetPassword = () => {
     if (!childId) return;
+    if (isOffline) {
+      showOfflineActionMessage("reset parent password");
+      return;
+    }
     Alert.alert(
       "Reset Parent Password",
       "Are you sure you want to reset this parent's password? Their current password will be invalidated immediately. This will affect their entire account.",
@@ -115,7 +137,10 @@ export default function TeacherChildDetailsScreen() {
                 tempPassword: credentials.tempPassword,
               });
             } catch (error: any) {
-              Alert.alert("Error", error.message || "Failed to reset password.");
+              Alert.alert(
+                "Error",
+                error.message || "Failed to reset password.",
+              );
             } finally {
               setIsResettingPassword(false);
             }
@@ -161,9 +186,21 @@ export default function TeacherChildDetailsScreen() {
       };
       const today = getManilaDateKey();
       const [child, attendanceRecord, feedingRecord] = await Promise.all([
-        onlineWithOfflineFallback(offline, () => getChildById(childId), localChild),
-        onlineWithOfflineFallback(offline, () => getTodayAttendance(), () => readOfflineRecordForDate<any>(user.id, "attendance", today)),
-        onlineWithOfflineFallback(offline, () => getTodayFeeding(), () => readOfflineRecordForDate<any>(user.id, "feeding", today)),
+        onlineWithOfflineFallback(
+          offline,
+          () => getChildById(childId),
+          localChild,
+        ),
+        onlineWithOfflineFallback(
+          offline,
+          () => getTodayAttendance(),
+          () => readOfflineRecordForDate<any>(user.id, "attendance", today),
+        ),
+        onlineWithOfflineFallback(
+          offline,
+          () => getTodayFeeding(),
+          () => readOfflineRecordForDate<any>(user.id, "feeding", today),
+        ),
       ]);
       return { child, attendanceRecord, feedingRecord };
     },
@@ -230,6 +267,7 @@ export default function TeacherChildDetailsScreen() {
             </Text>
           </View>
         </LinearGradient>
+        <OfflineStatusBanner />
         <ScreenLoadingState
           title="Loading child details"
           message="Getting the child’s profile and today’s records ready."
@@ -265,6 +303,7 @@ export default function TeacherChildDetailsScreen() {
             </Text>
           </View>
         </LinearGradient>
+        <OfflineStatusBanner />
         <View className="flex-1 items-center justify-center px-6">
           <View className="h-16 w-16 items-center justify-center rounded-2xl bg-red-50 mb-4">
             <User size={28} color="#EF4444" />
@@ -326,6 +365,7 @@ export default function TeacherChildDetailsScreen() {
           </View>
         </View>
       </LinearGradient>
+      <OfflineStatusBanner />
 
       <ScrollView
         className="flex-1"
@@ -442,7 +482,9 @@ export default function TeacherChildDetailsScreen() {
             <View className="h-12 w-12 items-center justify-center rounded-2xl bg-teal-50 mb-2">
               <Award size={24} color="#0D9488" />
             </View>
-            <Text className="text-xs font-bold text-gray-700 text-center">Evaluate</Text>
+            <Text className="text-xs font-bold text-gray-700 text-center">
+              Evaluate
+            </Text>
           </Pressable>
 
           <Pressable
@@ -459,7 +501,9 @@ export default function TeacherChildDetailsScreen() {
             <View className="h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 mb-2">
               <TrendingUp size={24} color="#047857" />
             </View>
-            <Text className="text-xs font-bold text-gray-700 text-center">History</Text>
+            <Text className="text-xs font-bold text-gray-700 text-center">
+              History
+            </Text>
           </Pressable>
 
           <Pressable
@@ -476,23 +520,26 @@ export default function TeacherChildDetailsScreen() {
             <View className="h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 mb-2">
               <ShieldCheck size={24} color="#0284C7" />
             </View>
-            <Text className="text-xs font-bold text-gray-700 text-center">Guardians</Text>
+            <Text className="text-xs font-bold text-gray-700 text-center">
+              Guardians
+            </Text>
           </Pressable>
           <Pressable
             accessibilityRole="button"
             onPress={() => {
               if (isOffline) {
-                Alert.alert(
-                  "Connection required",
-                  "Connect to the internet to update child information.",
-                );
+                showOfflineActionMessage("update child information");
                 return;
               }
               router.push(`/(teacher)/edit-child/${childId}`);
             }}
-            accessibilityLabel={isOffline ? "Edit child unavailable offline" : "Edit child information"}
+            accessibilityLabel={
+              isOffline
+                ? "Edit child unavailable offline"
+                : "Edit child information"
+            }
             accessibilityState={{ disabled: isOffline }}
-            className={`flex-1 items-center justify-center rounded-3xl py-4 ${isOffline ? "bg-gray-100" : "bg-white active:bg-gray-50"}`}
+            className={`flex-1 items-center justify-center rounded-3xl py-4 ${isOffline ? "bg-gray-100 opacity-60" : "bg-white active:bg-gray-50"}`}
             style={{
               shadowColor: "#000",
               shadowOffset: { width: 0, height: 2 },
@@ -504,19 +551,22 @@ export default function TeacherChildDetailsScreen() {
             <View className="h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 mb-2">
               <Edit3 size={24} color={isOffline ? "#9CA3AF" : "#4F46E5"} />
             </View>
-            <Text className={`text-xs font-bold text-center ${isOffline ? "text-gray-400" : "text-gray-700"}`}>Edit</Text>
+            <Text
+              className={`text-xs font-bold text-center ${isOffline ? "text-gray-400" : "text-gray-700"}`}
+            >
+              Edit
+            </Text>
           </Pressable>
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={isInactive ? "Unarchive child" : "Archive child"}
+            accessibilityLabel={
+              isInactive ? "Unarchive child" : "Archive child"
+            }
             disabled={isUpdatingStatus}
             onPress={() => {
               if (isOffline) {
-                Alert.alert(
-                  "Connection required",
-                  "Connect to the internet to change the child’s status.",
-                );
+                showOfflineActionMessage("change the child’s status");
                 return;
               }
               Alert.alert(
@@ -532,12 +582,15 @@ export default function TeacherChildDetailsScreen() {
                     onPress: () =>
                       isInactive ? restoreChild() : archiveChild(),
                   },
-                ]
+                ],
               );
             }}
-            className={`flex-1 items-center justify-center bg-white rounded-3xl py-4 active:bg-gray-50 ${
-              isUpdatingStatus ? "opacity-60" : ""
-            }`}
+            accessibilityState={{ disabled: isOffline || isUpdatingStatus }}
+            className={`flex-1 items-center justify-center rounded-3xl py-4 ${
+              isOffline
+                ? "bg-gray-100 opacity-60"
+                : "bg-white active:bg-gray-50"
+            } ${isUpdatingStatus && !isOffline ? "opacity-60" : ""}`}
             style={{
               shadowColor: "#000",
               shadowOffset: { width: 0, height: 2 },
@@ -548,18 +601,27 @@ export default function TeacherChildDetailsScreen() {
           >
             <View
               className={`h-12 w-12 items-center justify-center rounded-2xl mb-2 ${
-                isInactive ? "bg-emerald-50" : "bg-rose-50"
+                isOffline
+                  ? "bg-gray-200"
+                  : isInactive
+                    ? "bg-emerald-50"
+                    : "bg-rose-50"
               }`}
             >
               {isUpdatingStatus ? (
                 <ActivityIndicator color={isInactive ? "#047857" : "#E11D48"} />
               ) : isInactive ? (
-                <ArchiveRestore size={24} color="#047857" />
+                <ArchiveRestore
+                  size={24}
+                  color={isOffline ? "#9CA3AF" : "#047857"}
+                />
               ) : (
-                <Archive size={24} color="#E11D48" />
+                <Archive size={24} color={isOffline ? "#9CA3AF" : "#E11D48"} />
               )}
             </View>
-            <Text className="text-xs font-bold text-gray-700 text-center">
+            <Text
+              className={`text-xs font-bold text-center ${isOffline ? "text-gray-400" : "text-gray-700"}`}
+            >
               {isUpdatingStatus
                 ? isInactive
                   ? "Restoring..."
@@ -685,8 +747,6 @@ export default function TeacherChildDetailsScreen() {
           </View>
         </View>
 
-
-
         {/* Parent Information Card */}
         {child.parent ? (
           <View
@@ -736,21 +796,51 @@ export default function TeacherChildDetailsScreen() {
               <Pressable
                 onPress={handleViewCredentials}
                 disabled={isLoadingCredentials}
-                className="flex-1 flex-row items-center justify-center gap-2 bg-sky-50 py-3 rounded-xl active:bg-sky-100"
+                accessibilityRole="button"
+                accessibilityLabel={
+                  isOffline
+                    ? "View initial credentials unavailable offline"
+                    : "View initial credentials"
+                }
+                accessibilityState={{
+                  disabled: isOffline || isLoadingCredentials,
+                }}
+                className={`flex-1 flex-row items-center justify-center gap-2 py-3 rounded-xl ${isOffline ? "bg-gray-100 opacity-60" : "bg-sky-50 active:bg-sky-100"}`}
               >
-                <ShieldCheck size={20} color="#0284C7" />
-                <Text className="text-sky-700 font-semibold text-center text-sm">
-                  {isLoadingCredentials ? "Loading..." : "View Initial Credentials"}
+                <ShieldCheck
+                  size={20}
+                  color={isOffline ? "#9CA3AF" : "#0284C7"}
+                />
+                <Text
+                  className={`font-semibold text-center text-sm ${isOffline ? "text-gray-400" : "text-sky-700"}`}
+                >
+                  {isLoadingCredentials
+                    ? "Loading..."
+                    : "View Initial Credentials"}
                 </Text>
               </Pressable>
 
               <Pressable
                 onPress={handleResetPassword}
                 disabled={isResettingPassword}
-                className="flex-1 flex-row items-center justify-center gap-2 bg-rose-50 py-3 rounded-xl active:bg-rose-100"
+                accessibilityRole="button"
+                accessibilityLabel={
+                  isOffline
+                    ? "Reset parent password unavailable offline"
+                    : "Reset parent password"
+                }
+                accessibilityState={{
+                  disabled: isOffline || isResettingPassword,
+                }}
+                className={`flex-1 flex-row items-center justify-center gap-2 py-3 rounded-xl ${isOffline ? "bg-gray-100 opacity-60" : "bg-rose-50 active:bg-rose-100"}`}
               >
-                <ShieldCheck size={20} color="#E11D48" />
-                <Text className="text-rose-700 font-semibold text-center text-sm">
+                <ShieldCheck
+                  size={20}
+                  color={isOffline ? "#9CA3AF" : "#E11D48"}
+                />
+                <Text
+                  className={`font-semibold text-center text-sm ${isOffline ? "text-gray-400" : "text-rose-700"}`}
+                >
                   {isResettingPassword ? "Resetting..." : "Reset Password"}
                 </Text>
               </Pressable>
@@ -783,7 +873,7 @@ export default function TeacherChildDetailsScreen() {
           </View>
         )}
       </ScrollView>
-      
+
       <ViewGuardiansBottomSheet
         childId={childId}
         childName={fullName}
