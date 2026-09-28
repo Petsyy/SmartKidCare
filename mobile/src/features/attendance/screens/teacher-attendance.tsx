@@ -1,21 +1,11 @@
-import {
-  View,
-  Text,
-  Pressable,
-  ActivityIndicator,
-  ScrollView,
-  Alert,
-} from "react-native";
+import {View,Text,Pressable,ActivityIndicator,ScrollView,Alert,} from "react-native";
 import { CheckCircle2, XCircle, Users } from "lucide-react-native";
 import { useTeacherAttendance } from "@/src/features/attendance/hooks";
 import { AttendanceDatePicker } from "@/src/features/attendance/components/attendance-date-picker";
-import {
-  ScreenHeader,
-  ScreenLoadingState,
-  ScreenShell,
-  SearchBar,
-  SuccessFeedbackModal,
+import {ScreenHeader,ScreenLoadingState,ScreenShell,SearchBar,
+SuccessFeedbackModal,
 } from "@/src/components/ui";
+import { useAndroidBackRoute } from "@/src/hooks/use-android-back-route";
 
 export default function RecordAttendance() {
   const {
@@ -41,6 +31,7 @@ export default function RecordAttendance() {
     showSuccessFeedback,
     dismissSuccessFeedback,
   } = useTeacherAttendance();
+  useAndroidBackRoute("/(teacher)");
   const presentPercentage =
     stats.total > 0 ? Math.round((stats.present / stats.total) * 100) : 0;
 
@@ -50,7 +41,7 @@ export default function RecordAttendance() {
         <ScreenHeader
           backgroundVariant="teacherGradient"
           title="Record Attendance"
-          onBack={() => router.back()}
+          onBack={() => router.replace("/(teacher)")}
         />
         <ScreenLoadingState
           title="Loading attendance"
@@ -66,7 +57,7 @@ export default function RecordAttendance() {
         backgroundVariant="teacherGradient"
         title="Record Attendance"
         subtitle={selectedDateLabel}
-        onBack={() => router.push("/(teacher)")}
+        onBack={() => router.replace("/(teacher)")}
       />
 
       <ScrollView className="flex-1" keyboardDismissMode="on-drag">

@@ -31,6 +31,7 @@ import {
   validateNutritionAssessment,
   type NutritionAssessmentErrors,
 } from "../validations/nutrition-assessment.validation";
+import { useAndroidBackRoute } from "@/src/hooks/use-android-back-route";
 
 const getCurrentSchoolYear = (): string => {
   const now = new Date();
@@ -49,6 +50,7 @@ const nutritionDraftScopeKey = (
 
 export const TeacherNutritionScreen = () => {
   const router = useRouter();
+  useAndroidBackRoute("/(teacher)");
   const { user } = useAuth();
   const { isConnected, isInternetReachable, refreshPendingCount } =
     useOffline();
@@ -303,7 +305,7 @@ export const TeacherNutritionScreen = () => {
         <ScreenHeader
           backgroundVariant="teacherGradient"
           title="Nutrition Assessment"
-          onBack={() => router.back()}
+          onBack={() => router.replace("/(teacher)")}
         />
         <ScreenLoadingState
           title="Loading nutrition records"
@@ -318,7 +320,7 @@ export const TeacherNutritionScreen = () => {
         <ScreenHeader
           backgroundVariant="teacherGradient"
           title="Nutrition Assessment"
-          onBack={() => router.back()}
+          onBack={() => router.replace("/(teacher)")}
         />
         <View className="flex-1 items-center justify-center p-6">
           <Text className="text-center text-base font-semibold text-gray-700">
@@ -335,7 +337,7 @@ export const TeacherNutritionScreen = () => {
         <ScreenHeader
           backgroundVariant="teacherGradient"
           title="Nutrition Assessment"
-          onBack={() => router.back()}
+          onBack={() => router.replace("/(teacher)")}
         />
         <View className="flex-1 items-center justify-center p-6">
           <Text className="text-xl font-bold text-red-600 mb-2">
@@ -354,7 +356,7 @@ export const TeacherNutritionScreen = () => {
         backgroundVariant="teacherGradient"
         title="Nutrition Assessment"
         subtitle={`Class List (${schoolYear})`}
-        onBack={() => router.push("/(teacher)")}
+        onBack={() => router.replace("/(teacher)")}
       />
 
       <View className="flex-1 bg-gray-50">

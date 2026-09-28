@@ -21,6 +21,7 @@ import {
 } from "../hooks/useCompetencyEvaluation";
 import { useUnsavedChangesGuard } from "../../../hooks/use-unsaved-changes-guard";
 import { CompetencyDatePicker } from "../components/competency-date-picker";
+import { useAndroidBackRoute } from "../../../hooks/use-android-back-route";
 
 export default function CompetencyEvaluationScreen() {
   const params = useLocalSearchParams<{
@@ -29,6 +30,7 @@ export default function CompetencyEvaluationScreen() {
   }>();
   const childId = typeof params.childId === "string" ? params.childId : null;
   const isParentView = params.isParentView === "true";
+  useAndroidBackRoute("/(parent)/children", isParentView);
   const evaluation = useCompetencyEvaluation(childId, { isParentView });
   const child = evaluation.data?.child;
 
@@ -55,7 +57,7 @@ export default function CompetencyEvaluationScreen() {
         }
         onBack={() => {
           if (isParentView) {
-            router.navigate("/(parent)/children");
+            router.replace("/(parent)/children");
           } else {
             router.back();
           }

@@ -25,6 +25,7 @@ import {
   SearchBar,
   SuccessFeedbackModal,
 } from "@/src/components/ui";
+import { useAndroidBackRoute } from "@/src/hooks/use-android-back-route";
 
 export default function RecordFeeding() {
   const {
@@ -57,6 +58,7 @@ export default function RecordFeeding() {
     foodMenuOptions,
     isOffline,
   } = useTeacherFeeding();
+  useAndroidBackRoute("/(teacher)");
   const completedPercentage =
     stats.total > 0 ? Math.round((stats.fed / stats.total) * 100) : 0;
 
@@ -338,7 +340,7 @@ export default function RecordFeeding() {
         <ScreenHeader
           backgroundVariant="teacherGradient"
           title="Record Feeding"
-          onBack={() => router.back()}
+          onBack={() => router.replace("/(teacher)")}
         />
         <ScreenLoadingState
           title="Loading feeding records"
@@ -354,7 +356,7 @@ export default function RecordFeeding() {
         <ScreenHeader
           backgroundVariant="teacherGradient"
           title="Record Feeding"
-          onBack={() => router.back()}
+          onBack={() => router.replace("/(teacher)")}
         />
         <View className="flex-1 items-center justify-center px-6">
           <CheckCircle2 size={64} color="#D1D5DB" />
@@ -375,7 +377,7 @@ export default function RecordFeeding() {
         backgroundVariant="teacherGradient"
         title="Record Feeding"
         subtitle={attendanceDateLabel}
-        onBack={() => router.push("/(teacher)")}
+        onBack={() => router.replace("/(teacher)")}
       />
 
       <FlatList
@@ -493,7 +495,9 @@ export default function RecordFeeding() {
           {!isReadOnly ? (
             <Pressable
               onPress={() =>
-                void submitBeforeLeaving().then(() => router.back())
+                void submitBeforeLeaving().then(() =>
+                  router.replace("/(teacher)"),
+                )
               }
               disabled={isSubmitting}
               accessibilityRole="button"

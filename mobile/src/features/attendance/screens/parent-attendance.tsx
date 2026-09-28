@@ -1,7 +1,8 @@
 import { Pressable, Text, View } from "react-native";
-import { UserCheck, UserX, Calendar, Clock, User, X, CheckCircle2, AlertCircle } from "lucide-react-native";
+import { UserCheck, UserX, Calendar, Clock, User, X } from "lucide-react-native";
 import { MonthlyRecordViewer } from "@/src/components/ui/monthly-record-viewer";
 import { useParentAttendance } from "@/src/features/attendance/hooks";
+import { useAndroidBackRoute } from "@/src/hooks/use-android-back-route";
 
 type AttendanceDay = {
   day: number;
@@ -11,6 +12,7 @@ type AttendanceDay = {
 };
 
 export default function ViewAttendanceDetails() {
+  useAndroidBackRoute("/(parent)");
   const {
     router,
     insets,
@@ -46,7 +48,7 @@ export default function ViewAttendanceDetails() {
       subtitle="Track your child's daily school attendance"
       loading={loading}
       insetsTop={insets.top}
-      onBack={() => router.push("/(parent)")}
+      onBack={() => router.replace("/(parent)")}
       childOptions={children}
       selectedChild={selectedChild}
       onSelectChild={setSelectedChild}

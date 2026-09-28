@@ -285,7 +285,7 @@ export const useTeacherAttendance = () => {
       "Draft saved on this device",
       "You can return to this draft later on this device.",
     );
-    router.back();
+    router.replace("/(teacher)");
   };
 
   return {

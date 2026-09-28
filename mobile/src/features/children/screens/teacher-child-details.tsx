@@ -51,10 +51,12 @@ import {
   useRestoreChild,
 } from "../hooks/useArchiveChild";
 import type { Guardian } from "@/src/api/api.types";
+import { useAndroidBackRoute } from "@/src/hooks/use-android-back-route";
 
 export default function TeacherChildDetailsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  useAndroidBackRoute("/(teacher)/children");
   const { id } = useLocalSearchParams();
   const { isAuthenticated } = useAuth();
   const childId = typeof id === "string" ? id : null;
@@ -203,7 +205,7 @@ export default function TeacherChildDetailsScreen() {
         >
           <View className="flex-row items-center">
             <Pressable
-              onPress={() => router.push("/(teacher)/children")}
+              onPress={() => router.replace("/(teacher)/children")}
               className="mr-3"
             >
               <ChevronLeft size={28} color="white" />
@@ -238,7 +240,7 @@ export default function TeacherChildDetailsScreen() {
         >
           <View className="flex-row items-center">
             <Pressable
-              onPress={() => router.push("/(teacher)/children")}
+              onPress={() => router.replace("/(teacher)/children")}
               className="mr-3"
             >
               <ChevronLeft size={28} color="white" />
@@ -256,7 +258,7 @@ export default function TeacherChildDetailsScreen() {
             {error instanceof Error ? error.message : "Child not found"}
           </Text>
           <Pressable
-            onPress={() => router.push("/(teacher)/children")}
+            onPress={() => router.replace("/(teacher)/children")}
             className="mt-4 bg-teal-600 px-6 py-3 rounded-2xl active:scale-95"
             style={{
               shadowColor: "#0D9488",
@@ -293,7 +295,7 @@ export default function TeacherChildDetailsScreen() {
       >
         <View className="flex-row items-center">
           <Pressable
-            onPress={() => router.push("/(teacher)/children")}
+            onPress={() => router.replace("/(teacher)/children")}
             className="h-10 w-10 items-center justify-center rounded-full bg-white/20 mr-3"
           >
             <ChevronLeft size={22} color="white" />

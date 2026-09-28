@@ -2,6 +2,7 @@ import { Pressable, Text, View } from "react-native";
 import { UtensilsCrossed, X, Clock, User, Calendar, CheckCircle2, AlertCircle } from "lucide-react-native";
 import { MonthlyRecordViewer } from "@/src/components/ui/monthly-record-viewer";
 import { useParentFeeding } from "@/src/features/feeding/hooks";
+import { useAndroidBackRoute } from "@/src/hooks/use-android-back-route";
 
 type FeedingDay = {
   day: number;
@@ -12,6 +13,7 @@ type FeedingDay = {
 };
 
 export default function ViewFeedingDetails() {
+  useAndroidBackRoute("/(parent)");
   const {
     router,
     insets,
@@ -46,7 +48,7 @@ export default function ViewFeedingDetails() {
       subtitle="Track your child's daily meals & feeding logs"
       loading={loading}
       insetsTop={insets.top}
-      onBack={() => router.push("/(parent)")}
+      onBack={() => router.replace("/(parent)")}
       childOptions={children}
       selectedChild={selectedChild}
       onSelectChild={setSelectedChild}
