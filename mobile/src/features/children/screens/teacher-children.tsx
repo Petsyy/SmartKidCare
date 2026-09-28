@@ -48,6 +48,7 @@ export default function ChildScreen() {
     refetch,
   } = useQuery({
     queryKey: mobileQueryKeys.teacherChildrenOverview(),
+    networkMode: "always",
     enabled: isAuthenticated,
     queryFn: async () => {
       if (!user?.id) return { children: [], attendanceRecord: null, feedingRecord: null };

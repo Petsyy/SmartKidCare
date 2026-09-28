@@ -42,6 +42,7 @@ export const useParentAttendance = () => {
     refetch: refetchChildren,
   } = useQuery({
     queryKey: mobileQueryKeys.parentAttendanceChildren(),
+    networkMode: "always",
     enabled: isAuthenticated,
     queryFn: async () => {
       if (!user?.id) return [];
@@ -68,6 +69,7 @@ export const useParentAttendance = () => {
       selectedChild?._id ?? null,
       monthKey,
     ),
+    networkMode: "always",
     enabled: isAuthenticated && Boolean(selectedChild),
     queryFn: async () => {
       if (!selectedChild) return [];

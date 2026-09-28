@@ -37,6 +37,7 @@ export const useParentChildrenData = () => {
 
   const { data, isLoading, isRefetching, error, refetch } = useQuery({
     queryKey: mobileQueryKeys.parentChildrenStatusOverview(),
+    networkMode: "always",
     enabled: isAuthenticated,
     queryFn: async () => {
       if (!user?.id) return { children: [], todayAttendance: null, todayFeeding: null };

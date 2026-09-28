@@ -23,12 +23,20 @@ import {
   PickupReleasedBanner,
   PickupPersonSelector,
 } from "../components";
+import { useAuth } from "@/src/hooks/use-auth";
+import { useOffline } from "@/src/offline/offline-context";
+import { readOfflineResource, onlineWithOfflineFallback } from "@/src/offline/offline-read";
 
 export function ParentPickupScreen() {
+  const { user } = useAuth();
+  const { isConnected, isInternetReachable, lastCompleteRecordSyncAt } = useOffline();
+  const isOffline = !isConnected || !isInternetReachable;
   const { data: children = [], isLoading: loadingChildren } = useQuery<Child[]>(
     {
       queryKey: ["parent", "my-children"],
-      queryFn: getMyChildren,
+      queryFn: () => onlineWithOfflineFallback(isOffline, getMyChildren, () =>
+        user?.id ? readOfflineResource<Child>(user.id, "children") : Promise.resolve([])),
+      networkMode: "always",
     },
   );
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
@@ -64,6 +72,13 @@ export function ParentPickupScreen() {
         contentContainerStyle={{ paddingBottom: 130 }}
         showsVerticalScrollIndicator={false}
       >
+        {isOffline ? (
+          <View className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+            <Text className="font-bold text-amber-900">Last known pickup status</Text>
+            <Text className="mt-1 text-sm leading-5 text-amber-800">Pickup information may have changed since this device was last synchronized.</Text>
+            <Text className="mt-2 text-xs font-semibold text-amber-700">Last synchronized {lastCompleteRecordSyncAt ? new Date(lastCompleteRecordSyncAt).toLocaleString() : "not available"}</Text>
+          </View>
+        ) : null}
         {children.length === 0 ? (
           <View className="items-center justify-center p-8 bg-white rounded-3xl border border-gray-100 shadow-sm mt-4">
             <View className="h-16 w-16 rounded-full bg-teal-50 items-center justify-center mb-3">
@@ -160,7 +175,7 @@ export function ParentPickupScreen() {
 
 function PickupManager({ childId }: { childId: string }) {
   const queryClient = useQueryClient();
-  const { statusData, isLoading, requestCode, isRequesting } =
+  const { statusData, isLoading, requestCode, isRequesting, isOffline } =
     usePickupParent(childId);
   const { guardians } = useGuardians(childId);
 
@@ -201,6 +216,10 @@ function PickupManager({ childId }: { childId: string }) {
   }, [childId, expiresAt, queryClient]);
 
   const handleGenerateCode = async () => {
+    if (isOffline) {
+      Alert.alert("Connection required", "Connect to the internet to perform this action.");
+      return;
+    }
     try {
       const res = await requestCode(selectedGuardianIndex);
       queryClient.setQueryData(["activePickupCode", childId], {
@@ -263,9 +282,9 @@ function PickupManager({ childId }: { childId: string }) {
 
           <Pressable
             onPress={handleGenerateCode}
-            disabled={isRequesting}
+            disabled={isRequesting || isOffline}
             className={`mt-6 items-center justify-center py-5 px-6 rounded-2xl flex-row shadow-md active:opacity-90 ${
-              isRequesting ? "bg-teal-400" : "bg-teal-600"
+              isRequesting || isOffline ? "bg-gray-300" : "bg-teal-600"
             }`}
             accessibilityRole="button"
             accessibilityLabel="Generate secure pickup code"

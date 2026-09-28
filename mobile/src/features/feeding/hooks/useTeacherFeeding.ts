@@ -147,6 +147,7 @@ export const useTeacherFeeding = () => {
       attendanceDateKey,
       presentChildrenIdsKey,
     ),
+    networkMode: "always",
     enabled: isAuthenticated,
     queryFn: async () => {
       if (!user?.id) throw new Error("Please sign in again.");

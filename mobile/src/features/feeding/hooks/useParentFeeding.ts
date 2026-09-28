@@ -43,6 +43,7 @@ export const useParentFeeding = () => {
   const { data: childrenData = EMPTY_CHILDREN, isLoading: isLoadingChildren } =
     useQuery({
       queryKey: mobileQueryKeys.parentFeedingChildren(),
+      networkMode: "always",
       enabled: isAuthenticated,
       queryFn: () =>
         !user?.id
@@ -66,6 +67,7 @@ export const useParentFeeding = () => {
       selectedChild?._id ?? null,
       monthKey,
     ),
+    networkMode: "always",
     enabled: isAuthenticated && Boolean(selectedChild),
     queryFn: async () => {
       if (!selectedChild) return [];

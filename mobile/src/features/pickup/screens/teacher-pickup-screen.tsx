@@ -8,7 +8,6 @@ import {
   Pressable,
 } from "react-native";
 import { useFocusEffect } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ShieldCheck, Search } from "lucide-react-native";
 import {
   ScreenHeader,
@@ -34,10 +33,9 @@ export function TeacherPickupScreen() {
     isVerifying,
     manualRelease,
     isReleasing,
+    isOffline,
   } = usePickupTeacher();
   
-  const insets = useSafeAreaInsets();
-
   const [selectedChild, setSelectedChild] =
     useState<PickupEligibleChild | null>(null);
   const [code, setCode] = useState("");
@@ -130,6 +128,13 @@ export function TeacherPickupScreen() {
         subtitle={`${eligibleChildren.length} Eligible for Pickup`}
       />
 
+      {isOffline ? (
+        <View className="mx-5 mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+          <Text className="font-bold text-amber-900">Last known pickup status</Text>
+          <Text className="mt-1 text-sm text-amber-800">Pickup information may have changed since this device was last synchronized. Verification and release require internet.</Text>
+        </View>
+      ) : null}
+
       <SearchBar
         value={searchQuery}
         onChangeText={setSearchQuery}
@@ -187,7 +192,13 @@ export function TeacherPickupScreen() {
                 >
                   <PickupEligibleChildCard
                     child={child}
-                    onPress={() => setSelectedChild(child)}
+                    onPress={() => {
+                      if (isOffline) {
+                        Alert.alert("Connection required", "Connect to the internet to perform this action.");
+                        return;
+                      }
+                      setSelectedChild(child);
+                    }}
                   />
                 </View>
               ))}

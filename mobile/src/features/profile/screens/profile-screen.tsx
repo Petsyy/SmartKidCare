@@ -15,6 +15,7 @@ import {
   ScreenHeader,
   ScreenLoadingState,
   ScreenShell,
+  OfflineDataCard,
 } from "@/src/components/ui";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -51,6 +52,7 @@ export default function ProfileScreen({
     handleLockApp,
     handleLogout,
     handleChangePassword,
+    isOffline,
   } = useProfileScreen({ fetchProfile });
 
   const fullName =
@@ -236,7 +238,11 @@ export default function ProfileScreen({
 
           <View>
             <TouchableOpacity
-              onPress={() => setShowPasswordModal(true)}
+              onPress={() => {
+                if (isOffline) return;
+                setShowPasswordModal(true);
+              }}
+              disabled={isOffline}
               accessibilityRole="button"
               accessibilityLabel="Change password"
               className="flex-row items-center justify-between border-b border-gray-100 py-4"
@@ -250,7 +256,7 @@ export default function ProfileScreen({
                     Change Password
                   </Text>
                   <Text className="mt-0.5 text-xs text-gray-500">
-                    Keep your account secure
+                    {isOffline ? "Connect to the internet to change your password" : "Keep your account secure"}
                   </Text>
                 </View>
               </View>
@@ -280,6 +286,8 @@ export default function ProfileScreen({
             </TouchableOpacity>
           </View>
         </View>
+
+        <OfflineDataCard />
 
         <View className="mx-5">
           <TouchableOpacity

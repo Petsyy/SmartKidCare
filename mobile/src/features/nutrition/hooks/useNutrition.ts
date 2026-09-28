@@ -25,6 +25,7 @@ export const useMyClassNutrition = (
   const isOffline = !isConnected || !isInternetReachable;
   return useQuery({
     queryKey: ["my-class-nutrition", schoolYear, period],
+    networkMode: "always",
     queryFn: () => {
       if (!user?.id) return Promise.resolve([]);
       return onlineWithOfflineFallback(
@@ -87,6 +88,7 @@ export const useChildNutritionHistory = (childId: string) => {
   const isOffline = !isConnected || !isInternetReachable;
   return useQuery({
     queryKey: ["child-nutrition", childId],
+    networkMode: "always",
     queryFn: () =>
       !user?.id
         ? Promise.resolve([])

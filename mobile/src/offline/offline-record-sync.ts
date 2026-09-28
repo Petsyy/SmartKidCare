@@ -3,12 +3,15 @@ import {
   createOfflineSnapshot,
   deleteOfflineSnapshot,
   getOfflineSnapshotPage,
+  OFFLINE_RESOURCES,
   type OfflineResource,
 } from "@/src/api/offline-sync.api";
 import {
   activateRecordSnapshot,
   beginRecordSnapshot,
   failRecordSnapshot,
+  initializeSnapshotResources,
+  markSnapshotResourceVerified,
   writeRecordSnapshotPage,
 } from "./offline-record-store";
 
@@ -30,6 +33,19 @@ export const synchronizeOfflineRecords = async (
     snapshotId = manifest.snapshotId;
     if (Date.parse(manifest.expiresAt) <= Date.now())
       throw new Error("OFFLINE_SNAPSHOT_EXPIRED");
+    const manifestResources = new Set(
+      manifest.resources.map((item) => item.resource),
+    );
+    const missingRequired = OFFLINE_RESOURCES.some(
+      (resource) => !manifestResources.has(resource),
+    );
+    if (missingRequired) throw new Error("OFFLINE_REQUIRED_RESOURCE_MISSING");
+    await initializeSnapshotResources(
+      userId,
+      manifest.snapshotId,
+      manifest.generatedAt,
+      manifest.resources,
+    );
     const expectedItems = manifest.resources.reduce(
       (sum, item) => sum + item.itemCount,
       0,
@@ -75,6 +91,12 @@ export const synchronizeOfflineRecords = async (
       );
       if (actualChecksum !== resourceManifest.checksum)
         throw new Error("OFFLINE_SNAPSHOT_CHECKSUM_MISMATCH");
+      await markSnapshotResourceVerified(
+        userId,
+        manifest.snapshotId,
+        resourceManifest.resource,
+        allItems.length,
+      );
     }
     await activateRecordSnapshot(userId, manifest.snapshotId);
     await deleteOfflineSnapshot(manifest.snapshotId).catch(() => undefined);

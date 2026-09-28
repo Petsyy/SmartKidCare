@@ -24,10 +24,10 @@ import {
 } from "./offline-query-cache";
 import { listOutboxOperations, updateOutboxStatus } from "./offline-store";
 import { synchronizeOfflineRecords, type RecordSyncProgress } from "./offline-record-sync";
-import { getRecordSyncMetadata } from "./offline-record-store";
+import { getActiveResourceStates, getRecordSyncMetadata, type OfflineResourceState } from "./offline-record-store";
 
 type SyncState = "idle" | "syncing" | "paused" | "error";
-type OfflineDataState = "notDownloaded" | "downloading" | "ready" | "partiallyAvailable" | "failed" | "authorizationExpired";
+export type OfflineDataState = "notDownloaded" | "downloading" | "ready" | "partiallyAvailable" | "failed" | "authorizationExpired";
 
 type OfflineContextValue = {
   isConnected: boolean;
@@ -40,6 +40,8 @@ type OfflineContextValue = {
   offlineDataState: OfflineDataState;
   recordSyncProgress: RecordSyncProgress;
   lastCompleteRecordSyncAt: string | null;
+  snapshotGeneratedAt: string | null;
+  resourceStates: OfflineResourceState[];
   synchronizeRecords: () => Promise<void>;
 };
 
@@ -65,6 +67,8 @@ export const OfflineProvider = ({
   const [offlineDataState, setOfflineDataState] = useState<OfflineDataState>("notDownloaded");
   const [recordSyncProgress, setRecordSyncProgress] = useState<RecordSyncProgress>({ downloadedItems: 0, expectedItems: 0 });
   const [lastCompleteRecordSyncAt, setLastCompleteRecordSyncAt] = useState<string | null>(null);
+  const [snapshotGeneratedAt, setSnapshotGeneratedAt] = useState<string | null>(null);
+  const [resourceStates, setResourceStates] = useState<OfflineResourceState[]>([]);
   const userId = user?.id;
 
   const refreshPendingCount = useCallback(async () => {
@@ -154,6 +158,8 @@ export const OfflineProvider = ({
       await synchronizeOfflineRecords(userId, setRecordSyncProgress);
       const metadata = await getRecordSyncMetadata(userId);
       setLastCompleteRecordSyncAt(metadata?.last_complete_sync_at ?? null);
+      setSnapshotGeneratedAt(metadata?.generated_at ?? null);
+      setResourceStates(await getActiveResourceStates(userId));
       setOfflineDataState("ready");
       await queryClient.invalidateQueries();
     } catch {
@@ -187,11 +193,19 @@ export const OfflineProvider = ({
       if (!userId) {
         setOfflineDataState("notDownloaded");
         setLastCompleteRecordSyncAt(null);
+        setSnapshotGeneratedAt(null);
+        setResourceStates([]);
         return;
       }
       void getRecordSyncMetadata(userId).then((metadata) => {
         setLastCompleteRecordSyncAt(metadata?.last_complete_sync_at ?? null);
-        setOfflineDataState(metadata?.active_snapshot_id ? "ready" : "notDownloaded");
+        setSnapshotGeneratedAt(metadata?.generated_at ?? null);
+        void getActiveResourceStates(userId).then(setResourceStates);
+        setOfflineDataState(
+          metadata?.active_snapshot_id
+            ? metadata.last_error_code ? "partiallyAvailable" : "ready"
+            : metadata?.last_error_code ? "failed" : "notDownloaded",
+        );
       });
     }, 0);
     return () => clearTimeout(timeout);
@@ -246,6 +260,8 @@ export const OfflineProvider = ({
       offlineDataState,
       recordSyncProgress,
       lastCompleteRecordSyncAt,
+      snapshotGeneratedAt,
+      resourceStates,
       synchronizeRecords,
     }),
     [
@@ -259,6 +275,8 @@ export const OfflineProvider = ({
       offlineDataState,
       recordSyncProgress,
       lastCompleteRecordSyncAt,
+      snapshotGeneratedAt,
+      resourceStates,
       synchronizeRecords,
     ],
   );

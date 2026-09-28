@@ -7,6 +7,7 @@ import {
 import { inferMimeType } from "@/src/features/enrollment/utils/enrollment-utils";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { useAuth } from "@/src/hooks/use-auth";
+import { useOffline } from "@/src/offline/offline-context";
 
 interface SubmissionData {
   childData: {
@@ -34,11 +35,14 @@ export interface ParentCredentials {
 
 export const useEnrollmentSubmit = (onSuccess?: (credentials: ParentCredentials) => void) => {
   const { isAuthenticated } = useAuth();
+  const { isConnected, isInternetReachable } = useOffline();
   const queryClient = useQueryClient();
 
   const submitEnrollmentMutation = useMutation({
     mutationFn: async ({ data }: { data: SubmissionData }) => {
       if (!isAuthenticated) throw new Error("No authentication token.");
+      if (!isConnected || !isInternetReachable)
+        throw new Error("Connect to the internet to perform this action.");
       return submitChildEnrollment(
         { ...data.childData, programType: data.childData.programType as "4Ps Beneficiary" | "Regular Enrollee (Non-beneficiary)", ...data.parentData },
         {

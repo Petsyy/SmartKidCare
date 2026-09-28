@@ -8,7 +8,7 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "start": "node dist/server.js",
-    "test": "node --test --require ts-node/register tests/captain-onboarding.service.test.ts tests/captain-password-setup.test.ts tests/child-access.service.test.ts tests/feeding.retroactive.test.ts tests/nutrition.analytics.service.test.ts tests/nutrition.utils.test.ts tests/pickup.manual-release.validation.test.ts tests/record-idempotency.test.ts tests/records.utils.test.ts",
+    "test": "node --test --require ts-node/register tests/captain-onboarding.service.test.ts tests/captain-password-setup.test.ts tests/child-access.service.test.ts tests/feeding.retroactive.test.ts tests/nutrition.analytics.service.test.ts tests/nutrition.utils.test.ts tests/offline-sync.contract.test.ts tests/pickup.manual-release.validation.test.ts tests/record-idempotency.test.ts tests/records.utils.test.ts",
     "create:captain": "ts-node scripts/create-admin.ts",
     "test:ai-chat-services": "node --test --require ts-node/register tests/ai.chat-intent.service.test.ts tests/ai.chat-followup.service.test.ts",
     "test:csrf": "node --test --require ts-node/register tests/csrf.api.test.ts",

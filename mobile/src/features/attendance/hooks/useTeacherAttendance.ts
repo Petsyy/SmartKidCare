@@ -49,6 +49,7 @@ export const useTeacherAttendance = () => {
   );
   const { data, isLoading } = useQuery({
     queryKey: mobileQueryKeys.teacherAttendanceSetup(selectedDateKey),
+    networkMode: "always",
     enabled: isAuthenticated,
     queryFn: async () => {
       if (!user?.id) return { childrenData: [], attendanceRecord: null };

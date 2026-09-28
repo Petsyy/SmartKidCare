@@ -76,6 +76,7 @@ export function useParentDashboard(): ParentDashboardData {
 
   const { data, isLoading, isRefetching, error, refetch } = useQuery({
     queryKey: mobileQueryKeys.parentDashboard(),
+    networkMode: "always",
     enabled: isAuthenticated,
     queryFn: async () => {
       if (!user?.id) throw new Error("Please sign in again.");
@@ -135,13 +136,24 @@ export function useParentDashboard(): ParentDashboardData {
     },
   });
 
-  const children: Child[] = data?.children ?? [];
-  const attendanceRecords = data?.attendanceRecords ?? [];
-  const feedingRecords = data?.feedingRecords ?? [];
+  const children = useMemo<Child[]>(
+    () => data?.children ?? [],
+    [data?.children],
+  );
+  const attendanceRecords = useMemo<any[]>(
+    () => data?.attendanceRecords ?? [],
+    [data?.attendanceRecords],
+  );
+  const feedingRecords = useMemo<any[]>(
+    () => data?.feedingRecords ?? [],
+    [data?.feedingRecords],
+  );
   const todayAttendanceRecord = data?.todayAttendanceRecord ?? null;
   const todayFeedingRecord = data?.todayFeedingRecord ?? null;
-  const recentNotificationsRaw: ParentNotificationFeedItem[] =
-    data?.recentNotifications ?? [];
+  const recentNotificationsRaw = useMemo<ParentNotificationFeedItem[]>(
+    () => data?.recentNotifications ?? [],
+    [data?.recentNotifications],
+  );
 
   const recentNotifications = useMemo(() => {
     return recentNotificationsRaw

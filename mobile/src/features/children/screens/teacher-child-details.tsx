@@ -144,6 +144,7 @@ export default function TeacherChildDetailsScreen() {
     error,
   } = useQuery({
     queryKey: mobileQueryKeys.teacherChildDetails(childId),
+    networkMode: "always",
     enabled: isAuthenticated && Boolean(childId),
     queryFn: async () => {
       if (!childId) {

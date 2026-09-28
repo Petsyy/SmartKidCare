@@ -96,9 +96,18 @@ const initializeDatabase = async () => {
     CREATE TABLE IF NOT EXISTS offline_sync_metadata (
       user_id TEXT PRIMARY KEY NOT NULL,
       active_snapshot_id TEXT,
+      pending_snapshot_id TEXT,
       sync_status TEXT NOT NULL DEFAULT 'notDownloaded',
       last_complete_sync_at TEXT,
+      generated_at TEXT,
+      pending_generated_at TEXT,
       last_error_code TEXT
+    );
+    CREATE TABLE IF NOT EXISTS offline_sync_resources (
+      user_id TEXT NOT NULL, snapshot_id TEXT NOT NULL, resource TEXT NOT NULL,
+      required INTEGER NOT NULL DEFAULT 1, expected_items INTEGER NOT NULL DEFAULT 0,
+      downloaded_items INTEGER NOT NULL DEFAULT 0, verified INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (user_id, snapshot_id, resource)
     );
     CREATE TABLE IF NOT EXISTS offline_children (
       user_id TEXT NOT NULL, server_id TEXT NOT NULL, snapshot_id TEXT NOT NULL,
@@ -132,12 +141,63 @@ const initializeDatabase = async () => {
       server_updated_at TEXT, data_json TEXT NOT NULL,
       PRIMARY KEY (user_id, server_id, snapshot_id)
     );
+    CREATE TABLE IF NOT EXISTS offline_profiles (
+      user_id TEXT NOT NULL, server_id TEXT NOT NULL, snapshot_id TEXT NOT NULL,
+      server_updated_at TEXT, data_json TEXT NOT NULL,
+      PRIMARY KEY (user_id, server_id, snapshot_id)
+    );
+    CREATE TABLE IF NOT EXISTS offline_guardian_summaries (
+      user_id TEXT NOT NULL, server_id TEXT NOT NULL, snapshot_id TEXT NOT NULL,
+      server_updated_at TEXT, data_json TEXT NOT NULL,
+      PRIMARY KEY (user_id, server_id, snapshot_id)
+    );
+    CREATE TABLE IF NOT EXISTS offline_enrollment_reference (
+      user_id TEXT NOT NULL, server_id TEXT NOT NULL, snapshot_id TEXT NOT NULL,
+      server_updated_at TEXT, data_json TEXT NOT NULL,
+      PRIMARY KEY (user_id, server_id, snapshot_id)
+    );
+    CREATE TABLE IF NOT EXISTS offline_pickup_statuses (
+      user_id TEXT NOT NULL, server_id TEXT NOT NULL, snapshot_id TEXT NOT NULL,
+      server_updated_at TEXT, data_json TEXT NOT NULL,
+      PRIMARY KEY (user_id, server_id, snapshot_id)
+    );
+    CREATE TABLE IF NOT EXISTS offline_pickup_history (
+      user_id TEXT NOT NULL, server_id TEXT NOT NULL, snapshot_id TEXT NOT NULL,
+      server_updated_at TEXT, data_json TEXT NOT NULL,
+      PRIMARY KEY (user_id, server_id, snapshot_id)
+    );
+    CREATE TABLE IF NOT EXISTS offline_notifications (
+      user_id TEXT NOT NULL, server_id TEXT NOT NULL, snapshot_id TEXT NOT NULL,
+      server_updated_at TEXT, data_json TEXT NOT NULL,
+      PRIMARY KEY (user_id, server_id, snapshot_id)
+    );
+    CREATE TABLE IF NOT EXISTS offline_chat_messages (
+      user_id TEXT NOT NULL, message_id TEXT NOT NULL, child_id TEXT,
+      role TEXT NOT NULL, content TEXT NOT NULL, created_at TEXT NOT NULL,
+      PRIMARY KEY (user_id, message_id)
+    );
     CREATE INDEX IF NOT EXISTS idx_offline_children_active ON offline_children(user_id, snapshot_id, child_id);
     CREATE INDEX IF NOT EXISTS idx_offline_attendance_date ON offline_attendance(user_id, snapshot_id, date_key);
     CREATE INDEX IF NOT EXISTS idx_offline_feeding_date ON offline_feeding(user_id, snapshot_id, date_key);
     CREATE INDEX IF NOT EXISTS idx_offline_nutrition_child ON offline_nutrition(user_id, snapshot_id, child_id, school_year, period);
     CREATE INDEX IF NOT EXISTS idx_offline_competency_child ON offline_competency_evaluations(user_id, snapshot_id, child_id, school_year, period);
   `);
+  const metadataColumns = await database.getAllAsync<{ name: string }>(
+    "PRAGMA table_info(offline_sync_metadata)",
+  );
+  const metadataColumnNames = new Set(
+    metadataColumns.map((column) => column.name),
+  );
+  for (const [name, type] of [
+    ["pending_snapshot_id", "TEXT"],
+    ["generated_at", "TEXT"],
+    ["pending_generated_at", "TEXT"],
+  ] as const) {
+    if (!metadataColumnNames.has(name))
+      await database.execAsync(
+        `ALTER TABLE offline_sync_metadata ADD COLUMN ${name} ${type};`,
+      );
+  }
   await database.runAsync(
     "UPDATE offline_outbox SET status = 'failedRetryable' WHERE status = 'attempting'",
   );
@@ -172,6 +232,14 @@ export const clearOfflineDataForUser = async (userId: string) => {
       "offline_nutrition",
       "offline_competency_definitions",
       "offline_competency_evaluations",
+      "offline_profiles",
+      "offline_guardian_summaries",
+      "offline_enrollment_reference",
+      "offline_pickup_statuses",
+      "offline_pickup_history",
+      "offline_notifications",
+      "offline_chat_messages",
+      "offline_sync_resources",
       "offline_sync_metadata",
     ]) {
       await database.runAsync(`DELETE FROM ${table} WHERE user_id = ?`, userId);

@@ -68,6 +68,7 @@ export function useCompetencyEvaluation(
 
   const query = useQuery({
     queryKey: ["competencyScreen", childId],
+    networkMode: "always",
     enabled: Boolean(childId),
     queryFn: async () => {
       if (!childId) throw new Error("Missing child ID.");

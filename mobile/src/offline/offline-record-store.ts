@@ -8,6 +8,12 @@ const TABLES: Record<OfflineResource, string> = {
   nutrition: "offline_nutrition",
   competencyDefinitions: "offline_competency_definitions",
   competencyEvaluations: "offline_competency_evaluations",
+  profiles: "offline_profiles",
+  guardianSummaries: "offline_guardian_summaries",
+  enrollmentReference: "offline_enrollment_reference",
+  pickupStatuses: "offline_pickup_statuses",
+  pickupHistory: "offline_pickup_history",
+  notifications: "offline_notifications",
 };
 
 const text = (value: unknown) => (value == null ? null : String(value));
@@ -20,6 +26,61 @@ export const beginRecordSnapshot = async (userId: string) => {
      VALUES (?, 'downloading')
      ON CONFLICT(user_id) DO UPDATE SET sync_status = 'downloading', last_error_code = NULL`,
     userId,
+  );
+};
+
+export const initializeSnapshotResources = async (
+  userId: string,
+  snapshotId: string,
+  generatedAt: string,
+  resources: {
+    resource: OfflineResource;
+    required: boolean;
+    itemCount: number;
+  }[],
+) => {
+  const database = await getOfflineDatabase();
+  await database.withTransactionAsync(async () => {
+    await database.runAsync(
+      "UPDATE offline_sync_metadata SET pending_snapshot_id = ?, pending_generated_at = ? WHERE user_id = ?",
+      snapshotId,
+      generatedAt,
+      userId,
+    );
+    await database.runAsync(
+      "DELETE FROM offline_sync_resources WHERE user_id = ? AND snapshot_id = ?",
+      userId,
+      snapshotId,
+    );
+    for (const item of resources) {
+      await database.runAsync(
+        `INSERT INTO offline_sync_resources
+          (user_id, snapshot_id, resource, required, expected_items, downloaded_items, verified)
+         VALUES (?, ?, ?, ?, ?, 0, 0)`,
+        userId,
+        snapshotId,
+        item.resource,
+        item.required ? 1 : 0,
+        item.itemCount,
+      );
+    }
+  });
+};
+
+export const markSnapshotResourceVerified = async (
+  userId: string,
+  snapshotId: string,
+  resource: OfflineResource,
+  downloadedItems: number,
+) => {
+  const database = await getOfflineDatabase();
+  await database.runAsync(
+    `UPDATE offline_sync_resources SET downloaded_items = ?, verified = 1
+     WHERE user_id = ? AND snapshot_id = ? AND resource = ?`,
+    downloadedItems,
+    userId,
+    snapshotId,
+    resource,
   );
 };
 
@@ -93,14 +154,25 @@ export const activateRecordSnapshot = async (
 ) => {
   const database = await getOfflineDatabase();
   await database.withTransactionAsync(async () => {
+    const incomplete = await database.getFirstAsync<{ count: number }>(
+      `SELECT COUNT(*) AS count FROM offline_sync_resources
+       WHERE user_id = ? AND snapshot_id = ? AND required = 1 AND verified = 0`,
+      userId,
+      snapshotId,
+    );
+    if ((incomplete?.count ?? 0) > 0)
+      throw new Error("OFFLINE_REQUIRED_RESOURCE_INCOMPLETE");
     await database.runAsync(
-      `INSERT INTO offline_sync_metadata (user_id, active_snapshot_id, sync_status, last_complete_sync_at)
-       VALUES (?, ?, 'ready', ?)
+      `INSERT INTO offline_sync_metadata (user_id, active_snapshot_id, sync_status, last_complete_sync_at, generated_at)
+       VALUES (?, ?, 'ready', ?, (SELECT pending_generated_at FROM offline_sync_metadata WHERE user_id = ?))
        ON CONFLICT(user_id) DO UPDATE SET active_snapshot_id = excluded.active_snapshot_id,
-       sync_status = 'ready', last_complete_sync_at = excluded.last_complete_sync_at, last_error_code = NULL`,
+       sync_status = 'ready', last_complete_sync_at = excluded.last_complete_sync_at,
+       generated_at = excluded.generated_at, pending_snapshot_id = NULL, pending_generated_at = NULL,
+       last_error_code = NULL`,
       userId,
       snapshotId,
       new Date().toISOString(),
+      userId,
     );
     for (const table of Object.values(TABLES)) {
       await database.runAsync(
@@ -109,6 +181,11 @@ export const activateRecordSnapshot = async (
         snapshotId,
       );
     }
+    await database.runAsync(
+      "DELETE FROM offline_sync_resources WHERE user_id = ? AND snapshot_id <> ?",
+      userId,
+      snapshotId,
+    );
   });
 };
 
@@ -126,8 +203,14 @@ export const failRecordSnapshot = async (
           userId,
           snapshotId,
         );
+    if (snapshotId)
+      await database.runAsync(
+        "DELETE FROM offline_sync_resources WHERE user_id = ? AND snapshot_id = ?",
+        userId,
+        snapshotId,
+      );
     await database.runAsync(
-      "UPDATE offline_sync_metadata SET sync_status = CASE WHEN active_snapshot_id IS NULL THEN 'failed' ELSE 'ready' END, last_error_code = ? WHERE user_id = ?",
+      "UPDATE offline_sync_metadata SET sync_status = CASE WHEN active_snapshot_id IS NULL THEN 'failed' ELSE 'ready' END, pending_snapshot_id = NULL, pending_generated_at = NULL, last_error_code = ? WHERE user_id = ?",
       errorCode,
       userId,
     );
@@ -140,11 +223,46 @@ export const getRecordSyncMetadata = async (userId: string) => {
     active_snapshot_id: string | null;
     sync_status: string;
     last_complete_sync_at: string | null;
+    generated_at: string | null;
     last_error_code: string | null;
   }>(
-    "SELECT active_snapshot_id, sync_status, last_complete_sync_at, last_error_code FROM offline_sync_metadata WHERE user_id = ?",
+    "SELECT active_snapshot_id, sync_status, last_complete_sync_at, generated_at, last_error_code FROM offline_sync_metadata WHERE user_id = ?",
     userId,
   );
+};
+
+export type OfflineResourceState = {
+  resource: OfflineResource;
+  required: boolean;
+  expectedItems: number;
+  downloadedItems: number;
+  verified: boolean;
+};
+
+export const getActiveResourceStates = async (
+  userId: string,
+): Promise<OfflineResourceState[]> => {
+  const database = await getOfflineDatabase();
+  const rows = await database.getAllAsync<{
+    resource: OfflineResource;
+    required: number;
+    expected_items: number;
+    downloaded_items: number;
+    verified: number;
+  }>(
+    `SELECT resource, required, expected_items, downloaded_items, verified
+     FROM offline_sync_resources WHERE user_id = ? AND snapshot_id =
+     (SELECT active_snapshot_id FROM offline_sync_metadata WHERE user_id = ?)`,
+    userId,
+    userId,
+  );
+  return rows.map((row) => ({
+    resource: row.resource,
+    required: row.required === 1,
+    expectedItems: row.expected_items,
+    downloadedItems: row.downloaded_items,
+    verified: row.verified === 1,
+  }));
 };
 
 export const readActiveOfflineRecords = async <T>(

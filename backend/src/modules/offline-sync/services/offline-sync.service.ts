@@ -12,6 +12,8 @@ import {
   type OfflineResource,
   type SnapshotResourceManifest,
 } from "../types/offline-sync.types";
+import { getTeacherNotificationsFeed } from "../../notifications/services/teacher-notification.service";
+import { getParentNotificationsFeed } from "../../notifications/services/parent-notification.service";
 
 const PAGE_SIZE = 100;
 const SNAPSHOT_TTL_MS = 30 * 60 * 1000;
@@ -19,6 +21,10 @@ const stableJson = (value: unknown) => JSON.stringify(value);
 const checksum = (items: unknown[]) =>
   crypto.createHash("sha256").update(stableJson(items)).digest("hex");
 const idString = (value: unknown) => String(value ?? "");
+const manilaDateKey = (value: Date | string) =>
+  new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Manila", year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(new Date(value));
 
 class OfflineSyncService {
   private assertUser(user: AuthenticatedUser | undefined) {
@@ -33,11 +39,13 @@ class OfflineSyncService {
   async createSnapshot(userInput: AuthenticatedUser | undefined) {
     const user = this.assertUser(userInput);
     const childFilter =
-      user.role === "teacher" ? { teacher: user.id } : { parent: user.id };
+      user.role === "teacher"
+        ? { teacher: user.id, ...(user.daycareCenterId ? { daycareCenter: user.daycareCenterId } : {}) }
+        : { parent: user.id };
     const children = await offlineSyncRepository.findChildren(childFilter);
     const childIds = children.map((child) => child._id);
     const childIdSet = new Set(childIds.map(String));
-    const [attendanceRaw, feedingRaw, nutrition, definitions, evaluations] =
+    const [attendanceRaw, feedingRaw, nutrition, definitions, evaluations, profile, pickupHistory] =
       await Promise.all([
         offlineSyncRepository.findAttendance(
           user.role === "teacher"
@@ -52,18 +60,55 @@ class OfflineSyncService {
         offlineSyncRepository.findNutrition(childIds),
         offlineSyncRepository.findDefinitions(),
         offlineSyncRepository.findEvaluations(childIds),
+        offlineSyncRepository.findProfile(user.id),
+        offlineSyncRepository.findPickupHistory(childIds),
       ]);
-    const attendance = attendanceRaw.map((record) => ({
-      ...record,
-      records: record.records.filter((entry) =>
-        childIdSet.has(idString(entry.child)),
-      ),
-    }));
-    const feeding = feedingRaw.map((record) => ({
-      ...record,
-      records: record.records.filter((entry) =>
-        childIdSet.has(idString(entry.child)),
-      ),
+    const attendance = attendanceRaw
+      .map((record) => ({ ...record, records: record.records.filter((entry) => childIdSet.has(idString(entry.child))) }))
+      .filter((record) => record.records.length > 0);
+    const feeding = feedingRaw
+      .map((record) => ({ ...record, records: record.records.filter((entry) => childIdSet.has(idString(entry.child))) }))
+      .filter((record) => record.records.length > 0);
+    const guardianSummaries = children.flatMap((child: any) =>
+      (child.authorizedPickupPersons || []).map((guardian: any, index: number) => ({
+        _id: `${idString(child._id)}:${index}`,
+        childId: idString(child._id),
+        guardianIndex: index,
+        firstName: guardian.firstName,
+        lastName: guardian.lastName,
+        relationship: guardian.relationship,
+        customRelationship: guardian.customRelationship ?? null,
+        phone: guardian.phone,
+        verificationStatus: guardian.verificationStatus,
+        isActive: guardian.isActive !== false,
+      })),
+    );
+    const latestPickupByChild = new Map<string, any>();
+    for (const pickup of pickupHistory as any[]) {
+      const childId = idString((pickup.child as any)?._id ?? pickup.child);
+      if (!latestPickupByChild.has(childId)) latestPickupByChild.set(childId, pickup);
+    }
+    const todayKey = manilaDateKey(new Date());
+    const attendanceToday = attendance.find((entry: any) => manilaDateKey(entry.date) === todayKey) as any;
+    const presentChildIds = new Set(
+      (attendanceToday?.records || [])
+        .filter((entry: any) => entry.status === "present")
+        .map((entry: any) => idString(entry.child?._id ?? entry.child)),
+    );
+    const pickupStatuses = children.map((child: any) => {
+      const childId = idString(child._id);
+      const latestPickup = latestPickupByChild.get(childId);
+      const pickup = latestPickup && manilaDateKey(latestPickup.pickedUpAt) === todayKey ? latestPickup : null;
+      return { _id: childId, childId, eligible: presentChildIds.has(childId),
+        status: pickup ? "released" : "pending", pickup };
+    });
+    const notificationFeed = user.role === "teacher"
+      ? await getTeacherNotificationsFeed({ teacherId: user.id })
+      : await getParentNotificationsFeed({ parentId: user.id });
+    const notifications = notificationFeed.notifications.map((item) => ({
+      ...item,
+      _id: item.id,
+      feedDate: notificationFeed.date,
     }));
     const resources: Record<OfflineResource, unknown[]> = {
       children,
@@ -72,11 +117,23 @@ class OfflineSyncService {
       nutrition,
       competencyDefinitions: definitions,
       competencyEvaluations: evaluations,
+      profiles: profile ? [profile] : [],
+      guardianSummaries,
+      enrollmentReference: [{
+        _id: user.id,
+        childCount: children.length,
+        daycareCenter: (profile as any)?.daycareCenter ?? null,
+        generatedAt: new Date().toISOString(),
+      }],
+      pickupStatuses,
+      pickupHistory,
+      notifications,
     };
     const expiresAt = new Date(Date.now() + SNAPSHOT_TTL_MS);
     const manifests: SnapshotResourceManifest[] = OFFLINE_RESOURCES.map(
       (resource) => ({
         resource,
+        required: true,
         itemCount: resources[resource].length,
         pageCount: Math.ceil(resources[resource].length / PAGE_SIZE),
         checksum: checksum(resources[resource]),

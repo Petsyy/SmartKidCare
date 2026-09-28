@@ -8,6 +8,7 @@ import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { useChangePassword } from "./useChangePassword";
 import { useOffline } from "@/src/offline/offline-context";
 import { clearOfflineDataForUser } from "@/src/offline/offline-database";
+import { readOfflineResource, onlineWithOfflineFallback } from "@/src/offline/offline-read";
 
 export type ProfileRole = "parent" | "teacher";
 
@@ -43,7 +44,8 @@ export function useProfileScreen({ fetchProfile }: Params) {
   const pathname = usePathname();
   const { lockApp, logout, user } = useAuthContext();
   const { isAuthenticated } = useAuth();
-  const { localWorkCount } = useOffline();
+  const { localWorkCount, isConnected, isInternetReachable } = useOffline();
+  const isOffline = !isConnected || !isInternetReachable;
 
   const profileRole: ProfileRole = pathname.includes("(teacher)")
     ? "teacher"
@@ -56,7 +58,18 @@ export function useProfileScreen({ fetchProfile }: Params) {
   } = useQuery({
     queryKey: mobileQueryKeys.profile(profileRole),
     enabled: isAuthenticated,
-    queryFn: () => fetchProfile(),
+    queryFn: () => onlineWithOfflineFallback(
+      isOffline,
+      fetchProfile,
+      async () => {
+        if (!user?.id) throw new Error("Offline profile is unavailable.");
+        const profiles = await readOfflineResource<UserProfile>(user.id, "profiles");
+        const profile = profiles[0];
+        if (!profile) throw new Error("This information has not been downloaded.");
+        return profile;
+      },
+    ),
+    networkMode: "always",
   });
 
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -132,6 +145,7 @@ export function useProfileScreen({ fetchProfile }: Params) {
     setShowHelpModal,
     handleLockApp,
     handleLogout,
+    isOffline,
     ...passwordManager,
   };
 }

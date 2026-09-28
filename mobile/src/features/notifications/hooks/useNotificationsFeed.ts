@@ -8,6 +8,8 @@ import { toLocalDateKey } from "@/src/features/notifications/utils";
 import type { NotificationFilter } from "@/src/features/notifications/types";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { useAuth } from "@/src/hooks/use-auth";
+import { useOffline } from "@/src/offline/offline-context";
+import { readOfflineResource, onlineWithOfflineFallback } from "@/src/offline/offline-read";
 
 type FeedResponse<T> = {
   date?: string;
@@ -26,6 +28,8 @@ export const useNotificationsFeed = <T extends NotificationArchiveBaseItem>({
   fetchFeed,
 }: Params<T>) => {
   const { isAuthenticated } = useAuth();
+  const { isConnected, isInternetReachable } = useOffline();
+  const isOffline = !isConnected || !isInternetReachable;
   const [readIds, setReadIds] = useState<Record<string, boolean>>({});
   const [archivedItems, setArchivedItems] = useState<ArchivedNotificationItem<T>[]>([]);
   const [deletedIds, setDeletedIds] = useState<string[]>([]);
@@ -37,12 +41,23 @@ export const useNotificationsFeed = <T extends NotificationArchiveBaseItem>({
     queryKey: mobileQueryKeys.notificationsFeed(audience, userId, todayDateKey),
     enabled: isAuthenticated,
     queryFn: async () => {
-      const result = await fetchFeed(todayDateKey);
-      return { items: result.notifications || [], date: result.date || todayDateKey };
+      return onlineWithOfflineFallback(
+        isOffline,
+        async () => {
+          const result = await fetchFeed(todayDateKey);
+          return { items: result.notifications || [], date: result.date || todayDateKey };
+        },
+        async () => {
+          if (!userId) return { items: [], date: todayDateKey };
+          const items = await readOfflineResource<(T & { feedDate?: string })>(userId, "notifications");
+          return { items, date: items[0]?.feedDate || todayDateKey };
+        },
+      );
     },
+    networkMode: "always",
   });
 
-  const items = data?.items || [];
+  const items = useMemo(() => data?.items || [], [data?.items]);
   const date = data?.date || null;
   const error = !isAuthenticated
     ? "You need to sign in first."
