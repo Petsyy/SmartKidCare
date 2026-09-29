@@ -282,12 +282,18 @@ function PickupManager({ childId }: { childId: string }) {
 
           <Pressable
             onPress={handleGenerateCode}
-            disabled={isRequesting || isOffline}
+            disabled={isRequesting}
             className={`mt-6 items-center justify-center py-5 px-6 rounded-2xl flex-row shadow-md active:opacity-90 ${
               isRequesting || isOffline ? "bg-gray-300" : "bg-teal-600"
             }`}
             accessibilityRole="button"
             accessibilityLabel="Generate secure pickup code"
+            accessibilityHint={
+              isOffline
+                ? "Displays a message explaining that an internet connection is required"
+                : "Generates a new pickup code"
+            }
+            accessibilityState={{ disabled: isRequesting }}
           >
             {isRequesting ? (
               <ActivityIndicator color="white" size="small" />

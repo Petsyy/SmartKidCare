@@ -17,19 +17,12 @@ if (
 }
 
 interface CollapsibleSectionProps {
-  /** Icon rendered inside a 40×40 rounded box on the left */
   icon: ReactNode;
-  /** Section heading text */
   title: string;
-  /** Whether the section starts expanded (default: false) */
   defaultExpanded?: boolean;
-  /** Section content — only rendered when expanded */
   children: ReactNode;
 }
 
-/**
- * Collapsible card section with native smooth expand/collapse.
- */
 export function CollapsibleSection({
   icon,
   title,

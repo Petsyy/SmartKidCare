@@ -1,17 +1,49 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Alert, View, Text, TextInput, Pressable, FlatList, ActivityIndicator, StatusBar, ScrollView } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import {
+  Alert,
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  FlatList,
+  ActivityIndicator,
+  StatusBar,
+  ScrollView,
+} from "react-native";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import * as Icons from "lucide-react-native";
 import { useAuth } from "@/src/hooks/use-auth";
 import { sendAIChat } from "@/src/api/ai.api";
 import { getMyChildren, type Child } from "@/src/api/parent.api";
-import { extractAIBulletText, extractAIRiskLevel, getAIRiskBadgeStyle, isAISectionLine, removeAIRiskLevelLine } from "@/src/components/ai/ai-chat";
+import {
+  extractAIBulletText,
+  extractAIRiskLevel,
+  getAIRiskBadgeStyle,
+  isAISectionLine,
+  removeAIRiskLevelLine,
+} from "@/src/components/ai/ai-chat";
 import { BRAND_HEADER_GRADIENT, ScreenHeader } from "@/src/components/ui";
 import { useOffline } from "@/src/offline/offline-context";
-import { readOfflineResource, onlineWithOfflineFallback } from "@/src/offline/offline-read";
-import { clearOfflineChatMessages, readOfflineChatMessages, replaceOfflineChatMessages } from "@/src/offline/offline-chat-store";
+import {
+  readOfflineResource,
+  onlineWithOfflineFallback,
+} from "@/src/offline/offline-read";
+import {
+  clearOfflineChatMessages,
+  readOfflineChatMessages,
+  replaceOfflineChatMessages,
+} from "@/src/offline/offline-chat-store";
 
 const SUGGESTIONS = [
   "Was my child present today?",
@@ -56,10 +88,14 @@ export default function ParentChatScreen() {
   const selectedChild = useMemo(() => {
     if (!children.length) return null;
     if (!selectedChildId) return children[0];
-    return children.find((child) => child._id === selectedChildId) ?? children[0];
+    return (
+      children.find((child) => child._id === selectedChildId) ?? children[0]
+    );
   }, [children, selectedChildId]);
 
-  const selectedChildName = selectedChild ? getChildFullName(selectedChild) : "";
+  const selectedChildName = selectedChild
+    ? getChildFullName(selectedChild)
+    : "";
   const canSend =
     Boolean(input.trim()) &&
     Boolean(selectedChild?._id) &&
@@ -70,17 +106,29 @@ export default function ParentChatScreen() {
 
   useEffect(() => {
     let cancelled = false;
-    if (!user?.id) { setMessages([]); setHistoryReady(true); return; }
+    if (!user?.id) {
+      setMessages([]);
+      setHistoryReady(true);
+      return;
+    }
     setHistoryReady(false);
     void readOfflineChatMessages(user.id).then((stored) => {
-      if (!cancelled) { setMessages(stored); setHistoryReady(true); }
+      if (!cancelled) {
+        setMessages(stored);
+        setHistoryReady(true);
+      }
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id]);
 
   useEffect(() => {
     if (!historyReady || !user?.id) return;
-    const timeout = setTimeout(() => void replaceOfflineChatMessages(user.id, messages), 300);
+    const timeout = setTimeout(
+      () => void replaceOfflineChatMessages(user.id, messages),
+      300,
+    );
     return () => clearTimeout(timeout);
   }, [historyReady, messages, user?.id]);
 
@@ -110,7 +158,10 @@ export default function ParentChatScreen() {
         const linkedChildren = await onlineWithOfflineFallback(
           isOffline,
           getMyChildren,
-          () => user?.id ? readOfflineResource<Child>(user.id, "children") : Promise.resolve([]),
+          () =>
+            user?.id
+              ? readOfflineResource<Child>(user.id, "children")
+              : Promise.resolve([]),
         );
 
         if (cancelled) return;
@@ -167,7 +218,13 @@ export default function ParentChatScreen() {
     const assistantId = `assistant-${Date.now()}`;
     setMessages((prev) => [
       ...prev,
-      { id: assistantId, role: "assistant", content: "", childId, createdAt: new Date().toISOString() },
+      {
+        id: assistantId,
+        role: "assistant",
+        content: "",
+        childId,
+        createdAt: new Date().toISOString(),
+      },
     ]);
 
     try {
@@ -236,10 +293,16 @@ export default function ParentChatScreen() {
                 key={`bullet-${index}`}
                 className="flex-row items-start gap-2"
               >
-                <Text className="text-[15px] text-gray-800" style={{ lineHeight: 22 }}>
+                <Text
+                  className="text-[15px] text-gray-800"
+                  style={{ lineHeight: 22 }}
+                >
                   •
                 </Text>
-                <Text className="flex-1 text-[15px] text-gray-800" style={{ lineHeight: 22 }}>
+                <Text
+                  className="flex-1 text-[15px] text-gray-800"
+                  style={{ lineHeight: 22 }}
+                >
                   {bulletMatch[1]}
                 </Text>
               </View>
@@ -350,10 +413,19 @@ export default function ParentChatScreen() {
 
   const confirmClearHistory = () => {
     if (!user?.id || messages.length === 0) return;
-    Alert.alert("Delete chat history?", "This removes the encrypted chat history saved on this device.", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: () => void clearOfflineChatMessages(user.id).then(() => setMessages([])) },
-    ]);
+    Alert.alert(
+      "Delete chat history?",
+      "This removes the encrypted chat history saved on this device.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () =>
+            void clearOfflineChatMessages(user.id).then(() => setMessages([])),
+        },
+      ],
+    );
   };
 
   const listEmpty = (
@@ -423,7 +495,10 @@ export default function ParentChatScreen() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={["left", "right", "bottom"]}>
+    <SafeAreaView
+      className="flex-1 bg-gray-50"
+      edges={["left", "right", "bottom"]}
+    >
       <StatusBar barStyle="light-content" backgroundColor="#0D9488" />
       <View className="flex-1">
         <ScreenHeader
@@ -431,18 +506,28 @@ export default function ParentChatScreen() {
           title="AI Assistant"
           subtitle="Ask about attendance and meals"
           onBack={() => router.back()}
-          rightAction={messages.length ? (
-            <Pressable accessibilityRole="button" accessibilityLabel="Delete saved chat history" onPress={confirmClearHistory}
-              className="h-10 w-10 items-center justify-center rounded-full bg-white/20">
-              <Icons.Trash2 size={20} color="white" />
-            </Pressable>
-          ) : undefined}
+          rightAction={
+            messages.length ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Delete saved chat history"
+                onPress={confirmClearHistory}
+                className="h-10 w-10 items-center justify-center rounded-full bg-white/20"
+              >
+                <Icons.Trash2 size={20} color="white" />
+              </Pressable>
+            ) : undefined
+          }
         />
 
         {isOffline ? (
-          <View className="border-b border-amber-200 bg-amber-50 px-4 py-3">
-            <Text className="text-sm font-semibold text-amber-900">Offline · saved chat history is read-only</Text>
-            <Text className="mt-1 text-xs text-amber-800">Connect to the internet to send a new message.</Text>
+          <View className="border-b border-amber-200 bg-amber-50 px-5 py-4">
+            <Text className="text-base font-bold text-amber-900">
+              Offline · saved chat history is read-only
+            </Text>
+            <Text className="mt-1 text-sm leading-5 text-amber-800">
+              Connect to the internet to send a new message.
+            </Text>
           </View>
         ) : null}
 
@@ -502,7 +587,7 @@ export default function ParentChatScreen() {
         />
 
         <View
-          className="flex-row items-end gap-3 border-t border-gray-200 bg-white px-4 py-3"
+          className="flex-row items-center gap-3 border-t border-gray-200 bg-white px-4 py-3"
           style={{
             paddingBottom: insets.bottom + 12,
             shadowColor: "#000",
@@ -519,15 +604,21 @@ export default function ParentChatScreen() {
               isOffline
                 ? "Connect to the internet to send a message"
                 : contextLoading
-                ? "Loading your child records..."
-                : selectedChild
-                  ? `Ask about ${selectedChild.firstName}'s attendance or feeding...`
-                  : "Link a child before chatting..."
+                  ? "Loading your child records..."
+                  : selectedChild
+                    ? `Ask about ${selectedChild.firstName}'s attendance or feeding...`
+                    : "Link a child before chatting..."
             }
             placeholderTextColor="#9CA3AF"
-            className="flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3.5 text-[15px] text-gray-800 min-h-[48px] max-h-28"
+            className="min-h-[52px] max-h-28 flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3.5 text-[15px] text-gray-800"
+            textAlignVertical="center"
             multiline
-            editable={!isOffline && !loading && !contextLoading && Boolean(selectedChild)}
+            editable={
+              !isOffline &&
+              !loading &&
+              !contextLoading &&
+              Boolean(selectedChild)
+            }
             onSubmitEditing={sendMessage}
             returnKeyType="send"
           />
@@ -536,7 +627,7 @@ export default function ParentChatScreen() {
             disabled={!canSend}
             accessibilityRole="button"
             accessibilityLabel="Send message to AI assistant"
-            className="h-12 w-12 overflow-hidden rounded-full active:opacity-90 disabled:opacity-50"
+            className="h-[52px] w-[52px] overflow-hidden rounded-full active:opacity-90 disabled:opacity-50"
             style={{
               shadowColor: "#0D9488",
               shadowOpacity: 0.35,
