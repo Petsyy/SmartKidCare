@@ -82,12 +82,6 @@ export default function ChildDetailsModal({
                     id={descriptionId}
                     className="mt-1 text-sm font-normal text-slate-600 dark:text-slate-400"
                   >
-                    {child.studentId
-                      ? `Student ID ${child.studentId}`
-                      : "Student ID not assigned"}{" "}
-                    <span className="mx-1.5 text-gray-400 dark:text-slate-500">
-                      |
-                    </span>{" "}
                     {child.age || "Age not set"} years old
                   </p>
                 </DialogDescription>

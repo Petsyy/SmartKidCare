@@ -260,14 +260,6 @@ export const showLinkedChildrenModal = (
               : ""
           }
         </div>
-        <div style="margin-bottom: 12px;">
-          <p style="margin: 0 0 4px 0; font-size: 14px; color: #6b7280; font-weight: 500;">
-            Student ID:
-          </p>
-          <p style="margin: 0; font-size: 16px; color: #374151; font-family: monospace; font-weight: 500;">
-            ${child.studentId || "No Student ID"}
-          </p>
-        </div>
         ${
           child.age
             ? `

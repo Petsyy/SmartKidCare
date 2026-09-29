@@ -261,10 +261,6 @@ export function ProfileSection({
       className="space-y-4 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-300"
     >
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <InfoCard
-          label="Student ID"
-          value={<span>{child.studentId || "Not assigned"}</span>}
-        />
         <InfoCard label="School Year" value={child.schoolYear || "Not set"} />
         <InfoCard label="Age" value={child.age || "Not set"} />
         <InfoCard label="Gender" value={formatTitleCase(child.gender)} />

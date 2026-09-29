@@ -119,7 +119,6 @@ export const FeedingViewModal = ({ viewingRow, onClose }: ViewModalProps) => {
               Record details
             </p>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Detail label="Child ID" value={viewingRow.studentId || "-"} />
               <Detail
                 label="Food served"
                 value={viewingRow.foodServed || "-"}
