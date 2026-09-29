@@ -214,6 +214,7 @@ function PickupManager({ childId }: { childId: string }) {
     queryFn: () =>
       user?.id ? getActivePickupCode(user.id, childId) : Promise.resolve(null),
     enabled: Boolean(user?.id),
+    networkMode: "always",
     staleTime: Infinity,
     gcTime: 60 * 60 * 1000,
   });

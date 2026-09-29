@@ -16,10 +16,7 @@ import {
   StatusBar,
   ScrollView,
 } from "react-native";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import * as Icons from "lucide-react-native";
@@ -69,7 +66,6 @@ function getChildFullName(child: Child): string {
 }
 
 export default function ParentChatScreen() {
-  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   const { user } = useAuth();
@@ -589,7 +585,6 @@ export default function ParentChatScreen() {
         <View
           className="flex-row items-end gap-3 border-t border-gray-200 bg-white px-4 py-3"
           style={{
-            paddingBottom: insets.bottom + 12,
             shadowColor: "#000",
             shadowOpacity: 0.06,
             shadowRadius: 12,
