@@ -25,24 +25,37 @@ import {
 } from "../components";
 import { useAuth } from "@/src/hooks/use-auth";
 import { useOffline } from "@/src/offline/offline-context";
-import { readOfflineResource, onlineWithOfflineFallback } from "@/src/offline/offline-read";
+import {
+  readOfflineResource,
+  onlineWithOfflineFallback,
+} from "@/src/offline/offline-read";
+import {
+  clearPickupCode,
+  getActivePickupCode,
+  savePickupCode,
+} from "../utils/pickup-code-storage";
 
 export function ParentPickupScreen() {
   const { user } = useAuth();
-  const { isConnected, isInternetReachable, lastCompleteRecordSyncAt } = useOffline();
+  const { isConnected, isInternetReachable, lastCompleteRecordSyncAt } =
+    useOffline();
   const isOffline = !isConnected || !isInternetReachable;
   const { data: children = [], isLoading: loadingChildren } = useQuery<Child[]>(
     {
       queryKey: ["parent", "my-children"],
-      queryFn: () => onlineWithOfflineFallback(isOffline, getMyChildren, () =>
-        user?.id ? readOfflineResource<Child>(user.id, "children") : Promise.resolve([])),
+      queryFn: () =>
+        onlineWithOfflineFallback(isOffline, getMyChildren, () =>
+          user?.id
+            ? readOfflineResource<Child>(user.id, "children")
+            : Promise.resolve([]),
+        ),
       networkMode: "always",
     },
   );
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
   const activeChildId = children.some((child) => child._id === selectedChildId)
     ? selectedChildId
-    : children[0]?._id ?? null;
+    : (children[0]?._id ?? null);
 
   if (loadingChildren) {
     return (
@@ -74,9 +87,19 @@ export function ParentPickupScreen() {
       >
         {isOffline ? (
           <View className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-            <Text className="font-bold text-amber-900">Last known pickup status</Text>
-            <Text className="mt-1 text-sm leading-5 text-amber-800">Pickup information may have changed since this device was last synchronized.</Text>
-            <Text className="mt-2 text-xs font-semibold text-amber-700">Last synchronized {lastCompleteRecordSyncAt ? new Date(lastCompleteRecordSyncAt).toLocaleString() : "not available"}</Text>
+            <Text className="font-bold text-amber-900">
+              Last known pickup status
+            </Text>
+            <Text className="mt-1 text-sm leading-5 text-amber-800">
+              Pickup information may have changed since this device was last
+              synchronized.
+            </Text>
+            <Text className="mt-2 text-xs font-semibold text-amber-700">
+              Last synchronized{" "}
+              {lastCompleteRecordSyncAt
+                ? new Date(lastCompleteRecordSyncAt).toLocaleString()
+                : "not available"}
+            </Text>
           </View>
         ) : null}
         {children.length === 0 ? (
@@ -118,9 +141,7 @@ export function ParentPickupScreen() {
                   >
                     <View
                       className={`h-2 w-2 rounded-full mr-2 ${
-                        activeChildId === child._id
-                          ? "bg-white"
-                          : "bg-teal-500"
+                        activeChildId === child._id ? "bg-white" : "bg-teal-500"
                       }`}
                     />
                     <Text
@@ -175,6 +196,7 @@ export function ParentPickupScreen() {
 
 function PickupManager({ childId }: { childId: string }) {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const { statusData, isLoading, requestCode, isRequesting, isOffline } =
     usePickupParent(childId);
   const { guardians } = useGuardians(childId);
@@ -184,12 +206,14 @@ function PickupManager({ childId }: { childId: string }) {
   >(null);
   const [timeLeft, setTimeLeft] = useState<string>("");
 
-  const { data: activeCodeSession } = useQuery<{
+  const { data: activeCodeSession, isLoading: isLoadingActiveCode } = useQuery<{
     code: string;
     expiresAt: Date;
   } | null>({
-    queryKey: ["activePickupCode", childId],
-    queryFn: () => null,
+    queryKey: ["activePickupCode", user?.id, childId],
+    queryFn: () =>
+      user?.id ? getActivePickupCode(user.id, childId) : Promise.resolve(null),
+    enabled: Boolean(user?.id),
     staleTime: Infinity,
     gcTime: 60 * 60 * 1000,
   });
@@ -205,7 +229,8 @@ function PickupManager({ childId }: { childId: string }) {
       if (distance < 0) {
         clearInterval(interval);
         setTimeLeft("Expired");
-        queryClient.setQueryData(["activePickupCode", childId], null);
+        queryClient.setQueryData(["activePickupCode", user?.id, childId], null);
+        if (user?.id) void clearPickupCode(user.id, childId);
       } else {
         const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((distance % (1000 * 60)) / 1000);
@@ -213,25 +238,53 @@ function PickupManager({ childId }: { childId: string }) {
       }
     }, 1000);
     return () => clearInterval(interval);
-  }, [childId, expiresAt, queryClient]);
+  }, [childId, expiresAt, queryClient, user?.id]);
+
+  useEffect(() => {
+    if (statusData?.status !== "released" || !user?.id) return;
+    queryClient.setQueryData(["activePickupCode", user.id, childId], null);
+    void clearPickupCode(user.id, childId);
+  }, [childId, queryClient, statusData?.status, user?.id]);
 
   const handleGenerateCode = async () => {
     if (isOffline) {
-      Alert.alert("Connection required", "Connect to the internet to perform this action.");
+      Alert.alert(
+        "Connection required",
+        "Connect to the internet to perform this action.",
+      );
       return;
     }
     try {
       const res = await requestCode(selectedGuardianIndex);
-      queryClient.setQueryData(["activePickupCode", childId], {
+      const session = {
         code: res.code,
         expiresAt: new Date(res.expiresAt),
-      });
+      };
+      queryClient.setQueryData(
+        ["activePickupCode", user?.id, childId],
+        session,
+      );
+      if (user?.id) {
+        try {
+          await savePickupCode({
+            userId: user.id,
+            childId,
+            code: res.code,
+            expiresAt: res.expiresAt,
+          });
+        } catch {
+          Alert.alert(
+            "Code generated",
+            "The code is active, but it could not be saved for app restart.",
+          );
+        }
+      }
     } catch (e: any) {
       Alert.alert("Error", e.message || "Failed to generate pickup code.");
     }
   };
 
-  if (isLoading) {
+  if (isLoading || isLoadingActiveCode) {
     return (
       <View className="bg-white border border-gray-100 rounded-3xl p-8 items-center justify-center my-2 shadow-sm">
         <ActivityIndicator size="small" color="#0D9488" />

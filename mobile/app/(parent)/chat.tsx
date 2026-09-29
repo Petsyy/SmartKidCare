@@ -587,7 +587,7 @@ export default function ParentChatScreen() {
         />
 
         <View
-          className="flex-row items-center gap-3 border-t border-gray-200 bg-white px-4 py-3"
+          className="flex-row items-end gap-3 border-t border-gray-200 bg-white px-4 py-3"
           style={{
             paddingBottom: insets.bottom + 12,
             shadowColor: "#000",
@@ -610,7 +610,12 @@ export default function ParentChatScreen() {
                     : "Link a child before chatting..."
             }
             placeholderTextColor="#9CA3AF"
-            className="min-h-[52px] max-h-28 flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3.5 text-[15px] text-gray-800"
+            className="h-14 flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-4 text-[15px] text-gray-800"
+            style={{
+              includeFontPadding: false,
+              paddingTop: 0,
+              paddingBottom: 0,
+            }}
             textAlignVertical="center"
             multiline
             editable={
@@ -627,7 +632,7 @@ export default function ParentChatScreen() {
             disabled={!canSend}
             accessibilityRole="button"
             accessibilityLabel="Send message to AI assistant"
-            className="h-[52px] w-[52px] overflow-hidden rounded-full active:opacity-90 disabled:opacity-50"
+            className="h-14 w-14 overflow-hidden rounded-full active:opacity-90 disabled:opacity-50"
             style={{
               shadowColor: "#0D9488",
               shadowOpacity: 0.35,

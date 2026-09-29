@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Alert } from "react-native";
-import { useRouter, useFocusEffect, usePathname } from "expo-router";
+import { useFocusEffect, usePathname } from "expo-router";
 import { useAuthContext } from "@/src/context/auth-context";
 import { useAuth } from "@/src/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
@@ -9,6 +9,7 @@ import { useChangePassword } from "./useChangePassword";
 import { useOffline } from "@/src/offline/offline-context";
 import { clearOfflineDataForUser } from "@/src/offline/offline-database";
 import { readOfflineResource, onlineWithOfflineFallback } from "@/src/offline/offline-read";
+import { clearPickupCodesForUser } from "@/src/features/pickup/utils/pickup-code-storage";
 
 export type ProfileRole = "parent" | "teacher";
 
@@ -40,7 +41,6 @@ type Params = {
 };
 
 export function useProfileScreen({ fetchProfile }: Params) {
-  const router = useRouter();
   const pathname = usePathname();
   const { lockApp, logout, user } = useAuthContext();
   const { isAuthenticated } = useAuth();
@@ -87,9 +87,13 @@ export function useProfileScreen({ fetchProfile }: Params) {
 
   const handleLogout = () => {
     const performLogout = async () => {
-      if (user?.id) await clearOfflineDataForUser(user.id);
+      if (user?.id) {
+        await Promise.all([
+          clearOfflineDataForUser(user.id),
+          clearPickupCodesForUser(user.id),
+        ]);
+      }
       await logout();
-      router.push("/(auth)/login");
     };
     const message =
       localWorkCount > 0

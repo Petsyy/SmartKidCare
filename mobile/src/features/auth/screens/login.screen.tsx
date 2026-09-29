@@ -1,5 +1,11 @@
-import { useState, type ComponentType, type ReactNode } from "react";
 import {
+  useCallback,
+  useState,
+  type ComponentType,
+  type ReactNode,
+} from "react";
+import {
+  BackHandler,
   View,
   Text,
   TextInput,
@@ -13,7 +19,7 @@ import {
 import { useForm } from "react-hook-form";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Mail, Lock, ShieldCheck } from "lucide-react-native";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/src/hooks/use-auth";
@@ -78,6 +84,20 @@ export default function Login() {
   const loginMutation = useMutation({
     mutationFn: apiLogin,
   });
+
+  useFocusEffect(
+    useCallback(() => {
+      const subscription = BackHandler.addEventListener(
+        "hardwareBackPress",
+        () => {
+          BackHandler.exitApp();
+          return true;
+        },
+      );
+
+      return () => subscription.remove();
+    }, []),
+  );
 
   const handleLogin = async () => {
     const trimmedIdentifier = identifier.trim();

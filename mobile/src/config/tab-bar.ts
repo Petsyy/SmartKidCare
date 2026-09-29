@@ -1,4 +1,12 @@
+import { createElement } from "react";
+import { Pressable, type PressableProps } from "react-native";
 import { colors } from "./theme";
+
+const TabBarButton = (props: PressableProps) =>
+  createElement(Pressable, {
+    ...props,
+    android_ripple: { color: "transparent" },
+  });
 
 export function getTabBarScreenOptions(
   bottomInset: number,
@@ -10,7 +18,8 @@ export function getTabBarScreenOptions(
     tabBarActiveTintColor: colors.primary,
     tabBarInactiveTintColor: colors.textMuted,
     tabBarHideOnKeyboard: true,
-    tabBarActiveBackgroundColor: colors.primaryLight,
+    tabBarActiveBackgroundColor: "transparent",
+    tabBarButton: TabBarButton,
     sceneStyle: {
       backgroundColor: colors.background,
     },
