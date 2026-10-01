@@ -1,12 +1,5 @@
 import React, { useMemo, useState } from "react";
-import {
-  View,
-  Text,
-  Alert,
-  Modal,
-  ScrollView,
-  Pressable,
-} from "react-native";
+import { View, Text, Alert, Modal, ScrollView, Pressable } from "react-native";
 import { useFocusEffect } from "expo-router";
 import { ShieldCheck, Search } from "lucide-react-native";
 import {
@@ -15,6 +8,7 @@ import {
   ScreenShell,
   SearchBar,
   RefreshableScrollView,
+  OfflineFeatureBanner,
 } from "@/src/components/ui";
 import { usePickupTeacher } from "../hooks/usePickupTeacher";
 import type { PickupEligibleChild } from "@/src/api/api.types";
@@ -35,7 +29,7 @@ export function TeacherPickupScreen() {
     isReleasing,
     isOffline,
   } = usePickupTeacher();
-  
+
   const [selectedChild, setSelectedChild] =
     useState<PickupEligibleChild | null>(null);
   const [code, setCode] = useState("");
@@ -49,7 +43,7 @@ export function TeacherPickupScreen() {
   useFocusEffect(
     React.useCallback(() => {
       refetch();
-    }, [refetch])
+    }, [refetch]),
   );
 
   const filteredChildren = useMemo(() => {
@@ -129,10 +123,10 @@ export function TeacherPickupScreen() {
       />
 
       {isOffline ? (
-        <View className="mx-5 mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-          <Text className="font-bold text-amber-900">Last known pickup status</Text>
-          <Text className="mt-1 text-sm text-amber-800">Pickup information may have changed since this device was last synchronized. Verification and release require internet.</Text>
-        </View>
+        <OfflineFeatureBanner
+          title="Last known pickup status"
+          description="Pickup information may have changed since this device was last synchronized. Verification and release require internet."
+        />
       ) : null}
 
       <SearchBar
@@ -194,7 +188,10 @@ export function TeacherPickupScreen() {
                     child={child}
                     onPress={() => {
                       if (isOffline) {
-                        Alert.alert("Connection required", "Connect to the internet to perform this action.");
+                        Alert.alert(
+                          "Connection required",
+                          "Connect to the internet to perform this action.",
+                        );
                         return;
                       }
                       setSelectedChild(child);
@@ -228,55 +225,55 @@ export function TeacherPickupScreen() {
                 elevation: 2,
               }}
             >
-            <Text className="text-2xl font-black text-gray-900">
-              Release Authorization
-            </Text>
-            <Pressable
-              onPress={handleClose}
-              className="px-4 py-2 rounded-full bg-gray-100 active:bg-gray-200"
-              accessibilityRole="button"
-              accessibilityLabel="Cancel and close"
-            >
-              <Text className="text-gray-600 font-black text-sm">Cancel</Text>
-            </Pressable>
+              <Text className="text-2xl font-black text-gray-900">
+                Release Authorization
+              </Text>
+              <Pressable
+                onPress={handleClose}
+                className="px-4 py-2 rounded-full bg-gray-100 active:bg-gray-200"
+                accessibilityRole="button"
+                accessibilityLabel="Cancel and close"
+              >
+                <Text className="text-gray-600 font-black text-sm">Cancel</Text>
+              </Pressable>
+            </View>
+
+            {selectedChild && (
+              <ScrollView
+                className="flex-1 p-5"
+                showsVerticalScrollIndicator={false}
+              >
+                <PickupChildInfoCard child={selectedChild} />
+
+                {!isManualRelease ? (
+                  <PickupCodeVerifier
+                    code={code}
+                    onChangeCode={setCode}
+                    onVerify={handleVerify}
+                    isVerifying={isVerifying}
+                    onSwitchToManual={() => setIsManualRelease(true)}
+                  />
+                ) : (
+                  <PickupManualOverridePanel
+                    parent={selectedChild.parent}
+                    guardians={selectedChild.authorizedPickupPersons || []}
+                    selectedGuardianIndex={selectedGuardianIndex}
+                    onSelectGuardian={(index) => {
+                      setSelectedGuardianIndex(index);
+                      if (index !== null) {
+                        setIsVisuallyVerified(false);
+                      }
+                    }}
+                    onConfirm={handleManualRelease}
+                    isReleasing={isReleasing}
+                    onBack={() => setIsManualRelease(false)}
+                    isVisuallyVerified={isVisuallyVerified}
+                    onToggleVisualVerification={setIsVisuallyVerified}
+                  />
+                )}
+              </ScrollView>
+            )}
           </View>
-
-          {selectedChild && (
-            <ScrollView
-              className="flex-1 p-5"
-              showsVerticalScrollIndicator={false}
-            >
-              <PickupChildInfoCard child={selectedChild} />
-
-              {!isManualRelease ? (
-                <PickupCodeVerifier
-                  code={code}
-                  onChangeCode={setCode}
-                  onVerify={handleVerify}
-                  isVerifying={isVerifying}
-                  onSwitchToManual={() => setIsManualRelease(true)}
-                />
-              ) : (
-                <PickupManualOverridePanel
-                  parent={selectedChild.parent}
-                  guardians={selectedChild.authorizedPickupPersons || []}
-                  selectedGuardianIndex={selectedGuardianIndex}
-                  onSelectGuardian={(index) => {
-                    setSelectedGuardianIndex(index);
-                    if (index !== null) {
-                      setIsVisuallyVerified(false);
-                    }
-                  }}
-                  onConfirm={handleManualRelease}
-                  isReleasing={isReleasing}
-                  onBack={() => setIsManualRelease(false)}
-                  isVisuallyVerified={isVisuallyVerified}
-                  onToggleVisualVerification={setIsVisuallyVerified}
-                />
-              )}
-            </ScrollView>
-          )}
-        </View>
         </View>
       </Modal>
     </ScreenShell>

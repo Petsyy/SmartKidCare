@@ -23,6 +23,7 @@ import {
   PickupReleasedBanner,
   PickupPersonSelector,
 } from "../components";
+import { OfflineFeatureBanner } from "@/src/components/ui";
 import { useAuth } from "@/src/hooks/use-auth";
 import { useOffline } from "@/src/offline/offline-context";
 import {
@@ -86,21 +87,7 @@ export function ParentPickupScreen() {
         showsVerticalScrollIndicator={false}
       >
         {isOffline ? (
-          <View className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-            <Text className="font-bold text-amber-900">
-              Last known pickup status
-            </Text>
-            <Text className="mt-1 text-sm leading-5 text-amber-800">
-              Pickup information may have changed since this device was last
-              synchronized.
-            </Text>
-            <Text className="mt-2 text-xs font-semibold text-amber-700">
-              Last synchronized{" "}
-              {lastCompleteRecordSyncAt
-                ? new Date(lastCompleteRecordSyncAt).toLocaleString()
-                : "not available"}
-            </Text>
-          </View>
+          <OfflineFeatureBanner title="Last known pickup status" description={`Pickup information may have changed since this device was last synchronized.\nLast synchronized: ${lastCompleteRecordSyncAt ? new Date(lastCompleteRecordSyncAt).toLocaleString() : "not available"}`} className="mb-4" />
         ) : null}
         {children.length === 0 ? (
           <View className="items-center justify-center p-8 bg-white rounded-3xl border border-gray-100 shadow-sm mt-4">

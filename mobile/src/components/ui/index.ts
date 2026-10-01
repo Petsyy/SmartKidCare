@@ -16,4 +16,5 @@ export * from "./empty-state-card";
 export * from "./refreshable-scroll-view";
 export * from "./success-feedback-modal";
 export * from "./offline-status-banner";
+export * from "./offline-feature-banner";
 export * from "./offline-data-card";

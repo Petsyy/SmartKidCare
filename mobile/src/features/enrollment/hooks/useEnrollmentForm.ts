@@ -17,7 +17,7 @@ import {
   childEnrollmentStepTwoSchema,
 } from "@/src/features/enrollment/validations/child-enrollment-validation";
 import { computeAgeFromDateOfBirth } from "@/src/shared/validations/child-validation-utils";
-import DocumentPicker from "expo-document-picker";
+import type * as DocumentPicker from "expo-document-picker";
 
 const enrollmentSchema = z.intersection(
   childEnrollmentStepOneSchema,
@@ -147,8 +147,7 @@ export const useEnrollmentForm = () => {
     if (!isValid) {
       const errors = form.formState.errors;
       const firstError = Object.values(errors)[0] as
-        | { message?: string }
-        | undefined;
+        { message?: string } | undefined;
       if (firstError?.message) {
         Alert.alert("Validation", firstError.message);
       } else {
@@ -173,8 +172,7 @@ export const useEnrollmentForm = () => {
     if (!isValid) {
       const errors = form.formState.errors;
       const firstError = Object.values(errors)[0] as
-        | { message?: string }
-        | undefined;
+        { message?: string } | undefined;
       if (firstError?.message) {
         Alert.alert("Validation", firstError.message);
       } else {
@@ -198,8 +196,7 @@ export const useEnrollmentForm = () => {
     if (!isValid) {
       const errors = form.formState.errors;
       const firstError = Object.values(errors)[0] as
-        | { message?: string }
-        | undefined;
+        { message?: string } | undefined;
       if (firstError?.message) {
         Alert.alert("Validation", firstError.message);
       } else {

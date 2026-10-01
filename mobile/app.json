@@ -47,6 +47,7 @@
         }
       ],
       "expo-notifications",
+      "expo-image-picker",
       "@react-native-community/datetimepicker",
       "expo-font",
       "expo-web-browser"
@@ -61,7 +62,7 @@
       }
     },
     "runtimeVersion": {
-      "policy": "appVersion"
+      "policy": "fingerprint"
     },
     "updates": {
       "url": "https://u.expo.dev/47e6a41d-4218-4cde-8d15-9916bfb72f85"
