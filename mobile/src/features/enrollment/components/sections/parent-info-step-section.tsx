@@ -52,7 +52,7 @@ export function ParentInfoStepSection({ control }: { control: Control<any> }) {
       <FormInput
         control={control}
         name="parentMiddleName"
-        label="Middle Name *"
+        label="Middle Name (Optional)"
         placeholder="e.g. Santos"
         maxLength={30}
         filterRegex={/[^a-zA-Z\s\-']/g}

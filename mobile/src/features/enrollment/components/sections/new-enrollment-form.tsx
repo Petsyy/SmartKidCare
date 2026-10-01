@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  Alert,
   Modal,
   Platform,
   Pressable,
@@ -14,7 +15,10 @@ import { DocumentsStepSection } from "./documents-step-section";
 import { EnrollmentStartState } from "./enrollment-start-state";
 import { ParentInfoStepSection } from "./parent-info-step-section";
 import { ReviewSubmitStepSection } from "./review-submit-step-section";
-import { ParentCredentialsModal, StepProgress } from "@/src/features/enrollment/components/ui";
+import {
+  ParentCredentialsModal,
+  StepProgress,
+} from "@/src/features/enrollment/components/ui";
 import {
   displayDate,
   formatYmd,
@@ -26,7 +30,9 @@ import {
   useDatePicker,
   useDocumentPicker,
   useEnrollmentSubmit,
+  useDocumentVerification,
 } from "@/src/features/enrollment/hooks";
+import { getVerificationDisplay } from "@/src/features/enrollment/hooks/useDocumentVerification";
 import type { Step } from "@/src/features/enrollment/types";
 import { getDaycareCenterDisplay } from "@/src/utils/daycare-center-format";
 
@@ -63,23 +69,32 @@ export function NewEnrollmentForm({
     },
   );
   const { pickDocument } = useDocumentPicker();
+  const documentVerification = useDocumentVerification();
+  const clearDocumentVerification = documentVerification.clear;
   const [step, setStep] = useState<Step>(1);
-  const [credentialsModal, setCredentialsModal] = useState<{ visible: boolean; email: string; tempPassword?: string | null } | null>(null);
+  const [credentialsModal, setCredentialsModal] = useState<{
+    visible: boolean;
+    email: string;
+    tempPassword?: string | null;
+  } | null>(null);
 
   const resetForm = () => {
     form.resetForm();
+    clearDocumentVerification("birthCertificate");
+    clearDocumentVerification("parentId");
     setHasStarted(false);
     setStep(1);
   };
 
-  const { isSubmitting, submitEnrollment } =
-    useEnrollmentSubmit((credentials) => {
+  const { isSubmitting, submitEnrollment } = useEnrollmentSubmit(
+    (credentials) => {
       setCredentialsModal({
         visible: true,
         email: credentials.email,
         tempPassword: credentials.tempPassword,
       });
-    });
+    },
+  );
 
   const handleModalClose = () => {
     setCredentialsModal(null);
@@ -97,11 +112,32 @@ export function NewEnrollmentForm({
     }
   }, [centers.assignedCenterId, currentCenterId, setAssignedCenterId]);
 
+  useEffect(() => {
+    clearDocumentVerification("birthCertificate");
+  }, [form.childFullName, form.dateOfBirth, clearDocumentVerification]);
+
+  useEffect(() => {
+    clearDocumentVerification("parentId");
+  }, [form.parentFullName, clearDocumentVerification]);
+
   const nextStep = async () => {
     if (step === 1 && !(await form.validateStepOne())) return;
     if (step === 2 && !(await form.validateStepTwo())) return;
     if (step === 3 && !(await form.validateStepThree())) return;
-    if (step === 4 && !form.validateStepFour()) return;
+    if (
+      step === 4 &&
+      (!form.validateStepFour() ||
+        !documentVerification.isEligible(
+          documentVerification.birthCertificate,
+        ) ||
+        !documentVerification.isEligible(documentVerification.parentId))
+    ) {
+      Alert.alert(
+        "Document Verification",
+        "Verify both document images or inspect and confirm uncertain results before continuing.",
+      );
+      return;
+    }
     setStep((prev) => (prev < 5 ? ((prev + 1) as Step) : prev));
   };
 
@@ -110,13 +146,28 @@ export function NewEnrollmentForm({
   };
 
   const handlePickBirthCertificate = async () => {
-    const file = await pickDocument("birthCertificate", "file");
-    if (file) form.setBirthCertificateFile(file);
+    const file = await pickDocument("birthCertificate", "gallery");
+    if (file) {
+      form.setBirthCertificateFile(file);
+      documentVerification.clear("birthCertificate");
+      await documentVerification.verify("birthCertificate", file, {
+        childFullName: form.childFullName,
+        dateOfBirth: form.dateOfBirth,
+      });
+    }
   };
 
   const handlePickParentId = async () => {
-    const file = await pickDocument("parentId", "file");
-    if (file) form.setParentIdFile(file);
+    const file = await pickDocument("parentId", "gallery");
+    if (file) {
+      form.setParentIdFile(file);
+      documentVerification.clear("parentId");
+      await documentVerification.verify("parentId", file, {
+        parentFirstName: form.parentFirstName,
+        ...(form.parentMiddleName ? { parentMiddleName: form.parentMiddleName } : {}),
+        parentLastName: form.parentLastName,
+      });
+    }
   };
 
   const handleSubmitEnrollment = async () => {
@@ -124,11 +175,17 @@ export function NewEnrollmentForm({
       !(await form.validateStepOne()) ||
       !(await form.validateStepTwo()) ||
       !(await form.validateStepThree()) ||
-      !form.validateStepFour()
+      !form.validateStepFour() ||
+      !documentVerification.isEligible(documentVerification.birthCertificate) ||
+      !documentVerification.isEligible(documentVerification.parentId)
     )
       return;
 
-    const submissionData = form.getSubmissionData();
+    const submissionData = form.getSubmissionData() as any;
+    submissionData.documentData.birthCertificateVerificationId =
+      documentVerification.birthCertificate.result!.verificationId;
+    submissionData.documentData.parentIdVerificationId =
+      documentVerification.parentId.result!.verificationId;
     await submitEnrollment(submissionData);
   };
 
@@ -226,10 +283,41 @@ export function NewEnrollmentForm({
                   parentIdFile={form.parentIdFile}
                   onPickBirthCertificate={handlePickBirthCertificate}
                   onPickParentId={handlePickParentId}
-                  onClearBirthCertificate={() =>
-                    form.setBirthCertificateFile(null)
+                  onClearBirthCertificate={() => {
+                    form.setBirthCertificateFile(null);
+                    documentVerification.clear("birthCertificate");
+                  }}
+                  onClearParentId={() => {
+                    form.setParentIdFile(null);
+                    documentVerification.clear("parentId");
+                  }}
+                  birthVerification={documentVerification.birthCertificate}
+                  parentVerification={documentVerification.parentId}
+                  onConfirmBirth={() =>
+                    documentVerification.confirm("birthCertificate")
                   }
-                  onClearParentId={() => form.setParentIdFile(null)}
+                  onConfirmParent={() =>
+                    documentVerification.confirm("parentId")
+                  }
+                  onRetryBirth={() =>
+                    form.birthCertificateFile &&
+                    documentVerification.verify(
+                      "birthCertificate",
+                      form.birthCertificateFile,
+                      {
+                        childFullName: form.childFullName,
+                        dateOfBirth: form.dateOfBirth,
+                      },
+                    )
+                  }
+                  onRetryParent={() =>
+                    form.parentIdFile &&
+                    documentVerification.verify("parentId", form.parentIdFile, {
+                      parentFirstName: form.parentFirstName,
+                      ...(form.parentMiddleName ? { parentMiddleName: form.parentMiddleName } : {}),
+                      parentLastName: form.parentLastName,
+                    })
+                  }
                 />
               )}
 
@@ -249,6 +337,8 @@ export function NewEnrollmentForm({
                   parentRelationship={form.parentRelationship}
                   hasBirthCertificate={Boolean(form.birthCertificateFile)}
                   hasParentId={Boolean(form.parentIdFile)}
+                  birthCertificateVerification={getVerificationDisplay(documentVerification.birthCertificate).label}
+                  parentIdVerification={getVerificationDisplay(documentVerification.parentId).label}
                 />
               )}
 

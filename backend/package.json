@@ -18,6 +18,8 @@
     "test:captain-password-setup": "node --test --require ts-node/register tests/captain-password-setup.test.ts",
     "test:nutrition-analytics": "node --test --require ts-node/register tests/nutrition.analytics.service.test.ts",
     "test:ai-intent": "node --test --require ts-node/register tests/ai.intentRouting.test.ts",
+    "test:document-verification": "node --test --require ts-node/register tests/document-verification.service.test.ts",
+    "test:gemini-key-pool": "node --test --require ts-node/register tests/gemini-key-pool.service.test.ts",
     "seed:records": "ts-node scripts/seedRecords.ts",
     "seed:children:targets": "ts-node scripts/seedChildrenByTargets.ts",
     "seed:centers": "ts-node scripts/seedDagupanCenters.ts",
@@ -74,6 +76,7 @@
     "mongoose": "^9.1.4",
     "morgan": "^1.10.1",
     "multer": "^2.1.0",
+    "sharp": "^0.35.5",
     "streamifier": "^0.1.1",
     "xlsx": "^0.18.5",
     "zod": "^4.3.6"

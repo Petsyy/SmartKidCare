@@ -1,13 +1,30 @@
 import type { Express } from "express";
 import mongoose from "mongoose";
-import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../../../shared/errors/app-error";
+import {
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+  ValidationError,
+} from "../../../shared/errors/app-error";
 import { logger } from "../../../shared/lib/logger";
 import { type UploadResult } from "../../../shared/utils/upload-cloudinary";
 import { storageService } from "../../../shared/services/storage.service";
 import { hashFileBuffer } from "../../blockchain/utils/ethers";
-import { buildFullName, extractUploadedDocument, isChildGender, isChildProgramType, splitChildName } from "../../child/shared";
-import { normalizeOptionalString, normalizeString } from "../../../shared/utils/string.utils";
-import { computeAgeFromDate, parseDate } from "../../../shared/utils/date.utils";
+import {
+  buildFullName,
+  extractUploadedDocument,
+  isChildGender,
+  isChildProgramType,
+  splitChildName,
+} from "../../child/shared";
+import {
+  normalizeOptionalString,
+  normalizeString,
+} from "../../../shared/utils/string.utils";
+import {
+  computeAgeFromDate,
+  parseDate,
+} from "../../../shared/utils/date.utils";
 import { createChildRecord } from "../../child/services";
 import {
   calculateAgeInMonths,
@@ -15,16 +32,24 @@ import {
   classifyNutritionalStatus,
 } from "../../../shared/utils/nutrition.utils";
 import { parentService } from "../../parents/services/parents.service";
-import { enrollmentChildRepository, enrollmentCenterRepository, enrollmentUserRepository } from "../repositories/enrollment.repository";
+import {
+  enrollmentChildRepository,
+  enrollmentCenterRepository,
+  enrollmentUserRepository,
+} from "../repositories/enrollment.repository";
 import { authUserRepository } from "../../auth/repositories/auth.repository";
 import { childRepository } from "../../child/repositories/child.repository";
 import NutritionRecord from "../../../models/NutritionRecord";
 import { generateStudentId } from "../../../shared/utils/generate-child-id";
-import type { AuthUser, UploadedFiles, SubmitEnrollmentRequestCommand as DirectEnrollmentCommand } from "../types/enrollment-submit.types";
+import type {
+  AuthUser,
+  UploadedFiles,
+  SubmitEnrollmentRequestCommand as DirectEnrollmentCommand,
+} from "../types/enrollment-submit.types";
+import { documentVerificationService } from "./document-verification.service";
+import { documentVerificationRepository } from "../repositories/document-verification.repository";
 
-export const directEnrollChild = async (
-  command: DirectEnrollmentCommand,
-) => {
+export const directEnrollChild = async (command: DirectEnrollmentCommand) => {
   if (!command.user?.id || command.user.role !== "teacher") {
     throw new ForbiddenError("Teachers only");
   }
@@ -32,6 +57,10 @@ export const directEnrollChild = async (
   const files = command.files;
   const birthFile = files?.birthCertificate?.[0];
   const parentIdFile = files?.parentId?.[0];
+  if (!birthFile || !parentIdFile)
+    throw new ValidationError(
+      "Birth certificate and Parent ID images are required.",
+    );
   const birthDocumentHash = birthFile ? hashFileBuffer(birthFile.buffer) : null;
   const parentIdDocumentHash = parentIdFile
     ? hashFileBuffer(parentIdFile.buffer)
@@ -58,12 +87,23 @@ export const directEnrollChild = async (
   const daycareCenterIdInput = normalizeString(command.body.daycareCenterId);
   const schoolYear = normalizeString(command.body.schoolYear);
   const parentFirstName = normalizeString(command.body.parentFirstName);
-  const parentMiddleName = normalizeOptionalString(command.body.parentMiddleName);
+  const parentMiddleName = normalizeOptionalString(
+    command.body.parentMiddleName,
+  );
   const parentLastName = normalizeString(command.body.parentLastName);
-  const parentPhone = normalizeString(command.body.parentPhone).replace(/\D/g, "");
+  const parentPhone = normalizeString(command.body.parentPhone).replace(
+    /\D/g,
+    "",
+  );
   const parentRelationship = normalizeString(command.body.parentRelationship);
   const weight = command.body.weight ? Number(command.body.weight) : null;
   const height = command.body.height ? Number(command.body.height) : null;
+  const birthVerificationId = normalizeString(
+    command.body.birthCertificateVerificationId,
+  );
+  const parentVerificationId = normalizeString(
+    command.body.parentIdVerificationId,
+  );
 
   if (
     !firstName ||
@@ -79,12 +119,20 @@ export const directEnrollChild = async (
     !homeAddress ||
     !parentRelationship ||
     weight === null ||
-    height === null
+    height === null ||
+    !birthVerificationId ||
+    !parentVerificationId
   ) {
     throw new ValidationError("Missing required enrollment fields");
   }
 
-  const allowedRelationships = ["Mother", "Father", "Guardian", "Grandparent", "Other"];
+  const allowedRelationships = [
+    "Mother",
+    "Father",
+    "Guardian",
+    "Grandparent",
+    "Other",
+  ];
   if (!allowedRelationships.includes(parentRelationship)) {
     throw new ValidationError("A valid parent relationship is required.");
   }
@@ -103,7 +151,9 @@ export const directEnrollChild = async (
 
   const computedAge = computeAgeFromDate(dateOfBirth);
   if (computedAge < 3) {
-    throw new ValidationError("Child must be at least 3 years old at enrollment.");
+    throw new ValidationError(
+      "Child must be at least 3 years old at enrollment.",
+    );
   }
 
   // Child must NOT turn 5 during the school year (June–March)
@@ -120,7 +170,7 @@ export const directEnrollChild = async (
 
     if (fifthBirthday <= schoolYearEnd) {
       throw new ValidationError(
-        "Child must not turn 5 years old during the school year (June–March)."
+        "Child must not turn 5 years old during the school year (June–March).",
       );
     }
   }
@@ -141,16 +191,46 @@ export const directEnrollChild = async (
     );
   }
 
+  const dateYmd = dateOfBirth.toISOString().slice(0, 10);
+  const [birthVerification, parentVerification] = await Promise.all([
+    documentVerificationService.assertEnrollmentVerification({
+      id: birthVerificationId,
+      teacherId: command.user.id,
+      documentType: "birthCertificate",
+      file: birthFile,
+      expectedBody: {
+        documentType: "birthCertificate",
+        childFullName: buildFullName([firstName, middleName, lastName]),
+        dateOfBirth: dateYmd,
+      },
+    }),
+    documentVerificationService.assertEnrollmentVerification({
+      id: parentVerificationId,
+      teacherId: command.user.id,
+      documentType: "parentId",
+      file: parentIdFile,
+      expectedBody: {
+        documentType: "parentId",
+        parentFirstName,
+        parentMiddleName: parentMiddleName || undefined,
+        parentLastName,
+      },
+    }),
+  ]);
+
   if (!daycareCenterIdInput || !/^[a-f\d]{24}$/i.test(daycareCenterIdInput)) {
     throw new ValidationError("Invalid assigned center.");
   }
 
-  const selectedCenter = await enrollmentCenterRepository.findActiveById(daycareCenterIdInput);
+  const selectedCenter =
+    await enrollmentCenterRepository.findActiveById(daycareCenterIdInput);
   if (!selectedCenter || selectedCenter.isActive === false) {
     throw new NotFoundError("Selected center");
   }
 
-  const requestingTeacher = await enrollmentUserRepository.findTeacherById(command.user.id);
+  const requestingTeacher = await enrollmentUserRepository.findTeacherById(
+    command.user.id,
+  );
   const teacherCenterId = String(requestingTeacher?.daycareCenter || "");
 
   if (!teacherCenterId) {
@@ -175,7 +255,11 @@ export const directEnrollChild = async (
   }
 
   const [existingParent, existingNonParentByPhone] = await Promise.all([
-    parentService.findParentByIdentity(parentFirstName, parentLastName, parentPhone),
+    parentService.findParentByIdentity(
+      parentFirstName,
+      parentLastName,
+      parentPhone,
+    ),
     parentService.findNonParentByPhone(parentPhone),
   ]);
   if (existingNonParentByPhone) {
@@ -188,8 +272,35 @@ export const directEnrollChild = async (
   let parentUpload: UploadResult | null = null;
   let createdParentId: string | null = null;
   let childCreated = false;
+  const plannedChildId = new mongoose.Types.ObjectId();
+  let verificationsClaimed = false;
 
   try {
+    const claimedBirth = await documentVerificationRepository.consume(
+      birthVerificationId,
+      command.user.id,
+      String(plannedChildId),
+    );
+    if (!claimedBirth)
+      throw new ConflictError(
+        "Birth certificate verification was already used. Please verify again.",
+      );
+    const claimedParent = await documentVerificationRepository.consume(
+      parentVerificationId,
+      command.user.id,
+      String(plannedChildId),
+    );
+    if (!claimedParent) {
+      await documentVerificationRepository.release(
+        birthVerificationId,
+        command.user.id,
+        String(plannedChildId),
+      );
+      throw new ConflictError(
+        "Parent ID verification was already used. Please verify again.",
+      );
+    }
+    verificationsClaimed = true;
     if (birthFile) {
       birthUpload = await storageService.uploadFile(
         birthFile.buffer,
@@ -242,6 +353,7 @@ export const directEnrollChild = async (
 
     const created = await createChildRecord(
       {
+        _id: plannedChildId,
         firstName,
         middleName: middleName || undefined,
         lastName,
@@ -266,19 +378,19 @@ export const directEnrollChild = async (
       {
         birthUpload: birthUpload
           ? {
-            publicId: birthUpload.publicId,
-            resourceType: String(birthUpload.resourceType || "image"),
-            format: String(birthUpload.format || "jpg"),
-            bytes: birthUpload.bytes || 0,
-          }
+              publicId: birthUpload.publicId,
+              resourceType: String(birthUpload.resourceType || "image"),
+              format: String(birthUpload.format || "jpg"),
+              bytes: birthUpload.bytes || 0,
+            }
           : null,
         parentUpload: parentUpload
           ? {
-            publicId: parentUpload.publicId,
-            resourceType: String(parentUpload.resourceType || "image"),
-            format: String(parentUpload.format || "jpg"),
-            bytes: parentUpload.bytes || 0,
-          }
+              publicId: parentUpload.publicId,
+              resourceType: String(parentUpload.resourceType || "image"),
+              format: String(parentUpload.format || "jpg"),
+              bytes: parentUpload.bytes || 0,
+            }
           : null,
         birthDocumentHash,
         parentIdDocumentHash,
@@ -297,13 +409,33 @@ export const directEnrollChild = async (
         ageInMonths: calculateAgeInMonths(dateOfBirth, new Date()),
         sex: gender as "male" | "female",
         bmi: calculatedBmi === null ? undefined : calculatedBmi,
-        nutritionalStatus: (calculatedNutritionalStatus === null ? undefined : calculatedNutritionalStatus) as any,
+        nutritionalStatus: (calculatedNutritionalStatus === null
+          ? undefined
+          : calculatedNutritionalStatus) as any,
         measurementDate: new Date(),
         submittedAt: new Date(),
       });
     }
 
     childCreated = true;
+
+    created.child.set("documents.birthCertificate.verification", {
+      status: birthVerification.status,
+      teacherConfirmed: birthVerification.teacherConfirmed,
+      modelVersion: birthVerification.modelVersion,
+      policyVersion: birthVerification.policyVersion,
+      reasonCodes: birthVerification.reasonCodes,
+      confirmedAt: birthVerification.confirmedAt,
+    });
+    created.child.set("documents.parentId.verification", {
+      status: parentVerification.status,
+      teacherConfirmed: parentVerification.teacherConfirmed,
+      modelVersion: parentVerification.modelVersion,
+      policyVersion: parentVerification.policyVersion,
+      reasonCodes: parentVerification.reasonCodes,
+      confirmedAt: parentVerification.confirmedAt,
+    });
+    await created.child.save();
 
     return {
       message: "Child enrolled successfully.",
@@ -312,16 +444,32 @@ export const directEnrollChild = async (
       parentCredentials,
     };
   } catch (error) {
+    if (!childCreated && verificationsClaimed) {
+      await Promise.all([
+        documentVerificationRepository.release(
+          birthVerificationId,
+          command.user.id,
+          String(plannedChildId),
+        ),
+        documentVerificationRepository.release(
+          parentVerificationId,
+          command.user.id,
+          String(plannedChildId),
+        ),
+      ]);
+    }
     if (!childCreated && createdParentId) {
-      await authUserRepository.deleteById(createdParentId).catch((cleanupError: unknown) => {
-        logger.error("Failed to clean up parent after enrollment error.", {
-          parentId: createdParentId,
-          error:
-            cleanupError instanceof Error
-              ? cleanupError.message
-              : String(cleanupError),
+      await authUserRepository
+        .deleteById(createdParentId)
+        .catch((cleanupError: unknown) => {
+          logger.error("Failed to clean up parent after enrollment error.", {
+            parentId: createdParentId,
+            error:
+              cleanupError instanceof Error
+                ? cleanupError.message
+                : String(cleanupError),
+          });
         });
-      });
     }
 
     if (!childCreated) {

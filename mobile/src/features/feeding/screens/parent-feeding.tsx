@@ -1,5 +1,5 @@
 import { Pressable, Text, View } from "react-native";
-import { UtensilsCrossed, X, Clock, User, Calendar, CheckCircle2, AlertCircle } from "lucide-react-native";
+import { UtensilsCrossed, X, Clock, User, Calendar, CheckCircle2 } from "lucide-react-native";
 import { MonthlyRecordViewer } from "@/src/components/ui/monthly-record-viewer";
 import { useParentFeeding } from "@/src/features/feeding/hooks";
 import { useAndroidBackRoute } from "@/src/hooks/use-android-back-route";
@@ -119,14 +119,6 @@ export default function ViewFeedingDetails() {
                 Completed
               </Text>
             </View>
-            <View className="flex-row items-center bg-rose-50 border border-rose-200/60 px-3 py-1.5 rounded-full">
-              <View className="w-2.5 h-2.5 rounded-full bg-rose-500 mr-2" />
-              <Text className="text-xs font-bold text-rose-800">Missed</Text>
-            </View>
-            <View className="flex-row items-center bg-teal-50 border border-teal-200/60 px-3 py-1.5 rounded-full">
-              <View className="w-2.5 h-2.5 rounded-full bg-teal-500 mr-2" />
-              <Text className="text-xs font-bold text-teal-800">Today</Text>
-            </View>
           </View>
         </View>
       )}
@@ -145,40 +137,21 @@ export default function ViewFeedingDetails() {
             Monthly Summary
           </Text>
 
-          <View className="flex-row gap-3 mb-5">
-            <View className="flex-1 bg-emerald-50/80 rounded-2xl p-4 border border-emerald-100">
-              <View className="flex-row items-center justify-between mb-2">
-                <View className="w-8 h-8 rounded-xl bg-emerald-100 items-center justify-center">
-                  <CheckCircle2 size={18} color="#059669" />
-                </View>
-                <Text className="text-xs font-bold text-emerald-700 uppercase tracking-wide">
-                  Completed
-                </Text>
-              </View>
-              <Text className="text-3xl font-extrabold text-emerald-900">
-                {summary.completed}
+          <View className="mb-4 flex-row items-center rounded-2xl border border-emerald-100 bg-emerald-50/80 p-4">
+            <View className="h-11 w-11 items-center justify-center rounded-xl bg-emerald-100">
+              <CheckCircle2 size={22} color="#059669" />
+            </View>
+            <View className="ml-3 flex-1">
+              <Text className="text-sm font-bold text-emerald-800">
+                Meals served this month
               </Text>
-              <Text className="text-xs text-emerald-700 mt-1 font-medium">
-                Meals served
+              <Text className="mt-0.5 text-xs text-emerald-700">
+                Completed feeding records
               </Text>
             </View>
-
-            <View className="flex-1 bg-rose-50/80 rounded-2xl p-4 border border-rose-100">
-              <View className="flex-row items-center justify-between mb-2">
-                <View className="w-8 h-8 rounded-xl bg-rose-100 items-center justify-center">
-                  <AlertCircle size={18} color="#E11D48" />
-                </View>
-                <Text className="text-xs font-bold text-rose-700 uppercase tracking-wide">
-                  Missed
-                </Text>
-              </View>
-              <Text className="text-3xl font-extrabold text-rose-900">
-                {summary.missed}
-              </Text>
-              <Text className="text-xs text-rose-700 mt-1 font-medium">
-                Meals missed
-              </Text>
-            </View>
+            <Text className="text-3xl font-extrabold text-emerald-900">
+              {summary.completed}
+            </Text>
           </View>
 
           {/* Rate Progress Bar */}

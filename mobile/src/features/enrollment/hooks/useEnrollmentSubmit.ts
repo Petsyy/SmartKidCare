@@ -1,9 +1,7 @@
 import { useCallback } from "react";
 import { Alert } from "react-native";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  submitChildEnrollment,
-} from "@/src/api/teacher.api";
+import { submitChildEnrollment } from "@/src/api/teacher.api";
 import { inferMimeType } from "@/src/features/enrollment/utils/enrollment-utils";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { useAuth } from "@/src/hooks/use-auth";
@@ -11,20 +9,33 @@ import { useOffline } from "@/src/offline/offline-context";
 
 interface SubmissionData {
   childData: {
-    firstName: string; middleName?: string; lastName: string;
-    dateOfBirth: string; age: number; gender: "male" | "female";
+    firstName: string;
+    middleName?: string;
+    lastName: string;
+    dateOfBirth: string;
+    age: number;
+    gender: "male" | "female";
     homeAddress: string;
-    programType: string; daycareCenterId: string; enrollmentDate: string; schoolYear: string;
-    weight: number; height: number;
+    programType: string;
+    daycareCenterId: string;
+    enrollmentDate: string;
+    schoolYear: string;
+    weight: number;
+    height: number;
   };
   parentData: {
-    parentFirstName: string; parentMiddleName?: string; parentLastName: string;
+    parentFirstName: string;
+    parentMiddleName?: string;
+    parentLastName: string;
     parentPhone: string;
-    parentRelationship: "Mother" | "Father" | "Guardian" | "Grandparent" | "Other";
+    parentRelationship:
+      "Mother" | "Father" | "Guardian" | "Grandparent" | "Other";
   };
   documentData: {
     birthCertificate: { uri: string; name: string; mimeType: string } | null;
     parentId: { uri: string; name: string; mimeType: string } | null;
+    birthCertificateVerificationId: string;
+    parentIdVerificationId: string;
   };
 }
 
@@ -33,7 +44,9 @@ export interface ParentCredentials {
   tempPassword?: string | null;
 }
 
-export const useEnrollmentSubmit = (onSuccess?: (credentials: ParentCredentials) => void) => {
+export const useEnrollmentSubmit = (
+  onSuccess?: (credentials: ParentCredentials) => void,
+) => {
   const { isAuthenticated } = useAuth();
   const { isConnected, isInternetReachable } = useOffline();
   const queryClient = useQueryClient();
@@ -44,13 +57,37 @@ export const useEnrollmentSubmit = (onSuccess?: (credentials: ParentCredentials)
       if (!isConnected || !isInternetReachable)
         throw new Error("Connect to the internet to perform this action.");
       return submitChildEnrollment(
-        { ...data.childData, programType: data.childData.programType as "4Ps Beneficiary" | "Regular Enrollee (Non-beneficiary)", ...data.parentData },
+        {
+          ...data.childData,
+          programType: data.childData.programType as
+            "4Ps Beneficiary" | "Regular Enrollee (Non-beneficiary)",
+          ...data.parentData,
+          birthCertificateVerificationId:
+            data.documentData.birthCertificateVerificationId,
+          parentIdVerificationId: data.documentData.parentIdVerificationId,
+        } as any,
         {
           birthCertificate: data.documentData.birthCertificate
-            ? { uri: data.documentData.birthCertificate.uri, name: data.documentData.birthCertificate.name, mimeType: data.documentData.birthCertificate.mimeType || inferMimeType(data.documentData.birthCertificate.name || "") || "application/octet-stream" }
+            ? {
+                uri: data.documentData.birthCertificate.uri,
+                name: data.documentData.birthCertificate.name,
+                mimeType:
+                  data.documentData.birthCertificate.mimeType ||
+                  inferMimeType(
+                    data.documentData.birthCertificate.name || "",
+                  ) ||
+                  "application/octet-stream",
+              }
             : null,
           parentId: data.documentData.parentId
-            ? { uri: data.documentData.parentId.uri, name: data.documentData.parentId.name, mimeType: data.documentData.parentId.mimeType || inferMimeType(data.documentData.parentId.name || "") || "application/octet-stream" }
+            ? {
+                uri: data.documentData.parentId.uri,
+                name: data.documentData.parentId.name,
+                mimeType:
+                  data.documentData.parentId.mimeType ||
+                  inferMimeType(data.documentData.parentId.name || "") ||
+                  "application/octet-stream",
+              }
             : null,
         },
       );
@@ -61,7 +98,9 @@ export const useEnrollmentSubmit = (onSuccess?: (credentials: ParentCredentials)
     async (data: SubmissionData) => {
       try {
         const submission = await submitEnrollmentMutation.mutateAsync({ data });
-        await queryClient.invalidateQueries({ queryKey: mobileQueryKeys.teacherChildrenOverview() });
+        await queryClient.invalidateQueries({
+          queryKey: mobileQueryKeys.teacherChildrenOverview(),
+        });
 
         const credentials = submission.parentCredentials;
         const submittedEmail = credentials?.email || "Unavailable";

@@ -175,3 +175,12 @@ export const parentAiChatLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+export const documentVerificationLimiter = rateLimit({
+  windowMs: parsePositiveInt(process.env.DOCUMENT_VERIFICATION_RATE_WINDOW_MS, 5 * 60 * 1000),
+  max: parsePositiveInt(process.env.DOCUMENT_VERIFICATION_RATE_MAX, 10),
+  keyGenerator: authenticatedUserKeyGenerator,
+  message: { message: "Too many document verification requests. Please wait and try again." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});

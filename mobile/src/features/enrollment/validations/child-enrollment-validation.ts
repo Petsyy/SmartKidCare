@@ -15,7 +15,7 @@ import {
 export const childEnrollmentStepOneSchema = z
   .object({
     firstName: nameSchema("First name"),
-    middleName: nameSchema("Middle name"),
+    middleName: nameSchema("Middle name").optional().or(z.literal("")),
     lastName: nameSchema("Last name"),
     dateOfBirth: ymdDateSchema("Date of birth"),
     gender: z.enum(["male", "female"], {
@@ -78,7 +78,7 @@ export const childEnrollmentStepOneSchema = z
 
 export const childEnrollmentStepTwoSchema = z.object({
   parentFirstName: nameSchema("First name"),
-  parentMiddleName: nameSchema("Middle name"),
+  parentMiddleName: nameSchema("Middle name").optional().or(z.literal("")),
   parentLastName: nameSchema("Last name"),
   parentPhone: phoneSchema(),
   parentRelationship: z.enum(

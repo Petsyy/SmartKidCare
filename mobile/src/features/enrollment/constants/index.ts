@@ -9,7 +9,6 @@ export const STEPS: { id: Step; label: string }[] = [
 ];
 
 export const ALLOWED_MIME_TYPES = [
-  "application/pdf",
   "image/jpeg",
   "image/png",
 ];

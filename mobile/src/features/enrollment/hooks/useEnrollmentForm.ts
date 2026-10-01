@@ -310,6 +310,9 @@ export const useEnrollmentForm = () => {
     childFullName,
     computedChildAge,
     parentFullName,
+    parentFirstName,
+    parentMiddleName,
+    parentLastName,
     computedBmi,
     computedNutritionalStatus,
 

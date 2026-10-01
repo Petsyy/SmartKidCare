@@ -84,12 +84,20 @@ const ChildSchema = new mongoose.Schema(
         resourceType: String,
         format: String,
         hash: String,
+        verification: {
+          status: String, teacherConfirmed: Boolean, modelVersion: String,
+          policyVersion: String, reasonCodes: [String], confirmedAt: Date,
+        },
       },
       parentId: {
         publicId: String,
         resourceType: String,
         format: String,
         hash: String,
+        verification: {
+          status: String, teacherConfirmed: Boolean, modelVersion: String,
+          policyVersion: String, reasonCodes: [String], confirmedAt: Date,
+        },
       },
     },
     documentIntegrity: {

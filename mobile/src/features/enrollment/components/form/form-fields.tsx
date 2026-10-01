@@ -1,7 +1,31 @@
 import { useState } from "react";
-import {Pressable,StyleProp,Text,TextInput,TextStyle,View,ViewStyle,Image} from "react-native";
-import { CalendarDays, Camera, ChevronDown, Upload, Trash2, CheckCircle2 } from "lucide-react-native";
-import {displayDate,parseYmd} from "@/src/features/enrollment/utils/enrollment-utils";
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleProp,
+  Text,
+  TextInput,
+  TextStyle,
+  View,
+  ViewStyle,
+  Image,
+  Modal,
+  SafeAreaView,
+} from "react-native";
+import {
+  CalendarDays,
+  Camera,
+  ChevronDown,
+  Upload,
+  Trash2,
+  CheckCircle2,
+  Eye,
+  X,
+} from "lucide-react-native";
+import {
+  displayDate,
+  parseYmd,
+} from "@/src/features/enrollment/utils/enrollment-utils";
 import { type InputProps, INPUT_PLACEHOLDER } from "../types/enrollment-types";
 
 export function Input({
@@ -242,6 +266,8 @@ export function DocumentUploadField({
   labelStyle,
   showPhotoOption = true,
   onUploadImage,
+  verificationBadge,
+  allowImagePreview = false,
 }: {
   label: string;
   file: { uri: string; name: string; mimeType?: string } | null;
@@ -251,13 +277,21 @@ export function DocumentUploadField({
   labelStyle?: StyleProp<TextStyle>;
   showPhotoOption?: boolean;
   onUploadImage?: () => void;
+  verificationBadge?: {
+    label: string;
+    tone: "success" | "pending" | "warning" | "error" | "neutral";
+    loading?: boolean;
+  };
+  allowImagePreview?: boolean;
 }) {
+  const [previewVisible, setPreviewVisible] = useState(false);
   const hasPhotoOption = showPhotoOption && typeof onUploadImage === "function";
 
   const isRequired = label.endsWith(" *");
   const bareLabel = isRequired ? label.slice(0, -2) : label;
 
   return (
+    <>
     <View className="mb-[18px]" style={containerStyle}>
       <Text
         className="text-[13px] font-bold tracking-[0.6px] uppercase text-[#374151] mb-2"
@@ -282,29 +316,54 @@ export function DocumentUploadField({
               numberOfLines={1}
               className="mt-2 text-[14px] font-bold text-[#047857]"
             >
-              Select Photo
+              Take Photo
             </Text>
           </Pressable>
         ) : null}
 
         {file ? (
-          (file.mimeType?.startsWith("image/") || file.name.match(/\.(jpg|jpeg|png)$/i)) ? (
+          file.mimeType?.startsWith("image/") ||
+          file.name.match(/\.(jpg|jpeg|png)$/i) ? (
             <View className="relative border border-gray-200 rounded-2xl overflow-hidden bg-gray-50 items-center justify-center">
-              <Image 
-                source={{ uri: file.uri }} 
-                style={{ width: "100%", height: 160 }} 
-                resizeMode="cover"
-              />
-              <View className="absolute inset-0 bg-black/20" />
+              <Pressable
+                onPress={() => allowImagePreview && setPreviewVisible(true)}
+                disabled={!allowImagePreview}
+                accessibilityRole={allowImagePreview ? "button" : undefined}
+                accessibilityLabel={allowImagePreview ? `View full ${bareLabel} image` : undefined}
+                className="w-full"
+              >
+                <Image source={{ uri: file.uri }} style={{ width: "100%", height: 160 }} resizeMode="cover" accessibilityLabel={`${bareLabel} preview`} />
+              </Pressable>
+              <View pointerEvents="none" className="absolute inset-0 bg-black/20" />
+              {allowImagePreview ? (
+                <View pointerEvents="none" className="absolute left-3 top-3 flex-row items-center rounded-lg bg-black/60 px-2.5 py-2">
+                  <Eye size={15} color="white" />
+                  <Text className="ml-1.5 text-xs font-bold text-white">View Full Image</Text>
+                </View>
+              ) : null}
               <Pressable
                 onPress={onClear}
-                className="absolute top-3 right-3 h-8 w-8 rounded-full bg-black/50 items-center justify-center active:bg-black/70"
+                accessibilityRole="button"
+                accessibilityLabel={`Remove ${bareLabel} image`}
+                className="absolute top-2 right-2 h-11 w-11 rounded-full bg-black/60 items-center justify-center active:bg-black/70"
               >
                 <Trash2 size={16} color="white" />
               </Pressable>
-              <View className="absolute bottom-3 left-3 bg-white/90 px-3 py-1.5 rounded-lg flex-row items-center">
-                <CheckCircle2 size={14} color="#10B981" />
-                <Text className="ml-1.5 text-xs font-bold text-gray-800">Photo Attached</Text>
+              <View pointerEvents="none"
+                className={`absolute bottom-3 left-3 max-w-[80%] px-3 py-2 rounded-lg flex-row items-center ${verificationBadge?.tone === "success" ? "bg-emerald-100" : verificationBadge?.tone === "error" ? "bg-red-100" : verificationBadge?.tone === "warning" ? "bg-amber-100" : verificationBadge?.tone === "pending" ? "bg-teal-100" : "bg-white/90"}`}
+              >
+                {verificationBadge?.loading ? (
+                  <ActivityIndicator size="small" color="#0F766E" />
+                ) : verificationBadge?.tone === "success" ? (
+                  <CheckCircle2 size={14} color="#047857" />
+                ) : null}
+                <Text
+                  numberOfLines={2}
+                  className={`text-xs font-bold ${verificationBadge?.loading || verificationBadge?.tone === "success" ? "ml-1.5" : ""} ${verificationBadge?.tone === "success" ? "text-emerald-800" : verificationBadge?.tone === "error" ? "text-red-800" : verificationBadge?.tone === "warning" ? "text-amber-800" : verificationBadge?.tone === "pending" ? "text-teal-800" : "text-gray-800"}`}
+                >
+                  {verificationBadge?.label ||
+                    "Image Uploaded - Not Yet Verified"}
+                </Text>
               </View>
             </View>
           ) : (
@@ -320,7 +379,7 @@ export function DocumentUploadField({
                   numberOfLines={1}
                   className="mt-2 text-[14px] font-bold text-[#047857]"
                 >
-                  Upload File
+                  Choose from Gallery
                 </Text>
                 <Text
                   numberOfLines={1}
@@ -360,11 +419,26 @@ export function DocumentUploadField({
               numberOfLines={1}
               className="mt-2 text-[14px] font-bold text-[#047857]"
             >
-              Upload File
+              Choose from Gallery
             </Text>
           </Pressable>
         )}
       </View>
     </View>
+    <Modal visible={previewVisible} animationType="fade" presentationStyle="fullScreen" onRequestClose={() => setPreviewVisible(false)}>
+      <SafeAreaView className="flex-1 bg-black">
+        <View className="min-h-[60px] flex-row items-center justify-between border-b border-white/20 px-4">
+          <Text className="flex-1 text-lg font-bold text-white" numberOfLines={1}>{bareLabel}</Text>
+          <Pressable onPress={() => setPreviewVisible(false)} accessibilityRole="button" accessibilityLabel="Close full image preview" className="h-11 w-11 items-center justify-center rounded-full bg-white/15">
+            <X size={26} color="white" />
+          </Pressable>
+        </View>
+        <View className="flex-1 items-center justify-center p-3">
+          {file ? <Image source={{ uri: file.uri }} className="h-full w-full" resizeMode="contain" accessibilityLabel={`Full ${bareLabel} image`} /> : null}
+        </View>
+        <Text className="px-4 pb-4 text-center text-sm text-white/70">Review the complete image, then close this preview to continue.</Text>
+      </SafeAreaView>
+    </Modal>
+    </>
   );
 }

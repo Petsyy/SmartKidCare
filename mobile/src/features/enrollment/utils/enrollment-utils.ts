@@ -60,7 +60,7 @@ export const validateDocument = (
   if (!file) return "File is required.";
   const mimeType = file.mimeType || inferMimeType(file.name || "");
   if (!mimeType || !ALLOWED_MIME_TYPES.includes(mimeType)) {
-    return "Only PDF, JPG, and PNG files are allowed.";
+    return "Only JPG and PNG images are allowed.";
   }
   if (typeof file.size === "number" && file.size > MAX_DOCUMENT_SIZE) {
     return "File size must be 5MB or below.";

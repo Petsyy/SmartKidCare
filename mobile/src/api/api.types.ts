@@ -400,3 +400,23 @@ export interface ParentNotificationFeedResponse {
   hasPushToken: boolean;
   notifications: ParentNotificationFeedItem[];
 }
+export type DocumentVerificationStatus = "verified" | "teacher_confirmation_required" | "rejected";
+export type DetectedDocumentType = "birth_certificate" | "government_id" | "other_document" | "person_photo" | "unrelated_image" | "unknown";
+export interface DocumentVerificationResponse {
+  verificationId: string;
+  status: DocumentVerificationStatus;
+  detectedType: DetectedDocumentType;
+  confidence: number | null;
+  reasonCodes: string[];
+  fieldMatches: {
+    childName?: boolean;
+    birthDate?: boolean;
+    parentName?: boolean;
+    parentFirstName?: boolean;
+    parentMiddleName?: boolean;
+    parentLastName?: boolean;
+  };
+  teacherConfirmed: boolean;
+  message: string;
+  expiresAt: string;
+}

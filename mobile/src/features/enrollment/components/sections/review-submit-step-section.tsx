@@ -19,6 +19,8 @@ export function ReviewSubmitStepSection({
   parentRelationship,
   hasBirthCertificate,
   hasParentId,
+  birthCertificateVerification,
+  parentIdVerification,
 }: {
   childFullName: string;
   dateOfBirth: string;
@@ -34,6 +36,8 @@ export function ReviewSubmitStepSection({
   parentRelationship: string;
   hasBirthCertificate: boolean;
   hasParentId: boolean;
+  birthCertificateVerification: string;
+  parentIdVerification: string;
 }) {
   return (
     <View
@@ -98,11 +102,11 @@ export function ReviewSubmitStepSection({
       <ReviewSection title="Documents">
         <ReviewRow
           label="Birth Certificate"
-          value={hasBirthCertificate ? "Uploaded" : "Not uploaded"}
+          value={hasBirthCertificate ? birthCertificateVerification : "Not uploaded"}
         />
         <ReviewRow
           label="Parent ID"
-          value={hasParentId ? "Uploaded" : "Not uploaded"}
+          value={hasParentId ? parentIdVerification : "Not uploaded"}
         />
       </ReviewSection>
 

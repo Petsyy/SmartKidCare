@@ -9,6 +9,7 @@ export type ChildDocumentUploads = {
 };
 
 export type CreateChildRecordPayload = {
+  _id?: import("mongoose").Types.ObjectId;
   firstName: string;
   middleName?: string;
   lastName: string;

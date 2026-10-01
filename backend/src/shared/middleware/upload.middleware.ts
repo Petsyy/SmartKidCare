@@ -8,14 +8,10 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024,
   },
   fileFilter: (_req, file, cb) => {
-    const allowed = [
-      "application/pdf",
-      "image/jpeg",
-      "image/png",
-    ];
+    const allowed = ["image/jpeg", "image/png"];
 
     if (!allowed.includes(file.mimetype)) {
-      cb(new Error("Only PDF, JPG, PNG allowed"));
+      cb(new Error("Only JPG and PNG images are allowed"));
     } else {
       cb(null, true);
     }

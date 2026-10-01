@@ -6,6 +6,7 @@ import type {
   ChildEnrollmentRequestFiles,
   EnrollmentCenterOption,
   ChildEnrollmentSubmissionResponse,
+  DocumentVerificationResponse,
 } from "./api.types";
 
 export type {
@@ -15,7 +16,41 @@ export type {
   ChildEnrollmentSubmissionResponse,
 };
 
-export const getEnrollmentCenters = async (): Promise<EnrollmentCenterOption[]> => {
+export const verifyEnrollmentDocument = async (
+  file: { uri: string; name: string },
+  fields:
+    | {
+        documentType: "birthCertificate";
+        childFullName: string;
+        dateOfBirth: string;
+      }
+    | {
+        documentType: "parentId";
+        parentFirstName: string;
+        parentMiddleName?: string;
+        parentLastName: string;
+      },
+): Promise<DocumentVerificationResponse> => {
+  const formData = new FormData();
+  Object.entries(fields).forEach(([key, value]) => formData.append(key, value));
+  formData.append("file", new File(file.uri), file.name);
+  return apiFormDataClient<DocumentVerificationResponse>(
+    "/api/enrollment/documents/verify",
+    formData,
+  );
+};
+
+export const confirmEnrollmentDocument = async (
+  verificationId: string,
+): Promise<DocumentVerificationResponse> =>
+  apiClient<DocumentVerificationResponse>(
+    `/api/enrollment/documents/${verificationId}/confirm`,
+    { method: "POST" },
+  );
+
+export const getEnrollmentCenters = async (): Promise<
+  EnrollmentCenterOption[]
+> => {
   const data = await apiClient<{ centers?: EnrollmentCenterOption[] }>(
     "/api/enrollment/centers",
   );
@@ -28,12 +63,13 @@ export const submitChildEnrollment = async (
 ): Promise<ChildEnrollmentSubmissionResponse> => {
   const formData = new FormData();
 
-  (Object.entries(payload) as [keyof ChildEnrollmentRequestPayload, any][])
-    .forEach(([key, value]) => {
-      if (value !== undefined && value !== null && String(value).length > 0) {
-        formData.append(key, String(value));
-      }
-    });
+  (
+    Object.entries(payload) as [keyof ChildEnrollmentRequestPayload, any][]
+  ).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && String(value).length > 0) {
+      formData.append(key, String(value));
+    }
+  });
 
   if (files?.birthCertificate?.uri) {
     formData.append(
@@ -56,8 +92,6 @@ export const submitChildEnrollment = async (
     formData,
   );
 };
-
-
 
 export const getChildren = async (): Promise<Child[]> => {
   const data = await apiClient<Child[] | any>("/api/children");
@@ -88,7 +122,10 @@ export const resetChildParentPassword = async (
 
 export const updateChild = async (
   childId: string,
-  payload: Partial<ChildEnrollmentRequestPayload> & { weight?: number | null; height?: number | null },
+  payload: Partial<ChildEnrollmentRequestPayload> & {
+    weight?: number | null;
+    height?: number | null;
+  },
 ): Promise<Child> => {
   return apiClient<Child>(`/api/children/${childId}`, {
     method: "PATCH",
