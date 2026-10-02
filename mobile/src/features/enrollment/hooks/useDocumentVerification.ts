@@ -17,6 +17,7 @@ export type VerificationView = {
   result: DocumentVerificationResponse | null;
   message?: string;
   pendingAction?: "verify" | "retry" | "confirm";
+  progressStage?: "uploading" | "analyzing";
 };
 const initial: VerificationView = { state: "idle", result: null };
 const isServiceFailure = (codes: string[]) =>
@@ -31,13 +32,19 @@ export const getVerificationDisplay = (value: VerificationView) => {
     };
   if (value.pendingAction === "retry")
     return {
-      label: "Retrying Verification...",
+      label:
+        value.progressStage === "analyzing"
+          ? "Analyzing Document..."
+          : "Uploading Document...",
       tone: "pending" as const,
       loading: true,
     };
   if (value.state === "checking")
     return {
-      label: "Verifying Document...",
+      label:
+        value.progressStage === "analyzing"
+          ? "Analyzing Document..."
+          : "Uploading Document...",
       tone: "pending" as const,
       loading: true,
     };
@@ -95,7 +102,16 @@ export const useDocumentVerification = () => {
       state: "checking",
       result: null,
       pendingAction: current.state === "idle" ? "verify" : "retry",
+      progressStage: "uploading",
     });
+    const analyzingTimer = setTimeout(() => {
+      set({
+        state: "checking",
+        result: null,
+        pendingAction: current.state === "idle" ? "verify" : "retry",
+        progressStage: "analyzing",
+      });
+    }, 800);
     try {
       const result = await verifyEnrollmentDocument(file, {
         documentType: type,
@@ -118,6 +134,8 @@ export const useDocumentVerification = () => {
         message: error?.message || "Verification failed.",
       });
       return null;
+    } finally {
+      clearTimeout(analyzingTimer);
     }
   };
   const confirm = async (type: "birthCertificate" | "parentId") => {

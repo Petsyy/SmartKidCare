@@ -12,6 +12,7 @@ import {
 } from "../../../shared/errors/app-error";
 import { documentVerificationRepository } from "../repositories/document-verification.repository";
 import { verifyDocumentBodySchema } from "../validators/document-verification.validator";
+import { logger } from "../../../shared/lib/logger";
 import type {
   DetectedType,
   DocumentType,
@@ -409,6 +410,7 @@ export class DocumentVerificationService {
     bodyInput: unknown,
     file?: Express.Multer.File,
   ) {
+    const verificationStartedAt = Date.now();
     if (!user?.id || user.role !== "teacher")
       throw new ForbiddenError("Teachers only");
     const body = verifyDocumentBodySchema.parse(bodyInput);
@@ -456,7 +458,15 @@ export class DocumentVerificationService {
       policyVersion: this.policyVersion(),
     };
     const cached = await documentVerificationRepository.findReusable(cacheKey);
-    if (cached) return this.toResponse(cached);
+    if (cached) {
+      logger.info("Document verification completed.", {
+        source: "cache",
+        documentType: body.documentType,
+        totalMs: Date.now() - verificationStartedAt,
+      });
+      return this.toResponse(cached);
+    }
+    const imageProcessingStartedAt = Date.now();
     let analysis: Buffer;
     try {
       analysis = await sharp(file.buffer)
@@ -472,7 +482,9 @@ export class DocumentVerificationService {
     } catch {
       throw new ValidationError("The image is corrupted or cannot be decoded.");
     }
+    const imageProcessingMs = Date.now() - imageProcessingStartedAt;
     let values: any;
+    const aiStartedAt = Date.now();
     try {
       const timeoutMs = this.envNumber(
         "DOCUMENT_VERIFICATION_TIMEOUT_MS",
@@ -533,6 +545,7 @@ export class DocumentVerificationService {
         isTransientFailure: true,
       };
     }
+    const aiMs = Date.now() - aiStartedAt;
     const minutes = values.isTransientFailure
       ? this.envNumber("DOCUMENT_VERIFICATION_FAILURE_EXPIRY_MINUTES", 10, 1, 120)
       : this.envNumber("DOCUMENT_VERIFICATION_NORMAL_EXPIRY_MINUTES", 30, 1, 1440);
@@ -542,6 +555,17 @@ export class DocumentVerificationService {
       teacherConfirmed: false,
       modelVersion: this.modelVersion(),
       expiresAt: new Date(Date.now() + minutes * 60_000),
+    });
+    logger.info("Document verification completed.", {
+      source: "ai",
+      documentType: body.documentType,
+      inputBytes: file.size,
+      analysisBytes: analysis.length,
+      imageProcessingMs,
+      aiMs,
+      totalMs: Date.now() - verificationStartedAt,
+      outcome: values.status,
+      transientFailure: values.isTransientFailure,
     });
     return this.toResponse(record);
   }
