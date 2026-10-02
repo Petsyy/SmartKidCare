@@ -47,7 +47,7 @@ export default function DaycareCenters() {
       breadcrumbs={["Admin", "Child Development Centers"]}
       onNavigate={(path) => navigate(`/${path}`)}
     >
-      <div className="space-y-6 p-8">
+      <div className="space-y-6 p-4 sm:p-6 lg:p-8">
         <PageHeader
           title="Child Development Centers"
           subtitle="Manage the Dagupan City barangay center list used for teacher assignments."
@@ -85,7 +85,7 @@ export default function DaycareCenters() {
         </div>
 
         <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex flex-col gap-4 border-b border-gray-200 p-6 dark:border-slate-800 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex flex-col gap-4 border-b border-gray-200 p-4 dark:border-slate-800 sm:p-6 xl:flex-row xl:items-center xl:justify-between">
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
                 Dagupan Centers
