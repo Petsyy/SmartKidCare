@@ -30,6 +30,33 @@ export const buildNutritionCsvRows = (
       ? `${((count / data.totalEvaluated) * 100).toFixed(1)}%`
       : "0.0%";
 
+  const periodRows: CsvRow[] = (["initial", "quarterly", "final"] as const).flatMap(
+    (period) => {
+      const values = data.periods[period];
+      const label = period.charAt(0).toUpperCase() + period.slice(1);
+      return [
+        [label, "Submitted Assessments", values.submittedCount],
+        [label, "Severely Underweight", values.severelyUnderweightCount],
+        [label, "Underweight", values.underweightCount],
+        [label, "Normal", values.normalCount],
+        [label, "Overweight", values.overweightCount],
+        [label, "Obese", values.obeseCount],
+      ];
+    },
+  );
+  const comparisonRows: CsvRow[] = ([
+    ["Initial to Quarterly", data.comparisons.initialToQuarterly],
+    ["Quarterly to Final", data.comparisons.quarterlyToFinal],
+    ["Initial to Final", data.comparisons.initialToFinal],
+  ] as const).map(([label, summary]) => [
+    label,
+    summary.totalEvaluated,
+    summary.initiallyMalnourished,
+    summary.improvedToNormal,
+    summary.remainedMalnourished,
+    `${summary.improvementRate}%`,
+  ]);
+
   return [
     ["SMARTKIDCARE HEALTH & NUTRITION REPORT"],
     [
@@ -37,6 +64,14 @@ export const buildNutritionCsvRows = (
       formatReportSchoolYear(data.filters.schoolYear, data.schoolYears),
     ],
     ["Generated At", generatedAt],
+    [],
+    ["ASSESSMENT PERIOD DISTRIBUTIONS"],
+    ["Period", "Metric", "Students"],
+    ...periodRows,
+    [],
+    ["PROGRESS COMPARISONS"],
+    ["Comparison", "Students Compared", "Initially Malnourished", "Improved to Normal", "Remained Malnourished", "Improvement Rate"],
+    ...comparisonRows,
     [],
     ["NUTRITION PROGRESS"],
     ["Metric", "Value", "Unit"],

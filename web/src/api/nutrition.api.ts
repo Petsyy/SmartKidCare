@@ -17,16 +17,35 @@ export interface NutritionRecord {
   updatedAt: string;
 }
 
-export type NutritionAnalyticsData = {
-  filters: {
-    schoolYear: string;
-  };
-  schoolYears: string[];
+export type NutritionProgressSummary = {
   totalEvaluated: number;
   initiallyMalnourished: number;
   improvedToNormal: number;
   remainedMalnourished: number;
   improvementRate: number;
+};
+
+export type NutritionStatusDistribution = {
+  submittedCount: number;
+  underweightCount: number;
+  severelyUnderweightCount: number;
+  normalCount: number;
+  overweightCount: number;
+  obeseCount: number;
+};
+
+export type NutritionAnalyticsData = NutritionProgressSummary & {
+  filters: {
+    schoolYear: string;
+  };
+  schoolYears: string[];
+  totalSubmitted: number;
+  assessedStudents: number;
+  periods: Record<"initial" | "quarterly" | "final", NutritionStatusDistribution>;
+  comparisons: Record<
+    "initialToQuarterly" | "quarterlyToFinal" | "initialToFinal",
+    NutritionProgressSummary
+  >;
   underweightCount: number;
   severelyUnderweightCount: number;
   normalCount: number;

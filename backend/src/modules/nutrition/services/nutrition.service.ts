@@ -29,6 +29,18 @@ export type NutritionAnalyticsSummary = {
   improvementRate: number;
 };
 
+export type NutritionStatusDistribution = {
+  underweightCount: number;
+  severelyUnderweightCount: number;
+  normalCount: number;
+  overweightCount: number;
+  obeseCount: number;
+};
+
+export type NutritionPeriodAnalytics = NutritionStatusDistribution & {
+  submittedCount: number;
+};
+
 const nutritionPairKey = (record: NutritionAnalyticsRecord) =>
   `${String(record.childId)}|${String(record.schoolYear)}`;
 
@@ -122,6 +134,13 @@ export const summarizeLatestNutritionStatuses = (
     },
   );
 };
+
+const summarizePeriod = (
+  records: Array<{ childId: unknown; nutritionalStatus: string; measurementDate?: Date }>,
+): NutritionPeriodAnalytics => ({
+  submittedCount: new Set(records.map((record) => String(record.childId))).size,
+  ...summarizeLatestNutritionStatuses(records),
+});
 
 export class NutritionService {
   public async getMyClassNutrition(
@@ -325,10 +344,16 @@ export class NutritionService {
         ? {}
         : { schoolYear: selectedSchoolYear };
 
-    const [initialRecords, finalRecords, submittedRecords] = await Promise.all([
+    const [initialRecords, quarterlyRecords, finalRecords, submittedRecords] = await Promise.all([
       NutritionRecord.find({
         ...schoolYearFilter,
         period: "initial",
+        status: "submitted",
+        ...centerFilter,
+      }).lean(),
+      NutritionRecord.find({
+        ...schoolYearFilter,
+        period: "quarterly",
         status: "submitted",
         ...centerFilter,
       }).lean(),
@@ -350,6 +375,22 @@ export class NutritionService {
       initialRecords as NutritionAnalyticsRecord[],
       finalRecords as NutritionAnalyticsRecord[],
     );
+    const comparisons = {
+      initialToQuarterly: summarizeNutritionAnalytics(
+        initialRecords as NutritionAnalyticsRecord[],
+        quarterlyRecords as NutritionAnalyticsRecord[],
+      ),
+      quarterlyToFinal: summarizeNutritionAnalytics(
+        quarterlyRecords as NutritionAnalyticsRecord[],
+        finalRecords as NutritionAnalyticsRecord[],
+      ),
+      initialToFinal: summary,
+    };
+    const periods = {
+      initial: summarizePeriod(initialRecords),
+      quarterly: summarizePeriod(quarterlyRecords),
+      final: summarizePeriod(finalRecords),
+    };
     const latestStatuses = summarizeLatestNutritionStatuses(
       submittedRecords as Array<{
         childId: unknown;
@@ -364,6 +405,12 @@ export class NutritionService {
         centerId,
       },
       schoolYears,
+      totalSubmitted: submittedRecords.length,
+      assessedStudents: new Set(
+        submittedRecords.map((record) => String(record.childId)),
+      ).size,
+      periods,
+      comparisons,
       ...summary,
       ...latestStatuses,
     };

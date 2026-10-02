@@ -3,7 +3,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
+  Legend,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -15,27 +15,42 @@ import { useNutritionAnalytics } from "../hooks/useNutritionAnalytics";
 import { downloadCsvFile, todayFileKey } from "../utils/csv-export";
 import { buildNutritionCsvRows } from "../utils/report-csv-builders";
 
-const STATUS_COLORS: Record<string, string> = {
-  "Severely Underweight": "#e11d48",
-  Underweight: "#a855f7",
-  Normal: "#0d9488",
-  Overweight: "#3b82f6",
-  Obese: "#f43f5e",
-};
+const PERIODS = [
+  { key: "initial", label: "Initial", color: "#3b82f6" },
+  { key: "quarterly", label: "Quarterly", color: "#a855f7" },
+  { key: "final", label: "Final", color: "#0d9488" },
+] as const;
 
-const PROGRESS_COLORS: Record<string, string> = {
-  "Evaluated Students": "#3b82f6",
-  "Initially Malnourished": "#e11d48",
-  "Improved to Normal": "#0d9488",
-  "Improvement Rate": "#a855f7",
-};
+const COMPARISONS = [
+  {
+    key: "initialToQuarterly",
+    label: "Initial → Quarterly",
+    from: "initial",
+    to: "quarterly",
+  },
+  {
+    key: "quarterlyToFinal",
+    label: "Quarterly → Final",
+    from: "quarterly",
+    to: "final",
+  },
+  {
+    key: "initialToFinal",
+    label: "Initial → Final",
+    from: "initial",
+    to: "final",
+  },
+] as const;
+
+const assessmentLabel = (period: "initial" | "quarterly" | "final") =>
+  period.charAt(0).toUpperCase() + period.slice(1);
 
 export function NutritionAnalytics({ showActions = true }: { showActions?: boolean }) {
   const { data, isLoading, isFetching, error, refetch, schoolYear } =
     useNutritionAnalytics();
 
   const selectedSchoolYear = schoolYear || data?.filters.schoolYear || "all";
-  const hasData = (data?.totalEvaluated ?? 0) > 0;
+  const hasData = (data?.totalSubmitted ?? 0) > 0;
   const errorMessage =
     error instanceof Error
       ? error.message
@@ -43,43 +58,36 @@ export function NutritionAnalytics({ showActions = true }: { showActions?: boole
         ? "Unable to load nutrition analytics."
         : null;
 
-  const progressData = [
-    {
-      name: "Evaluated Students",
-      value: data?.totalEvaluated ?? 0,
-    },
-    {
-      name: "Initially Malnourished",
-      value: data?.initiallyMalnourished ?? 0,
-    },
-    {
-      name: "Improved to Normal",
-      value: data?.improvedToNormal ?? 0,
-    },
-  ];
-
-  const improvementRate = data?.improvementRate ?? 0;
-
   const statusData = [
     {
       name: "Severely Underweight",
-      value: data?.severelyUnderweightCount ?? 0,
+      initial: data?.periods.initial.severelyUnderweightCount ?? 0,
+      quarterly: data?.periods.quarterly.severelyUnderweightCount ?? 0,
+      final: data?.periods.final.severelyUnderweightCount ?? 0,
     },
     {
       name: "Underweight",
-      value: data?.underweightCount ?? 0,
+      initial: data?.periods.initial.underweightCount ?? 0,
+      quarterly: data?.periods.quarterly.underweightCount ?? 0,
+      final: data?.periods.final.underweightCount ?? 0,
     },
     {
       name: "Normal",
-      value: data?.normalCount ?? 0,
+      initial: data?.periods.initial.normalCount ?? 0,
+      quarterly: data?.periods.quarterly.normalCount ?? 0,
+      final: data?.periods.final.normalCount ?? 0,
     },
     {
       name: "Overweight",
-      value: data?.overweightCount ?? 0,
+      initial: data?.periods.initial.overweightCount ?? 0,
+      quarterly: data?.periods.quarterly.overweightCount ?? 0,
+      final: data?.periods.final.overweightCount ?? 0,
     },
     {
       name: "Obese",
-      value: data?.obeseCount ?? 0,
+      initial: data?.periods.initial.obeseCount ?? 0,
+      quarterly: data?.periods.quarterly.obeseCount ?? 0,
+      final: data?.periods.final.obeseCount ?? 0,
     },
   ];
 
@@ -115,7 +123,7 @@ export function NutritionAnalytics({ showActions = true }: { showActions?: boole
               )}
             </div>
             <p className="mt-1 text-sm text-gray-600 dark:text-slate-400">
-              Tracking students who improved their nutritional status between initial and final assessments.
+              View submitted assessments immediately and compare progress across initial, quarterly, and final periods.
             </p>
           </div>
           {showActions && <div className="no-print flex flex-wrap items-end gap-2">
@@ -153,10 +161,10 @@ export function NutritionAnalytics({ showActions = true }: { showActions?: boole
         ) : !hasData ? (
           <div className="mt-5 flex h-48 flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 px-6 text-center dark:border-slate-700">
             <p className="font-medium text-gray-700 dark:text-slate-200">
-              No completed nutrition assessments found.
+              No submitted nutrition assessments found.
             </p>
             <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
-              Choose another school year or submit both initial and final assessments for Bonuan Sabangan.
+              Choose another school year or submit an initial, quarterly, or final assessment.
             </p>
           </div>
         ) : (
@@ -170,66 +178,55 @@ export function NutritionAnalytics({ showActions = true }: { showActions?: boole
                   Student evaluation and improvement metrics.
                 </p>
               </div>
-              <div className="grid gap-6 lg:grid-cols-3">
-                <div className="lg:col-span-2" role="img" aria-label="Progress overview chart">
-                  <ResponsiveContainer width="100%" height={280}>
-                    <BarChart
-                      data={progressData}
-                      barCategoryGap="30%"
-                      margin={{ top: 8, right: 16, left: 0, bottom: 8 }}
-                    >
-                      <CartesianGrid
-                        vertical={false}
-                        strokeDasharray="3 3"
-                        stroke="#e5e7eb"
-                      />
-                      <XAxis
-                        dataKey="name"
-                        interval={0}
-                        tick={{ fontSize: 12 }}
-                        tickLine={false}
-                        axisLine={false}
-                      />
-                      <YAxis
-                        allowDecimals={false}
-                        tickLine={false}
-                        axisLine={false}
-                        width={32}
-                      />
-                      <Tooltip
-                        formatter={(value?: number | string) => [Number(value ?? 0), "Students"]}
-                        contentStyle={{
-                          borderRadius: "8px",
-                          border: "1px solid #e5e7eb",
-                          boxShadow: "0 4px 6px -1px rgba(0,0,0,.1)",
-                        }}
-                      />
-                      <Bar
-                        dataKey="value"
-                        radius={[6, 6, 0, 0]}
-                        maxBarSize={64}
-                      >
-                        {progressData.map((entry) => (
-                          <Cell
-                            key={entry.name}
-                            fill={PROGRESS_COLORS[entry.name] ?? "#6b7280"}
-                          />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="flex flex-col items-center justify-center rounded-xl border border-gray-100 bg-gray-50 p-6 dark:border-slate-700 dark:bg-slate-800">
-                  <p className="text-sm font-medium text-gray-500 dark:text-slate-400">
-                    Improvement Rate
-                  </p>
-                  <p className="mt-2 text-5xl font-bold text-purple-600 dark:text-purple-400">
-                    {improvementRate.toFixed(1)}%
-                  </p>
-                  <p className="mt-2 text-center text-xs text-gray-500 dark:text-slate-400">
-                    Of malnourished students improved
-                  </p>
-                </div>
+              <div className="mb-6 grid gap-3 sm:grid-cols-3">
+                {PERIODS.map((period) => (
+                  <div key={period.key} className="rounded-lg border border-gray-200 p-4 dark:border-slate-700">
+                    <p className="text-sm text-gray-500 dark:text-slate-400">{period.label} assessments</p>
+                    <p className="mt-1 text-2xl font-bold" style={{ color: period.color }}>
+                      {data?.periods[period.key].submittedCount ?? 0}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <div className="grid gap-4 lg:grid-cols-3">
+                {COMPARISONS.map((comparison) => {
+                  const summary = data?.comparisons[comparison.key];
+                  const isAvailable = (summary?.totalEvaluated ?? 0) > 0;
+                  const fromCount = data?.periods[comparison.from].submittedCount ?? 0;
+                  const toCount = data?.periods[comparison.to].submittedCount ?? 0;
+                  const fromLabel = assessmentLabel(comparison.from);
+                  const toLabel = assessmentLabel(comparison.to);
+                  const unavailableMessage =
+                    fromCount === 0 && toCount === 0
+                      ? `No ${fromLabel} or ${toLabel} assessments have been submitted yet.`
+                      : fromCount === 0
+                        ? `Submit ${fromLabel} assessments for the same students to calculate this comparison.`
+                        : toCount === 0
+                          ? `Submit ${toLabel} assessments for the same students to calculate this comparison.`
+                          : `${fromLabel} and ${toLabel} assessments exist, but none match the same student and school year.`;
+                  return (
+                    <div key={comparison.key} className="rounded-xl border border-gray-200 bg-gray-50 p-5 dark:border-slate-700 dark:bg-slate-800">
+                      <h4 className="font-semibold text-gray-900 dark:text-slate-100">{comparison.label}</h4>
+                      {isAvailable && summary ? (
+                        <>
+                          <p className="mt-3 text-3xl font-bold text-purple-600 dark:text-purple-400">
+                            {summary.improvementRate.toFixed(1)}%
+                          </p>
+                          <p className="mt-1 text-sm text-gray-600 dark:text-slate-300">
+                            {summary.improvedToNormal} of {summary.initiallyMalnourished} malnourished students improved
+                          </p>
+                          <p className="mt-2 text-xs text-gray-500 dark:text-slate-400">
+                            {summary.totalEvaluated} students compared
+                          </p>
+                        </>
+                      ) : (
+                        <p className="mt-3 text-sm text-gray-500 dark:text-slate-400">
+                          {unavailableMessage}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -239,7 +236,7 @@ export function NutritionAnalytics({ showActions = true }: { showActions?: boole
                   Current Status Distribution
                 </h3>
                 <p className="text-sm text-gray-500 dark:text-slate-400">
-                  Number of students at each nutritional status level.
+                  Submitted students at each status level, grouped by assessment period.
                 </p>
               </div>
               <div role="img" aria-label="Current nutritional status distribution">
@@ -275,18 +272,17 @@ export function NutritionAnalytics({ showActions = true }: { showActions?: boole
                         boxShadow: "0 4px 6px -1px rgba(0,0,0,.1)",
                       }}
                     />
-                    <Bar
-                      dataKey="value"
-                      radius={[6, 6, 0, 0]}
-                      maxBarSize={56}
-                    >
-                      {statusData.map((entry) => (
-                        <Cell
-                          key={entry.name}
-                          fill={STATUS_COLORS[entry.name] ?? "#6b7280"}
-                        />
-                      ))}
-                    </Bar>
+                    <Legend />
+                    {PERIODS.map((period) => (
+                      <Bar
+                        key={period.key}
+                        dataKey={period.key}
+                        name={period.label}
+                        fill={period.color}
+                        radius={[4, 4, 0, 0]}
+                        maxBarSize={34}
+                      />
+                    ))}
                   </BarChart>
                 </ResponsiveContainer>
               </div>
