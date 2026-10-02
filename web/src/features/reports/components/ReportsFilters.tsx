@@ -38,7 +38,7 @@ export const ReportsFilters = ({
   scopeDescription,
 }: ReportsFiltersProps) => {
   return (
-    <div className="no-print rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+    <div className="no-print rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-6">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div>
           <p className="text-sm font-semibold text-gray-900 dark:text-slate-50">
@@ -56,7 +56,7 @@ export const ReportsFilters = ({
         </div>
 
         {showDateRangeControls && (
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
             {PRESET_OPTIONS.map((option) => {
               const isActive = datePreset === option.value;
               return (
@@ -64,7 +64,7 @@ export const ReportsFilters = ({
                   key={option.value}
                   type="button"
                   onClick={() => setDatePreset(option.value)}
-                  className={`cursor-pointer rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  className={`min-h-10 cursor-pointer rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
                     isActive
                       ? "border-teal-300 bg-teal-100 text-teal-800 dark:border-teal-700 dark:bg-teal-900/40 dark:text-teal-200"
                       : "border-gray-300 bg-white text-gray-600 hover:border-teal-200 hover:text-teal-700 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:border-teal-600 dark:hover:text-teal-200"

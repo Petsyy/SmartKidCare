@@ -45,7 +45,7 @@ export function ViewCenterModal({ center, onClose }: ViewCenterModalProps) {
             </button>
           </div>
 
-          <div className="p-6 space-y-6">
+          <div className="space-y-6 overflow-y-auto p-4 sm:p-6">
             <div>
               <h4 className="text-3xl font-bold text-gray-900 dark:text-white mb-2 leading-tight">
                 {center.name}
@@ -55,7 +55,7 @@ export function ViewCenterModal({ center, onClose }: ViewCenterModalProps) {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1 rounded-2xl border border-gray-100 bg-gray-50/50 p-4 dark:border-slate-800 dark:bg-slate-800/30">
                 <div className="flex items-center gap-2 text-sm font-medium text-teal-600 dark:text-teal-400">
                   <MapPin size={16} />
@@ -86,7 +86,7 @@ export function ViewCenterModal({ center, onClose }: ViewCenterModalProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 pt-2">
+            <div className="grid grid-cols-1 gap-4 pt-2 sm:grid-cols-2">
               <div className="space-y-1 rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4 dark:border-emerald-900/30 dark:bg-emerald-900/10">
                 <div className="flex items-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-400">
                   <User size={16} />

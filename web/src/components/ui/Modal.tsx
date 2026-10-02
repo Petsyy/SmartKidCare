@@ -33,11 +33,11 @@ export function Modal({
       <DialogContent
         overlayClassName="z-50"
         className={cn(
-          "fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-gray-200 bg-white shadow-lg outline-none dark:border-slate-700 dark:bg-slate-900",
+          "fixed left-1/2 top-1/2 z-50 flex max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg outline-none dark:border-slate-700 dark:bg-slate-900 sm:max-h-[calc(100dvh-2rem)] sm:w-[calc(100%-2rem)]",
           maxWidth,
         )}
       >
-        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-slate-700">
+        <div className="flex items-center justify-between border-b border-gray-200 px-4 py-4 dark:border-slate-700 sm:px-6">
           <div>
             <DialogTitle className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-50">
               {title}
@@ -59,10 +59,10 @@ export function Modal({
           </DialogClose>
         </div>
 
-        <div className="px-6 py-4">{children}</div>
+        <div className="overflow-y-auto px-4 py-4 sm:px-6">{children}</div>
 
         {footer && (
-          <div className="flex items-center justify-end gap-2 border-t border-gray-200 px-6 py-4 dark:border-slate-700">
+          <div className="flex flex-col-reverse gap-2 border-t border-gray-200 px-4 py-4 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-end sm:px-6 [&>*]:w-full sm:[&>*]:w-auto">
             {footer}
           </div>
         )}

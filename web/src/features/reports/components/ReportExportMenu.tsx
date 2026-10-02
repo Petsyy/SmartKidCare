@@ -110,7 +110,7 @@ export function ReportExportMenu({
     hasOverviewData || Boolean(nutritionRows) || Boolean(competencyRows);
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="grid w-full grid-cols-1 gap-2 min-[380px]:grid-cols-2 sm:w-auto sm:flex sm:flex-wrap sm:items-center">
       <Button
         size="md"
         onClick={onRefreshAll}
@@ -125,12 +125,12 @@ export function ReportExportMenu({
       </Button>
 
       <details ref={menuRef} className="relative">
-        <summary className="inline-flex min-h-10 cursor-pointer list-none items-center gap-2 rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2">
+        <summary className="inline-flex min-h-11 w-full cursor-pointer list-none items-center justify-center gap-2 rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 sm:w-auto">
           <Download className="h-4 w-4" />
           Export Report
           <ChevronDown className="h-4 w-4" />
         </summary>
-        <div className="absolute right-0 z-30 mt-2 w-72 overflow-hidden rounded-xl border border-gray-200 bg-white p-2 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+        <div className="absolute right-0 z-30 mt-2 w-[min(18rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-gray-200 bg-white p-2 shadow-xl dark:border-slate-700 dark:bg-slate-900">
           <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
             Download CSV
           </p>

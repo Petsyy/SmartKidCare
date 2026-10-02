@@ -46,7 +46,7 @@ export function CompetencyAnalytics({ showActions = true }: { showActions?: bool
 
   return (
     <section className="space-y-4" aria-labelledby="competency-analytics-title">
-      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-6">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div>
             <div className="flex items-center gap-3">

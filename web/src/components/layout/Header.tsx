@@ -1,4 +1,4 @@
-import { Search, Bell, ChevronRight, LogOut } from "lucide-react";
+import { Search, Bell, ChevronRight, LogOut, Menu } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -9,10 +9,12 @@ import { CommandPalette } from "../ui/CommandPalette";
 
 type HeaderProps = {
   breadcrumbs?: string[];
+  onOpenNavigation?: () => void;
 };
 
 export default function Header({
   breadcrumbs = ["Admin", "User Management"],
+  onOpenNavigation,
 }: HeaderProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -71,19 +73,27 @@ export default function Header({
 
   return (
     <>
-    <header className="sticky top-0 z-40 border-b border-gray-200/60 bg-white/80 backdrop-blur-xl px-8 py-4 transition-colors dark:border-white/5 dark:bg-[#060913]/80 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+    <header className="sticky top-0 z-40 border-b border-gray-200/60 bg-white/80 px-4 py-3 shadow-[0_1px_2px_rgba(0,0,0,0.02)] backdrop-blur-xl transition-colors dark:border-white/5 dark:bg-[#060913]/80 sm:px-6 lg:px-8 lg:py-4">
       <div className="flex items-center justify-between">
         {/* Left: Breadcrumbs */}
-        <div className="flex items-center gap-2 text-sm text-gray-500 font-medium dark:text-slate-400">
+        <div className="flex min-w-0 items-center gap-2 text-sm font-medium text-gray-500 dark:text-slate-400">
+          <button
+            type="button"
+            onClick={onOpenNavigation}
+            aria-label="Open navigation"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-gray-600 transition hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-white/10 lg:hidden"
+          >
+            <Menu size={22} />
+          </button>
           {breadcrumbs.map((crumb, index) => (
-            <div key={index} className="flex items-center gap-2">
-              {index > 0 && <ChevronRight size={16} className="text-gray-400 dark:text-slate-600" />}
+            <div key={index} className={`${index < breadcrumbs.length - 1 ? "hidden sm:flex" : "flex min-w-0"} items-center gap-2`}>
+              {index > 0 && <ChevronRight size={16} className="hidden shrink-0 text-gray-400 dark:text-slate-600 sm:block" />}
               <span
-                className={
+                className={`truncate ${
                   index === breadcrumbs.length - 1
                     ? "font-semibold text-gray-900 dark:text-slate-200 tracking-wide"
                     : "transition-colors hover:text-teal-600 dark:hover:text-teal-400 cursor-default"
-                }
+                }`}
               >
                 {crumb}
               </span>
@@ -92,23 +102,24 @@ export default function Header({
         </div>
 
         {/* Right: Search, Notifications, and Profile */}
-        <div className="flex items-center gap-5">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-3 lg:gap-5">
           {/* Search Bar — opens Command Palette */}
           <button
             onClick={() => setIsSearchOpen(true)}
-            className="group relative flex w-72 items-center gap-2 rounded-full border border-gray-200/80 bg-gray-50/50 py-2.5 pl-11 pr-4 text-sm text-gray-400 shadow-sm transition-all duration-300 ease-out hover:border-teal-500/50 hover:bg-white hover:shadow-md dark:border-white/5 dark:bg-white/5 dark:text-slate-500 dark:hover:border-teal-500/30 dark:hover:bg-[#0A101D]"
+            aria-label="Open search"
+            className="group relative flex h-10 w-10 items-center rounded-full border border-gray-200/80 bg-gray-50/50 text-sm text-gray-400 shadow-sm transition-all duration-300 ease-out hover:border-teal-500/50 hover:bg-white hover:shadow-md dark:border-white/5 dark:bg-white/5 dark:text-slate-500 dark:hover:border-teal-500/30 dark:hover:bg-[#0A101D] md:w-56 md:gap-2 md:py-2.5 md:pl-11 md:pr-4 xl:w-72"
           >
             <Search
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 transition-colors group-hover:text-teal-500 dark:text-slate-500 dark:group-hover:text-teal-400"
+              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-gray-400 transition-colors group-hover:text-teal-500 dark:text-slate-500 dark:group-hover:text-teal-400 md:left-3.5 md:translate-x-0"
               size={18}
             />
-            <span>Search anything...</span>
+            <span className="hidden md:inline">Search anything...</span>
             <kbd className="ml-auto hidden rounded-md border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 sm:inline-block dark:border-white/10 dark:bg-white/5 dark:text-slate-400">
               Ctrl K
             </kbd>
           </button>
 
-          <div className="h-6 w-px bg-gray-200 dark:bg-white/10" />
+          <div className="hidden h-6 w-px bg-gray-200 dark:bg-white/10 sm:block" />
 
           {/* Notification Bell */}
           <button className="group relative flex h-10 w-10 items-center justify-center rounded-full bg-gray-50 text-gray-600 transition-all hover:bg-teal-50 hover:text-teal-600 hover:shadow-sm dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-teal-400">
@@ -122,7 +133,7 @@ export default function Header({
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setShowDropdown(!showDropdown)}
-              className="flex items-center gap-3 rounded-full py-1.5 pl-1.5 pr-4 transition-all hover:bg-gray-50 active:scale-95 dark:hover:bg-white/5"
+              className="flex items-center gap-3 rounded-full p-1.5 transition-all hover:bg-gray-50 active:scale-95 dark:hover:bg-white/5 sm:pr-4"
             >
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-cyan-500 shadow-[0_0_10px_rgba(45,212,191,0.3)] ring-2 ring-white dark:ring-[#060913]">
                 <span className="text-sm font-bold text-white tracking-wider">

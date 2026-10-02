@@ -23,8 +23,8 @@ export function Pagination({
   onPageSizeChange,
 }: PaginationProps) {
   return (
-    <div data-slot="pagination" className="flex items-center justify-between border-t border-gray-200 px-6 py-4 dark:border-slate-700">
-      <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-slate-400">
+    <div data-slot="pagination" className="flex flex-col gap-3 border-t border-gray-200 px-4 py-4 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-gray-600 dark:text-slate-400 sm:justify-start">
         <span>{rangeLabel}</span>
         {pageSizeOptions && pageSize !== undefined && onPageSizeChange && (
           <NativeSelect
@@ -40,7 +40,7 @@ export function Pagination({
           </NativeSelect>
         )}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-2 sm:justify-end">
         <Button
           variant="secondary"
           size="sm"
@@ -49,7 +49,7 @@ export function Pagination({
         >
           Previous
         </Button>
-        <span className="text-sm text-gray-600 dark:text-slate-400">
+        <span className="whitespace-nowrap text-center text-xs text-gray-600 dark:text-slate-400 sm:text-sm">
           Page {totalPages === 0 ? 0 : page} / {totalPages}
         </span>
         <Button

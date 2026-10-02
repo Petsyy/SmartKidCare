@@ -41,7 +41,7 @@ export const UserFilters = ({
         value={currentSearchQuery}
         onChange={onSearchChange}
         placeholder={`Search ${activeTab === "teacher" ? "teachers" : "parents"}...`}
-        className="min-w-55 flex-1 sm:max-w-xs"
+        className="w-full flex-1 sm:min-w-55 sm:max-w-xs"
       />
       <SelectFilter
         value={currentStatusFilter}
@@ -51,6 +51,7 @@ export const UserFilters = ({
           { value: "active", label: "Active" },
           { value: "inactive", label: "Inactive" },
         ]}
+        className="w-full sm:w-auto"
       />
 
       <SelectFilter
@@ -60,6 +61,7 @@ export const UserFilters = ({
           value: String(size),
           label: `${size} per page`,
         }))}
+        className="w-full sm:w-auto"
       />
     </FilterBar>
   );

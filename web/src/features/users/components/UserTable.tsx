@@ -42,7 +42,7 @@ export const UserTable = ({
   return (
     <>
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="min-w-[760px] w-full">
           <thead>
             <tr className="border-b border-gray-200 bg-gray-50 dark:border-slate-800 dark:bg-slate-900">
               <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">
@@ -176,11 +176,11 @@ export const UserTable = ({
         </table>
       </div>
 
-      <div className="flex flex-col gap-3 border-t border-gray-200 px-6 py-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 border-t border-gray-200 px-4 py-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <p className="text-sm text-gray-500 dark:text-slate-400">
           Showing {paginationRangeLabel}
         </p>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between gap-2 sm:justify-end">
           <button
             type="button"
             onClick={() => onPageChange(safeCurrentPage - 1)}
@@ -189,7 +189,7 @@ export const UserTable = ({
           >
             Previous
           </button>
-          <span className="px-2 text-sm text-gray-600 dark:text-slate-300">
+          <span className="whitespace-nowrap px-1 text-xs text-gray-600 dark:text-slate-300 sm:px-2 sm:text-sm">
             Page {filteredUsersLength === 0 ? 0 : safeCurrentPage} of {filteredUsersLength === 0 ? 0 : totalPages}
           </span>
           <button

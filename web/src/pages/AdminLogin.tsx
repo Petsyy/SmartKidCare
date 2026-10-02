@@ -72,7 +72,7 @@ export default function AdminLogin() {
           </aside>
 
           <section className="flex flex-col">
-            <div className="border-b border-slate-200 px-8 py-7 dark:border-slate-800 md:px-10">
+            <div className="border-b border-slate-200 px-5 py-6 dark:border-slate-800 sm:px-8 md:px-10 md:py-7">
               <div>
                 <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-slate-100">
                   {settings?.schoolName || "Smart KidCare"}
@@ -83,7 +83,7 @@ export default function AdminLogin() {
               </div>
             </div>
 
-            <div className="flex-1 px-8 py-8 md:px-10">
+            <div className="flex-1 px-5 py-6 sm:px-8 sm:py-8 md:px-10">
               <div className="mb-6">
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
                   {isPasswordSetup
@@ -327,7 +327,7 @@ export default function AdminLogin() {
               </form>
             </div>
 
-            <div className="border-t border-slate-200 bg-slate-50 px-8 py-5 dark:border-slate-800 dark:bg-slate-900 md:px-10">
+            <div className="border-t border-slate-200 bg-slate-50 px-5 py-5 dark:border-slate-800 dark:bg-slate-900 sm:px-8 md:px-10">
               <p className="text-center text-xs text-slate-500 dark:text-slate-400">
                 &copy; 2026 {settings?.schoolName || "Smart KidCare"}. All
                 rights reserved.

@@ -16,8 +16,8 @@ export function FilterBar({
 }: FilterBarProps) {
   return (
     <div data-slot="filter-bar" className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-      <div className="flex flex-1 flex-wrap items-center gap-2">{children}</div>
-      <div className="flex items-center justify-between gap-3 xl:justify-end">
+      <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">{children}</div>
+      <div className="flex flex-wrap items-center justify-between gap-3 xl:justify-end">
         {resultCount !== undefined && (
           <p className="text-sm text-gray-500 dark:text-slate-400">
             {resultCount} result{resultCount === 1 ? "" : "s"}

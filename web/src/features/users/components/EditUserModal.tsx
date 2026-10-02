@@ -83,9 +83,9 @@ export default function EditUserModal({ user, onClose, onUpdated }: Props) {
             </button>
           </div>
 
-          <form onSubmit={onSubmit} className="p-6">
+          <form onSubmit={onSubmit} className="overflow-y-auto p-4 sm:p-6">
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <InputField
                   label="First Name"
                   placeholder="Enter first name"

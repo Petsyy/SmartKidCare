@@ -34,7 +34,7 @@ export function FeedingTable({
 }: FeedingTableProps) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full border-collapse">
+      <table className="min-w-[680px] w-full border-collapse">
         <thead className="border-b border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-900/50">
           <tr>
             <th className="whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">

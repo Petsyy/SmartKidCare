@@ -34,7 +34,7 @@ export default function AdminDashboard() {
       breadcrumbs={["Barangay Captain", "Dashboard"]}
       onNavigate={(path) => navigate(`/${path}`)}
     >
-      <div className="space-y-6 p-8">
+      <div className="space-y-6 p-4 sm:p-6 lg:p-8">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <PageHeader
@@ -77,7 +77,7 @@ export default function AdminDashboard() {
             </div>
           </>
         ) : !hasData ? (
-          <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center dark:border-slate-700 dark:bg-slate-900">
+          <div className="rounded-xl border border-dashed border-gray-300 bg-white p-5 text-center dark:border-slate-700 dark:bg-slate-900 sm:p-8">
             <p className="font-medium text-gray-800 dark:text-slate-100">
               Dashboard data is unavailable.
             </p>

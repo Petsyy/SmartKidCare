@@ -24,7 +24,7 @@ export function ChildrenTable({
 }: ChildrenTableProps) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full border-collapse">
+      <table className="min-w-[840px] w-full border-collapse">
         <thead>
           <tr className="border-b border-gray-200 bg-gray-50 dark:border-slate-800 dark:bg-slate-900">
             <th className="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-600 dark:text-slate-400">

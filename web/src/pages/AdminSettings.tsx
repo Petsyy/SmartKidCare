@@ -340,7 +340,7 @@ export default function AdminSettings() {
       breadcrumbs={["Barangay Captain", "Settings"]}
       onNavigate={(path) => navigate(`/${path}`)}
     >
-      <div className="space-y-6 p-8">
+      <div className="space-y-6 p-4 sm:p-6 lg:p-8">
         <PageHeader
           title="Account Settings"
           subtitle="Manage your profile, security preferences, and administrative options"
@@ -348,7 +348,7 @@ export default function AdminSettings() {
 
         {isLoading && (
           <div className="grid gap-8 xl:grid-cols-[300px_minmax(0,1fr)] items-start">
-            <aside className="sticky top-28 rounded-3xl border border-slate-200/60 bg-white/60 backdrop-blur-xl p-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] dark:border-white/5 dark:bg-[#0A101D]/80">
+            <aside className="rounded-3xl border border-slate-200/60 bg-white/60 p-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] backdrop-blur-xl dark:border-white/5 dark:bg-[#0A101D]/80 xl:sticky xl:top-28">
               <Skeleton className="mb-4 h-4 w-24 ml-2" />
               <div className="space-y-2">
                 {[1, 2, 3, 4].map((i) => (
@@ -359,7 +359,7 @@ export default function AdminSettings() {
                 ))}
               </div>
             </aside>
-            <section className="rounded-3xl border border-slate-200/60 bg-white p-8 shadow-[0_8px_30px_-4px_rgba(0,0,0,0.04)] dark:border-white/5 dark:bg-[#0A101D]/90">
+            <section className="rounded-3xl border border-slate-200/60 bg-white p-4 shadow-[0_8px_30px_-4px_rgba(0,0,0,0.04)] dark:border-white/5 dark:bg-[#0A101D]/90 sm:p-6 lg:p-8">
               <div className="mb-8 flex items-start gap-4">
                 <Skeleton className="h-12 w-12 shrink-0 rounded-xl" />
                 <SkeletonText lines={2} className="w-48 mt-1" />
@@ -396,7 +396,7 @@ export default function AdminSettings() {
 
         {!isLoading && !loadError && isAdmin && (
           <div className="grid gap-8 xl:grid-cols-[300px_minmax(0,1fr)] items-start">
-            <aside className="sticky top-28 rounded-3xl border border-slate-200/60 bg-white/60 backdrop-blur-xl p-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] dark:border-white/5 dark:bg-[#0A101D]/80">
+            <aside className="rounded-3xl border border-slate-200/60 bg-white/60 p-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] backdrop-blur-xl dark:border-white/5 dark:bg-[#0A101D]/80 xl:sticky xl:top-28">
               <p className="px-3 text-[11px] font-bold uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500">
                 Settings Menu
               </p>
@@ -444,7 +444,7 @@ export default function AdminSettings() {
               </div>
             </aside>
 
-            <section className="rounded-3xl border border-slate-200/60 bg-white p-8 shadow-[0_8px_30px_-4px_rgba(0,0,0,0.04)] transition-all dark:border-white/5 dark:bg-[#0A101D]/90">
+            <section className="rounded-3xl border border-slate-200/60 bg-white p-4 shadow-[0_8px_30px_-4px_rgba(0,0,0,0.04)] transition-all dark:border-white/5 dark:bg-[#0A101D]/90 sm:p-6 lg:p-8">
               <div className="mb-8 flex items-start gap-4">
                 <div
                   className={`rounded-xl p-3 shadow-sm ${activeSectionMeta.iconClassName}`}

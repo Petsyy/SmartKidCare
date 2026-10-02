@@ -2,6 +2,7 @@ import {
   LayoutDashboard,
   BarChart3,
   Settings,
+  X,
   UsersRound,
   UserCog,
   Utensils,
@@ -43,11 +44,15 @@ const captainNavGroups: NavGroup[] = [
 type SidebarProps = {
   activeItem?: string;
   onNavigate?: (path: string) => void;
+  mobile?: boolean;
+  onClose?: () => void;
 };
 
 export default function Sidebar({
   activeItem = "users",
   onNavigate,
+  mobile = false,
+  onClose,
 }: SidebarProps) {
   const { settings, loading } = useSystemSettings();
   const navGroups = captainNavGroups;
@@ -58,7 +63,7 @@ export default function Sidebar({
   };
 
   return (
-    <aside className="fixed left-0 top-0 z-50 flex h-screen w-64 flex-col border-r border-[#0F4C4F] bg-[#082F35] font-sans text-[#A7C0C4] shadow-2xl transition-colors dark:bg-[#06252B]">
+    <aside className={`${mobile ? "absolute z-10" : "fixed z-50"} left-0 top-0 flex h-dvh w-[min(18rem,86vw)] flex-col border-r border-[#0F4C4F] bg-[#082F35] font-sans text-[#A7C0C4] shadow-2xl transition-colors dark:bg-[#06252B] lg:w-64`}>
       {/* Decorative background glow */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
         <div className="absolute -left-[20%] -top-[20%] h-[40%] w-[140%] rounded-full bg-teal-400/10 blur-[120px]" />
@@ -70,14 +75,24 @@ export default function Sidebar({
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white shadow-[0_0_20px_rgba(45,212,191,0.25)] overflow-hidden p-1">
             <img src="/smartkidcare1.png" alt="Logo" className="h-full w-full object-contain drop-shadow-sm" />
           </div>
-          <div className="flex flex-col">
-            <h1 className="text-lg font-bold text-white tracking-tight leading-tight">
+          <div className="flex min-w-0 flex-1 flex-col">
+            <h1 className="truncate text-lg font-bold leading-tight tracking-tight text-white">
               {loading ? "Loading..." : settings?.schoolName || "Smart KidCare"}
             </h1>
-            <p className="text-[10px] font-bold text-teal-400/80 uppercase tracking-widest mt-1">
+            <p className="truncate text-[10px] font-bold uppercase tracking-widest text-teal-400/80 mt-1">
               Captain Administration
             </p>
           </div>
+          {mobile && (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close navigation"
+              className="ml-auto flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-300 transition hover:bg-white/10 hover:text-white"
+            >
+              <X size={22} />
+            </button>
+          )}
         </div>
       </div>
 

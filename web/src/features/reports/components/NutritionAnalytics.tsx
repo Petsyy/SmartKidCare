@@ -106,7 +106,7 @@ export function NutritionAnalytics({ showActions = true }: { showActions?: boole
 
   return (
     <section className="space-y-4" aria-labelledby="nutrition-analytics-title">
-      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-6">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div>
             <div className="flex items-center gap-3">
@@ -239,7 +239,8 @@ export function NutritionAnalytics({ showActions = true }: { showActions?: boole
                   Submitted students at each status level, grouped by assessment period.
                 </p>
               </div>
-              <div role="img" aria-label="Current nutritional status distribution">
+              <div className="-mx-2 overflow-x-auto px-2" role="img" aria-label="Nutritional status distribution by assessment period">
+                <div className="min-w-[620px]">
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart
                     data={statusData}
@@ -285,6 +286,7 @@ export function NutritionAnalytics({ showActions = true }: { showActions?: boole
                     ))}
                   </BarChart>
                 </ResponsiveContainer>
+                </div>
               </div>
             </div>
           </>

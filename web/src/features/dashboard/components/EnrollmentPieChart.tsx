@@ -7,7 +7,7 @@ type EnrollmentPieChartProps = {
 
 export function EnrollmentPieChart({ data }: EnrollmentPieChartProps) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-6">
       <div className="mb-4">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
           Bonuan Sabangan Enrollment Overview
@@ -25,7 +25,7 @@ export function EnrollmentPieChart({ data }: EnrollmentPieChartProps) {
             cy="50%"
             labelLine={false}
             label={false}
-            outerRadius={100}
+            outerRadius="34%"
             fill="#8884d8"
             dataKey="value"
           >

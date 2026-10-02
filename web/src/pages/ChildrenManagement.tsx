@@ -181,7 +181,7 @@ export default function ChildrenManagement() {
       breadcrumbs={["Barangay Captain", "Daycare Records"]}
       onNavigate={(path) => navigate(`/${path}`)}
     >
-      <div className="space-y-6 p-8">
+      <div className="space-y-6 p-4 sm:p-6 lg:p-8">
         <PageHeader
           title="Daycare Records"
           subtitle="Read-only child records for Bonuan Sabangan"
@@ -232,7 +232,7 @@ export default function ChildrenManagement() {
         {/* Student Directory Card */}
         <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
           {/* Card Header */}
-          <div className="flex flex-col gap-4 border-b border-gray-200 p-6 dark:border-slate-700 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-4 border-b border-gray-200 p-4 dark:border-slate-700 sm:p-6 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-3">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
                 Child Directory

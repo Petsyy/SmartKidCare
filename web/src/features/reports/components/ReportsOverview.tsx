@@ -78,7 +78,7 @@ export function ReportsOverview({
           </p>
         </div>
         <div className="grid gap-6 xl:grid-cols-2">
-          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-6">
             <h3 className="font-semibold text-gray-900 dark:text-slate-100">
               Gender Distribution
             </h3>
@@ -105,7 +105,7 @@ export function ReportsOverview({
                     style={{ width: `${genderBreakdown.femalePercentage}%` }}
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 min-[380px]:grid-cols-2">
                   <div className="rounded-lg bg-teal-50 p-4 dark:bg-teal-500/10">
                     <p className="text-sm font-medium text-teal-800 dark:text-teal-300">
                       Male
@@ -133,7 +133,7 @@ export function ReportsOverview({
             )}
           </div>
 
-          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-6">
             <h3 className="font-semibold text-gray-900 dark:text-slate-100">
               Age Distribution
             </h3>
@@ -196,7 +196,7 @@ export function ReportsOverview({
         aria-labelledby="student-list-title"
         className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900"
       >
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           <h2
             id="student-list-title"
             className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-slate-50"

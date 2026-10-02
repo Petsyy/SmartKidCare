@@ -57,7 +57,7 @@ export default function CaptainActivation() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-50 p-5 dark:bg-slate-950">
-      <section className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-8 shadow-xl dark:border-slate-800 dark:bg-slate-900">
+      <section className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-5 shadow-xl dark:border-slate-800 dark:bg-slate-900 sm:p-8">
         <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300">
           {complete ? <CheckCircle2 size={30} /> : <ShieldCheck size={30} />}
         </div>
