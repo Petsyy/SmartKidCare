@@ -124,7 +124,10 @@ export class AgentFactory {
       return new TrendAgent(context, question);
     }
 
-    const hasAttendance = /\b(attendance|attend|present|absent|check[- ]?in)\b/.test(lower);
+    const hasAttendance =
+      /\b(attendance|attend|present|absent|absence|absences|check[- ]?in)\b/.test(
+        lower,
+      );
     const hasFeeding = /\b(feeding|feed|food|meal|meals|eat|ate|eaten|served)\b/.test(lower);
     const hasReportSignal = /\b(report|summary|overall|status|progress|risk)\b/.test(lower);
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { API_BASE } from "@/api/config";
 import { webQueryKeys } from "@/lib/query-keys";
@@ -144,9 +144,9 @@ export const formatDateTime = (value?: string) =>
     : "-";
 
 export function useReportAnalytics() {
-  const [datePreset, setDatePreset] = useState<ReportDatePreset>("30d");
-  const [customStartDate, setCustomStartDate] = useState("");
-  const [customEndDate, setCustomEndDate] = useState("");
+  const [datePreset, setDatePresetValue] = useState<ReportDatePreset>("30d");
+  const [customStartDate, setCustomStartDateValue] = useState("");
+  const [customEndDate, setCustomEndDateValue] = useState("");
   const [studentPage, setStudentPage] = useState(1);
   const [studentPageSize, setStudentPageSize] = useState(10);
 
@@ -161,9 +161,18 @@ export function useReportAnalytics() {
     return null;
   }, [customEndDate, customStartDate, datePreset]);
 
-  useEffect(() => {
+  const setDatePreset = useCallback((value: ReportDatePreset) => {
+    setDatePresetValue(value);
     setStudentPage(1);
-  }, [datePreset, customStartDate, customEndDate]);
+  }, []);
+  const setCustomStartDate = useCallback((value: string) => {
+    setCustomStartDateValue(value);
+    setStudentPage(1);
+  }, []);
+  const setCustomEndDate = useCallback((value: string) => {
+    setCustomEndDateValue(value);
+    setStudentPage(1);
+  }, []);
 
   const activeRange = useMemo<ActiveRange>(() => {
     const today = new Date();
@@ -219,6 +228,7 @@ export function useReportAnalytics() {
   const {
     data,
     isLoading,
+    isFetching,
     error: queryError,
     refetch,
   } = useQuery({
@@ -265,52 +275,55 @@ export function useReportAnalytics() {
   const overviewCsvRows = useMemo<CsvRow[]>(() => {
     const generatedAt = formatDateTime(new Date().toISOString());
     const rows: CsvRow[] = [
-      [
-        "Record Type",
-        "Section",
-        "Metric",
-        "Value",
-        "Unit",
-        "Date",
-        "Attendance Rate",
-        "Present",
-        "Absent",
-        "Student ID",
-        "Name",
-        "Gender",
-        "Age",
-        "Status",
-        "Program Type",
-        "School Year",
-        "Teacher",
-        "Enrollment Date",
-        "Date Range",
-        "Generated At",
-      ],
-      ["Metric", "Summary", "Bonuan Sabangan Daycare Center", summary.totalChildDevelopmentCenters, "Centers", "", "", "", "", "", "", "", "", "", "", "", "", "", activeRange.label, generatedAt],
-      ["Metric", "Summary", "Child Development Worker", summary.childDevelopmentWorkers, "Workers", "", "", "", "", "", "", "", "", "", "", "", "", "", activeRange.label, generatedAt],
-      ["Metric", "Summary", "Total Enrolled Children", summary.totalEnrolledChildren, "Children", "", "", "", "", "", "", "", "", "", "", "", "", "", activeRange.label, generatedAt],
-      ["Metric", "Summary", "Active Children", summary.activeChildren, "Children", "", "", "", "", "", "", "", "", "", "", "", "", "", activeRange.label, generatedAt],
-      ["Metric", "Summary", "4P's Beneficiaries", summary.fourPsBeneficiaries, "Children", "", "", "", "", "", "", "", "", "", "", "", "", "", activeRange.label, generatedAt],
-      ["Metric", "Summary", "Regular Attendees", summary.regularAttendees, "Children", "", "", "", "", "", "", "", "", "", "", "", "", "", activeRange.label, generatedAt],
-      ["Metric", "Summary", "Attendance Records", summary.attendanceRecords, "Records", "", "", "", "", "", "", "", "", "", "", "", "", "", activeRange.label, generatedAt],
-      ["Metric", "Summary", "Attendance Rate", summary.attendanceRate, "Percent", "", "", "", "", "", "", "", "", "", "", "", "", "", activeRange.label, generatedAt],
-      ["Metric", "Demographics", "Male", genderBreakdown.male, "Children", "", "", "", "", "", "", "", "", "", "", "", "", "", activeRange.label, generatedAt],
-      ["Metric", "Demographics", "Female", genderBreakdown.female, "Children", "", "", "", "", "", "", "", "", "", "", "", "", "", activeRange.label, generatedAt],
-      ["Metric", "Demographics", "Male Ratio", genderBreakdown.malePercentage, "Percent", "", "", "", "", "", "", "", "", "", "", "", "", "", activeRange.label, generatedAt],
-      ["Metric", "Demographics", "Female Ratio", genderBreakdown.femalePercentage, "Percent", "", "", "", "", "", "", "", "", "", "", "", "", "", activeRange.label, generatedAt],
+      ["SMARTKIDCARE OVERVIEW REPORT"],
+      ["Date Range", activeRange.label],
+      ["Generated At", generatedAt],
+      [],
+      ["SUMMARY"],
+      ["Metric", "Value", "Unit"],
+      ["Bonuan Sabangan Daycare Center", summary.totalChildDevelopmentCenters, "Centers"],
+      ["Child Development Worker", summary.childDevelopmentWorkers, "Workers"],
+      ["Total Enrolled Children", summary.totalEnrolledChildren, "Children"],
+      ["Active Children", summary.activeChildren, "Children"],
+      ["4P's Beneficiaries", summary.fourPsBeneficiaries, "Children"],
+      ["Regular Attendees", summary.regularAttendees, "Children"],
+      ["Attendance Records", summary.attendanceRecords, "Records"],
+      ["Attendance Rate", summary.attendanceRate, "Percent"],
+      [],
+      ["DEMOGRAPHICS"],
+      ["Category", "Count", "Percentage"],
+      ["Male", genderBreakdown.male, `${genderBreakdown.malePercentage}%`],
+      ["Female", genderBreakdown.female, `${genderBreakdown.femalePercentage}%`],
+      [],
+      ["AGE DISTRIBUTION"],
+      ["Age", "Number of Children"],
     ];
 
     ageBreakdown.forEach((row) => {
-      rows.push(["Metric", "Age Distribution", `Age ${row.age}`, row.count, "Children", "", "", "", "", "", "", "", "", "", "", "", "", "", activeRange.label, generatedAt]);
+      rows.push([row.age, row.count]);
     });
 
+    rows.push([], ["DAILY ATTENDANCE"], ["Date", "Attendance Rate", "Present", "Absent"]);
     recentDailyRows.forEach((row) => {
-      rows.push(["Daily Attendance", "Attendance", "", "", "", formatDateKey(row.dateKey), row.attendanceRate, row.present, row.absent, "", "", "", "", "", "", "", "", "", activeRange.label, generatedAt]);
+      rows.push([formatDateKey(row.dateKey), `${row.attendanceRate}%`, row.present, row.absent]);
     });
 
+    rows.push(
+      [],
+      ["STUDENT LIST"],
+      ["Name", "Gender", "Age", "Status", "Program Type", "School Year", "Teacher", "Enrollment Date"],
+    );
     studentList.forEach((student) => {
-      rows.push(["Student", "Student List", "", "", "", "", "", "", "", student.studentId, student.fullName, student.gender, student.age, student.status, student.programType, student.schoolYear, student.teacherName, student.enrollmentDate ? formatDateTime(student.enrollmentDate) : "-", activeRange.label, generatedAt]);
+      rows.push([
+        student.fullName,
+        student.gender,
+        student.age,
+        student.status,
+        student.programType,
+        student.schoolYear,
+        student.teacherName,
+        student.enrollmentDate ? formatDateTime(student.enrollmentDate) : "-",
+      ]);
     });
 
     return rows;
@@ -326,6 +339,7 @@ export function useReportAnalytics() {
 
   return {
     isLoading,
+    isFetching,
     error,
 
     datePreset,
@@ -349,6 +363,7 @@ export function useReportAnalytics() {
     recentDailyRows,
     hasData,
     fetchReportData,
+    overviewCsvRows,
     downloadCsv,
     printReport,
   };

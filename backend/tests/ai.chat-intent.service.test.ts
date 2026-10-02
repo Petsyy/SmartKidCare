@@ -4,7 +4,8 @@ import assert from "node:assert/strict";
 import {
   parseAiChatRequest,
   sanitizeAiChatFallbackMessage,
-} from "../src/modules/ai/chat-intent.service";
+} from "../src/modules/ai/services/core/ai-chat.service";
+import { shouldUseAIAgent } from "../src/modules/ai/services/agents/agent.service";
 
 test("parseAiChatRequest accepts valid parent payload", () => {
   const result = parseAiChatRequest(
@@ -20,11 +21,12 @@ test("parseAiChatRequest accepts valid parent payload", () => {
 
   assert.equal(result.ok, true);
   if (!result.ok) return;
+  assert.ok(result.data);
 
-  assert.equal(result.data.role, "parent");
-  assert.equal(result.data.requesterId, "parent-1");
-  assert.equal(result.data.childId, "507f1f77bcf86cd799439011");
-  assert.equal(result.data.message, "Show attendance details today");
+  assert.equal(result.data?.role, "parent");
+  assert.equal(result.data?.requesterId, "parent-1");
+  assert.equal(result.data?.childId, "507f1f77bcf86cd799439011");
+  assert.equal(result.data?.message, "Show attendance details today");
 });
 
 test("parseAiChatRequest rejects non-parent role", () => {
@@ -78,4 +80,16 @@ test("sanitizeAiChatFallbackMessage strips script tags", () => {
 
   assert.equal(message.includes("script"), false);
   assert.equal(message, "Hello there");
+});
+
+test("attendance routing recognizes parent questions using absence nouns", () => {
+  assert.equal(
+    shouldUseAIAgent("How many absences does my child have?"),
+    true,
+  );
+  assert.equal(
+    shouldUseAIAgent("How many absences did my child have?"),
+    true,
+  );
+  assert.equal(shouldUseAIAgent("Was my child absent today?"), true);
 });

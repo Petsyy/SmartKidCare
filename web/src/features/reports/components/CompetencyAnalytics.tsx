@@ -15,7 +15,7 @@ import { useCompetencyAnalytics } from "../hooks/useCompetencyAnalytics";
 import { downloadCsvFile, todayFileKey } from "../utils/csv-export";
 import { buildCompetencyCsvRows } from "../utils/report-csv-builders";
 
-export function CompetencyAnalytics() {
+export function CompetencyAnalytics({ showActions = true }: { showActions?: boolean }) {
   const {
     data,
     isLoading,
@@ -66,7 +66,7 @@ export function CompetencyAnalytics() {
               Overall rating distribution from submitted evaluations. Drafts are excluded.
             </p>
           </div>
-          <div className="flex flex-wrap items-end gap-2">
+          {showActions && <div className="no-print flex flex-wrap items-end gap-2">
             <Button
               onClick={() => void refetch()}
               disabled={isFetching}
@@ -81,7 +81,7 @@ export function CompetencyAnalytics() {
             >
               Export CSV
             </Button>
-          </div>
+          </div>}
         </div>
 
         {errorMessage && <div className="mt-4"><ErrorAlert message={errorMessage} /></div>}

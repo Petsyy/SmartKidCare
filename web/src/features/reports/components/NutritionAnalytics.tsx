@@ -1,5 +1,3 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Download, RefreshCw } from "lucide-react";
 import {
   Bar,
@@ -11,10 +9,9 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { getNutritionAnalytics } from "../../../api/nutrition.api";
 import { Button } from "@/components/ui/Button";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
-import { webQueryKeys } from "@/lib/query-keys";
+import { useNutritionAnalytics } from "../hooks/useNutritionAnalytics";
 import { downloadCsvFile, todayFileKey } from "../utils/csv-export";
 import { buildNutritionCsvRows } from "../utils/report-csv-builders";
 
@@ -33,18 +30,9 @@ const PROGRESS_COLORS: Record<string, string> = {
   "Improvement Rate": "#a855f7",
 };
 
-export function NutritionAnalytics() {
-  const [schoolYear] = useState("");
-
-  const { data, isLoading, isFetching, error, refetch } = useQuery({
-    queryKey: webQueryKeys.nutritionAnalytics(
-      schoolYear || "latest",
-    ),
-    queryFn: () =>
-      getNutritionAnalytics({
-        schoolYear: schoolYear || undefined,
-      }),
-  });
+export function NutritionAnalytics({ showActions = true }: { showActions?: boolean }) {
+  const { data, isLoading, isFetching, error, refetch, schoolYear } =
+    useNutritionAnalytics();
 
   const selectedSchoolYear = schoolYear || data?.filters.schoolYear || "all";
   const hasData = (data?.totalEvaluated ?? 0) > 0;
@@ -130,7 +118,7 @@ export function NutritionAnalytics() {
               Tracking students who improved their nutritional status between initial and final assessments.
             </p>
           </div>
-          <div className="flex flex-wrap items-end gap-2">
+          {showActions && <div className="no-print flex flex-wrap items-end gap-2">
             <Button
               onClick={() => void refetch()}
               disabled={isFetching}
@@ -149,7 +137,7 @@ export function NutritionAnalytics() {
             >
               Export CSV
             </Button>
-          </div>
+          </div>}
         </div>
 
         {errorMessage && (

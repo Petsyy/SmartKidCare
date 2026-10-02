@@ -14,6 +14,10 @@ export const downloadCsvFile = (filename: string, rows: CsvRow[]) => {
   const blob = new Blob([buildCsv(rows)], {
     type: "text/csv;charset=utf-8;",
   });
+  downloadBlob(filename, blob);
+};
+
+export const downloadBlob = (filename: string, blob: Blob) => {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;

@@ -2,7 +2,7 @@
   "expo": {
     "name": "SmartKidCare",
     "slug": "smart-kid-care",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/Group 55 (2).png",
     "scheme": "mobile",
@@ -62,7 +62,7 @@
       }
     },
     "runtimeVersion": {
-      "policy": "fingerprint"
+      "policy": "appVersion"
     },
     "updates": {
       "url": "https://u.expo.dev/47e6a41d-4218-4cde-8d15-9916bfb72f85"

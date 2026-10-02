@@ -58,10 +58,10 @@ export default function Sidebar({
   };
 
   return (
-    <aside className="fixed left-0 top-0 flex h-screen w-64 flex-col bg-[#0A101D] text-slate-400 transition-colors dark:bg-[#060913] border-r border-white/5 shadow-2xl z-50 font-sans">
+    <aside className="fixed left-0 top-0 z-50 flex h-screen w-64 flex-col border-r border-[#0F4C4F] bg-[#082F35] font-sans text-[#A7C0C4] shadow-2xl transition-colors dark:bg-[#06252B]">
       {/* Decorative background glow */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className="absolute -top-[20%] -left-[20%] w-[140%] h-[40%] bg-teal-500/10 blur-[120px] rounded-full" />
+        <div className="absolute -left-[20%] -top-[20%] h-[40%] w-[140%] rounded-full bg-teal-400/10 blur-[120px]" />
       </div>
 
       {/* Logo Section */}
@@ -85,7 +85,7 @@ export default function Sidebar({
       <nav className="relative z-10 flex-1 space-y-7 px-4 py-6 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-white/20 transition-all">
         {navGroups.map((group) => (
           <div key={group.groupName} className="space-y-2">
-            <h3 className="px-3 text-[10px] font-bold tracking-[0.15em] text-slate-500 mb-2">
+            <h3 className="mb-2 px-3 text-[10px] font-bold tracking-[0.15em] text-[#6F969B]">
               {group.groupName}
             </h3>
             <div className="space-y-1">
@@ -97,25 +97,24 @@ export default function Sidebar({
                   <button
                     key={item.path}
                     onClick={() => onNavigate?.(item.path)}
+                    aria-label={`Open ${item.label}`}
+                    aria-current={isActive ? "page" : undefined}
                     className={`relative w-full flex items-center gap-3.5 px-3 py-2.5 rounded-xl transition-all duration-300 ease-out cursor-pointer group ${
                       isActive
-                        ? "bg-teal-500/10 text-teal-300 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]"
-                        : "text-slate-400 hover:bg-white/5 hover:text-slate-200 hover:translate-x-1"
+                        ? "bg-[#0F4C4F] text-[#F8FAFC] shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)]"
+                        : "text-[#A7C0C4] hover:translate-x-1 hover:bg-white/5 hover:text-[#F8FAFC]"
                     }`}
                   >
-                    {isActive && (
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 h-7 w-1 rounded-r-full bg-teal-400 shadow-[0_0_10px_rgba(45,212,191,0.6)]" />
-                    )}
                     <Icon
                       size={18}
                       strokeWidth={isActive ? 2.5 : 2}
                       className={`transition-all duration-300 ${
                         isActive
                           ? "text-teal-400 scale-110"
-                          : "text-slate-500 group-hover:text-slate-300"
+                          : "text-[#6F969B] group-hover:text-[#A7C0C4]"
                       }`}
                     />
-                    <span className={`text-sm tracking-wide ${isActive ? "font-semibold text-teal-50" : "font-medium"}`}>
+                    <span className={`text-sm tracking-wide ${isActive ? "font-semibold text-[#F8FAFC]" : "font-medium"}`}>
                       {item.label}
                     </span>
                   </button>
@@ -127,28 +126,27 @@ export default function Sidebar({
       </nav>
 
       {/* System & Bottom Section */}
-      <div className="relative z-10 p-4 border-t border-white/5 bg-black/10 backdrop-blur-md">
+      <div className="relative z-10 border-t border-[#0F4C4F] bg-[#06252B] p-4 backdrop-blur-md">
         <button
           onClick={() => onNavigate?.(systemItem.path)}
+          aria-label={`Open ${systemItem.label}`}
+          aria-current={activeItem === systemItem.path ? "page" : undefined}
           className={`relative w-full flex items-center gap-3.5 px-3 py-3 rounded-xl transition-all duration-300 ease-out cursor-pointer group ${
             activeItem === systemItem.path
-              ? "bg-teal-500/10 text-teal-300"
-              : "text-slate-400 hover:bg-white/5 hover:text-slate-200 hover:-translate-y-0.5"
+              ? "bg-[#0F4C4F] text-[#F8FAFC]"
+              : "text-[#A7C0C4] hover:-translate-y-0.5 hover:bg-white/5 hover:text-[#F8FAFC]"
           }`}
         >
-          {activeItem === systemItem.path && (
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 h-7 w-1 rounded-r-full bg-teal-400 shadow-[0_0_10px_rgba(45,212,191,0.6)]" />
-          )}
           <systemItem.icon
             size={18}
             strokeWidth={activeItem === systemItem.path ? 2.5 : 2}
             className={`transition-all duration-300 ${
               activeItem === systemItem.path
                 ? "text-teal-400 scale-110"
-                : "text-slate-500 group-hover:text-slate-300 group-hover:rotate-90"
+                : "text-[#6F969B] group-hover:rotate-90 group-hover:text-[#A7C0C4]"
             }`}
           />
-          <span className={`text-sm tracking-wide ${activeItem === systemItem.path ? "font-semibold text-teal-50" : "font-medium"}`}>
+          <span className={`text-sm tracking-wide ${activeItem === systemItem.path ? "font-semibold text-[#F8FAFC]" : "font-medium"}`}>
             {systemItem.label}
           </span>
         </button>
