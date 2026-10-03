@@ -1,9 +1,5 @@
 export type DocumentType = "birthCertificate" | "parentId";
 export type VerificationStatus =
-  | "queued"
-  | "processing"
-  | "retrying"
-  | "service_unavailable"
   | "verified"
   | "teacher_confirmation_required"
   | "rejected";

@@ -1,7 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import {
   confirmEnrollmentDocument,
-  getEnrollmentDocumentVerification,
   verifyEnrollmentDocument,
 } from "@/src/api/teacher.api";
 import type { DocumentVerificationResponse } from "@/src/api/api.types";
@@ -24,22 +23,17 @@ export type VerificationView = {
 const initial: VerificationView = { state: "idle", result: null };
 const RETRY_DELAYS_MS = [1_000, 2_000];
 const ANALYZING_MESSAGE_DELAY_MS = 8_000;
-const POLL_INTERVAL_MS = 1_500;
-const MAX_POLL_ATTEMPTS = 80;
-const isProcessingStatus = (status: DocumentVerificationResponse["status"]) =>
-  status === "queued" || status === "processing" || status === "retrying";
 const isServiceFailure = (codes: string[]) =>
   codes.some((code) => code.startsWith("AI_"));
 const wait = (milliseconds: number) =>
   new Promise((resolve) => setTimeout(resolve, milliseconds));
 const isTransientUploadError = (error: unknown) =>
-  error instanceof TypeError ||
-  (error instanceof ApiError &&
-    (error.status === 0 ||
-      error.status === 408 ||
-      error.status === 502 ||
-      error.status === 503 ||
-      error.status === 504));
+  error instanceof ApiError &&
+  (error.status === 0 ||
+    error.status === 408 ||
+    error.status === 502 ||
+    error.status === 503 ||
+    error.status === 504);
 
 export const getVerificationDisplay = (value: VerificationView) => {
   if (value.pendingAction === "confirm")
@@ -165,48 +159,12 @@ export const useDocumentVerification = () => {
         }
       }
       if (!result) throw new Error("Verification failed.");
-      if (isProcessingStatus(result.status)) {
-        clearTimeout(analyzingTimer);
-        set({
-          state: "checking",
-          result,
-          progressStage: "analyzing",
-          message: result.message,
-        });
-        for (let pollAttempt = 0; pollAttempt < MAX_POLL_ATTEMPTS; pollAttempt += 1) {
-          await wait(POLL_INTERVAL_MS);
-          try {
-            result = await getEnrollmentDocumentVerification(
-              result.verificationId,
-            );
-            if (!isProcessingStatus(result.status)) break;
-            set({
-              state: "checking",
-              result,
-              progressStage: "analyzing",
-              message: result.message,
-            });
-          } catch (error) {
-            if (!isTransientUploadError(error)) throw error;
-          }
-        }
-      }
-      if (isProcessingStatus(result.status)) {
-        set({
-          state: "service_error",
-          result,
-          message:
-            "Verification is still queued. Check your connection and retry shortly.",
-        });
-        return result;
-      }
       const state: MobileVerificationState =
         result.status === "verified"
           ? "verified"
           : result.status === "rejected"
             ? "rejected"
-            : result.status === "service_unavailable" ||
-                isServiceFailure(result.reasonCodes)
+            : isServiceFailure(result.reasonCodes)
               ? "service_error"
               : "confirmation_required";
       set({ state, result, message: result.message });
