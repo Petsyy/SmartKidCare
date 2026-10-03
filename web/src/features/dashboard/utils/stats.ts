@@ -10,6 +10,9 @@ export function computeStats(
     (c: any) => c.status === "Active"
   ).length;
 
+  const boys = childrenArray.filter((c: any) => c.gender === "male").length;
+  const girls = childrenArray.filter((c: any) => c.gender === "female").length;
+
   const totalTeachers = usersArray.filter(
     (u: any) =>
       u.role === "teacher" &&
@@ -70,11 +73,14 @@ export function computeStats(
     todayAttendanceRate,
     hasTodayAttendance: allAttTotal > 0,
     todayAbsentCount: allAttTotal - allAttPresent,
+    todayPresentCount: allAttPresent,
     todayExceptions,
     underweightCount,
     severelyUnderweightCount,
     normalCount,
     overweightCount,
     obeseCount,
+    boys,
+    girls,
   };
 }
