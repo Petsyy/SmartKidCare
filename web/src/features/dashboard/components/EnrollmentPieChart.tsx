@@ -1,4 +1,4 @@
-import {PieChart,Pie,Cell,Tooltip,Legend,ResponsiveContainer} from "recharts";
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import type { PieDataPoint } from "../hooks/useAdminDashboard";
 
 type EnrollmentPieChartProps = {
@@ -7,7 +7,7 @@ type EnrollmentPieChartProps = {
 
 export function EnrollmentPieChart({ data }: EnrollmentPieChartProps) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-6">
+    <div className="self-start rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-6">
       <div className="mb-4">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
           Bonuan Sabangan Enrollment Overview
@@ -17,28 +17,30 @@ export function EnrollmentPieChart({ data }: EnrollmentPieChartProps) {
         </p>
       </div>
 
-      <ResponsiveContainer width="100%" height={300}>
-        <PieChart>
-          <Pie
-            data={data}
-            cx="50%"
-            cy="50%"
-            labelLine={false}
-            label={false}
-            outerRadius="34%"
-            fill="#8884d8"
-            dataKey="value"
-          >
-            {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.color} />
-            ))}
-          </Pie>
-          <Tooltip />
-          <Legend />
-        </PieChart>
-      </ResponsiveContainer>
+      <div className="h-48 w-full sm:h-52">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart accessibilityLayer>
+            <Pie
+              data={data}
+              cx="50%"
+              cy="50%"
+              labelLine={false}
+              label={false}
+              outerRadius="75%"
+              fill="#8884d8"
+              dataKey="value"
+              nameKey="name"
+            >
+              {data.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} />
+              ))}
+            </Pie>
+            <Tooltip />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
 
-      <div className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
+      <div className="mt-2 grid gap-2 text-sm sm:grid-cols-2">
         {data.map((entry) => (
           <div key={entry.name} className="flex items-center gap-2">
             <div
