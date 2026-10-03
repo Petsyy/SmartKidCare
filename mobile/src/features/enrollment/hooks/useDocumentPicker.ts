@@ -4,8 +4,8 @@ import * as ImageManipulator from "expo-image-manipulator";
 import type * as DocumentPicker from "expo-document-picker";
 import { validateDocument } from "@/src/features/enrollment/utils/enrollment-utils";
 
-const MAX_DOCUMENT_EDGE = 2000;
-const DOCUMENT_JPEG_QUALITY = 0.82;
+const MAX_DOCUMENT_EDGE = 1600;
+const DOCUMENT_JPEG_QUALITY = 0.78;
 
 const optimizeDocumentImage = async (image: ImagePicker.ImagePickerAsset) => {
   const longestEdge = Math.max(image.width, image.height);

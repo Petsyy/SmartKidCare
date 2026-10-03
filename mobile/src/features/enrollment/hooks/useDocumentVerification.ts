@@ -1,9 +1,10 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   confirmEnrollmentDocument,
   verifyEnrollmentDocument,
 } from "@/src/api/teacher.api";
 import type { DocumentVerificationResponse } from "@/src/api/api.types";
+import { ApiError } from "@/src/api/client";
 
 export type MobileVerificationState =
   | "idle"
@@ -17,11 +18,22 @@ export type VerificationView = {
   result: DocumentVerificationResponse | null;
   message?: string;
   pendingAction?: "verify" | "retry" | "confirm";
-  progressStage?: "uploading" | "analyzing";
+  progressStage?: "uploading" | "retrying" | "analyzing";
 };
 const initial: VerificationView = { state: "idle", result: null };
+const RETRY_DELAYS_MS = [1_000, 2_000];
+const ANALYZING_MESSAGE_DELAY_MS = 8_000;
 const isServiceFailure = (codes: string[]) =>
   codes.some((code) => code.startsWith("AI_"));
+const wait = (milliseconds: number) =>
+  new Promise((resolve) => setTimeout(resolve, milliseconds));
+const isTransientUploadError = (error: unknown) =>
+  error instanceof ApiError &&
+  (error.status === 0 ||
+    error.status === 408 ||
+    error.status === 502 ||
+    error.status === 503 ||
+    error.status === 504);
 
 export const getVerificationDisplay = (value: VerificationView) => {
   if (value.pendingAction === "confirm")
@@ -33,7 +45,9 @@ export const getVerificationDisplay = (value: VerificationView) => {
   if (value.pendingAction === "retry")
     return {
       label:
-        value.progressStage === "analyzing"
+        value.progressStage === "retrying"
+          ? "Retrying Upload..."
+          : value.progressStage === "analyzing"
           ? "Analyzing Document..."
           : "Uploading Document...",
       tone: "pending" as const,
@@ -42,7 +56,9 @@ export const getVerificationDisplay = (value: VerificationView) => {
   if (value.state === "checking")
     return {
       label:
-        value.progressStage === "analyzing"
+        value.progressStage === "retrying"
+          ? "Retrying Upload..."
+          : value.progressStage === "analyzing"
           ? "Analyzing Document..."
           : "Uploading Document...",
       tone: "pending" as const,
@@ -89,6 +105,10 @@ export const useDocumentVerification = () => {
   const [birthCertificate, setBirthCertificate] =
     useState<VerificationView>(initial);
   const [parentId, setParentId] = useState<VerificationView>(initial);
+  const inFlight = useRef<Record<"birthCertificate" | "parentId", boolean>>({
+    birthCertificate: false,
+    parentId: false,
+  });
   const setter = (type: "birthCertificate" | "parentId") =>
     type === "birthCertificate" ? setBirthCertificate : setParentId;
   const verify = async (
@@ -96,6 +116,8 @@ export const useDocumentVerification = () => {
     file: { uri: string; name: string },
     expected: Record<string, string>,
   ) => {
+    if (inFlight.current[type]) return null;
+    inFlight.current[type] = true;
     const current = type === "birthCertificate" ? birthCertificate : parentId;
     const set = setter(type);
     set({
@@ -111,12 +133,32 @@ export const useDocumentVerification = () => {
         pendingAction: current.state === "idle" ? "verify" : "retry",
         progressStage: "analyzing",
       });
-    }, 800);
+    }, ANALYZING_MESSAGE_DELAY_MS);
     try {
-      const result = await verifyEnrollmentDocument(file, {
-        documentType: type,
-        ...expected,
-      } as any);
+      let result: DocumentVerificationResponse | null = null;
+      for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt += 1) {
+        try {
+          result = await verifyEnrollmentDocument(file, {
+            documentType: type,
+            ...expected,
+          } as any);
+          break;
+        } catch (error) {
+          const retryDelay = RETRY_DELAYS_MS[attempt];
+          if (!isTransientUploadError(error) || retryDelay === undefined)
+            throw error;
+          clearTimeout(analyzingTimer);
+          set({
+            state: "checking",
+            result: null,
+            pendingAction: "retry",
+            progressStage: "retrying",
+            message: `Connection interrupted. Retrying upload (${attempt + 2}/3)...`,
+          });
+          await wait(retryDelay);
+        }
+      }
+      if (!result) throw new Error("Verification failed.");
       const state: MobileVerificationState =
         result.status === "verified"
           ? "verified"
@@ -131,11 +173,14 @@ export const useDocumentVerification = () => {
       set({
         state: "service_error",
         result: null,
-        message: error?.message || "Verification failed.",
+        message:
+          error?.message ||
+          "The upload could not be completed. Check your connection and retry.",
       });
       return null;
     } finally {
       clearTimeout(analyzingTimer);
+      inFlight.current[type] = false;
     }
   };
   const confirm = async (type: "birthCertificate" | "parentId") => {

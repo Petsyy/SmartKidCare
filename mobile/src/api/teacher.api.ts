@@ -37,6 +37,8 @@ export const verifyEnrollmentDocument = async (
   return apiFormDataClient<DocumentVerificationResponse>(
     "/api/enrollment/documents/verify",
     formData,
+    "POST",
+    { timeoutMs: 45_000 },
   );
 };
 

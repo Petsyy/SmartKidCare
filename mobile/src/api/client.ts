@@ -103,24 +103,47 @@ export async function apiClient<T>(
   return data as T;
 }
 
-
 export async function apiFormDataClient<T>(
   path: string,
   formData: FormData,
   method: "POST" | "PUT" = "POST",
+  options: { timeoutMs?: number } = {},
 ): Promise<T> {
   const token = getAuthToken();
   if (!token) {
     throw new Error("No authentication token");
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    method,
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    body: formData,
-  });
+  const controller = new AbortController();
+  const timeout = options.timeoutMs
+    ? setTimeout(() => controller.abort(), options.timeoutMs)
+    : null;
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      method,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+      signal: controller.signal,
+    });
+  } catch {
+    if (controller.signal.aborted) {
+      throw new ApiError(
+        "The upload took too long. Check your connection and try again.",
+        0,
+        "UPLOAD_TIMEOUT",
+      );
+    }
+    throw new ApiError(
+      "The upload was interrupted. Check your mobile data and try again.",
+      0,
+      "NETWORK_ERROR",
+    );
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
 
   let data: any;
   const raw = await response.text();
@@ -131,7 +154,11 @@ export async function apiFormDataClient<T>(
   }
 
   if (!response.ok) {
-    throw new Error(getApiErrorMessage(data, raw, `Upload failed: ${path}`));
+    throw new ApiError(
+      getApiErrorMessage(data, raw, `Upload failed: ${path}`),
+      response.status,
+      typeof data?.code === "string" ? data.code : undefined,
+    );
   }
 
   return data as T;
