@@ -30,8 +30,18 @@ export const getCenters = asyncHandler(async (_req: Request, res: Response) => {
 
 export const verifyDocument = asyncHandler(async (req: Request, res: Response) => {
   const result = await documentVerificationService.verifyEnrollmentDocument(req.user, req.body, req.file);
-  res.status(200).json(result);
+  res.status(result.status === "queued" ? 202 : 200).json(result);
 });
+
+export const getDocumentVerification = asyncHandler(
+  async (req: Request, res: Response) => {
+    const result = await documentVerificationService.getEnrollmentDocumentVerification(
+      req.user,
+      String(req.params.verificationId),
+    );
+    res.status(200).json(result);
+  },
+);
 
 export const confirmDocument = asyncHandler(async (req: Request, res: Response) => {
   const result = await documentVerificationService.confirmEnrollmentDocument(req.user, String(req.params.verificationId));

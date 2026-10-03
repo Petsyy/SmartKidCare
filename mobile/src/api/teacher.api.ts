@@ -50,6 +50,13 @@ export const confirmEnrollmentDocument = async (
     { method: "POST" },
   );
 
+export const getEnrollmentDocumentVerification = async (
+  verificationId: string,
+): Promise<DocumentVerificationResponse> =>
+  apiClient<DocumentVerificationResponse>(
+    `/api/enrollment/documents/${verificationId}`,
+  );
+
 export const getEnrollmentCenters = async (): Promise<
   EnrollmentCenterOption[]
 > => {

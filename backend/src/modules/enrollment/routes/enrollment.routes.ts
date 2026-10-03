@@ -7,6 +7,7 @@ import {
 } from "../controllers/enrollment.controller";
 import {
   verifyDocument,
+  getDocumentVerification,
   confirmDocument,
 } from "../controllers/enrollment.controller";
 import { requireRole } from "../../../shared/middleware/role.middleware";
@@ -31,6 +32,12 @@ router.post(
   documentVerificationUpload.single("file"),
   validate(verifyDocumentBodySchema),
   verifyDocument,
+);
+router.get(
+  "/documents/:verificationId",
+  requireRole("teacher"),
+  validate(confirmationParamsSchema, "params"),
+  getDocumentVerification,
 );
 router.post(
   "/documents/:verificationId/confirm",
