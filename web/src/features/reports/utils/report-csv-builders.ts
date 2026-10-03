@@ -98,7 +98,24 @@ export const buildNutritionCsvRows = (
 export const buildCompetencyCsvRows = (
   data: CompetencyAnalyticsPayload,
   generatedAt: string,
-): CsvRow[] => [
+): CsvRow[] => {
+  const periodRows = (["quarterly", "final"] as const).flatMap((period) => [
+    [period === "quarterly" ? "QUARTERLY DISTRIBUTION" : "FINAL DISTRIBUTION"],
+    ["Students Evaluated", data.periods[period].totalStudents],
+    ["Competency", "Category", "Achieved", "Developing", "Emerging", "Not Yet", "Total Evaluated", "Achieved Rate"],
+    ...data.periods[period].competencies.map((item) => [
+      item.name,
+      item.category,
+      item.distribution.achieved,
+      item.distribution.developing,
+      item.distribution.emerging,
+      item.distribution.not_demonstrated,
+      item.totalEvaluated,
+      `${item.achievedRate}%`,
+    ]),
+    [],
+  ] as CsvRow[]);
+  return [
   ["SMARTKIDCARE ACADEMIC COMPETENCY REPORT"],
   [
     "School Year",
@@ -108,6 +125,15 @@ export const buildCompetencyCsvRows = (
   ["Total Students", data.totalStudents],
   ["Generated At", generatedAt],
   [],
+  ["QUARTERLY TO FINAL PROGRESS"],
+  ["Matched Students", data.comparison.matchedStudents],
+  ["Compared Ratings", data.comparison.totalComparedRatings],
+  ["Improved Ratings", data.comparison.improvedRatings],
+  ["Unchanged Ratings", data.comparison.unchangedRatings],
+  ["Declined Ratings", data.comparison.declinedRatings],
+  ["Improvement Rate", `${data.comparison.improvementRate}%`],
+  [],
+  ...periodRows,
   ["COMPETENCY RATING DISTRIBUTION"],
   [
     "Competency",
@@ -129,4 +155,5 @@ export const buildCompetencyCsvRows = (
     item.totalEvaluated,
     `${item.achievedRate}%`,
   ]),
-];
+  ];
+};

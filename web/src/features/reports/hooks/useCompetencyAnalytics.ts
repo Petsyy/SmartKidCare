@@ -27,6 +27,18 @@ export type CompetencyAnalyticsPayload = {
   totalStudents: number;
   schoolYears: string[];
   competencies: CompetencyAnalyticsItem[];
+  periods: Record<
+    "quarterly" | "final",
+    { totalStudents: number; competencies: CompetencyAnalyticsItem[] }
+  >;
+  comparison: {
+    matchedStudents: number;
+    totalComparedRatings: number;
+    improvedRatings: number;
+    unchangedRatings: number;
+    declinedRatings: number;
+    improvementRate: number;
+  };
 };
 
 export function useCompetencyAnalytics() {

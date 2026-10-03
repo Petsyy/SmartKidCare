@@ -139,7 +139,7 @@ export class CompetencyEvaluationRepository extends BaseRepository<any> {
       { $sort: { evaluationDate: -1, updatedAt: -1 } },
       { $group: { _id: "$child", evaluation: { $first: "$$ROOT" } } },
       { $replaceRoot: { newRoot: "$evaluation" } },
-      { $project: { child: 1, entries: 1 } },
+      { $project: { child: 1, schoolYear: 1, period: 1, entries: 1 } },
     ]);
   }
 
