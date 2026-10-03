@@ -10,12 +10,15 @@ export type DashboardStats = {
   todayAttendanceRate: number | null;
   hasTodayAttendance: boolean;
   todayAbsentCount: number;
+  todayPresentCount: number;
   todayExceptions: number;
   underweightCount: number;
   severelyUnderweightCount: number;
   normalCount: number;
   overweightCount: number;
   obeseCount: number;
+  boys: number;
+  girls: number;
 };
 
 export type ChartDataPoint = {
@@ -47,12 +50,15 @@ export const DEFAULT_STATS: DashboardStats = {
   todayAttendanceRate: null,
   hasTodayAttendance: false,
   todayAbsentCount: 0,
+  todayPresentCount: 0,
   todayExceptions: 0,
   underweightCount: 0,
   severelyUnderweightCount: 0,
   normalCount: 0,
   overweightCount: 0,
   obeseCount: 0,
+  boys: 0,
+  girls: 0,
 };
 
 export const DEFAULT_DATE_META: DashboardDateMeta = {
