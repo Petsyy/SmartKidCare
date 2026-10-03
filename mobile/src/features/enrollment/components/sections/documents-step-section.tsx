@@ -48,7 +48,7 @@ const VerificationMessage = ({
               <Text className="font-bold text-white">Retry Verification</Text>
             </Pressable>
           ) : null}
-          {value.result ? (
+          {value.state === "confirmation_required" && value.result ? (
             <Pressable
               onPress={onConfirm}
               accessibilityRole="button"

@@ -16,9 +16,24 @@ const DocumentVerificationSchema = new mongoose.Schema(
     expectedFieldsHash: { type: String, required: true },
     status: {
       type: String,
-      enum: ["verified", "teacher_confirmation_required", "rejected"],
+      enum: [
+        "queued",
+        "processing",
+        "retrying",
+        "service_unavailable",
+        "verified",
+        "teacher_confirmation_required",
+        "rejected",
+      ],
       required: true,
     },
+    attemptCount: { type: Number, default: 0, min: 0 },
+    nextAttemptAt: { type: Date, default: null },
+    processingStartedAt: { type: Date, default: null },
+    completedAt: { type: Date, default: null },
+    lastErrorCode: { type: String, default: null },
+    imageData: { type: Buffer, select: false, default: null },
+    expectedFields: { type: mongoose.Schema.Types.Mixed, select: false, default: null },
     detectedType: {
       type: String,
       enum: [
@@ -71,6 +86,7 @@ DocumentVerificationSchema.index({
   expiresAt: 1,
 });
 DocumentVerificationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+DocumentVerificationSchema.index({ status: 1, nextAttemptAt: 1 });
 
 export default mongoose.model(
   "DocumentVerification",

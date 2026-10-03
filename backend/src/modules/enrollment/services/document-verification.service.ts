@@ -240,7 +240,15 @@ export class DocumentVerificationService {
       fieldMatches: record.fieldMatches || {},
       teacherConfirmed: Boolean(record.teacherConfirmed),
       message:
-        record.status === "verified" && record.documentType === "parentId"
+        record.status === "queued"
+          ? "Document uploaded and queued for verification."
+          : record.status === "processing"
+            ? "Document verification is in progress."
+            : record.status === "retrying"
+              ? "Verification was interrupted and will retry automatically."
+              : record.status === "service_unavailable" || record.isTransientFailure
+          ? "Automatic verification was interrupted. Check your connection and retry."
+          : record.status === "verified" && record.documentType === "parentId"
           ? "National ID and parent name verified."
           : record.status === "verified"
             ? "Document image verified for enrollment."
@@ -418,7 +426,7 @@ export class DocumentVerificationService {
       throw new ValidationError("A non-empty image is required.");
     if (file.size > 5 * 1024 * 1024)
       throw new ValidationError("Image must be 5 MB or below.");
-    const mimeType = this.detectImage(file.buffer);
+    this.detectImage(file.buffer);
     const fileHash = this.hash(file.buffer);
     const expected = this.canonicalExpected(body);
     const expectedFieldsHash = this.buildExpectedFieldsHash(body);
@@ -466,6 +474,11 @@ export class DocumentVerificationService {
       });
       return this.toResponse(cached);
     }
+    const active = await documentVerificationRepository.findActive(cacheKey);
+    if (active) {
+      this.scheduleProcessing(String(active._id));
+      return this.toResponse(active);
+    }
     const imageProcessingStartedAt = Date.now();
     let analysis: Buffer;
     try {
@@ -483,7 +496,69 @@ export class DocumentVerificationService {
       throw new ValidationError("The image is corrupted or cannot be decoded.");
     }
     const imageProcessingMs = Date.now() - imageProcessingStartedAt;
-    let values: any;
+    const minutes = this.envNumber(
+      "DOCUMENT_VERIFICATION_NORMAL_EXPIRY_MINUTES",
+      30,
+      1,
+      1440,
+    );
+    const record = await documentVerificationRepository.create({
+      ...cacheKey,
+      status: "queued",
+      detectedType: "unknown",
+      confidence: null,
+      reasonCodes: [],
+      fieldMatches: {},
+      isTransientFailure: false,
+      teacherConfirmed: false,
+      modelVersion: this.modelVersion(),
+      imageData: analysis,
+      expectedFields: expected,
+      attemptCount: 0,
+      nextAttemptAt: new Date(),
+      expiresAt: new Date(Date.now() + minutes * 60_000),
+    });
+    logger.info("Document verification queued.", {
+      documentType: body.documentType,
+      inputBytes: file.size,
+      analysisBytes: analysis.length,
+      imageProcessingMs,
+      totalMs: Date.now() - verificationStartedAt,
+    });
+    this.scheduleProcessing(String(record._id));
+    return this.toResponse(record);
+  }
+
+  private scheduleProcessing(verificationId: string, delayMs = 0) {
+    const timer = setTimeout(() => {
+      void this.processQueuedVerification(verificationId).catch((error) => {
+        logger.error("Queued document verification failed unexpectedly.", {
+          verificationId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      });
+    }, delayMs);
+    timer.unref?.();
+  }
+
+  public async processQueuedVerification(verificationId: string) {
+    const record = await documentVerificationRepository.claimForProcessing(
+      verificationId,
+    );
+    if (!record) return null;
+    if (!record.imageData || !record.expectedFields) {
+      return documentVerificationRepository.completeProcessing(verificationId, {
+        status: "service_unavailable",
+        detectedType: "unknown",
+        confidence: null,
+        reasonCodes: ["VERIFICATION_PAYLOAD_UNAVAILABLE"],
+        fieldMatches: {},
+        isTransientFailure: true,
+        lastErrorCode: "verification_payload_unavailable",
+      });
+    }
+    const imageData = Buffer.from(record.imageData);
+    const expectedFields = record.expectedFields;
     const aiStartedAt = Date.now();
     try {
       const timeoutMs = this.envNumber(
@@ -494,8 +569,8 @@ export class DocumentVerificationService {
       );
       const raw = await Promise.race([
         observeDocumentImage({
-          prompt: this.makePrompt(body.documentType),
-          image: analysis,
+          prompt: this.makePrompt(record.documentType as DocumentType),
+          image: imageData,
           mimeType: "image/jpeg",
           modelName: this.modelVersion(),
         }),
@@ -515,58 +590,85 @@ export class DocumentVerificationService {
       ]);
       const obs = this.parseGeminiDocumentObservations(raw);
       const decision = this.decideDocumentVerification(
-        body.documentType,
+        record.documentType as DocumentType,
         obs,
-        expected,
+        expectedFields,
       );
-      values = {
+      const completed = await documentVerificationRepository.completeProcessing(
+        verificationId,
+        {
         ...decision,
         detectedType: obs.detectedType,
         confidence: obs.confidence,
         isTransientFailure: false,
-      };
+        lastErrorCode: null,
+        },
+      );
+      logger.info("Document verification completed.", {
+        source: "async-ai",
+        documentType: record.documentType,
+        aiMs: Date.now() - aiStartedAt,
+        outcome: decision.status,
+      });
+      return completed;
     } catch (error) {
       const code =
         error instanceof AIServiceError ? error.code : "malformed_ai_response";
-      values = {
-        status: "teacher_confirmation_required",
+      const reasonCode =
+        code === "quota_exceeded"
+          ? "AI_QUOTA_EXHAUSTED"
+          : code === "ai_timeout"
+            ? "AI_TIMEOUT"
+            : code === "malformed_ai_response"
+              ? "AI_MALFORMED_RESPONSE"
+              : "AI_SERVICE_UNAVAILABLE";
+      const maxAttempts = this.envNumber(
+        "DOCUMENT_VERIFICATION_MAX_ATTEMPTS",
+        3,
+        1,
+        10,
+      );
+      if (record.attemptCount < maxAttempts) {
+        const retryDelayMs = Math.min(30_000, 2 ** record.attemptCount * 1_000);
+        const deferred = await documentVerificationRepository.deferProcessing(
+          verificationId,
+          {
+            status: "retrying",
+            isTransientFailure: true,
+            lastErrorCode: code,
+            reasonCodes: [reasonCode],
+            processingStartedAt: null,
+            nextAttemptAt: new Date(Date.now() + retryDelayMs),
+          },
+        );
+        this.scheduleProcessing(verificationId, retryDelayMs);
+        return deferred;
+      }
+      return documentVerificationRepository.completeProcessing(verificationId, {
+        status: "service_unavailable",
         detectedType: "unknown" as DetectedType,
         confidence: null,
-        reasonCodes: [
-          code === "quota_exceeded"
-            ? "AI_QUOTA_EXHAUSTED"
-            : code === "ai_timeout"
-              ? "AI_TIMEOUT"
-              : code === "malformed_ai_response"
-                ? "AI_MALFORMED_RESPONSE"
-                : "AI_SERVICE_UNAVAILABLE",
-        ],
+        reasonCodes: [reasonCode],
         fieldMatches: {},
         isTransientFailure: true,
-      };
+        lastErrorCode: code,
+      });
     }
-    const aiMs = Date.now() - aiStartedAt;
-    const minutes = values.isTransientFailure
-      ? this.envNumber("DOCUMENT_VERIFICATION_FAILURE_EXPIRY_MINUTES", 10, 1, 120)
-      : this.envNumber("DOCUMENT_VERIFICATION_NORMAL_EXPIRY_MINUTES", 30, 1, 1440);
-    const record = await documentVerificationRepository.create({
-      ...cacheKey,
-      ...values,
-      teacherConfirmed: false,
-      modelVersion: this.modelVersion(),
-      expiresAt: new Date(Date.now() + minutes * 60_000),
-    });
-    logger.info("Document verification completed.", {
-      source: "ai",
-      documentType: body.documentType,
-      inputBytes: file.size,
-      analysisBytes: analysis.length,
-      imageProcessingMs,
-      aiMs,
-      totalMs: Date.now() - verificationStartedAt,
-      outcome: values.status,
-      transientFailure: values.isTransientFailure,
-    });
+  }
+
+  public async getEnrollmentDocumentVerification(
+    user: any,
+    verificationId: string,
+  ) {
+    if (!user?.id || user.role !== "teacher")
+      throw new ForbiddenError("Teachers only");
+    const record = await documentVerificationRepository.findOwned(
+      verificationId,
+      user.id,
+    );
+    if (!record) throw new NotFoundError("Document verification");
+    if (["queued", "retrying", "processing"].includes(record.status))
+      this.scheduleProcessing(verificationId);
     return this.toResponse(record);
   }
 
@@ -583,6 +685,7 @@ export class DocumentVerificationService {
     if (!record) throw new NotFoundError("Document verification");
     if (
       record.status !== "teacher_confirmation_required" ||
+      record.isTransientFailure ||
       record.consumedAt ||
       record.expiresAt <= new Date()
     )
@@ -610,9 +713,10 @@ export class DocumentVerificationService {
         "Document verification is expired, used, or unavailable.",
       );
     const eligible =
-      record.status === "verified" ||
-      (record.status === "teacher_confirmation_required" &&
-        record.teacherConfirmed);
+      !record.isTransientFailure &&
+      (record.status === "verified" ||
+        (record.status === "teacher_confirmation_required" &&
+          record.teacherConfirmed));
     if (
       !eligible ||
       record.documentType !== params.documentType ||
@@ -629,3 +733,25 @@ export class DocumentVerificationService {
 }
 
 export const documentVerificationService = new DocumentVerificationService();
+export const parseGeminiDocumentObservations =
+  documentVerificationService.parseGeminiDocumentObservations.bind(
+    documentVerificationService,
+  );
+export const normalizeVerificationName =
+  documentVerificationService.normalizeVerificationName.bind(
+    documentVerificationService,
+  );
+export const buildExpectedFieldsHash =
+  documentVerificationService.buildExpectedFieldsHash.bind(
+    documentVerificationService,
+  );
+export const fuzzyMatch = documentVerificationService.fuzzyMatch.bind(
+  documentVerificationService,
+);
+export const detectImage = documentVerificationService.detectImage.bind(
+  documentVerificationService,
+);
+export const decideDocumentVerification =
+  documentVerificationService.decideDocumentVerification.bind(
+    documentVerificationService,
+  );
