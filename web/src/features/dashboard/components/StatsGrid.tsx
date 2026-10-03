@@ -26,6 +26,24 @@ export function StatsGrid({ stats, onNavigate }: StatsGridProps) {
         accessibilityLabel="Open daycare records for all enrolled children"
       />
       <StatCard
+        title="4P's Beneficiaries"
+        value={String(stats.fourPsBeneficiaries)}
+        subtitle="Children under assistance tracking"
+        icon={Heart}
+        color="blue"
+        onClick={() => onNavigate("/monitoring/reports/overview")}
+        accessibilityLabel="Open reports for 4Ps beneficiaries"
+      />
+      <StatCard
+        title="Regular Enrollees"
+        value={String(stats.regularAttendees)}
+        subtitle="Regular enrollees without 4Ps assistance"
+        icon={UsersRound}
+        color="teal"
+        onClick={() => onNavigate("/monitoring/reports/overview")}
+        accessibilityLabel="Open reports for regular enrollees"
+      />
+      <StatCard
         title="Underweight"
         value={String(stats.underweightCount)}
         subtitle="Priority for feeding support"
@@ -42,24 +60,6 @@ export function StatsGrid({ stats, onNavigate }: StatsGridProps) {
         color="rose"
         onClick={() => onNavigate("/monitoring/reports/nutrition")}
         accessibilityLabel="Open health and nutrition analytics for severely underweight children"
-      />
-      <StatCard
-        title="4P's Beneficiaries"
-        value={String(stats.fourPsBeneficiaries)}
-        subtitle="Children under assistance tracking"
-        icon={Heart}
-        color="blue"
-        onClick={() => onNavigate("/monitoring/reports/overview")}
-        accessibilityLabel="Open reports for 4Ps beneficiaries"
-      />
-      <StatCard
-        title="Regular Attendees"
-        value={String(stats.regularAttendees)}
-        subtitle="Regular enrollees without 4Ps assistance"
-        icon={UsersRound}
-        color="teal"
-        onClick={() => onNavigate("/monitoring/reports/overview")}
-        accessibilityLabel="Open reports for regular attendees"
       />
     </div>
   );

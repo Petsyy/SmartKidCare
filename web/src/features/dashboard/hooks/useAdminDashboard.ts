@@ -23,6 +23,12 @@ type DashboardReport = {
     activeChildren: number;
     attendanceRate: number;
   };
+  demographics?: {
+    genderBreakdown: {
+      male: number;
+      female: number;
+    };
+  };
   recentDailyRows: Array<{
     dateKey: string;
     attendanceRate: number;
@@ -34,13 +40,15 @@ type DashboardReport = {
 
 export type { DashboardStats, ChartDataPoint, PieDataPoint, DashboardDateMeta };
 
-const dayLabel = (dateKey: string) =>
+const dayLabel = (dateKey: string, preset: "7d" | "30d") =>
   new Intl.DateTimeFormat("en-PH", {
-    weekday: "short",
+    weekday: preset === "7d" ? "short" : undefined,
+    day: preset === "30d" ? "numeric" : undefined,
+    month: preset === "30d" ? "short" : undefined,
     timeZone: "Asia/Manila",
   }).format(new Date(`${dateKey}T00:00:00+08:00`));
 
-export function useAdminDashboard() {
+export function useAdminDashboard(datePreset: "7d" | "30d" = "7d") {
   const {
     data,
     isLoading,
@@ -49,11 +57,11 @@ export function useAdminDashboard() {
     refetch,
     dataUpdatedAt,
   } = useQuery({
-    queryKey: webQueryKeys.adminDashboard(),
+    queryKey: [...webQueryKeys.adminDashboard(), datePreset],
     queryFn: async () => {
       const [report, nutrition] = await Promise.all([
         apiRequestOrThrow<DashboardReport>(
-          "/reports/admin-analytics?datePreset=7d&limit=1",
+          `/reports/admin-analytics?datePreset=${datePreset}&limit=1`,
           "Failed to load dashboard analytics",
         ),
         getNutritionAnalytics({}),
@@ -78,23 +86,27 @@ export function useAdminDashboard() {
         todayAttendanceRate: hasTodayAttendance ? today?.attendanceRate ?? null : null,
         hasTodayAttendance,
         todayAbsentCount: today?.absent ?? 0,
+        todayPresentCount: today?.present ?? 0,
         todayExceptions: today?.absent ?? 0,
         underweightCount: nutrition.underweightCount,
         severelyUnderweightCount: nutrition.severelyUnderweightCount,
         normalCount: nutrition.normalCount,
         overweightCount: nutrition.overweightCount,
         obeseCount: nutrition.obeseCount,
+        boys: report.demographics?.genderBreakdown?.male ?? 0,
+        girls: report.demographics?.genderBreakdown?.female ?? 0,
       };
 
       const rowsByDate = new Map(
         report.recentDailyRows.map((row) => [row.dateKey, row]),
       );
-      const chartData = Array.from({ length: 7 }, (_, index) => {
-        const dateKey = shiftDateKey(todayKey, index - 6);
+      const daysCount = datePreset === "30d" ? 30 : 7;
+      const chartData = Array.from({ length: daysCount }, (_, index) => {
+        const dateKey = shiftDateKey(todayKey, index - (daysCount - 1));
         const row = rowsByDate.get(dateKey);
         const attendanceTotal = (row?.present ?? 0) + (row?.absent ?? 0);
         return {
-          day: dayLabel(dateKey),
+          day: dayLabel(dateKey, datePreset),
           attendance: attendanceTotal > 0 ? row?.attendanceRate ?? null : null,
         };
       });

@@ -3,21 +3,45 @@ import type { ChartDataPoint } from "../hooks/useAdminDashboard";
 
 type AttendanceChartProps = {
   data: ChartDataPoint[];
+  range: "7d" | "30d";
+  onChangeRange: (range: "7d" | "30d") => void;
 };
 
-export function AttendanceChart({ data }: AttendanceChartProps) {
+export function AttendanceChart({ data, range, onChangeRange }: AttendanceChartProps) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-6">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
-            Weekly Attendance Trend
+            {range === "7d" ? "Weekly" : "Monthly"} Attendance Trend
           </h3>
           <p className="text-sm text-gray-500 dark:text-slate-400">
-            Attendance rates for the past 7 days
+            Attendance rates for the past {range === "7d" ? "7" : "30"} days
           </p>
         </div>
         <div className="flex items-center gap-4 text-sm">
+          <div className="flex items-center rounded-md border border-gray-200 bg-gray-50 p-1 dark:border-slate-700 dark:bg-slate-800">
+            <button
+              onClick={() => onChangeRange("7d")}
+              className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
+                range === "7d"
+                  ? "bg-white text-gray-900 shadow dark:bg-slate-700 dark:text-white"
+                  : "text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200"
+              }`}
+            >
+              7 Days
+            </button>
+            <button
+              onClick={() => onChangeRange("30d")}
+              className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
+                range === "30d"
+                  ? "bg-white text-gray-900 shadow dark:bg-slate-700 dark:text-white"
+                  : "text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200"
+              }`}
+            >
+              30 Days
+            </button>
+          </div>
           <div className="flex items-center gap-2">
             <div className="h-3 w-3 rounded-full bg-teal-500"></div>
             <span className="text-gray-600 dark:text-slate-300">

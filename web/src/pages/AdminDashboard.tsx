@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -16,6 +17,7 @@ import { RefreshCw } from "lucide-react";
 export default function AdminDashboard() {
   const { settings } = useSystemSettings();
   const navigate = useNavigate();
+  const [chartRange, setChartRange] = useState<"7d" | "30d">("7d");
   const {
     stats,
     chartData,
@@ -26,7 +28,7 @@ export default function AdminDashboard() {
     error,
     lastUpdatedAt,
     fetchDashboardData,
-  } = useAdminDashboard();
+  } = useAdminDashboard(chartRange);
 
   return (
     <Layout
@@ -97,7 +99,11 @@ export default function AdminDashboard() {
             <StatsGrid stats={stats} onNavigate={navigate} />
 
             <div className="grid gap-4 lg:grid-cols-2">
-              <AttendanceChart data={chartData} />
+              <AttendanceChart 
+                data={chartData} 
+                range={chartRange}
+                onChangeRange={setChartRange}
+              />
               <EnrollmentPieChart data={pieData} />
             </div>
           </>

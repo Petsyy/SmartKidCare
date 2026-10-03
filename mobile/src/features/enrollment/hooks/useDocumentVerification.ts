@@ -48,8 +48,8 @@ export const getVerificationDisplay = (value: VerificationView) => {
         value.progressStage === "retrying"
           ? "Retrying Upload..."
           : value.progressStage === "analyzing"
-          ? "Analyzing Document..."
-          : "Uploading Document...",
+            ? "Analyzing Document..."
+            : "Uploading Document...",
       tone: "pending" as const,
       loading: true,
     };
@@ -59,8 +59,8 @@ export const getVerificationDisplay = (value: VerificationView) => {
         value.progressStage === "retrying"
           ? "Retrying Upload..."
           : value.progressStage === "analyzing"
-          ? "Analyzing Document..."
-          : "Uploading Document...",
+            ? "Analyzing Document..."
+            : "Uploading Document...",
       tone: "pending" as const,
       loading: true,
     };

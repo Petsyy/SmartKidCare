@@ -7,7 +7,7 @@ type EnrollmentPieChartProps = {
 
 export function EnrollmentPieChart({ data }: EnrollmentPieChartProps) {
   return (
-    <div className="self-start rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-6">
+    <div className="flex h-full flex-col rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-6">
       <div className="mb-4">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
           Bonuan Sabangan Enrollment Overview
@@ -17,7 +17,7 @@ export function EnrollmentPieChart({ data }: EnrollmentPieChartProps) {
         </p>
       </div>
 
-      <div className="h-48 w-full sm:h-52">
+      <div className="flex-1 w-full min-h-[200px]">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart accessibilityLayer>
             <Pie

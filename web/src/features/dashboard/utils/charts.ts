@@ -51,29 +51,24 @@ export function computeChartData(
 export function computePieData(stats: DashboardStats): PieDataPoint[] {
   return [
     {
-      name: "Bonuan Sabangan Center",
-      value: stats.totalChildDevelopmentCenters,
-      color: "#38bdf8",
+      name: "Boys",
+      value: stats.boys,
+      color: "#38bdf8", // light blue
     },
     {
-      name: "Child Development Worker",
-      value: stats.childDevelopmentWorkers,
-      color: "#14b8a6",
+      name: "Girls",
+      value: stats.girls,
+      color: "#f472b6", // pink
     },
     {
-      name: "Total Enrolled Children",
-      value: stats.totalEnrolledDaycares,
-      color: "#f59e0b",
+      name: "Regular Enrollees",
+      value: stats.regularAttendees,
+      color: "#6366f1", // indigo
     },
     {
       name: "4P's Beneficiaries",
       value: stats.fourPsBeneficiaries,
-      color: "#f43f5e",
-    },
-    {
-      name: "Regular Attendees",
-      value: stats.regularAttendees,
-      color: "#6366f1",
+      color: "#f59e0b", // amber
     },
   ];
 }

@@ -200,7 +200,7 @@ export async function getAdminAnalyticsReport(
       total: totalEnrolledChildren,
       totalPages: totalStudentPages,
     },
-    recentDailyRows: recentDailyRows.slice(0, 10),
+    recentDailyRows,
     hasData: totalChecks > 0 || totalEnrolledChildren > 0,
     lastUpdatedAt: new Date().toISOString(),
   };
