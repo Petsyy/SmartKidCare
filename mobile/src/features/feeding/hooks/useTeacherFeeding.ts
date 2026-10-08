@@ -9,7 +9,7 @@ import {
   getFeedingForDate,
   type FeedingRecord,
 } from "@/src/api/records.api";
-import type { Child } from "@/src/api/api.types";
+import type { Child, SubmitAttendanceData } from "@/src/api/api.types";
 import {
   formatManilaDateLabel,
   getManilaDateKey,
@@ -152,7 +152,12 @@ export const useTeacherFeeding = () => {
     queryFn: async () => {
       if (!user?.id) throw new Error("Please sign in again.");
       const offline = !isConnected || !isInternetReachable;
-      const [childrenData, serverFeedingRecord, pendingOperation] =
+      const [
+        childrenData,
+        serverFeedingRecord,
+        pendingFeedingOperation,
+        pendingAttendanceOperation,
+      ] =
         await Promise.all([
           onlineWithOfflineFallback(offline, getChildren, () =>
             readOfflineResource<Child>(user.id, "children"),
@@ -168,11 +173,16 @@ export const useTeacherFeeding = () => {
               ),
           ),
           getPendingOutboxByDate(user.id, "feeding.create", attendanceDateKey),
+          getPendingOutboxByDate(
+            user.id,
+            "attendance.create",
+            attendanceDateKey,
+          ),
         ]);
-      const feedingRecord = pendingOperation
+      const feedingRecord = pendingFeedingOperation
         ? {
             date: attendanceDateKey,
-            ...(pendingOperation.frozenPayload as any),
+            ...(pendingFeedingOperation.frozenPayload as any),
             localPending: true,
           }
         : serverFeedingRecord;
@@ -211,16 +221,24 @@ export const useTeacherFeeding = () => {
           presentIds.has(child._id),
         );
       } else {
-        const attendanceRecord = await onlineWithOfflineFallback(
-          offline,
-          () => getAttendanceForDate(attendanceDateKey),
-          () =>
-            readOfflineRecordForDate<any>(
-              user.id,
-              "attendance",
-              attendanceDateKey,
-            ),
-        );
+        const attendanceRecord = pendingAttendanceOperation
+          ? {
+              date: attendanceDateKey,
+              records: (
+                pendingAttendanceOperation.frozenPayload as SubmitAttendanceData
+              ).records,
+              localPending: true,
+            }
+          : await onlineWithOfflineFallback(
+              offline,
+              () => getAttendanceForDate(attendanceDateKey),
+              () =>
+                readOfflineRecordForDate<any>(
+                  user.id,
+                  "attendance",
+                  attendanceDateKey,
+                ),
+            );
         if (attendanceRecord?.records) {
           const presentIds = new Set(
             attendanceRecord.records
