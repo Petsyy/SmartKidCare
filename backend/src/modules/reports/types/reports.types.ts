@@ -33,6 +33,17 @@ export type ReportGenderBreakdown = {
   femalePercentage: number;
 };
 
+export type ReportProgramGenderCounts = {
+  fourPs: number;
+  regular: number;
+  total: number;
+};
+
+export type ReportProgramGenderBreakdown = {
+  male: ReportProgramGenderCounts;
+  female: ReportProgramGenderCounts;
+};
+
 export type ReportAgeBreakdownItem = {
   age: number;
   count: number;

@@ -4,7 +4,7 @@ import Layout from "@/components/layout/Layout";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatsGrid } from "@/features/dashboard/components/StatsGrid";
 import { AttendanceChart } from "@/features/dashboard/components/AttendanceChart";
-import { EnrollmentPieChart } from "@/features/dashboard/components/EnrollmentPieChart";
+import { EnrollmentBarChart } from "@/features/dashboard/components/EnrollmentBarChart";
 import { useAdminDashboard } from "@/features/dashboard/hooks/useAdminDashboard";
 import { useSystemSettings } from "@/context/SystemSettingsContext";
 import { StatCardSkeleton } from "@/components/ui/StatCardSkeleton";
@@ -21,7 +21,7 @@ export default function AdminDashboard() {
   const {
     stats,
     chartData,
-    pieData,
+    enrollmentData,
     isLoading,
     isRefreshing,
     hasData,
@@ -104,7 +104,7 @@ export default function AdminDashboard() {
                 range={chartRange}
                 onChangeRange={setChartRange}
               />
-              <EnrollmentPieChart data={pieData} />
+              <EnrollmentBarChart data={enrollmentData} />
             </div>
           </>
         )}

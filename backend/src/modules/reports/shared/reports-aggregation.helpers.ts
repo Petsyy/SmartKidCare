@@ -1,6 +1,7 @@
 import type {
   ReportAgeBreakdownItem,
   ReportGenderBreakdown,
+  ReportProgramGenderBreakdown,
   ReportStudentListItem,
 } from "../types/reports.types";
 
@@ -21,6 +22,14 @@ export type ChildReportRecord = {
 
 export type GenderAggregateRow = {
   _id: "male" | "female" | null;
+  count: number;
+};
+
+export type ProgramGenderAggregateRow = {
+  _id: {
+    gender: "male" | "female" | null;
+    programType: string | null;
+  };
   count: number;
 };
 
@@ -55,6 +64,43 @@ export const buildGenderBreakdown = (
     total,
     malePercentage: toPercentage(male, total),
     femalePercentage: toPercentage(female, total),
+  };
+};
+
+export const buildProgramGenderBreakdown = (
+  rows: ProgramGenderAggregateRow[],
+): ReportProgramGenderBreakdown => {
+  const countFor = (
+    gender: "male" | "female",
+    programType: string,
+  ) =>
+    rows.find(
+      (row) =>
+        row._id.gender === gender && row._id.programType === programType,
+    )?.count ?? 0;
+
+  const maleFourPs = countFor("male", "4Ps Beneficiary");
+  const maleRegular = countFor(
+    "male",
+    "Regular Enrollee (Non-beneficiary)",
+  );
+  const femaleFourPs = countFor("female", "4Ps Beneficiary");
+  const femaleRegular = countFor(
+    "female",
+    "Regular Enrollee (Non-beneficiary)",
+  );
+
+  return {
+    male: {
+      fourPs: maleFourPs,
+      regular: maleRegular,
+      total: maleFourPs + maleRegular,
+    },
+    female: {
+      fourPs: femaleFourPs,
+      regular: femaleRegular,
+      total: femaleFourPs + femaleRegular,
+    },
   };
 };
 

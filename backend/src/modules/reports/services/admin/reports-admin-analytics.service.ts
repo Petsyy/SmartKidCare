@@ -12,10 +12,12 @@ import type {
 import {
   buildAgeBreakdown,
   buildGenderBreakdown,
+  buildProgramGenderBreakdown,
   buildStudentList,
   type AgeAggregateRow,
   type ChildReportRecord,
   type GenderAggregateRow,
+  type ProgramGenderAggregateRow,
 } from "../../shared/reports-aggregation.helpers";
 import {
   getAdminDateMatch,
@@ -46,6 +48,7 @@ export async function getAdminAnalyticsReport(
     fourPsBeneficiaries,
     regularAttendees,
     genderRows,
+    programGenderRows,
     ageRows,
     pagedChildren,
     attendanceDaily,
@@ -70,6 +73,15 @@ export async function getAdminAnalyticsReport(
     Child.aggregate<GenderAggregateRow>([
       { $match: scopedChildMatch },
       { $group: { _id: "$gender", count: { $sum: 1 } } },
+    ]),
+    Child.aggregate<ProgramGenderAggregateRow>([
+      { $match: scopedChildMatch },
+      {
+        $group: {
+          _id: { gender: "$gender", programType: "$programType" },
+          count: { $sum: 1 },
+        },
+      },
     ]),
     Child.aggregate<AgeAggregateRow>([
       { $match: scopedChildMatch },
@@ -128,6 +140,8 @@ export async function getAdminAnalyticsReport(
   ]);
 
   const genderBreakdown = buildGenderBreakdown(genderRows, totalEnrolledChildren);
+  const programBreakdownByGender =
+    buildProgramGenderBreakdown(programGenderRows);
   const ageBreakdown = buildAgeBreakdown(ageRows);
   const totalStudentPages = Math.max(1, Math.ceil(totalEnrolledChildren / limit));
   const normalizedPage = Math.min(page, totalStudentPages);
@@ -191,6 +205,7 @@ export async function getAdminAnalyticsReport(
     },
     demographics: {
       genderBreakdown,
+      programBreakdownByGender,
       ageBreakdown,
     },
     studentList,

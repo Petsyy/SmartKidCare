@@ -2,14 +2,14 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequestOrThrow } from "@/api/api-client";
 import { getNutritionAnalytics } from "@/api/nutrition.api";
 import { webQueryKeys } from "@/lib/query-keys";
-import { computePieData } from "../utils";
+import { computeEnrollmentData } from "../utils";
 import {
   DEFAULT_DATE_META,
   DEFAULT_STATS,
   type ChartDataPoint,
   type DashboardDateMeta,
   type DashboardStats,
-  type PieDataPoint,
+  type EnrollmentDataPoint,
 } from "../utils";
 import { getManilaDateKey, shiftDateKey } from "../utils";
 
@@ -28,6 +28,16 @@ type DashboardReport = {
       male: number;
       female: number;
     };
+    programBreakdownByGender?: {
+      male: {
+        fourPs: number;
+        regular: number;
+      };
+      female: {
+        fourPs: number;
+        regular: number;
+      };
+    };
   };
   recentDailyRows: Array<{
     dateKey: string;
@@ -38,7 +48,12 @@ type DashboardReport = {
   lastUpdatedAt: string;
 };
 
-export type { DashboardStats, ChartDataPoint, PieDataPoint, DashboardDateMeta };
+export type {
+  DashboardStats,
+  ChartDataPoint,
+  EnrollmentDataPoint,
+  DashboardDateMeta,
+};
 
 const dayLabel = (dateKey: string, preset: "7d" | "30d") =>
   new Intl.DateTimeFormat("en-PH", {
@@ -95,6 +110,14 @@ export function useAdminDashboard(datePreset: "7d" | "30d" = "7d") {
         obeseCount: nutrition.obeseCount,
         boys: report.demographics?.genderBreakdown?.male ?? 0,
         girls: report.demographics?.genderBreakdown?.female ?? 0,
+        boysFourPs:
+          report.demographics?.programBreakdownByGender?.male.fourPs ?? 0,
+        boysRegular:
+          report.demographics?.programBreakdownByGender?.male.regular ?? 0,
+        girlsFourPs:
+          report.demographics?.programBreakdownByGender?.female.fourPs ?? 0,
+        girlsRegular:
+          report.demographics?.programBreakdownByGender?.female.regular ?? 0,
       };
 
       const rowsByDate = new Map(
@@ -114,7 +137,7 @@ export function useAdminDashboard(datePreset: "7d" | "30d" = "7d") {
       return {
         stats,
         chartData,
-        pieData: computePieData(stats),
+        enrollmentData: computeEnrollmentData(stats),
         dateMeta: {
           todayKey,
           attendanceKey: hasTodayAttendance ? todayKey : "",
@@ -137,7 +160,7 @@ export function useAdminDashboard(datePreset: "7d" | "30d" = "7d") {
   return {
     stats: data?.stats ?? DEFAULT_STATS,
     chartData: data?.chartData ?? [],
-    pieData: data?.pieData ?? [],
+    enrollmentData: data?.enrollmentData ?? [],
     isLoading,
     isRefreshing: isFetching && !isLoading,
     hasData: Boolean(data),

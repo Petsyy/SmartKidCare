@@ -9,7 +9,7 @@ type AttendanceChartProps = {
 
 export function AttendanceChart({ data, range, onChangeRange }: AttendanceChartProps) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-6">
+    <div className="flex h-full flex-col rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-6">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
@@ -51,43 +51,46 @@ export function AttendanceChart({ data, range, onChangeRange }: AttendanceChartP
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={data} margin={{ left: -20, right: 8 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-          <XAxis
-            dataKey="day"
-            stroke="#6b7280"
-            style={{ fontSize: "12px" }}
-          />
-          <YAxis
-            domain={[0, 100]}
-            stroke="#6b7280"
-            style={{ fontSize: "12px" }}
-            tickFormatter={(value) => `${value}%`}
-          />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: "#fff",
-              border: "1px solid #e5e7eb",
-              borderRadius: "0.5rem",
-              fontSize: "12px",
-            }}
-            formatter={(value: number | string | undefined) => [
-              value == null ? "No submission" : `${value}%`,
-              "Rate",
-            ]}
-          />
-          <Line
-            type="monotone"
-            dataKey="attendance"
-            stroke="#14b8a6"
-            strokeWidth={3}
-            name="Attendance Rate"
-            connectNulls={false}
-            dot={{ fill: "#14b8a6", r: 4 }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+      <div className="min-h-[300px] flex-1">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} margin={{ top: 8, left: -20, right: 8 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            <XAxis
+              dataKey="day"
+              stroke="#6b7280"
+              style={{ fontSize: "12px" }}
+            />
+            <YAxis
+              domain={[0, 110]}
+              ticks={[0, 25, 50, 75, 100]}
+              stroke="#6b7280"
+              style={{ fontSize: "12px" }}
+              tickFormatter={(value) => `${value}%`}
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "#fff",
+                border: "1px solid #e5e7eb",
+                borderRadius: "0.5rem",
+                fontSize: "12px",
+              }}
+              formatter={(value: number | string | undefined) => [
+                value == null ? "No submission" : `${value}%`,
+                "Rate",
+              ]}
+            />
+            <Line
+              type="monotone"
+              dataKey="attendance"
+              stroke="#14b8a6"
+              strokeWidth={3}
+              name="Attendance Rate"
+              connectNulls={false}
+              dot={{ fill: "#14b8a6", r: 4 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }
