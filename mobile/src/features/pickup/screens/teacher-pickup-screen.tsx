@@ -240,7 +240,8 @@ export function TeacherPickupScreen() {
 
             {selectedChild && (
               <ScrollView
-                className="flex-1 p-5"
+                className="flex-1"
+                contentContainerClassName="p-5 pb-8"
                 showsVerticalScrollIndicator={false}
               >
                 <PickupChildInfoCard child={selectedChild} />

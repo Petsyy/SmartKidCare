@@ -167,6 +167,7 @@ export function MonthlyRecordViewer<TDetails>({
       <View className="flex-1 bg-gray-50">
         {headerSection}
         <ParentLoadingState
+          variant="records"
           title={`Loading ${title.toLowerCase()}`}
           message={`Getting ${title.toLowerCase()} records ready.`}
         />

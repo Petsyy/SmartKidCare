@@ -188,7 +188,11 @@ export default function EditChildScreen() {
           backgroundVariant="teacherGradient"
           onBack={() => router.back()}
         />
-        <ScreenLoadingState title="Loading profile" message="Please wait..." />
+        <ScreenLoadingState
+          variant="form"
+          title="Loading profile"
+          message="Please wait..."
+        />
       </ScreenShell>
     );
   }

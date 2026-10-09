@@ -1,4 +1,8 @@
-import type { ChartDataPoint, PieDataPoint, DashboardStats } from "./types";
+import type {
+  ChartDataPoint,
+  DashboardStats,
+  EnrollmentDataPoint,
+} from "./types";
 import { getRecordDateKey, getLocalDateKey } from "./helpers";
 
 export function computeChartData(
@@ -48,27 +52,19 @@ export function computeChartData(
   return chartPoints;
 }
 
-export function computePieData(stats: DashboardStats): PieDataPoint[] {
+export function computeEnrollmentData(
+  stats: DashboardStats,
+): EnrollmentDataPoint[] {
   return [
     {
       name: "Boys",
-      value: stats.boys,
-      color: "#38bdf8", // light blue
+      regular: stats.boysRegular,
+      fourPs: stats.boysFourPs,
     },
     {
       name: "Girls",
-      value: stats.girls,
-      color: "#f472b6", // pink
-    },
-    {
-      name: "Regular Enrollees",
-      value: stats.regularAttendees,
-      color: "#6366f1", // indigo
-    },
-    {
-      name: "4P's Beneficiaries",
-      value: stats.fourPsBeneficiaries,
-      color: "#f59e0b", // amber
+      regular: stats.girlsRegular,
+      fourPs: stats.girlsFourPs,
     },
   ];
 }

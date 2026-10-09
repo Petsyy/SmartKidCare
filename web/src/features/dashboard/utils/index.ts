@@ -5,7 +5,7 @@ export * from "./charts";
 import type { DashboardDateMeta } from "./types";
 import { getLocalDateKey, getLatestDateKey, getRecordDateKey } from "./helpers";
 import { computeStats } from "./stats";
-import { computeChartData, computePieData } from "./charts";
+import { computeChartData, computeEnrollmentData } from "./charts";
 
 export function processDashboardData(
   childrenPayload: any,
@@ -40,7 +40,7 @@ export function processDashboardData(
   
   const stats = computeStats(childrenArray, usersArray, attendanceArray);
   const chartData = computeChartData(weekAttendanceArray, today);
-  const pieData = computePieData(stats);
+  const enrollmentData = computeEnrollmentData(stats);
 
-  return { stats, chartData, pieData, dateMeta };
+  return { stats, chartData, enrollmentData, dateMeta };
 }

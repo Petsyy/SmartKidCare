@@ -258,6 +258,7 @@ export default function ParentDashboardScreen() {
       <ScreenShell withKeyboardAvoiding={false}>
         {dashboardHero}
         <ParentLoadingState
+          variant="dashboard"
           title="Loading dashboard"
           message="Getting today's updates ready."
         />

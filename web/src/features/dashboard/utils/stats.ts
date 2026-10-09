@@ -13,6 +13,25 @@ export function computeStats(
   const boys = childrenArray.filter((c: any) => c.gender === "male").length;
   const girls = childrenArray.filter((c: any) => c.gender === "female").length;
 
+  const boysFourPs = childrenArray.filter(
+    (child: any) =>
+      child.gender === "male" && child.programType === "4Ps Beneficiary",
+  ).length;
+  const boysRegular = childrenArray.filter(
+    (child: any) =>
+      child.gender === "male" &&
+      child.programType === "Regular Enrollee (Non-beneficiary)",
+  ).length;
+  const girlsFourPs = childrenArray.filter(
+    (child: any) =>
+      child.gender === "female" && child.programType === "4Ps Beneficiary",
+  ).length;
+  const girlsRegular = childrenArray.filter(
+    (child: any) =>
+      child.gender === "female" &&
+      child.programType === "Regular Enrollee (Non-beneficiary)",
+  ).length;
+
   const totalTeachers = usersArray.filter(
     (u: any) =>
       u.role === "teacher" &&
@@ -82,5 +101,9 @@ export function computeStats(
     obeseCount,
     boys,
     girls,
+    boysFourPs,
+    boysRegular,
+    girlsFourPs,
+    girlsRegular,
   };
 }

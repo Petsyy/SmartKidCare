@@ -80,6 +80,7 @@ export default function ProfileScreen({
           subtitle="Manage your account settings"
         />
         <ScreenLoadingState
+          variant="details"
           title="Loading profile"
           message="Getting your account settings ready."
         />

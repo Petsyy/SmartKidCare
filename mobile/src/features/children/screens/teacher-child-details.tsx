@@ -269,6 +269,7 @@ export default function TeacherChildDetailsScreen() {
         </LinearGradient>
         <OfflineStatusBanner />
         <ScreenLoadingState
+          variant="details"
           title="Loading child details"
           message="Getting the child’s profile and today’s records ready."
         />

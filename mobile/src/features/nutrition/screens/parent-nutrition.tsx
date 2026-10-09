@@ -1,6 +1,7 @@
 import React from "react";
-import { View, Text, ActivityIndicator } from "react-native";
+import { View, Text } from "react-native";
 import { useChildNutritionHistory } from "../hooks/useNutrition";
+import { ScreenSkeleton } from "@/src/components/ui";
 
 export const ParentNutritionScreen = ({ route }: any) => {
   const { childId } = route.params;
@@ -13,9 +14,10 @@ export const ParentNutritionScreen = ({ route }: any) => {
 
   if (isLoading)
     return (
-      <View style={{ padding: 20 }}>
-        <ActivityIndicator size="large" />
-      </View>
+      <ScreenSkeleton
+        variant="details"
+        accessibilityLabel="Loading nutritional progress"
+      />
     );
   if (isError)
     return (

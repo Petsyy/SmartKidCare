@@ -214,6 +214,7 @@ export default function TeacherDashboardScreen() {
       <ScreenShell withKeyboardAvoiding={false}>
         {dashboardHero}
         <ScreenLoadingState
+          variant="dashboard"
           title="Loading dashboard"
           message="Preparing today’s class information."
         />

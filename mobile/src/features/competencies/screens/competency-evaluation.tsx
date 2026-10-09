@@ -65,6 +65,7 @@ export default function CompetencyEvaluationScreen() {
       />
       {evaluation.isLoading ? (
         <ScreenLoadingState
+          variant="form"
           title="Loading competencies"
           message="Getting this child’s skill checklist ready."
         />

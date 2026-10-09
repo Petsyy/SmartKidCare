@@ -9,9 +9,12 @@ import {
 } from "react-native";
 import { ShieldCheck, KeyRound } from "lucide-react-native";
 import {
+  OfflineFeatureBanner,
   ScreenHeader,
   ScreenShell,
   ScreenLoadingState,
+  SkeletonBlock,
+  SkeletonGroup,
 } from "@/src/components/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getMyChildren, type Child } from "@/src/api/parent.api";
@@ -23,7 +26,6 @@ import {
   PickupReleasedBanner,
   PickupPersonSelector,
 } from "../components";
-import { OfflineFeatureBanner } from "@/src/components/ui";
 import { useAuth } from "@/src/hooks/use-auth";
 import { useOffline } from "@/src/offline/offline-context";
 import {
@@ -274,12 +276,19 @@ function PickupManager({ childId }: { childId: string }) {
 
   if (isLoading || isLoadingActiveCode) {
     return (
-      <View className="bg-white border border-gray-100 rounded-3xl p-8 items-center justify-center my-2 shadow-sm">
-        <ActivityIndicator size="small" color="#0D9488" />
-        <Text className="text-gray-500 text-xs font-medium mt-2">
-          Checking pickup status...
-        </Text>
-      </View>
+      <SkeletonGroup
+        className="my-2 rounded-3xl border border-gray-100 bg-white p-5"
+        accessibilityLabel="Checking pickup status"
+      >
+        <View className="flex-row items-center">
+          <SkeletonBlock className="h-12 w-12 rounded-2xl bg-gray-200" />
+          <View className="ml-4 flex-1 gap-3">
+            <SkeletonBlock className="h-5 w-1/2 rounded-full bg-gray-200" />
+            <SkeletonBlock className="h-3 w-3/4 rounded-full bg-gray-200" />
+          </View>
+        </View>
+        <SkeletonBlock className="mt-5 h-14 w-full rounded-2xl bg-gray-200" />
+      </SkeletonGroup>
     );
   }
 

@@ -19,6 +19,10 @@ export type DashboardStats = {
   obeseCount: number;
   boys: number;
   girls: number;
+  boysFourPs: number;
+  boysRegular: number;
+  girlsFourPs: number;
+  girlsRegular: number;
 };
 
 export type ChartDataPoint = {
@@ -26,10 +30,10 @@ export type ChartDataPoint = {
   attendance: number | null;
 };
 
-export type PieDataPoint = {
+export type EnrollmentDataPoint = {
   name: string;
-  value: number;
-  color: string;
+  regular: number;
+  fourPs: number;
 };
 
 
@@ -59,6 +63,10 @@ export const DEFAULT_STATS: DashboardStats = {
   obeseCount: 0,
   boys: 0,
   girls: 0,
+  boysFourPs: 0,
+  boysRegular: 0,
+  girlsFourPs: 0,
+  girlsRegular: 0,
 };
 
 export const DEFAULT_DATE_META: DashboardDateMeta = {

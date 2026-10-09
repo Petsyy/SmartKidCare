@@ -370,6 +370,7 @@ export default function ParentChildrenScreen() {
           subtitle="Profile and care information"
         />
         <ScreenLoadingState
+          variant="details"
           title="Loading child profile"
           message="Getting your child's information ready."
         />

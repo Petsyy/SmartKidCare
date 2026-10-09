@@ -19,7 +19,7 @@ export function PickupChildInfoCard({ child }: Props) {
         elevation: 4,
       }}
     >
-      <View className="flex-row items-center flex-1">
+      <View className="min-h-16 flex-row items-center">
         <View className="h-16 w-16 bg-teal-100 rounded-2xl items-center justify-center mr-4 border border-teal-200">
           <User size={32} color="#0D9488" />
         </View>
