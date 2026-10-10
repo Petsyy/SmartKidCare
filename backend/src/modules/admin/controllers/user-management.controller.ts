@@ -4,7 +4,13 @@ import { AppError } from "../../../shared/errors/app-error";
 
 export const createTeacher = async (req: Request, res: Response) => {
   try {
-    const result = await adminUserManagementService.createTeacher(req.body);
+    if (!req.user?.id) {
+      return res.status(401).json({ message: "Not authenticated." });
+    }
+    const result = await adminUserManagementService.createTeacher(
+      req.body,
+      req.user.id,
+    );
     res.status(201).json(result);
   } catch (error: any) {
     if (error.message === "Email already in use") {

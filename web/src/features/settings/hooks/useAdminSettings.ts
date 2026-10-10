@@ -5,6 +5,7 @@ import {
   requestChangePasswordOtp,
   updateAdminPreferences,
   updateCurrentUser,
+  type AdminSettingsUser,
 } from "@/api/settings.api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { webQueryKeys } from "@/lib/query-keys";
@@ -20,6 +21,7 @@ export type AdminProfileForm = {
 
 export type AdminPreferencesForm = {
   adminMfaEnabled: boolean;
+  adminNotifyOperationalEvents: boolean;
   adminNotifySecurityEvents: boolean;
   adminNotifySystemUpdates: boolean;
 };
@@ -35,11 +37,12 @@ const DEFAULT_PROFILE: AdminProfileForm = {
 
 const DEFAULT_PREFERENCES: AdminPreferencesForm = {
   adminMfaEnabled: true,
+  adminNotifyOperationalEvents: true,
   adminNotifySecurityEvents: true,
   adminNotifySystemUpdates: true,
 };
 
-const mapProfile = (user: any): AdminProfileForm => ({
+const mapProfile = (user: AdminSettingsUser): AdminProfileForm => ({
   username: String(user?.username || ""),
   firstName: String(user?.firstName || ""),
   middleName: String(user?.middleName || ""),
@@ -48,9 +51,11 @@ const mapProfile = (user: any): AdminProfileForm => ({
   phone: String(user?.phone || ""),
 });
 
-const mapPreferences = (user: any): AdminPreferencesForm => ({
+const mapPreferences = (user: AdminSettingsUser): AdminPreferencesForm => ({
   adminMfaEnabled: user?.adminMfaEnabled !== false,
-  adminNotifySecurityEvents: user?.adminNotifySecurityEvents !== false,
+  adminNotifyOperationalEvents:
+    user?.adminNotifyOperationalEvents !== false,
+  adminNotifySecurityEvents: true,
   adminNotifySystemUpdates: user?.adminNotifySystemUpdates !== false,
 });
 
@@ -115,7 +120,8 @@ export function useAdminSettings() {
     const saved = await preferencesMutation.mutateAsync(nextPreferences);
     const mappedPreferences: AdminPreferencesForm = {
       adminMfaEnabled: saved.adminMfaEnabled,
-      adminNotifySecurityEvents: saved.adminNotifySecurityEvents,
+      adminNotifyOperationalEvents: saved.adminNotifyOperationalEvents,
+      adminNotifySecurityEvents: true,
       adminNotifySystemUpdates: saved.adminNotifySystemUpdates,
     };
 

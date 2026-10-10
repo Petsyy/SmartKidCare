@@ -10,6 +10,7 @@ export type AdminSettingsUser = {
   phone?: string;
   role: "barangay_captain" | "teacher" | "parent";
   adminMfaEnabled?: boolean;
+  adminNotifyOperationalEvents?: boolean;
   adminNotifySecurityEvents?: boolean;
   adminNotifySystemUpdates?: boolean;
 };
@@ -25,6 +26,7 @@ type UpdateCurrentUserPayload = {
 
 type UpdateAdminPreferencesPayload = {
   adminMfaEnabled?: boolean;
+  adminNotifyOperationalEvents?: boolean;
   adminNotifySecurityEvents?: boolean;
   adminNotifySystemUpdates?: boolean;
 };

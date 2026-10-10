@@ -7,6 +7,7 @@ import {
   ValidationError,
 } from "../../../shared/errors/app-error";
 import { logger } from "../../../shared/lib/logger";
+import { adminNotificationService } from "../../notifications/services/admin-notification.service";
 import { type UploadResult } from "../../../shared/utils/upload-cloudinary";
 import { storageService } from "../../../shared/services/storage.service";
 import { hashFileBuffer } from "../../blockchain/utils/ethers";
@@ -436,6 +437,13 @@ export const directEnrollChild = async (command: DirectEnrollmentCommand) => {
       confirmedAt: parentVerification.confirmedAt,
     });
     await created.child.save();
+
+    await adminNotificationService.publishChildEnrolled({
+      daycareCenterId: String(selectedCenter._id),
+      childId: String(created.child._id),
+      studentId: String(created.child.studentId || ""),
+      childName: buildFullName([firstName, middleName, lastName]),
+    });
 
     return {
       message: "Child enrolled successfully.",

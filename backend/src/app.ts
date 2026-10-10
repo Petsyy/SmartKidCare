@@ -38,8 +38,8 @@ app.get("/", (_req, res) => {
   res.json({ message: "SmartKidCare API running" });
 });
 
-app.use("/api/notifications", notificationRoutes);
 app.use(globalApiLimiter);
+app.use("/api/notifications", notificationRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/children", childRoutes);

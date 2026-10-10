@@ -24,6 +24,15 @@ export const PreferencesSection = ({
         onChange={(checked) => onPreferenceToggle("adminMfaEnabled", checked)}
       />
 
+      <ToggleRow
+        title="Operational notifications"
+        description="Receive alerts for enrollments, absences, missed feeding, and credential-delivery failures."
+        checked={preferences.adminNotifyOperationalEvents}
+        onChange={(checked) =>
+          onPreferenceToggle("adminNotifyOperationalEvents", checked)
+        }
+      />
+
       {preferenceState.error && (
         <p className="text-sm text-red-600">{preferenceState.error}</p>
       )}

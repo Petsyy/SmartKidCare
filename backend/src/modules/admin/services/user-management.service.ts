@@ -23,6 +23,7 @@ import {
   getCaptainActivationUrl,
   sendCaptainInvitationEmail,
 } from "../../notifications/services/captain-invitation.service";
+import { adminNotificationService } from "../../notifications/services/admin-notification.service";
 
 const CAPTAIN_INVITATION_TTL_MS = 24 * 60 * 60 * 1000;
 const CAPTAIN_RESEND_COOLDOWN_MS = 60 * 1000;
@@ -119,11 +120,22 @@ export class AdminUserManagementService {
       });
     } catch (error) {
       delivery = { sent: false, message: mapCredentialDeliveryError(error) };
-      await adminUserRepository.createAuditEvent({
+      const deliveryFailureAudit = await adminUserRepository.createAuditEvent({
         action: "CAPTAIN_INVITATION_DELIVERY_FAILED",
         actor: invitedBy,
         targetUser: String(captain._id),
         daycareCenter: centerId,
+      });
+      const sourceId = String(deliveryFailureAudit._id);
+      await adminNotificationService.publishSecurityToActiveCaptain({
+        daycareCenterId: centerId,
+        eventType: "captain_invitation_delivery_failed",
+        title: "Captain Invitation Delivery Failed",
+        message: "A Barangay Captain invitation could not be delivered by email.",
+        actionPath: "/monitoring/users",
+        actionLabel: "Review user accounts",
+        sourceId,
+        deduplicationKey: `captain_invitation_delivery_failed:${sourceId}`,
       });
     }
 
@@ -165,12 +177,23 @@ export class AdminUserManagementService {
       });
     } catch (error) {
       delivery = { sent: false, message: mapCredentialDeliveryError(error) };
-      await adminUserRepository.createAuditEvent({
+      const deliveryFailureAudit = await adminUserRepository.createAuditEvent({
         action: "CAPTAIN_INVITATION_DELIVERY_FAILED",
         actor: actorId,
         targetUser: String(captain._id),
         daycareCenter: String(center._id),
         metadata: { operation: "resend" },
+      });
+      const sourceId = String(deliveryFailureAudit._id);
+      await adminNotificationService.publishSecurityToActiveCaptain({
+        daycareCenterId: String(center._id),
+        eventType: "captain_invitation_delivery_failed",
+        title: "Captain Invitation Delivery Failed",
+        message: "A Barangay Captain invitation could not be delivered by email.",
+        actionPath: "/monitoring/users",
+        actionLabel: "Review user accounts",
+        sourceId,
+        deduplicationKey: `captain_invitation_delivery_failed:${sourceId}`,
       });
     }
     await adminUserRepository.createAuditEvent({
@@ -207,7 +230,7 @@ export class AdminUserManagementService {
     email: string;
     phone?: string;
     daycareCenterId?: string;
-  }) {
+  }, actorId: string) {
     const { firstName, middleName, lastName, email, phone } = data;
 
     const normalizedEmail = String(email).toLowerCase().trim();
@@ -267,6 +290,19 @@ export class AdminUserManagementService {
         to: normalizedEmail,
         message: deliveryErrorMessage,
       };
+      const deliveryAttemptId = `${String(teacher._id)}:${
+        teacher.latestTempPasswordIssuedAt instanceof Date
+          ? teacher.latestTempPasswordIssuedAt.getTime()
+          : Date.now()
+      }`;
+      await adminNotificationService.publishCredentialDeliveryFailed({
+        recipientId: actorId,
+        daycareCenterId: String(daycareCenter._id),
+        deliveryAttemptId,
+        teacherName: [teacher.firstName, teacher.middleName, teacher.lastName]
+          .filter(Boolean)
+          .join(" "),
+      });
     }
 
     const teacherResponse = teacher.toObject() as any;

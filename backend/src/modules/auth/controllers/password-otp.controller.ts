@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import bcrypt from "bcryptjs";
+import { adminNotificationService } from "../../notifications/services/admin-notification.service";
 import jwt from "jsonwebtoken";
 import User from "../../../models/Users";
 import {
@@ -582,6 +583,24 @@ export const changePassword = async (req: Request, res: Response) => {
     user.latestTempPassword = undefined;
     user.latestTempPasswordIssuedAt = undefined;
     await user.save();
+
+    if (user.role === "barangay_captain") {
+      const version =
+        user.updatedAt instanceof Date ? user.updatedAt.getTime() : Date.now();
+      await adminNotificationService.publishSecurity({
+        recipientId: String(user._id),
+        daycareCenterId: user.daycareCenter
+          ? String(user.daycareCenter)
+          : null,
+        eventType: "captain_password_changed",
+        title: "Password Changed",
+        message: "Your SmartKidCare account password was changed.",
+        actionPath: "/monitoring/settings",
+        actionLabel: "Review security settings",
+        sourceId: `${String(user._id)}:${version}:password`,
+        deduplicationKey: `captain_password_changed:${String(user._id)}:${version}`,
+      });
+    }
 
     return res.json({ message: "Password changed successfully." });
   } catch (error: any) {

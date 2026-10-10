@@ -15,6 +15,7 @@ export interface UpdateUserPayload {
 
 export interface AdminPreferencesPayload {
   adminMfaEnabled?: boolean;
+  adminNotifyOperationalEvents?: boolean;
   adminNotifySecurityEvents?: boolean;
   adminNotifySystemUpdates?: boolean;
 }

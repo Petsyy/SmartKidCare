@@ -14,4 +14,11 @@ export const webQueryKeys = {
   feedingTracking: (paramsKey: string) =>
     ["feedingTracking", paramsKey] as const,
   adminSettings: () => ["adminSettings"] as const,
+  adminNotificationsRoot: () => ["adminNotifications"] as const,
+  adminNotificationFeed: (
+    userId: string,
+    view: "inbox" | "unread" | "archived",
+  ) => ["adminNotifications", userId, "feed", view] as const,
+  adminNotificationUnread: (userId: string) =>
+    ["adminNotifications", userId, "unreadCount"] as const,
 };

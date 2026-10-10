@@ -5,6 +5,7 @@ import {
   sendExpoPushNotifications,
 } from "./push-notification.service";
 import type { AttendanceStatus, FeedingStatus, RecordInput, ParentRecord, ParentTarget } from "../types/record-event-notification.types";
+import { adminNotificationService } from "./admin-notification.service";
 
 const asIdString = (value: unknown): string => {
   if (value && typeof value === "object") {
@@ -168,9 +169,18 @@ const buildParentTargets = async (
 };
 
 export const notifyAttendanceSubmitted = async (params: {
+  batchId: string;
+  daycareCenterId: string;
   date: Date;
   records: Array<{ child: unknown; status: AttendanceStatus }>;
 }): Promise<void> => {
+  await adminNotificationService.publishAttendanceAbsence({
+    batchId: params.batchId,
+    daycareCenterId: params.daycareCenterId,
+    date: params.date,
+    records: params.records,
+  });
+
   const targets = await buildParentTargets(params.records);
   if (!targets.length) return;
 
@@ -236,10 +246,20 @@ export const notifyAttendanceSubmitted = async (params: {
 };
 
 export const notifyFeedingSubmitted = async (params: {
+  batchId: string;
+  daycareCenterId: string;
   date: Date;
   foodServed: string;
   records: Array<{ child: unknown; status: FeedingStatus }>;
 }): Promise<void> => {
+  await adminNotificationService.publishFeedingMissed({
+    batchId: params.batchId,
+    daycareCenterId: params.daycareCenterId,
+    date: params.date,
+    foodServed: params.foodServed,
+    records: params.records,
+  });
+
   const targets = await buildParentTargets(params.records);
   if (!targets.length) return;
 

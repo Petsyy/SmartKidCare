@@ -91,8 +91,8 @@ export class AuthUserRepository extends BaseRepository<IUser> {
     targetUser: string;
     daycareCenter?: string | null;
     metadata?: Record<string, unknown>;
-  }): Promise<void> {
-    await SecurityAuditLog.create(input);
+  }): Promise<any> {
+    return SecurityAuditLog.create(input);
   }
 
   async findByEmailExcluding(

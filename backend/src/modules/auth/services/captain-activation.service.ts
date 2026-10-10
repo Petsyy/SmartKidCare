@@ -5,6 +5,7 @@ import {
   UnauthorizedError,
 } from "../../../shared/errors/app-error";
 import { authUserRepository } from "../repositories/auth.repository";
+import { adminNotificationService } from "../../notifications/services/admin-notification.service";
 
 const hashToken = (token: string) =>
   createHash("sha256").update(token).digest("hex");
@@ -16,12 +17,17 @@ export interface CaptainActivationDependencies {
   >;
   hashPassword: (password: string) => Promise<string>;
   now: () => Date;
+  notificationPublisher?: Pick<
+    typeof adminNotificationService,
+    "publishSecurity"
+  >;
 }
 
 const defaultDependencies: CaptainActivationDependencies = {
   repository: authUserRepository,
   hashPassword: (password) => bcrypt.hash(password, 12),
   now: () => new Date(),
+  notificationPublisher: adminNotificationService,
 };
 
 export class CaptainActivationService {
@@ -95,10 +101,28 @@ export class CaptainActivationService {
         metadata: { replacementCaptainId: String(captain._id) },
       });
     }
-    await this.deps.repository.createAuditEvent({
+    const activationAudit = await this.deps.repository.createAuditEvent({
       action: "CAPTAIN_ACCOUNT_ACTIVATED",
       targetUser: String(captain._id),
       daycareCenter: captain.daycareCenter ? String(captain.daycareCenter) : null,
+    });
+    const sourceId = activationAudit?._id
+      ? String(activationAudit._id)
+      : `${String(captain._id)}:${this.deps.now().getTime()}`;
+    await (
+      this.deps.notificationPublisher ?? adminNotificationService
+    ).publishSecurity({
+      recipientId: String(captain._id),
+      daycareCenterId: captain.daycareCenter
+        ? String(captain.daycareCenter)
+        : null,
+      eventType: "captain_account_activated",
+      title: "Captain Account Activated",
+      message: "Your Barangay Captain account was activated successfully.",
+      actionPath: "/monitoring/settings",
+      actionLabel: "Review account settings",
+      sourceId,
+      deduplicationKey: `captain_account_activated:${sourceId}`,
     });
     return { message: "Account activated. You can now sign in." };
   }

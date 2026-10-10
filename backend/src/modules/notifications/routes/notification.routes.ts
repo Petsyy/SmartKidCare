@@ -10,6 +10,16 @@ import {
   unregisterPushToken,
 } from "../controllers/notification.controller";
 import {
+  getAdminNotificationFeed,
+  markAllAdminNotificationsRead,
+  setAdminNotificationArchived,
+  setAdminNotificationRead,
+} from "../controllers/admin-notification.controller";
+import {
+  validateAdminNotificationArchive,
+  validateAdminNotificationFeed,
+  validateAdminNotificationParams,
+  validateAdminNotificationRead,
   validateDispatchTeacherNotifications,
   validateParentNotificationsFeed,
   validateRegisterPushToken,
@@ -28,6 +38,33 @@ router.post(
   "/unregister-token",
   validateUnregisterPushToken,
   unregisterPushToken,
+);
+
+// Barangay Captain in-app notification inbox
+router.get(
+  "/admin-v1/feed",
+  requireRole("barangay_captain"),
+  validateAdminNotificationFeed,
+  getAdminNotificationFeed,
+);
+router.patch(
+  "/admin-v1/read-all",
+  requireRole("barangay_captain"),
+  markAllAdminNotificationsRead,
+);
+router.patch(
+  "/admin-v1/:id/read",
+  requireRole("barangay_captain"),
+  validateAdminNotificationParams,
+  validateAdminNotificationRead,
+  setAdminNotificationRead,
+);
+router.patch(
+  "/admin-v1/:id/archive",
+  requireRole("barangay_captain"),
+  validateAdminNotificationParams,
+  validateAdminNotificationArchive,
+  setAdminNotificationArchived,
 );
 
 // Admin-only Push Testing

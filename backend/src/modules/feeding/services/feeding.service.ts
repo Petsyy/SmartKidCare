@@ -161,6 +161,8 @@ const submitFeedingOperation = async (
 
   void dependencies
     .notifySubmitted({
+      batchId: String(feeding._id),
+      daycareCenterId,
       date: feedingDate,
       foodServed: normalizedFoodServed,
       records: normalizedRecords as Array<{

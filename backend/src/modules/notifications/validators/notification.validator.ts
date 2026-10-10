@@ -39,6 +39,24 @@ const parentFeedQuerySchema = z.object({
   parentId: z.string().trim().optional(),
 });
 
+const adminNotificationFeedQuerySchema = z.object({
+  view: z.enum(["inbox", "unread", "archived"]).default("inbox"),
+  cursor: z.string().trim().min(1).max(1000).optional(),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+});
+
+const adminNotificationParamsSchema = z.object({
+  id: objectIdSchema,
+});
+
+const adminNotificationReadSchema = z.object({
+  read: z.boolean(),
+});
+
+const adminNotificationArchiveSchema = z.object({
+  archived: z.boolean(),
+});
+
 export const validateRegisterPushToken = validate(registerPushTokenSchema);
 export const validateUnregisterPushToken = validate(unregisterPushTokenSchema);
 export const validateSendTestPush = validate(sendTestPushSchema);
@@ -52,4 +70,18 @@ export const validateTeacherNotificationsFeed = validate(
 export const validateParentNotificationsFeed = validate(
   parentFeedQuerySchema,
   "query",
+);
+export const validateAdminNotificationFeed = validate(
+  adminNotificationFeedQuerySchema,
+  "query",
+);
+export const validateAdminNotificationParams = validate(
+  adminNotificationParamsSchema,
+  "params",
+);
+export const validateAdminNotificationRead = validate(
+  adminNotificationReadSchema,
+);
+export const validateAdminNotificationArchive = validate(
+  adminNotificationArchiveSchema,
 );

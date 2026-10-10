@@ -20,6 +20,7 @@ export interface IUser extends Document {
   role: "barangay_captain" | "teacher" | "parent";
   phone?: string; // required for teacher/parent
   adminMfaEnabled?: boolean; // admin only
+  adminNotifyOperationalEvents?: boolean; // admin only
   adminNotifySecurityEvents?: boolean; // admin only
   adminNotifySystemUpdates?: boolean; // admin only
   pushToken?: string | null;
@@ -78,6 +79,13 @@ const UserSchema: Schema = new Schema(
     phone: { type: String, required: true, trim: true },
 
     adminMfaEnabled: {
+      type: Boolean,
+      default: function (this: { role?: string }): boolean {
+        return this.role === "barangay_captain";
+      },
+    },
+
+    adminNotifyOperationalEvents: {
       type: Boolean,
       default: function (this: { role?: string }): boolean {
         return this.role === "barangay_captain";

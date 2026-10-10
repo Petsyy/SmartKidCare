@@ -67,8 +67,8 @@ export class AdminUserRepository extends BaseRepository<IUser> {
     targetUser: string;
     daycareCenter?: string | null;
     metadata?: Record<string, unknown>;
-  }): Promise<void> {
-    await SecurityAuditLog.create(input);
+  }): Promise<any> {
+    return SecurityAuditLog.create(input);
   }
 
   async getSystemOverview(): Promise<Record<string, number>> {

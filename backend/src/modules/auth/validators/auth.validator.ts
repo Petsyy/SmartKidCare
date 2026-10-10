@@ -167,12 +167,16 @@ const updateMeSchema = z
 const updateAdminPreferencesSchema = z
   .object({
     adminMfaEnabled: z.boolean().optional(),
-    adminNotifySecurityEvents: z.boolean().optional(),
+    adminNotifyOperationalEvents: z.boolean().optional(),
+    adminNotifySecurityEvents: z.literal(true, {
+      error: "Security notifications must remain enabled.",
+    }).optional(),
     adminNotifySystemUpdates: z.boolean().optional(),
   })
   .refine(
     (data) =>
       data.adminMfaEnabled !== undefined ||
+      data.adminNotifyOperationalEvents !== undefined ||
       data.adminNotifySecurityEvents !== undefined ||
       data.adminNotifySystemUpdates !== undefined,
     {

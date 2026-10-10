@@ -57,7 +57,7 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
   {
     id: "preferences",
     title: "Preferences",
-    description: "MFA and appearance settings",
+    description: "Login and notification options",
     icon: Bell,
     iconClassName:
       "bg-violet-100 text-violet-700 ring-1 ring-violet-200 dark:bg-violet-500/20 dark:text-violet-300 dark:ring-violet-500/30",
@@ -318,14 +318,15 @@ export default function AdminSettings() {
   ].filter((value) => (value ?? "").trim().length > 0).length;
   const profileCompletion = Math.round((requiredProfileCount / 6) * 100);
 
-  const enabledPreferenceCount = [preferences.adminMfaEnabled].filter(
-    Boolean,
-  ).length;
+  const enabledPreferenceCount = [
+    preferences.adminMfaEnabled,
+    preferences.adminNotifyOperationalEvents,
+  ].filter(Boolean).length;
 
   const sectionStatus: Record<SettingsSectionId, string> = {
     profile: `${profileCompletion}% complete`,
     security: securityStatus,
-    preferences: `${enabledPreferenceCount}/1 enabled`,
+    preferences: `${enabledPreferenceCount}/2 configurable options enabled`,
     system: "",
   };
 

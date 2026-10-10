@@ -4,19 +4,24 @@ import { setAdminAuthCookie } from "./admin-login-mfa.service";
 import { Response } from "express";
 import { authUserRepository as defaultAuthUserRepository, authChildRepository as defaultAuthChildRepository, } from "../repositories/auth.repository";
 import type { LoginCredentials, UpdateUserPayload, AdminPreferencesPayload, LinkedChild, UserWithChildren } from "../types/session.types";
+import { adminNotificationService } from "../../notifications/services/admin-notification.service";
 
 export interface SessionServiceDependencies {
   authUserRepository: typeof defaultAuthUserRepository;
   authChildRepository: typeof defaultAuthChildRepository;
+  notificationPublisher: Pick<typeof adminNotificationService, "publishSecurity">;
 }
 
 export class SessionService {
   private authUserRepository: typeof defaultAuthUserRepository;
   private authChildRepository: typeof defaultAuthChildRepository;
+  private notificationPublisher: Pick<typeof adminNotificationService, "publishSecurity">;
 
   constructor(deps: Partial<SessionServiceDependencies> = {}) {
     this.authUserRepository = deps.authUserRepository || defaultAuthUserRepository;
     this.authChildRepository = deps.authChildRepository || defaultAuthChildRepository;
+    this.notificationPublisher =
+      deps.notificationPublisher || adminNotificationService;
   }
 
   /**
@@ -139,6 +144,9 @@ export class SessionService {
       throw new Error("User not found");
     }
 
+    const previousUsername = String(user.username || "");
+    const previousEmail = String(user.email || "").toLowerCase();
+
     // Update username (admin only)
     if (payload.username !== undefined) {
       if (user.role !== "barangay_captain") {
@@ -195,6 +203,47 @@ export class SessionService {
 
     await user.save();
 
+    if (user.role === "barangay_captain") {
+      const version =
+        user.updatedAt instanceof Date ? user.updatedAt.getTime() : Date.now();
+      const daycareCenterId = user.daycareCenter
+        ? String(user.daycareCenter)
+        : null;
+      const securityEvents: Array<Promise<unknown>> = [];
+
+      if (previousUsername !== String(user.username || "")) {
+        securityEvents.push(
+          this.notificationPublisher.publishSecurity({
+            recipientId: userId,
+            daycareCenterId,
+            eventType: "captain_username_changed",
+            title: "Username Changed",
+            message: "Your SmartKidCare login username was changed.",
+            actionPath: "/monitoring/settings",
+            actionLabel: "Review account settings",
+            sourceId: `${userId}:${version}:username`,
+            deduplicationKey: `captain_username_changed:${userId}:${version}`,
+          }),
+        );
+      }
+      if (previousEmail !== String(user.email || "").toLowerCase()) {
+        securityEvents.push(
+          this.notificationPublisher.publishSecurity({
+            recipientId: userId,
+            daycareCenterId,
+            eventType: "captain_login_email_changed",
+            title: "Login Email Changed",
+            message: "Your SmartKidCare login email was changed.",
+            actionPath: "/monitoring/settings",
+            actionLabel: "Review account settings",
+            sourceId: `${userId}:${version}:email`,
+            deduplicationKey: `captain_login_email_changed:${userId}:${version}`,
+          }),
+        );
+      }
+      await Promise.all(securityEvents);
+    }
+
     return this.sanitizeUserResponse(user);
   }
 
@@ -211,13 +260,18 @@ export class SessionService {
       throw new Error("Web administrator account not found.");
     }
 
+    const previousMfaEnabled = user.adminMfaEnabled !== false;
+
     if (typeof payload.adminMfaEnabled === "boolean") {
       user.adminMfaEnabled = payload.adminMfaEnabled;
     }
 
-    if (typeof payload.adminNotifySecurityEvents === "boolean") {
-      user.adminNotifySecurityEvents = payload.adminNotifySecurityEvents;
+    if (typeof payload.adminNotifyOperationalEvents === "boolean") {
+      user.adminNotifyOperationalEvents =
+        payload.adminNotifyOperationalEvents;
     }
+
+    user.adminNotifySecurityEvents = true;
 
     if (typeof payload.adminNotifySystemUpdates === "boolean") {
       user.adminNotifySystemUpdates = payload.adminNotifySystemUpdates;
@@ -225,9 +279,34 @@ export class SessionService {
 
     await user.save();
 
+    const currentMfaEnabled = user.adminMfaEnabled !== false;
+    if (previousMfaEnabled !== currentMfaEnabled) {
+      const version =
+        user.updatedAt instanceof Date ? user.updatedAt.getTime() : Date.now();
+      await this.notificationPublisher.publishSecurity({
+        recipientId: userId,
+        daycareCenterId: user.daycareCenter
+          ? String(user.daycareCenter)
+          : null,
+        eventType: currentMfaEnabled
+          ? "captain_mfa_enabled"
+          : "captain_mfa_disabled",
+        title: currentMfaEnabled ? "MFA Enabled" : "MFA Disabled",
+        message: currentMfaEnabled
+          ? "Email OTP verification was enabled for your SmartKidCare account."
+          : "Email OTP verification was disabled for your SmartKidCare account.",
+        actionPath: "/monitoring/settings",
+        actionLabel: "Review security settings",
+        sourceId: `${userId}:${version}:mfa`,
+        deduplicationKey: `captain_mfa_${currentMfaEnabled ? "enabled" : "disabled"}:${userId}:${version}`,
+      });
+    }
+
     return {
       adminMfaEnabled: user.adminMfaEnabled !== false,
-      adminNotifySecurityEvents: user.adminNotifySecurityEvents !== false,
+      adminNotifyOperationalEvents:
+        user.adminNotifyOperationalEvents !== false,
+      adminNotifySecurityEvents: true,
       adminNotifySystemUpdates: user.adminNotifySystemUpdates !== false,
     };
   }

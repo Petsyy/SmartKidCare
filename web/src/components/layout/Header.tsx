@@ -1,4 +1,4 @@
-import { Search, Bell, ChevronRight, LogOut, Menu } from "lucide-react";
+import { Search, ChevronRight, LogOut, Menu } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -6,6 +6,7 @@ import { API_BASE } from "@/api/config";
 import { useAuthSession } from "../auth/useAuthSession";
 import { webQueryKeys } from "@/lib/query-keys";
 import { CommandPalette } from "../ui/CommandPalette";
+import { NotificationPopover } from "@/features/notifications/components/NotificationPopover";
 
 type HeaderProps = {
   breadcrumbs?: string[];
@@ -60,6 +61,9 @@ export default function Header({
     }
 
     await queryClient.invalidateQueries({ queryKey: webQueryKeys.authSession() });
+    queryClient.removeQueries({
+      queryKey: webQueryKeys.adminNotificationsRoot(),
+    });
     navigate("/login");
   };
 
@@ -121,13 +125,7 @@ export default function Header({
 
           <div className="hidden h-6 w-px bg-gray-200 dark:bg-white/10 sm:block" />
 
-          {/* Notification Bell */}
-          <button className="group relative flex h-10 w-10 items-center justify-center rounded-full bg-gray-50 text-gray-600 transition-all hover:bg-teal-50 hover:text-teal-600 hover:shadow-sm dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-teal-400">
-            <Bell size={20} className="transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110" />
-            <span className="absolute right-2.5 top-2.5 flex h-2.5 w-2.5">
-              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500 border-[1.5px] border-white dark:border-[#060913]"></span>
-            </span>
-          </button>
+          <NotificationPopover userId={String(user?._id || "")} />
 
           {/* User Profile with Dropdown */}
           <div className="relative" ref={dropdownRef}>

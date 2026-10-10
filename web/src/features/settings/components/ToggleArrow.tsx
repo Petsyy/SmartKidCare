@@ -27,6 +27,7 @@ export const ToggleRow = ({
           type="checkbox"
           checked={checked}
           onChange={(event) => onChange(event.target.checked)}
+          aria-label={title}
           className="peer sr-only"
         />
         <span className="absolute inset-0 rounded-full bg-slate-300 transition peer-checked:bg-teal-500 peer-focus:ring-2 peer-focus:ring-teal-300 peer-focus:ring-offset-2 dark:bg-slate-600 dark:peer-focus:ring-offset-slate-900" />

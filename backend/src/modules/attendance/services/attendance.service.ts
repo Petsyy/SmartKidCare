@@ -168,6 +168,8 @@ const submitAttendanceOperation = async (
 
   void dependencies
     .notifySubmitted({
+      batchId: String(attendance._id),
+      daycareCenterId,
       date: attendanceDate,
       records: normalizedRecords as Array<{
         child: unknown;
