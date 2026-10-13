@@ -21,7 +21,15 @@ import {
   getPendingOutboxByDate,
 } from "@/src/offline/offline-store";
 import type { AttendanceDraftPayload } from "@/src/offline/offline.types";
-import { onlineWithOfflineFallback, readOfflineRecordForDate, readOfflineResource } from "@/src/offline/offline-read";
+import {
+  onlineWithOfflineFallback,
+  readOfflineRecordForDate,
+  readOfflineResource,
+} from "@/src/offline/offline-read";
+import {
+  getUserFriendlyErrorMessage,
+  reportHandledError,
+} from "@/src/lib/error-reporting";
 
 type AttendanceChildStatus = "present" | "absent";
 
@@ -54,13 +62,29 @@ export const useTeacherAttendance = () => {
     queryFn: async () => {
       if (!user?.id) return { childrenData: [], attendanceRecord: null };
       const offline = !isConnected || !isInternetReachable;
-      const [childrenData, serverAttendanceRecord, pendingOperation] = await Promise.all([
-        onlineWithOfflineFallback(offline, getChildren, () => readOfflineResource<Child>(user.id, "children")),
-        onlineWithOfflineFallback(offline, () => getAttendanceForDate(selectedDateKey), () => readOfflineRecordForDate<any>(user.id, "attendance", selectedDateKey)),
-        getPendingOutboxByDate(user.id, "attendance.create", selectedDateKey),
-      ]);
+      const [childrenData, serverAttendanceRecord, pendingOperation] =
+        await Promise.all([
+          onlineWithOfflineFallback(offline, getChildren, () =>
+            readOfflineResource<Child>(user.id, "children"),
+          ),
+          onlineWithOfflineFallback(
+            offline,
+            () => getAttendanceForDate(selectedDateKey),
+            () =>
+              readOfflineRecordForDate<any>(
+                user.id,
+                "attendance",
+                selectedDateKey,
+              ),
+          ),
+          getPendingOutboxByDate(user.id, "attendance.create", selectedDateKey),
+        ]);
       const attendanceRecord = pendingOperation
-        ? { date: selectedDateKey, records: (pendingOperation.frozenPayload as any).records, localPending: true }
+        ? {
+            date: selectedDateKey,
+            records: (pendingOperation.frozenPayload as any).records,
+            localPending: true,
+          }
         : serverAttendanceRecord;
       return { childrenData, attendanceRecord };
     },
@@ -107,8 +131,6 @@ export const useTeacherAttendance = () => {
   }, [data, selectedDateKey, user?.id]);
 
   useEffect(() => {
-    // Keep draft keys aligned when the assigned-child query changes.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAttendance((currentAttendance) => {
       const nextAttendance: Record<string, AttendanceChildStatus | undefined> =
         {};
@@ -261,11 +283,14 @@ export const useTeacherAttendance = () => {
           setShowSuccessFeedback(true);
         }
       }
-    } catch (error: any) {
-      console.error("Failed to submit attendance:", error);
+    } catch (error: unknown) {
+      reportHandledError("attendance.submit", error);
       Alert.alert(
         "Unable to Submit",
-        error.message || "Attendance could not be submitted. Please try again.",
+        getUserFriendlyErrorMessage(
+          error,
+          "Attendance could not be submitted. Please try again.",
+        ),
       );
     }
   };

@@ -3,6 +3,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import type * as DocumentPicker from "expo-document-picker";
 import { validateDocument } from "@/src/features/enrollment/utils/enrollment-utils";
+import { reportHandledError } from "@/src/lib/error-reporting";
 
 const MAX_DOCUMENT_EDGE = 1600;
 const DOCUMENT_JPEG_QUALITY = 0.78;
@@ -69,8 +70,12 @@ export const useDocumentPicker = () => {
         return null;
       }
       return file;
-    } catch (error: any) {
-      Alert.alert("Image Error", error?.message || "Failed to select image.");
+    } catch (error: unknown) {
+      reportHandledError("enrollment.document.select", error);
+      Alert.alert(
+        "Image Error",
+        "The image could not be selected. Please try again.",
+      );
       return null;
     }
   };

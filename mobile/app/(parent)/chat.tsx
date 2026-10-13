@@ -41,6 +41,10 @@ import {
   readOfflineChatMessages,
   replaceOfflineChatMessages,
 } from "@/src/offline/offline-chat-store";
+import {
+  getUserFriendlyErrorMessage,
+  reportHandledError,
+} from "@/src/lib/error-reporting";
 
 const SUGGESTIONS = [
   "Was my child present today?",
@@ -172,12 +176,16 @@ export default function ParentChatScreen() {
           }
           return linkedChildren[0]?._id ?? null;
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
+        reportHandledError("chat.children.load", error);
         if (!cancelled) {
           setChildren([]);
           setSelectedChildId(null);
           setContextError(
-            error?.message ?? "Unable to load your linked children.",
+            getUserFriendlyErrorMessage(
+              error,
+              "Unable to load your linked children. Please try again.",
+            ),
           );
         }
       } finally {
@@ -233,14 +241,17 @@ export default function ParentChatScreen() {
       setMessages((prev) =>
         prev.map((m) => (m.id === assistantId ? { ...m, content: reply } : m)),
       );
-    } catch (err: any) {
+    } catch (error: unknown) {
+      reportHandledError("chat.message.send", error);
       setMessages((prev) =>
         prev.map((m) =>
           m.id === assistantId
             ? {
                 ...m,
-                content:
-                  err?.message ?? "Something went wrong. Please try again.",
+                content: getUserFriendlyErrorMessage(
+                  error,
+                  "I couldn't send that message. Please try again.",
+                ),
               }
             : m,
         ),

@@ -6,6 +6,10 @@ import { useMutation } from "@tanstack/react-query";
 import { MailCheck } from "lucide-react-native";
 import {requestForgotPasswordOtp,verifyForgotPasswordOtp} from "@/src/api/authentication.api";
 import { AuthLayout, GradientButton } from "@/src/components/ui";
+import {
+  getUserFriendlyErrorMessage,
+  reportHandledError,
+} from "@/src/lib/error-reporting";
 
 export default function ForgotPasswordOtpScreen() {
   const router = useRouter();
@@ -53,8 +57,15 @@ export default function ForgotPasswordOtpScreen() {
         pathname: "/(auth)/forgot-password-reset",
         params: { resetToken: data.passwordResetToken },
       });
-    } catch (error: any) {
-      Alert.alert("Verification Failed", error.message || "Invalid OTP.");
+    } catch (error: unknown) {
+      reportHandledError("auth.password-recovery.verify", error);
+      Alert.alert(
+        "Verification Failed",
+        getUserFriendlyErrorMessage(
+          error,
+          "The verification code is invalid or has expired.",
+        ),
+      );
     }
   };
 
@@ -70,8 +81,12 @@ export default function ForgotPasswordOtpScreen() {
     try {
       await resendMutation.mutateAsync(email);
       Alert.alert("OTP Sent", "A new OTP has been sent to your email.");
-    } catch (error: any) {
-      Alert.alert("Unable to Resend OTP", error.message || "Please try again.");
+    } catch (error: unknown) {
+      reportHandledError("auth.password-recovery.resend", error);
+      Alert.alert(
+        "Unable to Resend OTP",
+        getUserFriendlyErrorMessage(error, "Please try again in a moment."),
+      );
     }
   };
 

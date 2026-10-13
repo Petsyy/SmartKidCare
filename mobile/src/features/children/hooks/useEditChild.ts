@@ -5,6 +5,10 @@ import { mobileQueryKeys } from "@/src/lib/query-keys";
 import type { Child } from "@/src/api/api.types";
 import type { EditChildFormValues } from "../validations/edit-child-validation";
 import { useOffline } from "@/src/offline/offline-context";
+import {
+  getUserFriendlyErrorMessage,
+  reportHandledError,
+} from "@/src/lib/error-reporting";
 
 export function useEditChild(childId: string | null) {
   const queryClient = useQueryClient();
@@ -30,8 +34,15 @@ export function useEditChild(childId: string | null) {
       });
       Alert.alert("Success", "Child profile updated successfully.");
     },
-    onError: (error: Error) => {
-      Alert.alert("Update Failed", error.message || "Something went wrong.");
+    onError: (error: unknown) => {
+      reportHandledError("child.update", error);
+      Alert.alert(
+        "Update Failed",
+        getUserFriendlyErrorMessage(
+          error,
+          "The child profile could not be updated. Please try again.",
+        ),
+      );
     },
   });
 }

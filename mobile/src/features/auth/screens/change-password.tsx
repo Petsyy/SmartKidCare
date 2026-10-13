@@ -10,6 +10,10 @@ import { completeTeacherPasswordSetup } from "@/src/api/authentication.api";
 import { getPasswordStrengthFeedback } from "@/src/features/auth/validations/password-validation";
 import { PasswordStrengthFeedback } from "@/src/features/auth/components";
 import { AuthLayout, PasswordInput, GradientButton } from "@/src/components/ui";
+import {
+  getUserFriendlyErrorMessage,
+  reportHandledError,
+} from "@/src/lib/error-reporting";
 
 export default function ChangePasswordScreen() {
   const router = useRouter();
@@ -80,8 +84,15 @@ export default function ChangePasswordScreen() {
 
       await login(appUser, authToken);
       router.replace("/");
-    } catch (error: any) {
-      Alert.alert("Setup Failed", error.message || "Unable to set password.");
+    } catch (error: unknown) {
+      reportHandledError("auth.password-setup", error);
+      Alert.alert(
+        "Setup Failed",
+        getUserFriendlyErrorMessage(
+          error,
+          "The password could not be saved. Please try again.",
+        ),
+      );
     }
   };
 

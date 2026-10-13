@@ -1,7 +1,8 @@
-import { Modal, Pressable, Share, Text, View } from "react-native";
+import { Alert, Modal, Pressable, Share, Text, View } from "react-native";
 import { CheckCircle2, Copy, Share2 } from "lucide-react-native";
 import * as Clipboard from "expo-clipboard";
 import { useState } from "react";
+import { reportHandledError } from "@/src/lib/error-reporting";
 
 export interface ParentCredentialsModalProps {
   visible: boolean;
@@ -29,7 +30,11 @@ export function ParentCredentialsModal({
         title: "SmartKidCare Parent Credentials",
       });
     } catch (error) {
-      console.error("Error sharing credentials:", error);
+      reportHandledError("parent-credentials.share", error);
+      Alert.alert(
+        "Unable to Share",
+        "The credentials could not be shared. Please try again.",
+      );
     }
   };
 
@@ -43,7 +48,11 @@ export function ParentCredentialsModal({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error("Error copying credentials:", error);
+      reportHandledError("parent-credentials.copy", error);
+      Alert.alert(
+        "Unable to Copy",
+        "The credentials could not be copied. Please try again.",
+      );
     }
   };
 

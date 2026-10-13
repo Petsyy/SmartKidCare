@@ -5,6 +5,10 @@ import {
 } from "@/src/api/teacher.api";
 import type { DocumentVerificationResponse } from "@/src/api/api.types";
 import { ApiError } from "@/src/api/client";
+import {
+  getUserFriendlyErrorMessage,
+  reportHandledError,
+} from "@/src/lib/error-reporting";
 
 export type MobileVerificationState =
   | "idle"
@@ -169,13 +173,15 @@ export const useDocumentVerification = () => {
               : "confirmation_required";
       set({ state, result, message: result.message });
       return result;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      reportHandledError("enrollment.document.verify", error);
       set({
         state: "service_error",
         result: null,
-        message:
-          error?.message ||
-          "The upload could not be completed. Check your connection and retry.",
+        message: getUserFriendlyErrorMessage(
+          error,
+          "The document could not be verified. Please try again.",
+        ),
       });
       return null;
     } finally {
@@ -201,11 +207,14 @@ export const useDocumentVerification = () => {
         result,
         message: "Verified by teacher.",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      reportHandledError("enrollment.document.confirm", error);
       set({
         ...current,
-        message:
-          error?.message || "Teacher verification failed. Please try again.",
+        message: getUserFriendlyErrorMessage(
+          error,
+          "Teacher verification failed. Please try again.",
+        ),
       });
     }
   };

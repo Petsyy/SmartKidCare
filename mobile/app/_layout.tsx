@@ -33,10 +33,6 @@ cssInterop(LinearGradient, { className: "style" });
 const isExpoGo =
   Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
-if (__DEV__ && isExpoGo) {
-  LogBox.ignoreAllLogs(true);
-}
-
 configureReanimatedLogger({
   level: ReanimatedLogLevel.warn,
   strict: false,
@@ -110,9 +106,9 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <SafeAreaProvider>
+      <SafeAreaProvider>
+        <ErrorBoundary>
+          <QueryClientProvider client={queryClient}>
             <AuthProvider>
               <OfflineProvider>
                 <SystemSettingsProvider>
@@ -120,9 +116,9 @@ export default function RootLayout() {
                 </SystemSettingsProvider>
               </OfflineProvider>
             </AuthProvider>
-          </SafeAreaProvider>
-        </QueryClientProvider>
-      </ErrorBoundary>
+          </QueryClientProvider>
+        </ErrorBoundary>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

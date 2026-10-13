@@ -32,6 +32,10 @@ import {
   type NutritionAssessmentErrors,
 } from "../validations/nutrition-assessment.validation";
 import { useAndroidBackRoute } from "@/src/hooks/use-android-back-route";
+import {
+  getUserFriendlyErrorMessage,
+  reportHandledError,
+} from "@/src/lib/error-reporting";
 
 const getCurrentSchoolYear = (): string => {
   const now = new Date();
@@ -218,9 +222,13 @@ export const TeacherNutritionScreen = () => {
           return;
         }
       } catch (err) {
+        reportHandledError("nutrition.draft.save", err);
         Alert.alert(
           "Unable to Save",
-          err instanceof Error ? err.message : "Failed to save draft.",
+          getUserFriendlyErrorMessage(
+            err,
+            "The draft could not be saved on this device.",
+          ),
         );
         return;
       }
@@ -248,9 +256,13 @@ export const TeacherNutritionScreen = () => {
       try {
         await saveLocalDraft(childId, inputs);
       } catch (err) {
+        reportHandledError("nutrition.assessment.stage", err);
         Alert.alert(
           "Unable to Save",
-          err instanceof Error ? err.message : "Failed to save assessment.",
+          getUserFriendlyErrorMessage(
+            err,
+            "The assessment could not be prepared. Please try again.",
+          ),
         );
         return;
       }
@@ -291,7 +303,14 @@ export const TeacherNutritionScreen = () => {
           );
         },
         onError: (err) => {
-          Alert.alert("Error", err.message || "Failed to save assessment.");
+          reportHandledError("nutrition.assessment.save", err);
+          Alert.alert(
+            "Unable to Save Assessment",
+            getUserFriendlyErrorMessage(
+              err,
+              "The assessment could not be saved. Please try again.",
+            ),
+          );
         },
       },
     );

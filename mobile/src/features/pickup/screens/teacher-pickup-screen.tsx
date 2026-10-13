@@ -18,6 +18,10 @@ import {
   PickupCodeVerifier,
   PickupManualOverridePanel,
 } from "../components";
+import {
+  getUserFriendlyErrorMessage,
+  reportHandledError,
+} from "@/src/lib/error-reporting";
 export function TeacherPickupScreen() {
   const {
     eligibleChildren,
@@ -61,10 +65,14 @@ export function TeacherPickupScreen() {
       await verifyCode({ childId: selectedChild._id, code });
       Alert.alert("Success", "Child successfully verified and released!");
       handleClose();
-    } catch (e: any) {
+    } catch (error: unknown) {
+      reportHandledError("pickup.code.verify", error);
       Alert.alert(
         "Verification Failed",
-        e.message || "Invalid or expired code.",
+        getUserFriendlyErrorMessage(
+          error,
+          "The pickup code is invalid or has expired.",
+        ),
       );
     }
   };
@@ -82,10 +90,14 @@ export function TeacherPickupScreen() {
       });
       Alert.alert("Success", "Child successfully released manually.");
       handleClose();
-    } catch (e: any) {
+    } catch (error: unknown) {
+      reportHandledError("pickup.manual-release", error);
       Alert.alert(
         "Release Failed",
-        e.message || "Could not complete manual release.",
+        getUserFriendlyErrorMessage(
+          error,
+          "The manual release could not be completed. Please try again.",
+        ),
       );
     }
   };

@@ -6,6 +6,10 @@ import { inferMimeType } from "@/src/features/enrollment/utils/enrollment-utils"
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { useAuth } from "@/src/hooks/use-auth";
 import { useOffline } from "@/src/offline/offline-context";
+import {
+  getUserFriendlyErrorMessage,
+  reportHandledError,
+} from "@/src/lib/error-reporting";
 
 interface SubmissionData {
   childData: {
@@ -110,11 +114,14 @@ export const useEnrollmentSubmit = (
           email: submittedEmail,
           tempPassword: generatedPassword,
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
+        reportHandledError("enrollment.submit", error);
         Alert.alert(
           "Submission Error",
-          error?.message ||
-            "The request could not be submitted because the connection was lost. Check your connection and select Try Again.",
+          getUserFriendlyErrorMessage(
+            error,
+            "The enrollment could not be submitted. Please try again.",
+          ),
         );
       }
     },

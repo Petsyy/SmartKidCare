@@ -6,6 +6,10 @@ import {
   getPasswordStrengthFeedback,
   validatePasswordRules,
 } from "@/src/features/auth/validations/password-validation";
+import {
+  getUserFriendlyErrorMessage,
+  reportHandledError,
+} from "@/src/lib/error-reporting";
 
 export function useChangePassword(onDismissModal: () => void) {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -76,8 +80,14 @@ export function useChangePassword(onDismissModal: () => void) {
       setHideNewPassword(true);
       setHideConfirmPassword(true);
       onDismissModal();
-    } catch (error: any) {
-      setPasswordError(error.message || "Failed to change password");
+    } catch (error: unknown) {
+      reportHandledError("profile.password.change", error);
+      setPasswordError(
+        getUserFriendlyErrorMessage(
+          error,
+          "The password could not be changed. Check your current password and try again.",
+        ),
+      );
     }
   };
 

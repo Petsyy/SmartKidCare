@@ -31,6 +31,10 @@ import {
   readOfflineResource,
 } from "@/src/offline/offline-read";
 import type { Child } from "@/src/api/parent.api";
+import {
+  getUserFriendlyErrorMessage,
+  reportHandledError,
+} from "@/src/lib/error-reporting";
 
 type OfflineCompetencyEvaluation = Omit<CompetencyEvaluation, "entries"> & {
   child: string;
@@ -397,7 +401,16 @@ export function useCompetencyEvaluation(
           : data.message,
       );
     },
-    onError: (error: Error) => Alert.alert("Unable to Save", error.message),
+    onError: (error: unknown) => {
+      reportHandledError("competency.evaluation.save", error);
+      Alert.alert(
+        "Unable to Save",
+        getUserFriendlyErrorMessage(
+          error,
+          "The evaluation could not be saved. Please try again.",
+        ),
+      );
+    },
   });
 
   const saveLocalDraft = async () => {
@@ -500,9 +513,13 @@ export function useCompetencyEvaluation(
         }
         await mutation.mutateAsync("draft").catch(() => undefined);
       } catch (error) {
+        reportHandledError("competency.draft.save", error);
         Alert.alert(
           "Unable to Save",
-          error instanceof Error ? error.message : "Failed to save draft.",
+          getUserFriendlyErrorMessage(
+            error,
+            "The draft could not be saved on this device.",
+          ),
         );
       }
     },
@@ -518,11 +535,13 @@ export function useCompetencyEvaluation(
         await saveLocalDraft();
         await mutation.mutateAsync("submitted").catch(() => undefined);
       } catch (error) {
+        reportHandledError("competency.evaluation.submit", error);
         Alert.alert(
           "Unable to Save",
-          error instanceof Error
-            ? error.message
-            : "Failed to submit evaluation.",
+          getUserFriendlyErrorMessage(
+            error,
+            "The evaluation could not be submitted. Please try again.",
+          ),
         );
       }
     },

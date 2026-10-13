@@ -5,6 +5,10 @@ import { useMutation } from "@tanstack/react-query";
 import { Mail } from "lucide-react-native";
 import { requestForgotPasswordOtp } from "@/src/api/authentication.api";
 import { AuthLayout, GradientButton } from "@/src/components/ui";
+import {
+  getUserFriendlyErrorMessage,
+  reportHandledError,
+} from "@/src/lib/error-reporting";
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -39,8 +43,15 @@ export default function ForgotPasswordScreen() {
         pathname: "/(auth)/forgot-password-otp",
         params: { email: trimmedEmail },
       });
-    } catch (error: any) {
-      Alert.alert("Recovery Error", error.message || "Unable to send OTP.");
+    } catch (error: unknown) {
+      reportHandledError("auth.password-recovery.request", error);
+      Alert.alert(
+        "Recovery Error",
+        getUserFriendlyErrorMessage(
+          error,
+          "The recovery code could not be sent. Please try again.",
+        ),
+      );
     }
   };
 

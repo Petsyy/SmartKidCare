@@ -1,3 +1,7 @@
+/**
+ * @param {{ config: import("@expo/config-types").ExpoConfig }} context
+ * @returns {import("@expo/config-types").ExpoConfig}
+ */
 module.exports = ({ config }) => ({
   ...config,
   android: {

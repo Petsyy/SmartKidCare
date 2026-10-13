@@ -22,6 +22,10 @@ import type { Guardian } from "@/src/api/api.types";
 import { useDocumentPicker } from "@/src/features/enrollment/hooks/useDocumentPicker";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { guardianSchema, type GuardianFormValues } from "../validations/guardian-validation";
+import {
+  getUserFriendlyErrorMessage,
+  reportHandledError,
+} from "@/src/lib/error-reporting";
 
 interface AddGuardianBottomSheetProps {
   childId: string | null;
@@ -145,8 +149,15 @@ export function AddGuardianBottomSheet({
       }
       
       handleClose();
-    } catch (e: any) {
-      Alert.alert("Error", e.message || "Failed to save guardian.");
+    } catch (error: unknown) {
+      reportHandledError("guardian.save", error);
+      Alert.alert(
+        "Unable to Save Guardian",
+        getUserFriendlyErrorMessage(
+          error,
+          "The guardian could not be saved. Please try again.",
+        ),
+      );
     }
   };
 

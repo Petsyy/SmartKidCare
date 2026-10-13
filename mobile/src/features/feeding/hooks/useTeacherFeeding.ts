@@ -31,6 +31,10 @@ import {
   readOfflineRecordForDate,
   readOfflineResource,
 } from "@/src/offline/offline-read";
+import {
+  getUserFriendlyErrorMessage,
+  reportHandledError,
+} from "@/src/lib/error-reporting";
 
 const foodMenuOptions = [
   "Sinigang, Adobo",
@@ -512,12 +516,14 @@ export const useTeacherFeeding = () => {
     try {
       await submitFeedingRecord();
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Failed to submit feeding records. Please try again.";
-      Alert.alert("Unable to Submit", message);
-      console.error("Feeding submission error:", error);
+      reportHandledError("feeding.submit", error);
+      Alert.alert(
+        "Unable to Submit",
+        getUserFriendlyErrorMessage(
+          error,
+          "Feeding records could not be submitted. Please try again.",
+        ),
+      );
     }
   }, [isReadOnly, router, submitFeedingRecord]);
 

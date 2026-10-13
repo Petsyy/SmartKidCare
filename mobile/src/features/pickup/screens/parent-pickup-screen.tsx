@@ -33,6 +33,10 @@ import {
   onlineWithOfflineFallback,
 } from "@/src/offline/offline-read";
 import {
+  getUserFriendlyErrorMessage,
+  reportHandledError,
+} from "@/src/lib/error-reporting";
+import {
   clearPickupCode,
   getActivePickupCode,
   savePickupCode,
@@ -262,15 +266,23 @@ function PickupManager({ childId }: { childId: string }) {
             code: res.code,
             expiresAt: res.expiresAt,
           });
-        } catch {
+        } catch (error: unknown) {
+          reportHandledError("pickup.code.persist", error);
           Alert.alert(
             "Code generated",
             "The code is active, but it could not be saved for app restart.",
           );
         }
       }
-    } catch (e: any) {
-      Alert.alert("Error", e.message || "Failed to generate pickup code.");
+    } catch (error: unknown) {
+      reportHandledError("pickup.code.generate", error);
+      Alert.alert(
+        "Unable to Generate Code",
+        getUserFriendlyErrorMessage(
+          error,
+          "The pickup code could not be generated. Please try again.",
+        ),
+      );
     }
   };
 

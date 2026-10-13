@@ -22,6 +22,10 @@ import {
 import { useGuardians } from "../hooks/useGuardian";
 import type { Guardian } from "@/src/api/api.types";
 import { useDocumentPicker } from "@/src/features/enrollment/hooks/useDocumentPicker";
+import {
+  getUserFriendlyErrorMessage,
+  reportHandledError,
+} from "@/src/lib/error-reporting";
 
 interface GuardianListProps {
   childId: string;
@@ -110,8 +114,15 @@ export function GuardianList({ childId, readOnly = false, hideAddButton = false 
         });
       }
       resetForm();
-    } catch (e: any) {
-      Alert.alert("Error", e.message || "Failed to save guardian.");
+    } catch (error: unknown) {
+      reportHandledError("guardian.save", error);
+      Alert.alert(
+        "Unable to Save Guardian",
+        getUserFriendlyErrorMessage(
+          error,
+          "The guardian could not be saved. Please try again.",
+        ),
+      );
     }
   };
 
@@ -268,7 +279,7 @@ export function GuardianList({ childId, readOnly = false, hideAddButton = false 
                     }
                     className={`mr-3 px-5 py-3 rounded-xl border active:opacity-85 ${
                       isSelected
-                        ? "bg-teal-600 border-teal-600 shadow-sm"
+                        ? "bg-teal-600 border-teal-600"
                         : "bg-white border-gray-300"
                     }`}
                   >

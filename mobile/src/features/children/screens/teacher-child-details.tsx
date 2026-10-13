@@ -60,6 +60,10 @@ import {
   readOfflineResource,
 } from "@/src/offline/offline-read";
 import { getManilaDateKey } from "@/src/utils/manila-date";
+import {
+  getUserFriendlyErrorMessage,
+  reportHandledError,
+} from "@/src/lib/error-reporting";
 
 export default function TeacherChildDetailsScreen() {
   const insets = useSafeAreaInsets();
@@ -106,8 +110,15 @@ export default function TeacherChildDetailsScreen() {
         email: credentials.email,
         tempPassword: credentials.tempPassword,
       });
-    } catch (error: any) {
-      Alert.alert("Error", error.message || "Failed to retrieve credentials.");
+    } catch (error: unknown) {
+      reportHandledError("parent-credentials.load", error);
+      Alert.alert(
+        "Unable to Load Credentials",
+        getUserFriendlyErrorMessage(
+          error,
+          "The parent credentials could not be retrieved. Please try again.",
+        ),
+      );
     } finally {
       setIsLoadingCredentials(false);
     }
@@ -136,10 +147,14 @@ export default function TeacherChildDetailsScreen() {
                 email: credentials.email,
                 tempPassword: credentials.tempPassword,
               });
-            } catch (error: any) {
+            } catch (error: unknown) {
+              reportHandledError("parent-credentials.password-reset", error);
               Alert.alert(
-                "Error",
-                error.message || "Failed to reset password.",
+                "Unable to Reset Password",
+                getUserFriendlyErrorMessage(
+                  error,
+                  "The parent password could not be reset. Please try again.",
+                ),
               );
             } finally {
               setIsResettingPassword(false);

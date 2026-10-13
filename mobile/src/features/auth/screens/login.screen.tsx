@@ -26,6 +26,10 @@ import { useAuth } from "@/src/hooks/use-auth";
 import type { User } from "@/src/context/auth-context";
 import { login as apiLogin } from "@/src/api/authentication.api";
 import { PasswordInput, GradientButton } from "@/src/components/ui";
+import {
+  getUserFriendlyErrorMessage,
+  reportHandledError,
+} from "@/src/lib/error-reporting";
 
 type LoginFormValues = {
   identifier: string;
@@ -143,10 +147,6 @@ export default function Login() {
 
       const { token: authToken, user: apiUser } = response;
 
-      if (__DEV__) {
-        console.log("[Login JWT Token]", authToken);
-      }
-
       const appUser: User = {
         id: apiUser._id,
         email: apiUser.email,
@@ -159,11 +159,13 @@ export default function Login() {
 
       await login(appUser, authToken);
     } catch (error: unknown) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Login failed. Please check your credentials.";
-      setErrorMessage(message);
+      reportHandledError("auth.login", error);
+      setErrorMessage(
+        getUserFriendlyErrorMessage(
+          error,
+          "Login failed. Check your credentials and try again.",
+        ),
+      );
     }
   };
 

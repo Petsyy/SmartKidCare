@@ -22,6 +22,7 @@ import {
 } from "@/src/utils/auth-storage";
 import { setAuthToken } from "@/src/api/client";
 import { queryClient } from "@/src/lib/query-client";
+import { reportHandledError } from "@/src/lib/error-reporting";
 
 type Role = "parent" | "teacher" | null;
 
@@ -163,7 +164,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           await clearSession();
         }
       } catch (error) {
-        console.log("Failed to restore session", error);
+        reportHandledError("auth.session.restore", error);
       } finally {
         setLoading(false);
       }

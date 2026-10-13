@@ -8,6 +8,10 @@ import { resetForgotPassword } from "@/src/api/authentication.api";
 import { getPasswordStrengthFeedback } from "@/src/features/auth/validations/password-validation";
 import { PasswordStrengthFeedback } from "@/src/features/auth/components";
 import { AuthLayout, PasswordInput, GradientButton } from "@/src/components/ui";
+import {
+  getUserFriendlyErrorMessage,
+  reportHandledError,
+} from "@/src/lib/error-reporting";
 
 export default function ForgotPasswordResetScreen() {
   const router = useRouter();
@@ -72,8 +76,15 @@ export default function ForgotPasswordResetScreen() {
           onPress: () => router.replace("/(auth)/login"),
         },
       ]);
-    } catch (error: any) {
-      Alert.alert("Reset Failed", error.message || "Unable to reset password.");
+    } catch (error: unknown) {
+      reportHandledError("auth.password-recovery.reset", error);
+      Alert.alert(
+        "Reset Failed",
+        getUserFriendlyErrorMessage(
+          error,
+          "The password could not be reset. Request a new code and try again.",
+        ),
+      );
     }
   };
 

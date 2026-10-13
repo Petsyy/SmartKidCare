@@ -6,6 +6,10 @@ import { useMutation } from "@tanstack/react-query";
 import { MailCheck } from "lucide-react-native";
 import { resendTeacherPasswordOtp, verifyTeacherPasswordOtp, } from "@/src/api/authentication.api";
 import { AuthLayout, GradientButton } from "@/src/components/ui";
+import {
+  getUserFriendlyErrorMessage,
+  reportHandledError,
+} from "@/src/lib/error-reporting";
 
 export default function VerifyOtpScreen() {
   const router = useRouter();
@@ -51,8 +55,15 @@ export default function VerifyOtpScreen() {
         pathname: "/(auth)/change-password",
         params: { setupToken: data.passwordSetupToken },
       });
-    } catch (error: any) {
-      Alert.alert("Verification Failed", error.message || "Invalid OTP.");
+    } catch (error: unknown) {
+      reportHandledError("auth.teacher-otp.verify", error);
+      Alert.alert(
+        "Verification Failed",
+        getUserFriendlyErrorMessage(
+          error,
+          "The verification code is invalid or has expired.",
+        ),
+      );
     }
   };
 
@@ -65,8 +76,12 @@ export default function VerifyOtpScreen() {
     try {
       await resendMutation.mutateAsync(email);
       Alert.alert("OTP Sent", "A new OTP has been sent to your email.");
-    } catch (error: any) {
-      Alert.alert("Unable to Resend OTP", error.message || "Please try again.");
+    } catch (error: unknown) {
+      reportHandledError("auth.teacher-otp.resend", error);
+      Alert.alert(
+        "Unable to Resend OTP",
+        getUserFriendlyErrorMessage(error, "Please try again in a moment."),
+      );
     }
   };
 

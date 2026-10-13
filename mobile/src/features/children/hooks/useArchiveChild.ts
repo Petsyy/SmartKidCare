@@ -4,6 +4,10 @@ import { updateChildStatus } from "@/src/api/teacher.api";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { useRouter } from "expo-router";
 import { useOffline } from "@/src/offline/offline-context";
+import {
+  getUserFriendlyErrorMessage,
+  reportHandledError,
+} from "@/src/lib/error-reporting";
 
 type ChildStatus = "Active" | "Inactive";
 
@@ -51,10 +55,14 @@ function useChildStatusMutation(
       Alert.alert(feedback.title, feedback.message);
       router.push("/(teacher)/children");
     },
-    onError: (error: Error) => {
+    onError: (error: unknown) => {
+      reportHandledError("child.status.update", error);
       Alert.alert(
         feedback.errorTitle,
-        error.message || "Something went wrong.",
+        getUserFriendlyErrorMessage(
+          error,
+          "The child's status could not be updated. Please try again.",
+        ),
       );
     },
   });
