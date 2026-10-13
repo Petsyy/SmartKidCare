@@ -425,8 +425,8 @@ export function NewEnrollmentForm({
                       ? datePicker.maxDateOfBirth
                       : undefined
                   }
-                  onChange={(_: any, selectedDate?: Date) => {
-                    if (selectedDate) datePicker.setPickerDate(selectedDate);
+                  onValueChange={(_, selectedDate) => {
+                    datePicker.setPickerDate(selectedDate);
                   }}
                 />
               ) : (

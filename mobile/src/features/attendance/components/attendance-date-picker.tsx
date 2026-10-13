@@ -65,18 +65,18 @@ export function AttendanceDatePicker({
     return true;
   };
 
-  const handleDateChange = (event: any, date?: Date) => {
+  const handleDateValueChange = (_event: unknown, date: Date) => {
     if (Platform.OS === "android") {
       setShowDatePicker(false);
-    }
-    if (event.type === "dismissed" || !date) return;
-
-    if (Platform.OS === "android") {
       applySelectedDate(date);
       return;
     }
 
     setPickerDate(date);
+  };
+
+  const handleDateDismiss = () => {
+    if (Platform.OS === "android") setShowDatePicker(false);
   };
 
   const confirmDate = () => {
@@ -138,7 +138,8 @@ export function AttendanceDatePicker({
               display="spinner"
               minimumDate={minimumDate}
               maximumDate={maximumDate}
-              onChange={handleDateChange}
+              onValueChange={handleDateValueChange}
+              onDismiss={handleDateDismiss}
               themeVariant="light"
             />
             <Pressable
@@ -161,7 +162,8 @@ export function AttendanceDatePicker({
           mode="date"
           minimumDate={minimumDate}
           maximumDate={maximumDate}
-          onChange={handleDateChange}
+          onValueChange={handleDateValueChange}
+          onDismiss={handleDateDismiss}
         />
       ) : null}
     </>

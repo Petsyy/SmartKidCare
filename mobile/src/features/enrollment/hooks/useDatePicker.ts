@@ -60,8 +60,7 @@ export const useDatePicker = (
         mode: "date",
         minimumDate: field === "dateOfBirth" ? minDateOfBirth : undefined,
         maximumDate: field === "dateOfBirth" ? maxDateOfBirth : undefined,
-        onChange: (event: any, selectedDate?: Date) => {
-          if (event.type !== "set" || !selectedDate) return;
+        onValueChange: (_event, selectedDate) => {
           const validationError = validatePickedDate(field, selectedDate);
           if (validationError) {
             Alert.alert("Validation", validationError);

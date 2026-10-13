@@ -38,6 +38,12 @@ configureReanimatedLogger({
   strict: false,
 });
 
+LogBox.ignoreLogs([
+  "DateTimePicker: `onChange` is deprecated.",
+  "SafeAreaView has been deprecated and will be removed in a future release.",
+  "[Reanimated] Reduced motion setting is enabled on this device.",
+]);
+
 function LayoutContent() {
   const { loading, authState, unlockOffline } = useAuth();
   return (
@@ -85,11 +91,6 @@ function LayoutContent() {
 
 export default function RootLayout() {
   useEffect(() => {
-    LogBox.ignoreLogs([
-      "SafeAreaView has been deprecated and will be removed in a future release.",
-      "[Reanimated] Reduced motion setting is enabled on this device.",
-    ]);
-
     if (!isExpoGo) {
       void import("expo-notifications").then((Notifications) => {
         Notifications.setNotificationHandler({

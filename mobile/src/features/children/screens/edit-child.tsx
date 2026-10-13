@@ -476,8 +476,8 @@ export default function EditChildScreen() {
                     display="spinner"
                     minimumDate={datePicker.minDateOfBirth}
                     maximumDate={datePicker.maxDateOfBirth}
-                    onChange={(_: any, selectedDate?: Date) => {
-                      if (selectedDate) datePicker.setPickerDate(selectedDate);
+                    onValueChange={(_, selectedDate) => {
+                      datePicker.setPickerDate(selectedDate);
                     }}
                   />
                 ) : (
