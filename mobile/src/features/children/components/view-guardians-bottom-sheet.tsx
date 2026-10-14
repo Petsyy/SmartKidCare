@@ -11,7 +11,15 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-import { X, ShieldCheck, Edit2, Trash2, Phone, UserRound, IdCard } from "lucide-react-native";
+import {
+  X,
+  ShieldCheck,
+  Edit2,
+  Trash2,
+  Phone,
+  UserRound,
+  IdCard,
+} from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGuardians } from "../hooks/useGuardian";
 import type { Guardian } from "@/src/api/api.types";
@@ -35,13 +43,14 @@ export function ViewGuardiansBottomSheet({
   readOnly = false,
 }: ViewGuardiansBottomSheetProps) {
   const insets = useSafeAreaInsets();
-  const {
-    guardians,
-    isLoading,
-    removeGuardian,
-  } = useGuardians(childId || undefined);
+  const { guardians, isLoading, removeGuardian } = useGuardians(
+    childId || undefined,
+  );
 
-  const [selectedImage, setSelectedImage] = useState<{ url: string; title: string } | null>(null);
+  const [selectedImage, setSelectedImage] = useState<{
+    url: string;
+    title: string;
+  } | null>(null);
 
   const activeGuardians = guardians.filter(
     (guardian) =>
@@ -82,10 +91,13 @@ export function ViewGuardiansBottomSheet({
       >
         <View className="flex-1 bg-black/40 justify-end">
           <Pressable className="flex-1" onPress={onClose} />
-          
+
           <View
             className="bg-gray-50 rounded-t-3xl pt-5 shadow-lg"
-            style={{ maxHeight: "85%", paddingBottom: Math.max(insets.bottom, 20) }}
+            style={{
+              maxHeight: "85%",
+              paddingBottom: Math.max(insets.bottom, 20),
+            }}
           >
             {/* Header */}
             <View className="flex-row items-center justify-between mb-2 border-b border-gray-200/60 pb-3 px-5">
@@ -97,7 +109,10 @@ export function ViewGuardiansBottomSheet({
                   <Text className="text-lg font-black text-gray-900">
                     Authorized Guardians
                   </Text>
-                  <Text className="text-xs text-gray-500 font-medium" numberOfLines={1}>
+                  <Text
+                    className="text-xs text-gray-500 font-medium"
+                    numberOfLines={1}
+                  >
                     {activeGuardians.length}/5 Configured • {childName}
                   </Text>
                 </View>
@@ -111,33 +126,45 @@ export function ViewGuardiansBottomSheet({
             </View>
 
             {/* Content */}
-            <ScrollView 
+            <ScrollView
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20, paddingTop: 10 }}
+              contentContainerStyle={{
+                paddingHorizontal: 20,
+                paddingBottom: 20,
+                paddingTop: 10,
+              }}
             >
               {isLoading ? (
                 <View className="py-10 items-center justify-center">
                   <ActivityIndicator size="small" color="#0D9488" />
-                  <Text className="text-gray-400 text-xs mt-2">Loading guardians...</Text>
+                  <Text className="text-gray-400 text-xs mt-2">
+                    Loading guardians...
+                  </Text>
                 </View>
               ) : activeGuardians.length === 0 ? (
                 <View className="py-10 items-center justify-center">
                   <View className="h-16 w-16 rounded-2xl bg-amber-50 items-center justify-center mb-3">
                     <ShieldCheck size={28} color="#D97706" />
                   </View>
-                  <Text className="text-base font-bold text-gray-700 mb-1">No Guardians Yet</Text>
+                  <Text className="text-base font-bold text-gray-700 mb-1">
+                    No Guardians Yet
+                  </Text>
                   <Text className="text-sm text-gray-500 text-center px-6">
-                    {readOnly 
-                      ? "No authorized guardians have been added for this child." 
+                    {readOnly
+                      ? "No authorized guardians have been added for this child."
                       : "Swipe a child card on the list to add an authorized guardian."}
                   </Text>
                 </View>
               ) : (
                 activeGuardians.map((guardian) => {
-                  const originalIndex = guardians.findIndex((g) => g === guardian);
-                  const displayRelationship = guardian.relationship === "Other" && guardian.customRelationship
-                    ? guardian.customRelationship
-                    : guardian.relationship;
+                  const originalIndex = guardians.findIndex(
+                    (g) => g === guardian,
+                  );
+                  const displayRelationship =
+                    guardian.relationship === "Other" &&
+                    guardian.customRelationship
+                      ? guardian.customRelationship
+                      : guardian.relationship;
 
                   return (
                     <View
@@ -147,23 +174,11 @@ export function ViewGuardiansBottomSheet({
                       {/* Guardian Main Info */}
                       <View className="p-4">
                         <View className="flex-row">
-                          {/* Photo Column */}
+                          {/* Guardian avatar */}
                           <View className="mr-3">
-                            {guardian.photoUrl ? (
-                              <Pressable
-                                onPress={() => setSelectedImage({ url: guardian.photoUrl!, title: `${guardian.firstName}'s Photo` })}
-                              >
-                                <Image
-                                  source={{ uri: guardian.photoUrl }}
-                                  className="h-12 w-12 rounded-full border border-gray-200 bg-gray-100 mt-1"
-                                  resizeMode="cover"
-                                />
-                              </Pressable>
-                            ) : (
-                              <View className="h-12 w-12 rounded-full bg-gray-100 items-center justify-center border border-gray-200 mt-1">
-                                <UserRound size={24} color="#9CA3AF" />
-                              </View>
-                            )}
+                            <View className="h-12 w-12 rounded-full bg-gray-100 items-center justify-center border border-gray-200 mt-1">
+                              <UserRound size={24} color="#9CA3AF" />
+                            </View>
                           </View>
 
                           {/* Info Column */}
@@ -173,11 +188,13 @@ export function ViewGuardiansBottomSheet({
                               <Text className="text-lg font-bold text-gray-900 flex-1 mr-2 mt-1">
                                 {guardian.firstName} {guardian.lastName}
                               </Text>
-                              
+
                               <View className="flex-row gap-1">
                                 {!readOnly && onEditGuardian && (
                                   <Pressable
-                                    onPress={() => onEditGuardian(guardian, originalIndex)}
+                                    onPress={() =>
+                                      onEditGuardian(guardian, originalIndex)
+                                    }
                                     className="p-2 rounded-full active:bg-gray-100"
                                   >
                                     <Edit2 size={18} color="#4B5563" />
@@ -188,7 +205,7 @@ export function ViewGuardiansBottomSheet({
                                     onPress={() =>
                                       handleRemove(
                                         originalIndex,
-                                        `${guardian.firstName} ${guardian.lastName}`
+                                        `${guardian.firstName} ${guardian.lastName}`,
                                       )
                                     }
                                     className="p-2 rounded-full active:bg-red-50"
@@ -203,7 +220,7 @@ export function ViewGuardiansBottomSheet({
                             <Text className="text-sm text-gray-500 font-medium mb-1.5 -mt-1">
                               {displayRelationship}
                             </Text>
-                            
+
                             {/* Phone */}
                             <View className="flex-row items-center">
                               <Phone size={14} color="#6B7280" />
@@ -225,7 +242,12 @@ export function ViewGuardiansBottomSheet({
                             </Text>
                           </View>
                           <Pressable
-                            onPress={() => setSelectedImage({ url: guardian.idUrl!, title: `${guardian.firstName}'s ID Document` })}
+                            onPress={() =>
+                              setSelectedImage({
+                                url: guardian.idUrl!,
+                                title: `${guardian.firstName}'s ID Document`,
+                              })
+                            }
                             className="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm"
                           >
                             <Image

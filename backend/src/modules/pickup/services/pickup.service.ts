@@ -35,27 +35,61 @@ const generatePickupCode = () => {
 };
 
 export const validateManualReleaseGuardianVerification = (
-  guardian: { photoUrl?: string | null; idUrl?: string | null; isActive?: boolean },
+  guardian: { idUrl?: string | null; isActive?: boolean },
   isVisuallyVerified: boolean,
 ) => {
   if (!guardian || guardian.isActive === false) {
     throw new ValidationError("Guardian not found or inactive");
   }
 
-  const hasPhoto = Boolean(guardian.photoUrl?.trim());
   const hasValidId = Boolean(guardian.idUrl?.trim());
 
-  if (!hasPhoto || !hasValidId) {
+  if (!hasValidId) {
     throw new ValidationError(
-      "Guardian must have a stored photo and valid ID on file before manual release.",
+      "Guardian must have a stored valid ID on file before manual release.",
     );
   }
 
   if (!isVisuallyVerified) {
     throw new ValidationError(
-      "Manual release requires a visual verification match against the guardian photo and ID.",
+      "Manual release requires a visual verification match against the stored guardian ID.",
     );
   }
+};
+
+export const validateManualReleaseParentVerification = (
+  parentIdDocument: { publicId?: string | null; resourceType?: string | null } | null | undefined,
+  isVisuallyVerified: boolean,
+) => {
+  if (!parentIdDocument?.publicId || !parentIdDocument.resourceType) {
+    throw new ValidationError(
+      "Parent must have a stored ID on file before manual release.",
+    );
+  }
+
+  if (!isVisuallyVerified) {
+    throw new ValidationError(
+      "Manual release requires a visual verification match against the stored parent ID.",
+    );
+  }
+};
+
+export const serializePickupEligibleChild = (child: any) => {
+  const { documents, ...safeChild } = child;
+  return {
+    ...safeChild,
+    parent: child.parent
+      ? {
+          ...child.parent,
+          hasIdDocument: Boolean(
+            documents?.parentId?.publicId && documents?.parentId?.resourceType,
+          ),
+        }
+      : child.parent,
+    authorizedPickupPersons: (child.authorizedPickupPersons || []).map(
+      refreshGuardianMediaUrls,
+    ),
+  };
 };
 
 class PickupService {
@@ -325,6 +359,10 @@ class PickupService {
       guardian.verificationStatus = "verified";
       await child.save();
     } else {
+      validateManualReleaseParentVerification(
+        child.documents?.parentId,
+        Boolean(input.isVisuallyVerified),
+      );
       if (parentUser) {
         userId = parentUser._id;
         name = `${parentUser.firstName} ${parentUser.lastName}`;
@@ -403,16 +441,13 @@ class PickupService {
       teacher: user.id,
       daycareCenter: this.getTeacherCenterId(user),
     })
-      .select("firstName lastName studentId authorizedPickupPersons parent")
+      .select(
+        "firstName lastName studentId authorizedPickupPersons parent documents.parentId.publicId documents.parentId.resourceType",
+      )
       .populate("parent", "firstName lastName phone email")
       .lean();
 
-    return children.map((child: any) => ({
-      ...child,
-      authorizedPickupPersons: (child.authorizedPickupPersons || []).map(
-        refreshGuardianMediaUrls,
-      ),
-    }));
+    return children.map(serializePickupEligibleChild);
   }
 
   public async getPickupStatus(user: PickupAuthUser, childId: string) {
@@ -505,7 +540,4 @@ class PickupService {
 }
 
 export const pickupService = new PickupService();
-
-
-
 

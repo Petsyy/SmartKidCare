@@ -39,11 +39,8 @@ export const validateGuardian = z.object({
   }),
   customRelationship: z.string().trim().max(50, "Custom relationship cannot exceed 50 characters").nullable().optional(),
   phone: z.string().min(1, "Phone number is required"),
-  photoUrl: z.string().nullable().optional(),
-  photoPublicId: z.string().nullable().optional(),
   idUrl: z.string().nullable().optional(),
   idPublicId: z.string().nullable().optional(),
   verificationStatus: z.enum(["pending", "verified"]).optional(),
   isActive: z.boolean().optional(),
 });
-

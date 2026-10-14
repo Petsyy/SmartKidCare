@@ -1,20 +1,11 @@
 import { type ReactNode, useState } from "react";
 import {
   LayoutAnimation,
-  Platform,
   Pressable,
   Text,
-  UIManager,
   View,
 } from "react-native";
 import { ChevronDown } from "lucide-react-native";
-
-if (
-  Platform.OS === "android" &&
-  UIManager.setLayoutAnimationEnabledExperimental
-) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 interface CollapsibleSectionProps {
   icon: ReactNode;

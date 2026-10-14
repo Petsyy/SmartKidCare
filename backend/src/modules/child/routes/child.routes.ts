@@ -62,10 +62,7 @@ router.delete("/:id", requireRole("teacher"), deleteChild);
 router.post(
   "/:id/guardians",
   requireRole("teacher"),
-  upload.fields([
-    { name: "guardianPhoto", maxCount: 1 },
-    { name: "guardianId", maxCount: 1 },
-  ]),
+  upload.fields([{ name: "guardianId", maxCount: 1 }]),
   ensureMultipartBody,
   validate(validateGuardian),
   addGuardianHandler,
@@ -73,10 +70,7 @@ router.post(
 router.put(
   "/:id/guardians/:guardianIndex",
   requireRole("teacher"),
-  upload.fields([
-    { name: "guardianPhoto", maxCount: 1 },
-    { name: "guardianId", maxCount: 1 },
-  ]),
+  upload.fields([{ name: "guardianId", maxCount: 1 }]),
   ensureMultipartBody,
   validate(validateGuardian),
   updateGuardianHandler,

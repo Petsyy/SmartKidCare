@@ -14,24 +14,14 @@ const attachGuardianUploads = async (
   guardianData: any,
   files?: Record<string, Express.Multer.File[] | undefined>,
 ) => {
-  const nextGuardianData = { ...guardianData };
-
-  if (files?.guardianPhoto?.[0]) {
-    const file = files.guardianPhoto[0];
-    const upload = await storageService.uploadFile(
-      file.buffer,
-      "child-guardians/photos",
-      file.mimetype,
-      file.originalname,
-    );
-
-    nextGuardianData.photoUrl = generateSecureUrl(
-      upload.publicId,
-      upload.resourceType,
-      upload.format,
-    );
-    nextGuardianData.photoPublicId = upload.publicId;
-  }
+  const {
+    photoUrl: _photoUrl,
+    photoPublicId: _photoPublicId,
+    idUrl: _idUrl,
+    idPublicId: _idPublicId,
+    ...editableGuardianData
+  } = guardianData;
+  const nextGuardianData = { ...editableGuardianData };
 
   if (files?.guardianId?.[0]) {
     const file = files.guardianId[0];
@@ -84,6 +74,11 @@ class GuardianService {
 
     child.authorizedPickupPersons = child.authorizedPickupPersons || [];
     const normalizedGuardian = await attachGuardianUploads(guardianData, files);
+    if (!normalizedGuardian.idPublicId) {
+      throw new ValidationError(
+        "A government-issued photo ID is required for each guardian.",
+      );
+    }
     child.authorizedPickupPersons.push(normalizedGuardian);
     await child.save();
 
@@ -123,9 +118,15 @@ class GuardianService {
     }
 
     const normalizedGuardian = await attachGuardianUploads(guardianData, files);
-    
+
     // Mongoose doesn't track direct index assignment
     Object.assign(child.authorizedPickupPersons[guardianIndex], normalizedGuardian);
+    const updatedGuardian = child.authorizedPickupPersons[guardianIndex];
+    if (!updatedGuardian.idPublicId && !updatedGuardian.idUrl) {
+      throw new ValidationError(
+        "A government-issued photo ID is required for each guardian.",
+      );
+    }
     child.markModified("authorizedPickupPersons");
     await child.save();
 
@@ -195,4 +196,3 @@ class GuardianService {
 }
 
 export const guardianService = new GuardianService();
-

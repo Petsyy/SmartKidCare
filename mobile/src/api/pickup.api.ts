@@ -1,32 +1,34 @@
 import { apiClient, apiFormDataClient } from "./client";
 import { File } from "expo-file-system";
+import { API_BASE_URL } from "../config/config.api";
 import type {
+  DocumentAccessResponse,
   Guardian,
   PickupEligibleChild,
   RequestPickupCodeResponse,
   PickupRecordResponse,
   PickupStatusResponse,
-  PaginatedPickupHistory,
 } from "./api.types";
+
+export const getParentIdDocumentUrl = async (
+  childId: string,
+): Promise<string> => {
+  const access = await apiClient<DocumentAccessResponse>(
+    `/api/documents/children/${childId}/parent-id/access`,
+  );
+  return `${API_BASE_URL}${access.viewPath.startsWith("/") ? "" : "/"}${access.viewPath}`;
+};
 
 const appendGuardianMultipartData = (
   formData: FormData,
   data: Partial<Guardian>,
-  files?: { guardianPhoto?: any; guardianId?: any },
+  files?: { guardianId?: any },
 ) => {
   Object.entries(data).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== "") {
       formData.append(key, String(value));
     }
   });
-
-  if (files?.guardianPhoto) {
-    formData.append(
-      "guardianPhoto",
-      new File(files.guardianPhoto.uri),
-      files.guardianPhoto.name || "guardian-photo.jpg",
-    );
-  }
 
   if (files?.guardianId) {
     formData.append(
@@ -40,9 +42,9 @@ const appendGuardianMultipartData = (
 export const addGuardian = async (
   childId: string,
   data: Partial<Guardian>,
-  files?: { guardianPhoto?: any; guardianId?: any },
+  files?: { guardianId?: any },
 ): Promise<Guardian[]> => {
-  if (files?.guardianPhoto || files?.guardianId) {
+  if (files?.guardianId) {
     const formData = new FormData();
     appendGuardianMultipartData(formData, data, files);
     const res = await apiFormDataClient<{ success: boolean; data: Guardian[] }>(
@@ -67,9 +69,9 @@ export const updateGuardian = async (
   childId: string,
   index: number,
   data: Partial<Guardian>,
-  files?: { guardianPhoto?: any; guardianId?: any },
+  files?: { guardianId?: any },
 ): Promise<Guardian[]> => {
-  if (files?.guardianPhoto || files?.guardianId) {
+  if (files?.guardianId) {
     const formData = new FormData();
     appendGuardianMultipartData(formData, data, files);
     const res = await apiFormDataClient<{ success: boolean; data: Guardian[] }>(
@@ -156,7 +158,13 @@ export const manualRelease = async (
     "/api/pickup/manual-release",
     {
       method: "POST",
-      body: { childId, pickedUpByType, guardianIndex, notes, isVisuallyVerified },
+      body: {
+        childId,
+        pickedUpByType,
+        guardianIndex,
+        notes,
+        isVisuallyVerified,
+      },
     },
   );
   return res.data;

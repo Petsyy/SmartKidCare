@@ -30,8 +30,7 @@ export interface PasswordChangeChallengeResponse {
 }
 
 export type LoginResponse =
-  | AuthenticatedLoginResponse
-  | PasswordChangeChallengeResponse;
+  AuthenticatedLoginResponse | PasswordChangeChallengeResponse;
 
 export interface ChildDocumentIntegrity {
   childIdHash?: string | null;
@@ -74,8 +73,6 @@ export interface Guardian {
   relationship: "Mother" | "Father" | "Guardian" | "Grandparent" | "Other";
   customRelationship?: string | null;
   phone: string;
-  photoUrl?: string | null;
-  photoPublicId?: string | null;
   idUrl?: string | null;
   idPublicId?: string | null;
   verificationStatus?: "pending" | "verified";
@@ -120,7 +117,7 @@ export interface Child {
     email: string;
     phone?: string;
   };
-  
+
   authorizedPickupPersons?: Guardian[];
 }
 
@@ -142,7 +139,8 @@ export interface ChildEnrollmentRequestPayload {
   parentMiddleName?: string;
   parentLastName: string;
   parentPhone: string;
-  parentRelationship: "Mother" | "Father" | "Guardian" | "Grandparent" | "Other";
+  parentRelationship:
+    "Mother" | "Father" | "Guardian" | "Grandparent" | "Other";
 }
 
 export interface ChildEnrollmentRequestFiles {
@@ -206,7 +204,7 @@ export interface TeacherEnrollmentRequest {
     studentId?: string;
     documentIntegrity?: ChildDocumentIntegrity | null;
   } | null;
-  
+
   createdAt: string;
   updatedAt: string;
 }
@@ -372,8 +370,16 @@ export interface PickupEligibleChild {
     lastName: string;
     phone: string;
     email: string;
+    hasIdDocument: boolean;
   };
   authorizedPickupPersons?: Guardian[];
+}
+
+export interface DocumentAccessResponse {
+  token: string;
+  expiresInSeconds: number;
+  documentType: "birthCertificate" | "parentId";
+  viewPath: string;
 }
 
 export interface RequestPickupCodeResponse {
@@ -395,7 +401,8 @@ export interface PickupRecordResponse {
     relationship: string;
   };
   verificationMethod: "pickup_code" | "manual_override";
-  verifiedByTeacher: string | { _id: string; firstName: string; lastName: string };
+  verifiedByTeacher:
+    string | { _id: string; firstName: string; lastName: string };
   pickedUpAt: string;
   notes?: string;
 }
@@ -425,8 +432,15 @@ export interface ParentNotificationFeedResponse {
   hasPushToken: boolean;
   notifications: ParentNotificationFeedItem[];
 }
-export type DocumentVerificationStatus = "verified" | "teacher_confirmation_required" | "rejected";
-export type DetectedDocumentType = "birth_certificate" | "government_id" | "other_document" | "person_photo" | "unrelated_image" | "unknown";
+export type DocumentVerificationStatus =
+  "verified" | "teacher_confirmation_required" | "rejected";
+export type DetectedDocumentType =
+  | "birth_certificate"
+  | "government_id"
+  | "other_document"
+  | "person_photo"
+  | "unrelated_image"
+  | "unknown";
 export interface DocumentVerificationResponse {
   verificationId: string;
   status: DocumentVerificationStatus;

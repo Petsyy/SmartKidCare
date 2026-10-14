@@ -8,6 +8,8 @@ export interface ImageViewerModalProps {
   imageUrl: string | null;
   title?: string;
   onClose: () => void;
+  onImageError?: () => void;
+  onImageLoad?: () => void;
 }
 
 export function ImageViewerModal({
@@ -15,6 +17,8 @@ export function ImageViewerModal({
   imageUrl,
   title = "View Image",
   onClose,
+  onImageError,
+  onImageLoad,
 }: ImageViewerModalProps) {
   if (!imageUrl) return null;
 
@@ -27,7 +31,10 @@ export function ImageViewerModal({
     >
       <View className="flex-1 bg-black/95">
         <SafeAreaView className="flex-row justify-between items-center px-4 py-3 bg-black/40 absolute top-0 left-0 right-0 z-10">
-          <Text className="text-white text-base font-bold ml-2" numberOfLines={1}>
+          <Text
+            className="text-white text-base font-bold ml-2"
+            numberOfLines={1}
+          >
             {title}
           </Text>
           <Pressable
@@ -37,12 +44,14 @@ export function ImageViewerModal({
             <X size={24} color="#FFF" />
           </Pressable>
         </SafeAreaView>
-        
+
         <View className="flex-1 justify-center items-center">
           <Image
             source={{ uri: imageUrl }}
             className="w-full h-full"
             resizeMode="contain"
+            onError={onImageError}
+            onLoad={onImageLoad}
           />
         </View>
       </View>

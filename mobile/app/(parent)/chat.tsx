@@ -61,6 +61,8 @@ type Message = {
   createdAt: string;
 };
 
+const messageKeyExtractor = (message: Message) => message.id;
+
 function getChildFullName(child: Child): string {
   return [child.firstName, child.middleName, child.lastName]
     .filter(Boolean)
@@ -261,11 +263,11 @@ export default function ParentChatScreen() {
     }
   }, [input, loading, contextLoading, isAuthenticated, selectedChild?._id]);
 
-  const onSuggestionPress = (text: string) => {
+  const onSuggestionPress = useCallback((text: string) => {
     setInput(text);
-  };
+  }, []);
 
-  const renderAssistantContent = (text: string) => {
+  const renderAssistantContent = useCallback((text: string) => {
     const lines = text.split(/\r?\n/);
     return (
       <View className="gap-1">
@@ -329,9 +331,9 @@ export default function ParentChatScreen() {
         })}
       </View>
     );
-  };
+  }, []);
 
-  const renderItem = ({ item }: { item: Message }) => {
+  const renderItem = useCallback(({ item }: { item: Message }) => {
     const isUser = item.role === "user";
     const isLoading = item.role === "assistant" && !item.content && loading;
     const riskLevel =
@@ -416,7 +418,7 @@ export default function ParentChatScreen() {
         </View>
       </View>
     );
-  };
+  }, [loading, renderAssistantContent]);
 
   const confirmClearHistory = () => {
     if (!user?.id || messages.length === 0) return;
@@ -435,7 +437,7 @@ export default function ParentChatScreen() {
     );
   };
 
-  const listEmpty = (
+  const listEmpty = useMemo(() => (
     <View className="flex-1 px-2 pt-3">
       <View className="mx-auto mb-4 h-14 w-14 items-center justify-center rounded-2xl bg-teal-50">
         {contextError || (!contextLoading && !selectedChild) ? (
@@ -499,6 +501,23 @@ export default function ParentChatScreen() {
         ))}
       </View>
     </View>
+  ), [
+    contextError,
+    contextLoading,
+    loadChildren,
+    onSuggestionPress,
+    selectedChild,
+    selectedChildName,
+  ]);
+
+  const messageListContentStyle = useMemo(
+    () => ({
+      flexGrow: 1,
+      paddingHorizontal: 16,
+      paddingTop: messages.length === 0 ? 20 : 16,
+      paddingBottom: 20,
+    }),
+    [messages.length],
   );
 
   return (
@@ -581,15 +600,10 @@ export default function ParentChatScreen() {
         <FlatList
           ref={listRef}
           data={messages}
-          keyExtractor={(item) => item.id}
+          keyExtractor={messageKeyExtractor}
           renderItem={renderItem}
           ListEmptyComponent={listEmpty}
-          contentContainerStyle={{
-            flexGrow: 1,
-            paddingHorizontal: 16,
-            paddingTop: messages.length === 0 ? 20 : 16,
-            paddingBottom: 20,
-          }}
+          contentContainerStyle={messageListContentStyle}
           showsVerticalScrollIndicator={false}
         />
 

@@ -7,14 +7,12 @@ import {
   ActivityIndicator,
   Alert,
   ScrollView,
-  Image,
 } from "react-native";
 import {
   UserPlus,
   Edit2,
   Trash2,
   X,
-  Check,
   ShieldCheck,
   Phone,
   UserCheck,
@@ -33,7 +31,11 @@ interface GuardianListProps {
   hideAddButton?: boolean;
 }
 
-export function GuardianList({ childId, readOnly = false, hideAddButton = false }: GuardianListProps) {
+export function GuardianList({
+  childId,
+  readOnly = false,
+  hideAddButton = false,
+}: GuardianListProps) {
   const {
     guardians,
     isLoading,
@@ -54,11 +56,9 @@ export function GuardianList({ childId, readOnly = false, hideAddButton = false 
     relationship: "Guardian",
     customRelationship: null,
     phone: "",
-    photoUrl: null,
     idUrl: null,
     verificationStatus: "pending",
   });
-  const [guardianPhotoFile, setGuardianPhotoFile] = useState<any>(null);
   const [guardianIdFile, setGuardianIdFile] = useState<any>(null);
 
   const activeGuardians = guardians.filter((g) => g.isActive !== false);
@@ -88,9 +88,16 @@ export function GuardianList({ childId, readOnly = false, hideAddButton = false 
         return;
       }
 
+      if (!guardianIdFile && !formData.idUrl) {
+        Alert.alert(
+          "Valid ID Required",
+          "Upload the guardian's government-issued photo ID before saving.",
+        );
+        return;
+      }
+
       const payload: Partial<Guardian> = {
         ...(formData as Guardian),
-        photoUrl: formData.photoUrl || null,
         idUrl: formData.idUrl || null,
         verificationStatus: "pending" as const,
       };
@@ -100,7 +107,6 @@ export function GuardianList({ childId, readOnly = false, hideAddButton = false 
           index: editingIndex,
           data: payload,
           files: {
-            guardianPhoto: guardianPhotoFile,
             guardianId: guardianIdFile,
           },
         });
@@ -108,7 +114,6 @@ export function GuardianList({ childId, readOnly = false, hideAddButton = false 
         await addGuardian({
           data: payload,
           files: {
-            guardianPhoto: guardianPhotoFile,
             guardianId: guardianIdFile,
           },
         });
@@ -144,7 +149,6 @@ export function GuardianList({ childId, readOnly = false, hideAddButton = false 
   const resetForm = () => {
     setIsAdding(false);
     setEditingIndex(null);
-    setGuardianPhotoFile(null);
     setGuardianIdFile(null);
     setFormData({
       firstName: "",
@@ -152,15 +156,9 @@ export function GuardianList({ childId, readOnly = false, hideAddButton = false 
       relationship: "Guardian",
       customRelationship: null,
       phone: "",
-      photoUrl: null,
       idUrl: null,
       verificationStatus: "pending",
     });
-  };
-
-  const handlePickGuardianPhoto = async () => {
-    const file = await pickDocument("parentId", "image");
-    if (file) setGuardianPhotoFile(file);
   };
 
   const handlePickGuardianId = async () => {
@@ -327,19 +325,7 @@ export function GuardianList({ childId, readOnly = false, hideAddButton = false 
           />
 
           <Text className="text-sm font-extrabold text-gray-700 mb-2 ml-2">
-            Guardian Photo
-          </Text>
-          <Pressable
-            onPress={handlePickGuardianPhoto}
-            className="bg-white border border-gray-200 rounded-2xl px-5 py-4 mb-4 items-center justify-center"
-          >
-            <Text className="text-base font-bold text-gray-800">
-              {guardianPhotoFile ? "Photo selected" : "Upload guardian photo"}
-            </Text>
-          </Pressable>
-
-          <Text className="text-sm font-extrabold text-gray-700 mb-2 ml-2">
-            Valid ID
+            Valid ID *
           </Text>
           <Pressable
             onPress={handlePickGuardianId}
@@ -405,19 +391,11 @@ export function GuardianList({ childId, readOnly = false, hideAddButton = false 
               key={idx}
               className="flex-row items-center justify-between bg-white border border-gray-200/80 p-4 rounded-2xl mb-3 shadow-sm"
             >
-              {guardian.photoUrl ? (
-                <Image
-                  source={{ uri: guardian.photoUrl }}
-                  className="h-12 w-12 rounded-2xl mr-4 border border-teal-100 bg-gray-100"
-                  resizeMode="cover"
-                />
-              ) : (
-                <View className="h-12 w-12 rounded-2xl bg-teal-50 items-center justify-center mr-4 border border-teal-100">
-                  <Text className="text-teal-800 font-black text-base">
-                    {initials || "G"}
-                  </Text>
-                </View>
-              )}
+              <View className="h-12 w-12 rounded-2xl bg-teal-50 items-center justify-center mr-4 border border-teal-100">
+                <Text className="text-teal-800 font-black text-base">
+                  {initials || "G"}
+                </Text>
+              </View>
 
               <View className="flex-1 mr-2">
                 <Text className="text-lg font-black text-gray-900">

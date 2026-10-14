@@ -268,18 +268,21 @@ export function TeacherPickupScreen() {
                   />
                 ) : (
                   <PickupManualOverridePanel
+                    key={`${selectedChild._id}:${selectedGuardianIndex ?? "parent"}`}
+                    childId={selectedChild._id}
                     parent={selectedChild.parent}
                     guardians={selectedChild.authorizedPickupPersons || []}
                     selectedGuardianIndex={selectedGuardianIndex}
                     onSelectGuardian={(index) => {
                       setSelectedGuardianIndex(index);
-                      if (index !== null) {
-                        setIsVisuallyVerified(false);
-                      }
+                      setIsVisuallyVerified(false);
                     }}
                     onConfirm={handleManualRelease}
                     isReleasing={isReleasing}
-                    onBack={() => setIsManualRelease(false)}
+                    onBack={() => {
+                      setIsManualRelease(false);
+                      setIsVisuallyVerified(false);
+                    }}
                     isVisuallyVerified={isVisuallyVerified}
                     onToggleVisualVerification={setIsVisuallyVerified}
                   />

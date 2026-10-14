@@ -12,7 +12,13 @@ import {
   Platform,
   Image,
 } from "react-native";
-import { X, UserCheck, Camera, IdCard, CheckCircle2, Image as ImageIcon, Trash2 } from "lucide-react-native";
+import {
+  X,
+  UserCheck,
+  IdCard,
+  CheckCircle2,
+  Trash2,
+} from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQueryClient } from "@tanstack/react-query";
 import { useForm, Controller } from "react-hook-form";
@@ -21,7 +27,10 @@ import { useGuardians } from "../hooks/useGuardian";
 import type { Guardian } from "@/src/api/api.types";
 import { useDocumentPicker } from "@/src/features/enrollment/hooks/useDocumentPicker";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
-import { guardianSchema, type GuardianFormValues } from "../validations/guardian-validation";
+import {
+  guardianSchema,
+  type GuardianFormValues,
+} from "../validations/guardian-validation";
 import {
   getUserFriendlyErrorMessage,
   reportHandledError,
@@ -47,12 +56,21 @@ export function AddGuardianBottomSheet({
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const { pickDocument } = useDocumentPicker();
-  
-  const isEditMode = editGuardian !== null && editIndex !== null;
-  
-  const { addGuardian, updateGuardian, isMutating } = useGuardians(childId || undefined);
 
-  const { control, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<GuardianFormValues>({
+  const isEditMode = editGuardian !== null && editIndex !== null;
+
+  const { addGuardian, updateGuardian, isMutating } = useGuardians(
+    childId || undefined,
+  );
+
+  const {
+    control,
+    handleSubmit,
+    reset,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useForm<GuardianFormValues>({
     resolver: zodResolver(guardianSchema),
     defaultValues: {
       firstName: "",
@@ -60,14 +78,12 @@ export function AddGuardianBottomSheet({
       relationship: "Guardian",
       customRelationship: null,
       phone: "",
-    }
+    },
   });
 
   const relationshipValue = watch("relationship");
 
-  const [guardianPhotoFile, setGuardianPhotoFile] = useState<any>(null);
   const [guardianIdFile, setGuardianIdFile] = useState<any>(null);
-  const [existingPhotoUrl, setExistingPhotoUrl] = useState<string | null>(null);
   const [existingIdUrl, setExistingIdUrl] = useState<string | null>(null);
 
   React.useEffect(() => {
@@ -79,7 +95,6 @@ export function AddGuardianBottomSheet({
         customRelationship: editGuardian.customRelationship || null,
         phone: editGuardian.phone,
       });
-      setExistingPhotoUrl(editGuardian.photoUrl || null);
       setExistingIdUrl(editGuardian.idUrl || null);
     } else {
       resetForm();
@@ -94,9 +109,7 @@ export function AddGuardianBottomSheet({
       customRelationship: null,
       phone: "",
     });
-    setGuardianPhotoFile(null);
     setGuardianIdFile(null);
-    setExistingPhotoUrl(null);
     setExistingIdUrl(null);
   };
 
@@ -108,6 +121,14 @@ export function AddGuardianBottomSheet({
   const onSubmit = async (data: GuardianFormValues) => {
     if (!childId) return;
 
+    if (!guardianIdFile && !existingIdUrl) {
+      Alert.alert(
+        "Valid ID Required",
+        "Upload the guardian's government-issued photo ID before saving.",
+      );
+      return;
+    }
+
     try {
       const payload: Partial<Guardian> = {
         firstName: data.firstName,
@@ -115,7 +136,6 @@ export function AddGuardianBottomSheet({
         relationship: data.relationship,
         customRelationship: data.customRelationship || null,
         phone: data.phone,
-        photoUrl: existingPhotoUrl,
         idUrl: existingIdUrl,
       };
 
@@ -124,7 +144,6 @@ export function AddGuardianBottomSheet({
           index: editIndex!,
           data: payload,
           files: {
-            guardianPhoto: guardianPhotoFile,
             guardianId: guardianIdFile,
           },
         });
@@ -132,7 +151,6 @@ export function AddGuardianBottomSheet({
         await addGuardian({
           data: payload,
           files: {
-            guardianPhoto: guardianPhotoFile,
             guardianId: guardianIdFile,
           },
         });
@@ -147,7 +165,7 @@ export function AddGuardianBottomSheet({
           queryKey: mobileQueryKeys.teacherChildDetails(childId),
         });
       }
-      
+
       handleClose();
     } catch (error: unknown) {
       reportHandledError("guardian.save", error);
@@ -159,11 +177,6 @@ export function AddGuardianBottomSheet({
         ),
       );
     }
-  };
-
-  const handlePickGuardianPhoto = async () => {
-    const file = await pickDocument("parentId", "image");
-    if (file) setGuardianPhotoFile(file);
   };
 
   const handlePickGuardianId = async () => {
@@ -184,10 +197,13 @@ export function AddGuardianBottomSheet({
       >
         <View className="flex-1 bg-black/40 justify-end">
           <Pressable className="flex-1" onPress={handleClose} />
-          
+
           <View
             className="bg-gray-50 rounded-t-3xl pt-5 shadow-lg"
-            style={{ maxHeight: "85%", paddingBottom: Math.max(insets.bottom, 20) }}
+            style={{
+              maxHeight: "85%",
+              paddingBottom: Math.max(insets.bottom, 20),
+            }}
           >
             <View className="flex-row items-center justify-between mb-5 border-b border-gray-200/60 pb-3 px-5">
               <View className="flex-row items-center flex-1 pr-4">
@@ -195,10 +211,13 @@ export function AddGuardianBottomSheet({
                   <UserCheck size={20} color="#0D9488" />
                 </View>
                 <View>
-                <Text className="text-lg font-black text-gray-900">
+                  <Text className="text-lg font-black text-gray-900">
                     {isEditMode ? "Edit Guardian" : "Add Guardian"}
                   </Text>
-                  <Text className="text-xs text-gray-500 font-medium" numberOfLines={1}>
+                  <Text
+                    className="text-xs text-gray-500 font-medium"
+                    numberOfLines={1}
+                  >
                     For {childName}
                   </Text>
                 </View>
@@ -211,9 +230,12 @@ export function AddGuardianBottomSheet({
               </Pressable>
             </View>
 
-            <ScrollView 
+            <ScrollView
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}
+              contentContainerStyle={{
+                paddingHorizontal: 20,
+                paddingBottom: 20,
+              }}
             >
               <Text className="text-base font-extrabold text-gray-700 mb-2 ml-2">
                 First Name <Text className="text-red-500">*</Text>
@@ -224,18 +246,24 @@ export function AddGuardianBottomSheet({
                 render={({ field: { onChange, onBlur, value } }) => (
                   <TextInput
                     value={value}
-                    onChangeText={(val) => onChange(val.replace(/[^a-zA-Z\s\-']/g, ""))}
+                    onChangeText={(val) =>
+                      onChange(val.replace(/[^a-zA-Z\s\-']/g, ""))
+                    }
                     onBlur={onBlur}
                     placeholder="Jane"
                     placeholderTextColor="#9CA3AF"
                     className={`bg-white border rounded-2xl px-5 py-4 ${
-                      errors.firstName ? "border-red-500 mb-1" : "border-gray-200 mb-4"
+                      errors.firstName
+                        ? "border-red-500 mb-1"
+                        : "border-gray-200 mb-4"
                     } text-base text-gray-900 font-semibold`}
                   />
                 )}
               />
               {errors.firstName ? (
-                <Text className="text-red-500 text-sm ml-2 mb-3">{errors.firstName.message}</Text>
+                <Text className="text-red-500 text-sm ml-2 mb-3">
+                  {errors.firstName.message}
+                </Text>
               ) : null}
 
               <Text className="text-base font-extrabold text-gray-700 mb-2 ml-2">
@@ -247,18 +275,24 @@ export function AddGuardianBottomSheet({
                 render={({ field: { onChange, onBlur, value } }) => (
                   <TextInput
                     value={value}
-                    onChangeText={(val) => onChange(val.replace(/[^a-zA-Z\s\-']/g, ""))}
+                    onChangeText={(val) =>
+                      onChange(val.replace(/[^a-zA-Z\s\-']/g, ""))
+                    }
                     onBlur={onBlur}
                     placeholder="Doe"
                     placeholderTextColor="#9CA3AF"
                     className={`bg-white border rounded-2xl px-5 py-4 ${
-                      errors.lastName ? "border-red-500 mb-1" : "border-gray-200 mb-4"
+                      errors.lastName
+                        ? "border-red-500 mb-1"
+                        : "border-gray-200 mb-4"
                     } text-base text-gray-900 font-semibold`}
                   />
                 )}
               />
               {errors.lastName ? (
-                <Text className="text-red-500 text-sm ml-2 mb-3">{errors.lastName.message}</Text>
+                <Text className="text-red-500 text-sm ml-2 mb-3">
+                  {errors.lastName.message}
+                </Text>
               ) : null}
 
               <Text className="text-base font-extrabold text-gray-700 mb-3 ml-2">
@@ -276,7 +310,9 @@ export function AddGuardianBottomSheet({
                       <Pressable
                         key={rel}
                         onPress={() => {
-                          setValue("relationship", rel as any, { shouldValidate: true });
+                          setValue("relationship", rel as any, {
+                            shouldValidate: true,
+                          });
                           if (rel !== "Other") {
                             setValue("customRelationship", null);
                           }
@@ -317,13 +353,17 @@ export function AddGuardianBottomSheet({
                         placeholderTextColor="#9CA3AF"
                         maxLength={50}
                         className={`bg-white border rounded-2xl px-5 py-4 ${
-                          errors.customRelationship ? "border-red-500 mb-1" : "border-gray-200 mb-4"
+                          errors.customRelationship
+                            ? "border-red-500 mb-1"
+                            : "border-gray-200 mb-4"
                         } text-base text-gray-900 font-semibold`}
                       />
                     )}
                   />
                   {errors.customRelationship ? (
-                    <Text className="text-red-500 text-sm ml-2 mb-3">{errors.customRelationship.message}</Text>
+                    <Text className="text-red-500 text-sm ml-2 mb-3">
+                      {errors.customRelationship.message}
+                    </Text>
                   ) : null}
                 </>
               )}
@@ -343,65 +383,27 @@ export function AddGuardianBottomSheet({
                     placeholderTextColor="#9CA3AF"
                     keyboardType="phone-pad"
                     className={`bg-white border rounded-2xl px-5 py-4 ${
-                      errors.phone ? "border-red-500 mb-1" : "border-gray-200 mb-5"
+                      errors.phone
+                        ? "border-red-500 mb-1"
+                        : "border-gray-200 mb-5"
                     } text-base text-gray-900 font-semibold`}
                   />
                 )}
               />
               {errors.phone ? (
-                <Text className="text-red-500 text-sm ml-2 mb-4">{errors.phone.message}</Text>
+                <Text className="text-red-500 text-sm ml-2 mb-4">
+                  {errors.phone.message}
+                </Text>
               ) : null}
 
               <Text className="text-base font-extrabold text-gray-700 mb-2 ml-2">
-                Guardian Photo
-              </Text>
-              {guardianPhotoFile ? (
-                <View className="relative mb-5 border border-gray-200 rounded-2xl overflow-hidden bg-gray-50 items-center justify-center">
-                  <Image 
-                    source={{ uri: guardianPhotoFile.uri }} 
-                    style={{ width: "100%", height: 160 }} 
-                    resizeMode="cover"
-                  />
-                  <View className="absolute inset-0 bg-black/20" />
-                  <Pressable
-                    onPress={() => {
-                      setGuardianPhotoFile(null);
-                      setExistingPhotoUrl(null);
-                    }}
-                    className="absolute top-3 right-3 h-8 w-8 rounded-full bg-black/50 items-center justify-center active:bg-black/70"
-                  >
-                    <Trash2 size={16} color="white" />
-                  </Pressable>
-                  <View className="absolute bottom-3 left-3 bg-white/90 px-3 py-1.5 rounded-lg flex-row items-center">
-                    <CheckCircle2 size={14} color="#10B981" />
-                    <Text className="ml-1.5 text-xs font-bold text-gray-800">Photo Attached</Text>
-                  </View>
-                </View>
-              ) : (
-                <Pressable
-                  onPress={handlePickGuardianPhoto}
-                  className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-2xl px-5 py-8 mb-5 items-center justify-center active:bg-gray-100"
-                >
-                  <View className="h-12 w-12 rounded-full bg-teal-100 items-center justify-center mb-3">
-                    <Camera size={24} color="#0D9488" />
-                  </View>
-                  <Text className="text-base font-bold text-gray-800 mb-1">
-                    Upload Guardian Photo
-                  </Text>
-                  <Text className="text-xs text-gray-500 font-medium">
-                    Tap to select a clear photo (JPG, PNG)
-                  </Text>
-                </Pressable>
-              )}
-
-              <Text className="text-base font-extrabold text-gray-700 mb-2 ml-2">
-                Valid ID
+                Valid ID <Text className="text-red-500">*</Text>
               </Text>
               {guardianIdFile ? (
                 <View className="relative mb-5 border border-gray-200 rounded-2xl overflow-hidden bg-gray-50 items-center justify-center">
-                  <Image 
-                    source={{ uri: guardianIdFile.uri }} 
-                    style={{ width: "100%", height: 160 }} 
+                  <Image
+                    source={{ uri: guardianIdFile.uri }}
+                    style={{ width: "100%", height: 160 }}
                     resizeMode="cover"
                   />
                   <View className="absolute inset-0 bg-black/20" />
@@ -416,7 +418,9 @@ export function AddGuardianBottomSheet({
                   </Pressable>
                   <View className="absolute bottom-3 left-3 bg-white/90 px-3 py-1.5 rounded-lg flex-row items-center">
                     <CheckCircle2 size={14} color="#10B981" />
-                    <Text className="ml-1.5 text-xs font-bold text-gray-800">ID Attached</Text>
+                    <Text className="ml-1.5 text-xs font-bold text-gray-800">
+                      ID Attached
+                    </Text>
                   </View>
                 </View>
               ) : (
@@ -441,7 +445,9 @@ export function AddGuardianBottomSheet({
                   onPress={handleClose}
                   className="flex-1 items-center justify-center py-4 rounded-2xl border border-gray-300 bg-white active:opacity-85"
                 >
-                  <Text className="text-gray-700 font-black text-base">Cancel</Text>
+                  <Text className="text-gray-700 font-black text-base">
+                    Cancel
+                  </Text>
                 </Pressable>
                 <Pressable
                   onPress={handleSubmit(onSubmit)}
@@ -460,7 +466,6 @@ export function AddGuardianBottomSheet({
                 </Pressable>
               </View>
             </ScrollView>
-
           </View>
         </View>
       </KeyboardAvoidingView>

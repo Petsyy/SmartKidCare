@@ -33,8 +33,6 @@ export interface GuardianInput {
   lastName: string;
   relationship: "Mother" | "Father" | "Guardian" | "Grandparent" | "Other";
   phone: string;
-  photoUrl?: string | null;
-  photoPublicId?: string | null;
   idUrl?: string | null;
   idPublicId?: string | null;
   verificationStatus?: "pending" | "verified";
@@ -52,4 +50,3 @@ export interface PickupPaginatedResult<T> {
     hasPrevPage: boolean;
   };
 }
-

@@ -1,12 +1,20 @@
 import { useState, useCallback } from "react";
 import { useFocusEffect } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getGuardians, addGuardian, updateGuardian, removeGuardian } from "@/src/api/pickup.api";
+import {
+  getGuardians,
+  addGuardian,
+  updateGuardian,
+  removeGuardian,
+} from "@/src/api/pickup.api";
 import type { Guardian } from "@/src/api/api.types";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { useAuth } from "@/src/hooks/use-auth";
 import { useOffline } from "@/src/offline/offline-context";
-import { readOfflineResource, onlineWithOfflineFallback } from "@/src/offline/offline-read";
+import {
+  readOfflineResource,
+  onlineWithOfflineFallback,
+} from "@/src/offline/offline-read";
 
 export const useGuardians = (childId: string | undefined) => {
   const queryClient = useQueryClient();
@@ -18,18 +26,27 @@ export const useGuardians = (childId: string | undefined) => {
 
   const queryKey = ["guardians", childId];
 
-  const { data: guardians = [], isLoading, error, refetch } = useQuery({
+  const {
+    data: guardians = [],
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
     queryKey,
-    queryFn: () => onlineWithOfflineFallback(
-      isOffline,
-      () => getGuardians(childId!),
-      async () => {
-        if (!user?.id) return [];
-        const summaries = await readOfflineResource<(Guardian & { childId: string; guardianIndex: number })>(user.id, "guardianSummaries");
-        return summaries.filter((item) => item.childId === childId)
-          .sort((a, b) => a.guardianIndex - b.guardianIndex);
-      },
-    ),
+    queryFn: () =>
+      onlineWithOfflineFallback(
+        isOffline,
+        () => getGuardians(childId!),
+        async () => {
+          if (!user?.id) return [];
+          const summaries = await readOfflineResource<
+            Guardian & { childId: string; guardianIndex: number }
+          >(user.id, "guardianSummaries");
+          return summaries
+            .filter((item) => item.childId === childId)
+            .sort((a, b) => a.guardianIndex - b.guardianIndex);
+        },
+      ),
     enabled: !!childId,
     networkMode: "always",
   });
@@ -39,7 +56,7 @@ export const useGuardians = (childId: string | undefined) => {
       if (childId) {
         refetch();
       }
-    }, [childId, refetch])
+    }, [childId, refetch]),
   );
 
   const addMutation = useMutation({
@@ -48,9 +65,10 @@ export const useGuardians = (childId: string | undefined) => {
       files,
     }: {
       data: Partial<Guardian>;
-      files?: { guardianPhoto?: any; guardianId?: any };
+      files?: { guardianId?: any };
     }) => {
-      if (isOffline) throw new Error("Connect to the internet to perform this action.");
+      if (isOffline)
+        throw new Error("Connect to the internet to perform this action.");
       return addGuardian(childId!, data, files);
     },
     onSuccess: () => {
@@ -67,16 +85,21 @@ export const useGuardians = (childId: string | undefined) => {
     }: {
       index: number;
       data: Partial<Guardian>;
-      files?: { guardianPhoto?: any; guardianId?: any };
+      files?: { guardianId?: any };
     }) => {
-      if (isOffline) throw new Error("Connect to the internet to perform this action.");
+      if (isOffline)
+        throw new Error("Connect to the internet to perform this action.");
       return updateGuardian(childId!, index, data, files);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
       if (childId) {
-        queryClient.invalidateQueries({ queryKey: mobileQueryKeys.teacherChildDetails(childId) });
-        queryClient.invalidateQueries({ queryKey: mobileQueryKeys.teacherChildrenOverview() });
+        queryClient.invalidateQueries({
+          queryKey: mobileQueryKeys.teacherChildDetails(childId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: mobileQueryKeys.teacherChildrenOverview(),
+        });
       }
       setEditingIndex(null);
     },
@@ -84,14 +107,19 @@ export const useGuardians = (childId: string | undefined) => {
 
   const removeMutation = useMutation({
     mutationFn: (index: number) => {
-      if (isOffline) throw new Error("Connect to the internet to perform this action.");
+      if (isOffline)
+        throw new Error("Connect to the internet to perform this action.");
       return removeGuardian(childId!, index);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
       if (childId) {
-        queryClient.invalidateQueries({ queryKey: mobileQueryKeys.teacherChildDetails(childId) });
-        queryClient.invalidateQueries({ queryKey: mobileQueryKeys.teacherChildrenOverview() });
+        queryClient.invalidateQueries({
+          queryKey: mobileQueryKeys.teacherChildDetails(childId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: mobileQueryKeys.teacherChildrenOverview(),
+        });
       }
     },
   });
@@ -107,7 +135,10 @@ export const useGuardians = (childId: string | undefined) => {
     addGuardian: addMutation.mutateAsync,
     updateGuardian: updateMutation.mutateAsync,
     removeGuardian: removeMutation.mutateAsync,
-    isMutating: addMutation.isPending || updateMutation.isPending || removeMutation.isPending,
+    isMutating:
+      addMutation.isPending ||
+      updateMutation.isPending ||
+      removeMutation.isPending,
     isOffline,
   };
 };
