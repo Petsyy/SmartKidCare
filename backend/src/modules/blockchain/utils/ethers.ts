@@ -18,7 +18,8 @@ const getDocumentsRegistryAddress = (): string => {
   return resolvedAddress;
 };
 
-const documentsRegistryAddress = getDocumentsRegistryAddress();
+export const documentsRegistryAddress = getDocumentsRegistryAddress();
+export const SEPOLIA_CHAIN_ID = 11155111;
 
 const provider = new ethers.JsonRpcProvider(
   process.env.SEPOLIA_RPC_URL,
@@ -38,7 +39,6 @@ const abi = [
   "function storeDocumentsHash(bytes32 childIdHash, bytes32 documentsHash)",
   "function verifyDocuments(bytes32 childIdHash, bytes32 documentsHash) view returns (bool)",
   "function getDocumentsHash(bytes32 childIdHash) view returns (bytes32)",
-  "event DocumentsStored(bytes32 indexed childIdHash, bytes32 indexed documentsHash, address indexed recordedBy, uint256 timestamp)",
 ];
 
 export const documentsRegistryContract = new ethers.Contract(
@@ -51,7 +51,13 @@ export const attendanceContract = documentsRegistryContract;
 
 export { wallet, provider, ethers };
 
-export const buildChildIdHash = (studentId: string) => ethers.id(studentId.trim());
+export const buildChildIdHash = (childId: string) => {
+  const normalizedChildId = String(childId || "").trim();
+  if (!ethers.isHexString(`0x${normalizedChildId}`, 12)) {
+    throw new Error("Child ID must be a valid MongoDB ObjectId.");
+  }
+  return ethers.id(`smartkidcare:child:${normalizedChildId.toLowerCase()}`);
+};
 
 export const hashFileBuffer = (buffer: Buffer): string => ethers.keccak256(buffer);
 

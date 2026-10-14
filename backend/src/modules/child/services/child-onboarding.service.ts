@@ -4,7 +4,6 @@ import { logger } from "../../../shared/lib/logger";
 import { type UploadResult } from "../../../shared/utils/upload-cloudinary";
 import { storageService } from "../../../shared/services/storage.service";
 import { hashFileBuffer } from "../../blockchain/utils/ethers";
-import { storeChildDocumentHashes } from "../../blockchain/services/blockchain.service";
 import { generateStudentId } from "../../../shared/utils/generate-child-id";
 import { extractUploadedDocument, resolveTeacherAssignment } from "../shared";
 import { parseDate } from "../../../shared/utils/date.utils";
@@ -67,10 +66,10 @@ export class ChildOnboardingService {
     try {
       // 1. Storage Service
       if (birthFile) {
-        birthUpload = await storageService.uploadFile(birthFile.buffer, "child-records/birth-certificates", birthFile.mimetype, birthFile.originalname);
+        birthUpload = await storageService.uploadEncryptedDocument(birthFile.buffer, "child-records/birth-certificates", birthFile.mimetype, birthFile.originalname);
       }
       if (parentIdFile) {
-        parentUpload = await storageService.uploadFile(parentIdFile.buffer, "child-records/parent-ids", parentIdFile.mimetype, parentIdFile.originalname);
+        parentUpload = await storageService.uploadEncryptedDocument(parentIdFile.buffer, "child-records/parent-ids", parentIdFile.mimetype, parentIdFile.originalname);
       }
 
       const documents = {
@@ -97,6 +96,15 @@ export class ChildOnboardingService {
         teacher: resolvedTeacherId,
         daycareCenter: resolvedDaycareCenterId,
         documents: (documents.birthCertificate || documents.parentId) ? documents : undefined,
+        documentIntegrity:
+          documents.birthCertificate || documents.parentId
+            ? {
+                status: "pending",
+                attemptCount: 0,
+                nextAttemptAt: new Date(),
+                blockchainVerified: false,
+              }
+            : undefined,
       };
 
       let parentCredentials: any = null;
@@ -123,21 +131,28 @@ export class ChildOnboardingService {
       // 3. Child Service
       childRecord = await childService.createChild(payload);
 
-      // 4. Blockchain Service (Inline integration until Phase 3)
-      let documentsAnchor = null;
-      if (birthDocumentHash || parentIdDocumentHash) {
-        documentsAnchor = await storeChildDocumentHashes(
-          String(childRecord.studentId || ""),
-          birthDocumentHash || null,
-          parentIdDocumentHash || null,
-        ).catch(() => null);
-
-        if (documentsAnchor) {
-          await childService.updateChildDocumentIntegrity(childRecord._id.toString(), documentsAnchor);
-        }
+      for (const [documentType, upload] of [
+        ["birthCertificate", birthUpload],
+        ["parentId", parentUpload],
+      ] as const) {
+        if (!upload) continue;
+        logger.info("Enrollment document encrypted and stored.", {
+          childId: String(childRecord._id),
+          documentType,
+          keyId: String((upload as any).encryption?.keyId || "unknown"),
+          operation: "encrypt_upload",
+          outcome: "success",
+        });
       }
 
-      return { child: childRecord, parentCredentials, documentAnchor: documentsAnchor };
+      if (documents.birthCertificate || documents.parentId) {
+        logger.info("📄 [Blockchain] Enrollment documents queued for anchoring.", {
+          childId: String(childRecord._id),
+          status: "pending",
+        });
+      }
+
+      return { child: childRecord, parentCredentials, documentAnchor: null };
 
     } catch (error) {
       if (!childRecord && createdParentId) {

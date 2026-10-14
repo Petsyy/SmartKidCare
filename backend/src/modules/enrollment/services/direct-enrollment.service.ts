@@ -303,7 +303,7 @@ export const directEnrollChild = async (command: DirectEnrollmentCommand) => {
     }
     verificationsClaimed = true;
     if (birthFile) {
-      birthUpload = await storageService.uploadFile(
+      birthUpload = await storageService.uploadEncryptedDocument(
         birthFile.buffer,
         "child-enrollment-requests/birth-certificates",
         birthFile.mimetype,
@@ -312,7 +312,7 @@ export const directEnrollChild = async (command: DirectEnrollmentCommand) => {
     }
 
     if (parentIdFile) {
-      parentUpload = await storageService.uploadFile(
+      parentUpload = await storageService.uploadEncryptedDocument(
         parentIdFile.buffer,
         "child-enrollment-requests/parent-ids",
         parentIdFile.mimetype,
@@ -377,26 +377,26 @@ export const directEnrollChild = async (command: DirectEnrollmentCommand) => {
         daycareCenter: selectedCenter._id,
       },
       {
-        birthUpload: birthUpload
-          ? {
-              publicId: birthUpload.publicId,
-              resourceType: String(birthUpload.resourceType || "image"),
-              format: String(birthUpload.format || "jpg"),
-              bytes: birthUpload.bytes || 0,
-            }
-          : null,
-        parentUpload: parentUpload
-          ? {
-              publicId: parentUpload.publicId,
-              resourceType: String(parentUpload.resourceType || "image"),
-              format: String(parentUpload.format || "jpg"),
-              bytes: parentUpload.bytes || 0,
-            }
-          : null,
+        birthUpload: birthUpload ? { ...birthUpload } : null,
+        parentUpload: parentUpload ? { ...parentUpload } : null,
         birthDocumentHash,
         parentIdDocumentHash,
       },
     );
+
+    for (const [documentType, upload] of [
+      ["birthCertificate", birthUpload],
+      ["parentId", parentUpload],
+    ] as const) {
+      if (!upload) continue;
+      logger.info("Enrollment document encrypted and stored.", {
+        childId: String(created.child._id),
+        documentType,
+        keyId: String((upload as any).encryption?.keyId || "unknown"),
+        operation: "encrypt_upload",
+        outcome: "success",
+      });
+    }
 
     if (weight != null && height != null) {
       await NutritionRecord.create({

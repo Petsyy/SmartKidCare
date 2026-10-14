@@ -10,8 +10,8 @@ export type AuthUser = {
 };
 
 export type ResolvedDocumentAccess = {
-  signedUrl: string;
   documentType: string;
   contentType: string;
   fileName: string;
+  buffer: Buffer;
 };

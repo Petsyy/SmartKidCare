@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import Child from "../../../models/Child";
 import DocumentAccessToken from "../../../models/DocumentAccessToken";
 import { BaseRepository } from "../../../shared/repositories/base.repository";
+import { logger } from "../../../shared/lib/logger";
 
 // ─── Child ────────────────────────────────────────────────────────────────────
 
@@ -27,8 +28,8 @@ export class DocumentAccessTokenRepository extends BaseRepository<any> {
     super(DocumentAccessToken);
   }
 
-  async findByToken(token: string): Promise<any | null> {
-    return this.model.findOne({ token });
+  async consumeByToken(token: string): Promise<any | null> {
+    return this.model.findOneAndDelete({ token });
   }
 
   async createToken(data: {
@@ -62,8 +63,12 @@ export class DocumentAccessTokenRepository extends BaseRepository<any> {
           },
         ],
       })
-      .catch(() => {
-        console.warn("Token cleanup failed silently");
+      .catch((error: unknown) => {
+        logger.warn("Document access token cleanup failed.", {
+          operation: "prune_access_tokens",
+          outcome: "failed",
+          error: error instanceof Error ? error.message : "unknown",
+        });
       });
   }
 }

@@ -1,161 +1,166 @@
+import type { ContractTransactionResponse, TransactionReceipt } from "ethers";
 import {
+  documentsRegistryAddress,
   documentsRegistryContract,
-  buildChildIdHash,
   buildDocumentsHash,
-  hashFileBuffer,
   wallet,
   provider,
+  SEPOLIA_CHAIN_ID,
+  ethers,
 } from "../utils/ethers";
+import type {
+  BlockchainDocumentHashes,
+  BlockchainErrorCode,
+} from "../types/blockchain-proof.types";
+import { logger } from "../../../shared/lib/logger";
 
-let totalGasSpent = 0;
-let totalTransactions = 0;
-let startingBalance = 0;
-const ZERO_HASH =
-  "0x0000000000000000000000000000000000000000000000000000000000000000";
+export const ZERO_HASH = ethers.ZeroHash;
 
-function normalizeDocumentHash(
+export const normalizeDocumentHash = (
   value: string | null | undefined,
-  label: string,
-): string | null {
-  const normalized = String(value || "").trim();
-  if (!normalized) {
+): string | null => {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (!normalized) return null;
+  return /^0x[a-f0-9]{64}$/.test(normalized) ? normalized : null;
+};
+
+export const resolveDocumentHashes = (
+  birthCertificateHash?: string | null,
+  parentIdHash?: string | null,
+): BlockchainDocumentHashes | null => {
+  const birthInput = String(birthCertificateHash || "").trim();
+  const parentInput = String(parentIdHash || "").trim();
+  const birth = normalizeDocumentHash(birthCertificateHash);
+  const parent = normalizeDocumentHash(parentIdHash);
+  if ((birthInput && !birth) || (parentInput && !parent)) return null;
+  if (!birth && !parent) return null;
+
+  const resolvedBirth = birth || ZERO_HASH;
+  const resolvedParent = parent || ZERO_HASH;
+  return {
+    birthCertificateHash: resolvedBirth,
+    parentIdHash: resolvedParent,
+    documentsHash: buildDocumentsHash(resolvedBirth, resolvedParent),
+  };
+};
+
+export const classifyBlockchainError = (error: unknown): BlockchainErrorCode => {
+  const value = error as {
+    code?: string;
+    revert?: { name?: string };
+    errorName?: string;
+    shortMessage?: string;
+    message?: string;
+  };
+  const errorName = String(value?.revert?.name || value?.errorName || "");
+  const message = String(value?.shortMessage || value?.message || "").toLowerCase();
+
+  if (errorName === "NotAuthorized") return "SIGNER_NOT_AUTHORIZED";
+  if (message.includes("insufficient funds")) return "INSUFFICIENT_FUNDS";
+  if (
+    message.includes("timeout") ||
+    message.includes("network") ||
+    message.includes("socket") ||
+    message.includes("server response") ||
+    value?.code === "NETWORK_ERROR" ||
+    value?.code === "TIMEOUT"
+  ) {
+    return "RPC_UNAVAILABLE";
+  }
+  if (message.includes("revert")) return "TRANSACTION_REVERTED";
+  return "UNKNOWN_BLOCKCHAIN_ERROR";
+};
+
+export class BlockchainClient {
+  async getStoredDocumentsHash(childIdHash: string): Promise<string> {
+    return String(
+      await documentsRegistryContract.getDocumentsHash(childIdHash),
+    ).toLowerCase();
+  }
+
+  async verifyDocuments(childIdHash: string, documentsHash: string): Promise<boolean> {
+    return Boolean(
+      await documentsRegistryContract.verifyDocuments(childIdHash, documentsHash),
+    );
+  }
+
+  async broadcastDocumentsHash(
+    childIdHash: string,
+    documentsHash: string,
+  ): Promise<ContractTransactionResponse> {
+    return documentsRegistryContract.storeDocumentsHash(
+      childIdHash,
+      documentsHash,
+    ) as Promise<ContractTransactionResponse>;
+  }
+
+  async getTransactionReceipt(txHash: string): Promise<TransactionReceipt | null> {
+    return provider.getTransactionReceipt(txHash);
+  }
+
+  async waitForTransaction(txHash: string): Promise<TransactionReceipt | null> {
+    const deadline = Date.now() + 60_000;
+    let rpcWarningLogged = false;
+
+    while (Date.now() < deadline) {
+      try {
+        const receipt = await provider.getTransactionReceipt(txHash);
+        if (receipt) return receipt;
+      } catch (error: unknown) {
+        if (!rpcWarningLogged) {
+          logger.warn("⏳ [Blockchain] Receipt lookup unavailable; retrying.", {
+            txHash,
+            errorCode: classifyBlockchainError(error),
+          });
+          rpcWarningLogged = true;
+        }
+      }
+      await new Promise<void>((resolve) => setTimeout(resolve, 5_000));
+    }
+
     return null;
   }
 
-  if (!/^0x[a-fA-F0-9]{64}$/.test(normalized)) {
-    throw new Error(`${label} hash is invalid.`);
-  }
+  async getHealth() {
+    const [network, blockNumber, code, owner, balance] = await Promise.all([
+      provider.getNetwork(),
+      provider.getBlockNumber(),
+      provider.getCode(documentsRegistryAddress),
+      documentsRegistryContract.owner(),
+      provider.getBalance(wallet.address),
+    ]);
 
-  return normalized.toLowerCase();
+    return {
+      healthy:
+        Number(network.chainId) === SEPOLIA_CHAIN_ID &&
+        code !== "0x" &&
+        String(owner).toLowerCase() === wallet.address.toLowerCase() &&
+        balance > 0n,
+      chainId: Number(network.chainId),
+      blockNumber,
+      contractHasCode: code !== "0x",
+      walletMatchesOwner:
+        String(owner).toLowerCase() === wallet.address.toLowerCase(),
+      walletFunded: balance > 0n,
+    };
+  }
 }
 
-function getDocumentsRegistryErrorMessage(error: any): string {
-  const errorName = String(
-    error?.revert?.name || error?.errorName || error?.info?.errorName || "",
-  ).trim();
-
-  if (errorName === "NotAuthorized") {
-    return "The configured wallet is not authorized to write to DocumentsRegistry.";
-  }
-
-  if (errorName === "InvalidInput") {
-    return "DocumentsRegistry rejected the request because one or more hashes were invalid.";
-  }
-
-  return (
-    error?.reason ||
-    error?.shortMessage ||
-    error?.info?.error?.message ||
-    error?.message ||
-    "Unknown error"
-  );
-}
+export const blockchainClient = new BlockchainClient();
 
 export async function getWalletBalance() {
   const balance = await provider.getBalance(wallet.address);
-  const balanceInEth = Number(balance) / 1e18;
   return {
     address: wallet.address,
     balance: balance.toString(),
-    balanceInEth: balanceInEth.toFixed(6),
+    balanceInEth: ethers.formatEther(balance),
   };
 }
 
 export async function getGasComparison() {
-  const currentBalance = await provider.getBalance(wallet.address);
-  const currentBalanceInEth = Number(currentBalance) / 1e18;
-
-  if (startingBalance === 0) {
-    startingBalance = currentBalanceInEth;
-  }
-
+  const balance = await provider.getBalance(wallet.address);
   return {
-    startingBalance: startingBalance.toFixed(8),
-    currentBalance: currentBalanceInEth.toFixed(8),
-    totalGasSpent: totalGasSpent.toFixed(8),
-    totalTransactions,
-    spent: (startingBalance - currentBalanceInEth).toFixed(8),
+    currentBalance: ethers.formatEther(balance),
+    tracking: "Persisted transaction receipts should be used for gas reporting.",
   };
-}
-
-export async function storeChildDocumentHashes(
-  studentId: string,
-  birthCertificateHash?: string | null,
-  parentIdHash?: string | null,
-) {
-  const safeStudentId = String(studentId || "").trim();
-  if (!safeStudentId) {
-    throw new Error("studentId is required for document anchoring.");
-  }
-
-  const normalizedBirthCertificateHash = normalizeDocumentHash(
-    birthCertificateHash,
-    "Birth certificate",
-  );
-  const normalizedParentIdHash = normalizeDocumentHash(
-    parentIdHash,
-    "Parent ID",
-  );
-
-  if (!normalizedBirthCertificateHash && !normalizedParentIdHash) {
-    return null;
-  }
-
-  const childIdHash = buildChildIdHash(safeStudentId);
-  const resolvedBirthCertificateHash =
-    normalizedBirthCertificateHash || ZERO_HASH;
-  const resolvedParentIdHash = normalizedParentIdHash || ZERO_HASH;
-  const documentsHash = buildDocumentsHash(
-    resolvedBirthCertificateHash,
-    resolvedParentIdHash,
-  );
-
-  try {
-    const tx = await documentsRegistryContract.storeDocumentsHash(
-      childIdHash,
-      documentsHash,
-    );
-    const receipt = await tx.wait();
-
-    const gasUsed = receipt.gasUsed;
-    const gasPrice = tx.gasPrice || receipt.gasPrice || 0n;
-    const gasCost = gasUsed * gasPrice;
-    const gasCostInEth = Number(gasCost) / 1e18;
-
-    totalGasSpent += gasCostInEth;
-    totalTransactions++;
-
-    return {
-      txHash: tx.hash,
-      blockNumber: receipt.blockNumber,
-      childIdHash,
-      documentsHash,
-      birthCertificateHash: resolvedBirthCertificateHash,
-      parentIdHash: resolvedParentIdHash,
-      gasUsed: gasUsed.toString(),
-      gasPrice: gasPrice.toString(),
-      gasCostInEth: gasCostInEth.toFixed(8),
-    };
-  } catch (error: any) {
-    throw new Error(getDocumentsRegistryErrorMessage(error));
-  }
-}
-
-export async function storeChildDocumentsHash(
-  studentId: string,
-  birthCertificateBuffer?: Buffer | null,
-  parentIdBuffer?: Buffer | null,
-) {
-  const birthCertificateHash = birthCertificateBuffer?.length
-    ? hashFileBuffer(birthCertificateBuffer as Buffer)
-    : null;
-  const parentIdHash = parentIdBuffer?.length
-    ? hashFileBuffer(parentIdBuffer as Buffer)
-    : null;
-
-  return storeChildDocumentHashes(
-    studentId,
-    birthCertificateHash,
-    parentIdHash,
-  );
 }

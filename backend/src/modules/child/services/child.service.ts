@@ -31,23 +31,6 @@ export class ChildService {
     return await childRepository.create(payload);
   }
 
-  async updateChildDocumentIntegrity(id: string, anchorResult: any) {
-    const child = await childRepository.findById(id);
-    if (!child) throw new NotFoundError("Child");
-
-    child.documentIntegrity = {
-      childIdHash: anchorResult.childIdHash,
-      documentsHash: anchorResult.documentsHash,
-      txHash: anchorResult.txHash,
-      blockNumber: anchorResult.blockNumber,
-      blockchainVerified: true,
-      anchoredAt: new Date(),
-    } as never;
-
-    await child.save();
-    return child;
-  }
-
   async updateChild(
     id: string,
     body: Record<string, any>,

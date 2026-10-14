@@ -1,123 +1,101 @@
 import mongoose from "mongoose";
-import Child from "../../../models/Child";
-import {
-  documentsRegistryContract,
-  buildChildIdHash,
-  buildDocumentsHash,
-} from "../utils/ethers";
+import { AppError, ForbiddenError, NotFoundError, UnauthorizedError, ValidationError } from "../../../shared/errors/app-error";
 import { canAccessChild } from "../../../shared/services/child-access.service";
-import { normalizeString } from "../../../shared/utils/string.utils";
-import type { ChildServiceResponse, AuthUser } from "../types/blockchain-proof.types";
+import { buildChildIdHash } from "../utils/ethers";
+import { blockchainRepository, type BlockchainRepository } from "../repositories/blockchain.repository";
+import { blockchainClient, type BlockchainClient, resolveDocumentHashes } from "./blockchain.service";
+import type { AuthUser, BlockchainAnchorStatus } from "../types/blockchain-proof.types";
 
-const ZERO_HASH =
-  "0x0000000000000000000000000000000000000000000000000000000000000000";
-export const getChildBlockchainProofData = async (
-  user: AuthUser | undefined,
-  childIdInput: string,
-): Promise<ChildServiceResponse> => {
-  if (!user?.id) {
-    return {
-      status: 401,
-      body: { message: "Unauthorized" },
-    };
-  }
-
-  const childId = String(childIdInput || "");
-  if (!mongoose.Types.ObjectId.isValid(childId)) {
-    return {
-      status: 400,
-      body: { message: "Invalid child ID" },
-    };
-  }
-
-  const child = await Child.findById(childId)
-    .populate("parent", "_id")
-    .populate("teacher", "_id")
-    .select("studentId documents documentIntegrity parent teacher daycareCenter")
-    .lean();
-
-  if (!child) {
-    return {
-      status: 404,
-      body: { message: "Child not found" },
-    };
-  }
-
-  const canAccess = canAccessChild(user as any, child);
-  if (!canAccess) {
-    return {
-      status: 403,
-      body: { message: "Forbidden" },
-    };
-  }
-
-  const studentId = String((child as any).studentId || "").trim();
-  if (!studentId) {
-    return {
-      status: 400,
-      body: { message: "Student ID is missing" },
-    };
-  }
-
-  const birthHash =
-    String((child as any)?.documents?.birthCertificate?.hash || "").trim() ||
-    ZERO_HASH;
-  const parentIdHash =
-    String((child as any)?.documents?.parentId?.hash || "").trim() || ZERO_HASH;
-
-  const childIdHash = buildChildIdHash(studentId);
-  const documentsHash = buildDocumentsHash(birthHash, parentIdHash);
-
-  let verifiedOnChain = false;
-  let onChainDocumentsHash: string | null = null;
-
-  try {
-    verifiedOnChain = await documentsRegistryContract.verifyDocuments(
-      childIdHash,
-      documentsHash,
-    );
-    onChainDocumentsHash =
-      await documentsRegistryContract.getDocumentsHash(childIdHash);
-  } catch (error) {
-    console.error("DocumentsRegistry proof read failed:", error);
-  }
-
-  const txHash = String((child as any)?.documentIntegrity?.txHash || "").trim();
-  const network = "Sepolia";
-  const etherscanUrl = txHash
-    ? `https://sepolia.etherscan.io/tx/${txHash}`
-    : null;
-
-  return {
-    status: 200,
-    body: {
-      network,
-      txHash: txHash || null,
-      etherscanUrl,
-      blockNumber: (child as any)?.documentIntegrity?.blockNumber ?? null,
-      anchoredAt: (child as any)?.documentIntegrity?.anchoredAt ?? null,
-      childIdHash,
-      localDocumentsHash: documentsHash,
-      onChainDocumentsHash,
-      verifiedOnChain,
-      documents: {
-        birthCertificate: {
-          hasDocument: Boolean((child as any)?.documents?.birthCertificate?.publicId),
-          hash: birthHash === ZERO_HASH ? null : birthHash,
-          blockchainVerified:
-            Boolean((child as any)?.documents?.birthCertificate?.publicId) &&
-            verifiedOnChain,
-        },
-        parentId: {
-          hasDocument: Boolean((child as any)?.documents?.parentId?.publicId),
-          hash: parentIdHash === ZERO_HASH ? null : parentIdHash,
-          blockchainVerified:
-            Boolean((child as any)?.documents?.parentId?.publicId) &&
-            verifiedOnChain,
-        },
-      },
-    },
-  };
+type ProofDependencies = {
+  repository: BlockchainRepository;
+  client: BlockchainClient;
 };
 
-export type { ChildServiceResponse } from "../types/blockchain-proof.types";
+export class BlockchainProofService {
+  constructor(private readonly deps: ProofDependencies) {}
+
+  async getProof(user: AuthUser | undefined, childIdInput: string) {
+    if (!user?.id) throw new UnauthorizedError();
+    const childId = String(childIdInput || "").trim();
+    if (!mongoose.Types.ObjectId.isValid(childId)) {
+      throw new ValidationError("Invalid child ID");
+    }
+
+    const child = await this.deps.repository.findForProof(childId);
+    if (!child) throw new NotFoundError("Child");
+    if (!canAccessChild(user as never, child)) throw new ForbiddenError();
+
+    const documents = child.documents as {
+      birthCertificate?: { publicId?: string; hash?: string | null };
+      parentId?: { publicId?: string; hash?: string | null };
+    } | undefined;
+    const integrity = child.documentIntegrity as {
+      status?: BlockchainAnchorStatus | null;
+      txHash?: string | null;
+      blockNumber?: number | null;
+      anchoredAt?: Date | null;
+      attemptCount?: number;
+      lastAttemptAt?: Date | null;
+      nextAttemptAt?: Date | null;
+      lastErrorCode?: string | null;
+    } | undefined;
+    const resolved = resolveDocumentHashes(
+      documents?.birthCertificate?.hash,
+      documents?.parentId?.hash,
+    );
+    if (!resolved) throw new ValidationError("No valid document hashes are available");
+
+    const childIdHash = buildChildIdHash(childId);
+    let verifiedOnChain: boolean;
+    let onChainDocumentsHash: string;
+    try {
+      onChainDocumentsHash = await this.deps.client.getStoredDocumentsHash(childIdHash);
+      verifiedOnChain =
+        onChainDocumentsHash === resolved.documentsHash.toLowerCase();
+    } catch {
+      throw new AppError(
+        503,
+        "Blockchain verification is temporarily unavailable.",
+        true,
+        "RPC_UNAVAILABLE",
+      );
+    }
+
+    const txHash = String(integrity?.txHash || "").trim() || null;
+    return {
+      network: "Sepolia",
+      networkAvailable: true,
+      anchorStatus: integrity?.status || "pending",
+      verifiedOnChain,
+      txHash,
+      etherscanUrl: txHash ? `https://sepolia.etherscan.io/tx/${txHash}` : null,
+      blockNumber: integrity?.blockNumber ?? null,
+      anchoredAt: integrity?.anchoredAt ?? null,
+      attemptCount: integrity?.attemptCount ?? 0,
+      lastAttemptAt: integrity?.lastAttemptAt ?? null,
+      nextAttemptAt: integrity?.nextAttemptAt ?? null,
+      errorCode: integrity?.lastErrorCode ?? null,
+      childIdHash,
+      localDocumentsHash: resolved.documentsHash,
+      onChainDocumentsHash,
+      documents: {
+        birthCertificate: {
+          hasDocument: Boolean(documents?.birthCertificate?.publicId),
+          hash: documents?.birthCertificate?.hash || null,
+          blockchainVerified:
+            Boolean(documents?.birthCertificate?.publicId) && verifiedOnChain,
+        },
+        parentId: {
+          hasDocument: Boolean(documents?.parentId?.publicId),
+          hash: documents?.parentId?.hash || null,
+          blockchainVerified: Boolean(documents?.parentId?.publicId) && verifiedOnChain,
+        },
+      },
+    };
+  }
+}
+
+export const blockchainProofService = new BlockchainProofService({
+  repository: blockchainRepository,
+  client: blockchainClient,
+});

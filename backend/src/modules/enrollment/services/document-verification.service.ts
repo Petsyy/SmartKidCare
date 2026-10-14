@@ -459,7 +459,7 @@ export class DocumentVerificationService {
     };
     const cached = await documentVerificationRepository.findReusable(cacheKey);
     if (cached) {
-      logger.info("Document verification completed.", {
+      logger.info("⚡ [Verification] Document verification completed.", {
         source: "cache",
         documentType: body.documentType,
         totalMs: Date.now() - verificationStartedAt,
@@ -556,7 +556,7 @@ export class DocumentVerificationService {
       modelVersion: this.modelVersion(),
       expiresAt: new Date(Date.now() + minutes * 60_000),
     });
-    logger.info("Document verification completed.", {
+    logger.info("🤖 [Verification] Document verification completed.", {
       source: "ai",
       documentType: body.documentType,
       inputBytes: file.size,

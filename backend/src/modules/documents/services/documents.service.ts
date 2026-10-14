@@ -1,62 +1,104 @@
 import mongoose from "mongoose";
 import { randomUUID } from "crypto";
-import { generateSecureUrl } from "../../../shared/utils/generate-secure-url";
+import { ethers } from "ethers";
+import { AppError } from "../../../shared/errors/app-error";
+import { logger } from "../../../shared/lib/logger";
+import { storageService } from "../../../shared/services/storage.service";
+import {
+  decryptDocument,
+  type DocumentEncryptionMetadata,
+} from "../../../shared/services/document-encryption.service";
 import { resolveDocumentField } from "../../child/shared";
-import { canAccessChildIdentityDocument } from "../../../shared/services/child-access.service";
+import { canAccessChild } from "../../../shared/services/child-access.service";
 import {
   documentsChildRepository,
   documentAccessTokenRepository,
 } from "../repositories/documents.repository";
-import type { ChildServiceResponse, AuthUser, ResolvedDocumentAccess } from "../types/documents.types";
+import type {
+  ChildServiceResponse,
+  AuthUser,
+  ResolvedDocumentAccess,
+} from "../types/documents.types";
 
-const getTokenErrorResponse = (message: string, status = 410): ChildServiceResponse => ({
+const response = (status: number, message: string): ChildServiceResponse => ({
   status,
   body: { message },
 });
 
+const resolveStoredDocument = async (childId: string, documentType: string) => {
+  const child = await documentsChildRepository.findWithDocuments(childId);
+  const doc = (child as any)?.documents?.[documentType];
+  return { child, doc };
+};
+
 const consumeDocumentAccessToken = async (
   token: string,
 ): Promise<ChildServiceResponse | ResolvedDocumentAccess> => {
-  const accessToken = await documentAccessTokenRepository.findByToken(token);
-  if (!accessToken) {
-    return {
-      status: 404,
-      body: { message: "Token not found or expired" },
-    };
-  }
-
-  if (accessToken.used) {
-    return getTokenErrorResponse(
-      "This link has already been used. Request a new document link.",
-    );
-  }
-
+  const accessToken = await documentAccessTokenRepository.consumeByToken(token);
+  if (!accessToken) return response(404, "Token not found or expired");
   if (new Date() > accessToken.expiresAt) {
-    return getTokenErrorResponse(
-      "This link has expired. Request a new document link.",
-    );
+    return response(410, "This link has expired. Request a new document link.");
   }
 
-  const signedUrl = generateSecureUrl(
-    accessToken.publicId,
-    accessToken.resourceType,
-    accessToken.format,
+  const { doc } = await resolveStoredDocument(
+    String(accessToken.childId),
+    String(accessToken.documentType),
   );
+  if (!doc?.publicId || !doc?.resourceType) {
+    return response(404, "Document not found");
+  }
 
-  await documentAccessTokenRepository.deleteById(String(accessToken._id));
-
-  const isImage =
-    accessToken.resourceType === "image" ||
-    ["jpg", "jpeg", "png", "gif", "webp"].includes(
-      accessToken.format.toLowerCase(),
+  try {
+    const storedBytes = await storageService.downloadFile(
+      String(doc.publicId),
+      String(doc.resourceType),
+      String(doc.format || "bin"),
     );
+    const encryption = doc.encryption as DocumentEncryptionMetadata | undefined;
+    const buffer = encryption?.keyId
+      ? decryptDocument(storedBytes, encryption)
+      : storedBytes;
+    const actualHash = ethers.keccak256(buffer);
+    if (
+      doc.hash &&
+      actualHash.toLowerCase() !== String(doc.hash).toLowerCase()
+    ) {
+      throw new Error("Document plaintext hash mismatch");
+    }
 
-  return {
-    signedUrl,
-    documentType: accessToken.documentType,
-    contentType: isImage ? `image/${accessToken.format}` : "application/pdf",
-    fileName: `${accessToken.childId}-${accessToken.documentType}.${accessToken.format}`,
-  };
+    logger.info("Document access completed.", {
+      childId: String(accessToken.childId),
+      documentType: String(accessToken.documentType),
+      keyId: encryption?.keyId || "legacy-plaintext",
+      operation: "decrypt_stream",
+      outcome: "success",
+    });
+
+    const contentType =
+      encryption?.originalMimeType ||
+      (doc.resourceType === "image"
+        ? `image/${doc.format || "jpeg"}`
+        : "application/pdf");
+    const fileName =
+      encryption?.originalFileName ||
+      `${accessToken.childId}-${accessToken.documentType}.${doc.format || "pdf"}`;
+    return {
+      buffer,
+      documentType: String(accessToken.documentType),
+      contentType,
+      fileName,
+    };
+  } catch (error: unknown) {
+    logger.error("Document access failed.", {
+      childId: String(accessToken.childId),
+      documentType: String(accessToken.documentType),
+      keyId: String(doc?.encryption?.keyId || "legacy-plaintext"),
+      operation: "decrypt_stream",
+      outcome: "failed",
+      error: error instanceof Error ? error.message : "unknown",
+    });
+    throw new AppError(500, "Document could not be securely retrieved.");
+  }
 };
 
 export const createChildDocumentAccessToken = async (
@@ -64,102 +106,49 @@ export const createChildDocumentAccessToken = async (
   childIdInput: string,
   documentTypeInput: string,
 ): Promise<ChildServiceResponse> => {
-  if (!user?.id) {
-    return {
-      status: 401,
-      body: { message: "Unauthorized" },
-    };
-  }
-
+  if (!user?.id) return response(401, "Unauthorized");
   const childId = String(childIdInput || "");
   if (!mongoose.Types.ObjectId.isValid(childId)) {
-    return {
-      status: 400,
-      body: { message: "Invalid child ID" },
-    };
+    return response(400, "Invalid child ID");
   }
+  const documentField = resolveDocumentField(documentTypeInput);
+  if (!documentField) return response(400, "Invalid document type");
 
-  const documentField = resolveDocumentField(String(documentTypeInput));
-  if (!documentField) {
-    return {
-      status: 400,
-      body: { message: "Invalid document type" },
-    };
-  }
-
-  const child = await documentsChildRepository.findWithDocuments(childId);
-
-  if (!child) {
-    return {
-      status: 404,
-      body: { message: "Child not found" },
-    };
-  }
-
-  const canAccess = canAccessChildIdentityDocument(user as any, child);
-
-  if (!canAccess) {
-    return {
-      status: 403,
-      body: { message: "Forbidden" },
-    };
-  }
-
-  const doc = (child as any)?.documents?.[documentField];
+  const { child, doc } = await resolveStoredDocument(childId, documentField);
+  if (!child) return response(404, "Child not found");
+  if (!canAccessChild(user as any, child)) return response(403, "Forbidden");
   if (!doc?.publicId || !doc?.resourceType) {
-    return {
-      status: 404,
-      body: { message: "Document not found" },
-    };
+    return response(404, "Document not found");
   }
 
   await documentAccessTokenRepository.pruneStale();
-
   const token = randomUUID();
   const expiresAt = new Date(Date.now() + 60 * 1000);
-
   await documentAccessTokenRepository.createToken({
     token,
     childId: new mongoose.Types.ObjectId(childId),
     documentType: documentField,
     publicId: String(doc.publicId),
     resourceType: String(doc.resourceType),
-    format: String(doc.format || "jpg"),
+    format: String(doc.format || "bin"),
     userId: new mongoose.Types.ObjectId(user.id),
     expiresAt,
   });
 
+  logger.info("Document access token issued.", {
+    childId,
+    documentType: documentField,
+    keyId: String(doc?.encryption?.keyId || "legacy-plaintext"),
+    operation: "issue_access_token",
+    outcome: "success",
+  });
   return {
     status: 200,
     body: {
       token,
       expiresInSeconds: 60,
       documentType: documentField,
-    },
-  };
-};
-
-export const getChildDocumentUrlByToken = async (
-  tokenInput: string,
-): Promise<ChildServiceResponse> => {
-  const token = String(tokenInput || "").trim();
-  if (!token) {
-    return {
-      status: 400,
-      body: { message: "Invalid token" },
-    };
-  }
-
-  const resolved = await consumeDocumentAccessToken(token);
-  if ("status" in resolved) {
-    return resolved;
-  }
-
-  return {
-    status: 200,
-    body: {
-      url: resolved.signedUrl,
-      documentType: resolved.documentType,
+      viewPath: `/api/documents/view?token=${encodeURIComponent(token)}`,
     },
   };
 };
@@ -168,27 +157,10 @@ export const getChildDocumentStreamByToken = async (
   tokenInput: string,
 ): Promise<ChildServiceResponse> => {
   const token = String(tokenInput || "").trim();
-  if (!token) {
-    return {
-      status: 400,
-      body: { message: "Invalid token" },
-    };
-  }
-
+  if (!token) return response(400, "Invalid token");
   const resolved = await consumeDocumentAccessToken(token);
-  if ("status" in resolved) {
-    return resolved;
-  }
-
-  return {
-    status: 200,
-    body: {
-      signedUrl: resolved.signedUrl,
-      contentType: resolved.contentType,
-      fileName: resolved.fileName,
-      documentType: resolved.documentType,
-    },
-  };
+  if ("status" in resolved) return resolved;
+  return { status: 200, body: resolved };
 };
 
 export type { ChildServiceResponse } from "../types/documents.types";

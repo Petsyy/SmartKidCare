@@ -1,5 +1,5 @@
 import type { HydratedDocument } from "mongoose";
-import { storeChildDocumentHashes } from "../../blockchain/services/blockchain.service";
+import { logger } from "../../../shared/lib/logger";
 import type { UploadResult } from "../../../shared/utils/upload-cloudinary";
 import { extractUploadedDocument } from "../shared";
 import { childRepository } from "../repositories/child.repository";
@@ -57,27 +57,26 @@ export const createChildRecord = async (
     bmi,
     nutritionalStatus,
     ...(documents ? { documents } : {}),
+    ...(documents
+      ? {
+          documentIntegrity: {
+            status: "pending",
+            attemptCount: 0,
+            nextAttemptAt: new Date(),
+            blockchainVerified: false,
+          },
+        }
+      : {}),
   });
 
-  const documentsAnchor = await storeChildDocumentHashes(
-    String(child.studentId || ""),
-    uploads.birthDocumentHash || null,
-    uploads.parentIdDocumentHash || null,
-  ).catch(() => null);
-
-  if (documentsAnchor) {
-    child.documentIntegrity = {
-      childIdHash: documentsAnchor.childIdHash,
-      documentsHash: documentsAnchor.documentsHash,
-      txHash: documentsAnchor.txHash,
-      blockNumber: documentsAnchor.blockNumber,
-      blockchainVerified: true,
-      anchoredAt: new Date(),
-    } as never;
-    await child.save();
+  if (documents) {
+    logger.info("📄 [Blockchain] Enrollment documents queued for anchoring.", {
+      childId: String(child._id),
+      status: "pending",
+    });
   }
 
-  return { child, documentsAnchor };
+  return { child, documentsAnchor: null };
 };
 
 export type {

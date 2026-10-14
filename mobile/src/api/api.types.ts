@@ -38,8 +38,33 @@ export interface ChildDocumentIntegrity {
   documentsHash?: string | null;
   txHash?: string | null;
   blockNumber?: number | null;
+  status?: "pending" | "processing" | "confirmed" | "failed" | null;
+  chainId?: number | null;
+  contractAddress?: string | null;
+  attemptCount?: number;
+  nextAttemptAt?: string | null;
+  lastAttemptAt?: string | null;
+  lastErrorCode?: string | null;
   blockchainVerified?: boolean;
   anchoredAt?: string | null;
+}
+
+export interface BlockchainProofResponse {
+  network: "Sepolia";
+  networkAvailable: boolean;
+  anchorStatus: "pending" | "processing" | "confirmed" | "failed";
+  verifiedOnChain: boolean;
+  txHash: string | null;
+  etherscanUrl: string | null;
+  blockNumber: number | null;
+  anchoredAt: string | null;
+  attemptCount: number;
+  lastAttemptAt: string | null;
+  nextAttemptAt: string | null;
+  errorCode: string | null;
+  childIdHash: string;
+  localDocumentsHash: string;
+  onChainDocumentsHash: string;
 }
 
 export interface Guardian {

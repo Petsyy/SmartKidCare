@@ -1,7 +1,11 @@
 import { ChildDocumentIntegrity } from "../api/parent.api";
 import { BLOCK_EXPLORER_BASE_URL } from "../config/config.api";
 
-export type BlockchainStatusKey = "verified" | "pending" | "not_anchored";
+export type BlockchainStatusKey =
+  | "verified"
+  | "pending"
+  | "failed"
+  | "not_anchored";
 
 export type BlockchainStatusInfo = {
   key: BlockchainStatusKey;
@@ -24,11 +28,24 @@ export function getBlockchainStatusInfo(
   const documentsHash = normalizeHash(documentIntegrity?.documentsHash);
   const anchoredAt = String(documentIntegrity?.anchoredAt || "").trim() || null;
 
-  if (txHash) {
+  if (
+    documentIntegrity?.status === "confirmed" &&
+    documentIntegrity.blockchainVerified === true
+  ) {
     return {
       key: "verified",
       label: "Verified on Sepolia",
       detail: "Document hashes were anchored to the blockchain.",
+      txHash,
+      anchoredAt,
+    };
+  }
+
+  if (documentIntegrity?.status === "failed") {
+    return {
+      key: "failed",
+      label: "Blockchain Verification Failed",
+      detail: "The document anchor needs administrative attention.",
       txHash,
       anchoredAt,
     };
@@ -74,6 +91,15 @@ export function getBlockchainStatusPalette(key: BlockchainStatusKey): {
       borderColor: "#FDE68A",
       textColor: "#B45309",
       dotColor: "#F59E0B",
+    };
+  }
+
+  if (key === "failed") {
+    return {
+      backgroundColor: "#FEF2F2",
+      borderColor: "#FECACA",
+      textColor: "#B91C1C",
+      dotColor: "#EF4444",
     };
   }
 

@@ -1,4 +1,5 @@
 import type { UploadResult } from "../../../shared/utils/upload-cloudinary";
+import type { DocumentEncryptionMetadata } from "../../../shared/services/document-encryption.service";
 
 export const CHILD_PROGRAM_TYPES = [
   "4Ps Beneficiary",
@@ -15,6 +16,7 @@ export type UploadedChildDocument = {
   resourceType?: string;
   format?: string;
   hash?: string;
+  encryption?: DocumentEncryptionMetadata;
 };
 
 
@@ -76,5 +78,7 @@ export const extractUploadedDocument = (
     resourceType: upload?.resourceType,
     format: upload?.format,
     hash: hash || undefined,
+    encryption: (upload as UploadResult & { encryption?: DocumentEncryptionMetadata })
+      ?.encryption,
   };
 };

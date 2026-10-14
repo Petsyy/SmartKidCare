@@ -8,19 +8,27 @@ export interface UploadResult {
   bytes: number;
 }
 
+type UploadOptions = {
+  forceRaw?: boolean;
+  storedExtension?: string;
+};
+
 export const uploadToCloudinary = async (
   buffer: Buffer,
   folder: string,
   mimetype: string,
   originalName?: string,
+  options: UploadOptions = {},
 ): Promise<UploadResult> => {
-  const resourceType = mimetype === "application/pdf" ? "raw" : "image";
+  const resourceType =
+    options.forceRaw || mimetype === "application/pdf" ? "raw" : "image";
   const inferredExtension = String(originalName || "")
     .split(".")
     .pop()
     ?.trim()
     .toLowerCase();
   const extension =
+    options.storedExtension ||
     inferredExtension ||
     (mimetype === "application/pdf"
       ? "pdf"

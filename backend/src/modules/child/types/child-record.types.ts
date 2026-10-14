@@ -1,6 +1,5 @@
 import type { HydratedDocument } from "mongoose";
 import type { UploadResult } from "../../../shared/utils/upload-cloudinary";
-import type { storeChildDocumentHashes } from "../../blockchain/services/blockchain.service";
 export type ChildDocumentUploads = {
   birthUpload?: UploadResult | null;
   parentUpload?: UploadResult | null;
@@ -32,9 +31,7 @@ export type CreateChildRecordPayload = {
   daycareCenter?: import("mongoose").Types.ObjectId | string | null;
 };
 
-export type ChildAnchorResult = Awaited<
-  ReturnType<typeof storeChildDocumentHashes>
->;
+export type ChildAnchorResult = null;
 
 export type ChildRecordCreationResult = {
   child: HydratedDocument<any>;

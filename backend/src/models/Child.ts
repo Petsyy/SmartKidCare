@@ -84,6 +84,20 @@ const ChildSchema = new mongoose.Schema(
         resourceType: String,
         format: String,
         hash: String,
+        encryption: {
+          version: Number,
+          algorithm: String,
+          keyId: String,
+          iv: String,
+          authTag: String,
+          originalMimeType: String,
+          originalFileName: String,
+          plaintextBytes: Number,
+          legacyPublicId: String,
+          legacyResourceType: String,
+          legacyFormat: String,
+          cleanupPending: { type: Boolean, default: false },
+        },
         verification: {
           status: String, teacherConfirmed: Boolean, modelVersion: String,
           policyVersion: String, reasonCodes: [String], confirmedAt: Date,
@@ -94,6 +108,20 @@ const ChildSchema = new mongoose.Schema(
         resourceType: String,
         format: String,
         hash: String,
+        encryption: {
+          version: Number,
+          algorithm: String,
+          keyId: String,
+          iv: String,
+          authTag: String,
+          originalMimeType: String,
+          originalFileName: String,
+          plaintextBytes: Number,
+          legacyPublicId: String,
+          legacyResourceType: String,
+          legacyFormat: String,
+          cleanupPending: { type: Boolean, default: false },
+        },
         verification: {
           status: String, teacherConfirmed: Boolean, modelVersion: String,
           policyVersion: String, reasonCodes: [String], confirmedAt: Date,
@@ -105,11 +133,29 @@ const ChildSchema = new mongoose.Schema(
       documentsHash: { type: String, default: null },
       txHash: { type: String, default: null },
       blockNumber: { type: Number, default: null },
+      status: {
+        type: String,
+        enum: ["pending", "processing", "confirmed", "failed"],
+        default: null,
+      },
+      chainId: { type: Number, default: null },
+      contractAddress: { type: String, default: null },
+      attemptCount: { type: Number, default: 0, min: 0 },
+      nextAttemptAt: { type: Date, default: null },
+      lastAttemptAt: { type: Date, default: null },
+      leaseUntil: { type: Date, default: null },
+      lastErrorCode: { type: String, default: null },
       blockchainVerified: { type: Boolean, default: false },
       anchoredAt: { type: Date, default: null },
     },
   },
   { timestamps: true },
 );
+
+ChildSchema.index({
+  "documentIntegrity.status": 1,
+  "documentIntegrity.nextAttemptAt": 1,
+  "documentIntegrity.leaseUntil": 1,
+});
 
 export default mongoose.model("Child", ChildSchema);
