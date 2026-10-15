@@ -29,6 +29,11 @@ export const verifyEnrollmentDocument = async (
         parentFirstName: string;
         parentMiddleName?: string;
         parentLastName: string;
+      }
+    | {
+        documentType: "guardianId";
+        guardianFirstName: string;
+        guardianLastName: string;
       },
 ): Promise<DocumentVerificationResponse> => {
   const formData = new FormData();
@@ -47,7 +52,7 @@ export const confirmEnrollmentDocument = async (
 ): Promise<DocumentVerificationResponse> =>
   apiClient<DocumentVerificationResponse>(
     `/api/enrollment/documents/${verificationId}/confirm`,
-    { method: "POST" },
+    { method: "POST", body: { reviewAcknowledged: true } },
   );
 
 export const getEnrollmentCenters = async (): Promise<
@@ -95,8 +100,8 @@ export const submitChildEnrollment = async (
   );
 };
 
-export const getChildren = async (): Promise<Child[]> => {
-  const data = await apiClient<Child[] | any>("/api/children");
+export const getChildren = async (status: "Active" | "Inactive" = "Active"): Promise<Child[]> => {
+  const data = await apiClient<Child[] | any>(`/api/children?status=${status}`);
   return Array.isArray(data) ? data : [];
 };
 
@@ -135,12 +140,18 @@ export const updateChild = async (
   });
 };
 
-export const updateChildStatus = async (
+export const archiveChild = async (
   childId: string,
-  status: "Active" | "Inactive",
+  input: { reason: string; note?: string },
 ): Promise<Child> => {
-  return apiClient<Child>(`/api/children/${childId}`, {
+  return apiClient<Child>(`/api/children/${childId}/archive`, {
     method: "PATCH",
-    body: { status },
+    body: input,
+  });
+};
+
+export const restoreChild = async (childId: string): Promise<Child> => {
+  return apiClient<Child>(`/api/children/${childId}/restore`, {
+    method: "PATCH",
   });
 };

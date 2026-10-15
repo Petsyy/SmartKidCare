@@ -1,29 +1,6 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-} from "react-native";
-import {
-  UserPlus,
-  Edit2,
-  Trash2,
-  X,
-  ShieldCheck,
-  Phone,
-  UserCheck,
-} from "lucide-react-native";
+import { ActivityIndicator, Text, View } from "react-native";
+import { Phone, ShieldCheck, UserRound } from "lucide-react-native";
 import { useGuardians } from "../hooks/useGuardian";
-import type { Guardian } from "@/src/api/api.types";
-import { useDocumentPicker } from "@/src/features/enrollment/hooks/useDocumentPicker";
-import {
-  getUserFriendlyErrorMessage,
-  reportHandledError,
-} from "@/src/lib/error-reporting";
 
 interface GuardianListProps {
   childId: string;
@@ -31,422 +8,78 @@ interface GuardianListProps {
   hideAddButton?: boolean;
 }
 
-export function GuardianList({
-  childId,
-  readOnly = false,
-  hideAddButton = false,
-}: GuardianListProps) {
-  const {
-    guardians,
-    isLoading,
-    isAdding,
-    setIsAdding,
-    editingIndex,
-    setEditingIndex,
-    addGuardian,
-    updateGuardian,
-    removeGuardian,
-    isMutating,
-  } = useGuardians(childId);
-  const { pickDocument } = useDocumentPicker();
-
-  const [formData, setFormData] = useState<Partial<Guardian>>({
-    firstName: "",
-    lastName: "",
-    relationship: "Guardian",
-    customRelationship: null,
-    phone: "",
-    idUrl: null,
-    verificationStatus: "pending",
-  });
-  const [guardianIdFile, setGuardianIdFile] = useState<any>(null);
-
-  const activeGuardians = guardians.filter((g) => g.isActive !== false);
-
-  const handleSave = async () => {
-    try {
-      if (
-        !formData.firstName?.trim() ||
-        !formData.lastName?.trim() ||
-        !formData.phone?.trim()
-      ) {
-        Alert.alert(
-          "Required Fields",
-          "Please provide a first name, last name, and contact phone number.",
-        );
-        return;
-      }
-
-      if (
-        formData.relationship === "Other" &&
-        !formData.customRelationship?.trim()
-      ) {
-        Alert.alert(
-          "Required Field",
-          "Please specify the relationship when selecting 'Other'.",
-        );
-        return;
-      }
-
-      if (!guardianIdFile && !formData.idUrl) {
-        Alert.alert(
-          "Valid ID Required",
-          "Upload the guardian's government-issued photo ID before saving.",
-        );
-        return;
-      }
-
-      const payload: Partial<Guardian> = {
-        ...(formData as Guardian),
-        idUrl: formData.idUrl || null,
-        verificationStatus: "pending" as const,
-      };
-
-      if (editingIndex !== null) {
-        await updateGuardian({
-          index: editingIndex,
-          data: payload,
-          files: {
-            guardianId: guardianIdFile,
-          },
-        });
-      } else {
-        await addGuardian({
-          data: payload,
-          files: {
-            guardianId: guardianIdFile,
-          },
-        });
-      }
-      resetForm();
-    } catch (error: unknown) {
-      reportHandledError("guardian.save", error);
-      Alert.alert(
-        "Unable to Save Guardian",
-        getUserFriendlyErrorMessage(
-          error,
-          "The guardian could not be saved. Please try again.",
-        ),
-      );
-    }
-  };
-
-  const handleRemove = (index: number, name: string) => {
-    Alert.alert(
-      "Remove Guardian",
-      `Are you sure you want to remove ${name} from authorized pickup persons?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Remove",
-          style: "destructive",
-          onPress: () => removeGuardian(index),
-        },
-      ],
-    );
-  };
-
-  const resetForm = () => {
-    setIsAdding(false);
-    setEditingIndex(null);
-    setGuardianIdFile(null);
-    setFormData({
-      firstName: "",
-      lastName: "",
-      relationship: "Guardian",
-      customRelationship: null,
-      phone: "",
-      idUrl: null,
-      verificationStatus: "pending",
-    });
-  };
-
-  const handlePickGuardianId = async () => {
-    const file = await pickDocument("parentId", "image");
-    if (file) setGuardianIdFile(file);
-  };
-
-  const startEdit = (guardian: Guardian, index: number) => {
-    setFormData(guardian);
-    setEditingIndex(index);
-    setIsAdding(false);
-  };
+export function GuardianList({ childId }: GuardianListProps) {
+  const { guardians, isLoading } = useGuardians(childId);
+  const activeGuardians = guardians.filter(
+    (guardian) => guardian.isActive !== false,
+  );
 
   if (isLoading) {
     return (
-      <View className="py-6 items-center justify-center">
+      <View className="items-center justify-center py-6">
         <ActivityIndicator size="small" color="#0D9488" />
-        <Text className="text-gray-400 text-xs mt-2">
+        <Text className="mt-2 text-xs text-gray-400">
           Loading authorized persons...
         </Text>
       </View>
     );
   }
 
-  const isFormOpen = isAdding || editingIndex !== null;
-
   return (
     <View className="mt-1">
-      {!isFormOpen && (
-        <View className="flex-row justify-between items-center mb-4">
-          <View className="flex-row items-center">
-            <View className="h-3 w-3 rounded-full bg-teal-500 mr-3" />
-            <Text className="text-gray-600 font-bold text-sm uppercase tracking-wider">
-              {activeGuardians.length}/5 Guardians Configured
-            </Text>
-          </View>
-          {!readOnly && !hideAddButton && activeGuardians.length < 5 && (
-            <Pressable
-              onPress={() => setIsAdding(true)}
-              className="flex-row items-center bg-teal-50 px-4 py-2 rounded-full border border-teal-200 active:opacity-85"
-              accessibilityRole="button"
-              accessibilityLabel="Add new guardian"
-            >
-              <UserPlus size={18} color="#0D9488" />
-              <Text className="ml-2 text-teal-800 font-extrabold text-sm">
-                Add Guardian
-              </Text>
-            </Pressable>
-          )}
-        </View>
-      )}
+      <View className="mb-4 flex-row items-center">
+        <View className="mr-3 h-3 w-3 rounded-full bg-teal-500" />
+        <Text className="text-sm font-bold uppercase tracking-wider text-gray-600">
+          {activeGuardians.length}/5 Guardians Configured
+        </Text>
+      </View>
 
-      {/* Add / Edit Form */}
-      {isFormOpen && !readOnly && (
-        <View className="bg-gray-50 border border-teal-200/60 rounded-3xl p-5 mb-5 shadow-sm">
-          <View className="flex-row items-center justify-between mb-5 border-b border-gray-200/60 pb-3">
-            <View className="flex-row items-center">
-              <View className="h-10 w-10 rounded-xl bg-teal-100 items-center justify-center mr-3">
-                <UserCheck size={20} color="#0D9488" />
-              </View>
-              <Text className="text-lg font-black text-gray-900">
-                {isAdding ? "Add Authorized Guardian" : "Edit Guardian Details"}
-              </Text>
-            </View>
-            <Pressable
-              onPress={resetForm}
-              className="h-8 w-8 rounded-full bg-gray-200/80 items-center justify-center active:opacity-85"
-            >
-              <X size={18} color="#4B5563" />
-            </Pressable>
-          </View>
-
-          <Text className="text-sm font-extrabold text-gray-700 mb-2 ml-2">
-            First Name *
-          </Text>
-          <TextInput
-            value={formData.firstName}
-            onChangeText={(t) => setFormData({ ...formData, firstName: t })}
-            placeholder="Jane"
-            placeholderTextColor="#9CA3AF"
-            className="bg-white border border-gray-200 rounded-2xl px-5 py-4 mb-4 text-base text-gray-900 font-semibold"
-          />
-
-          <Text className="text-sm font-extrabold text-gray-700 mb-2 ml-2">
-            Last Name *
-          </Text>
-          <TextInput
-            value={formData.lastName}
-            onChangeText={(t) => setFormData({ ...formData, lastName: t })}
-            placeholder="Doe"
-            placeholderTextColor="#9CA3AF"
-            className="bg-white border border-gray-200 rounded-2xl px-5 py-4 mb-4 text-base text-gray-900 font-semibold"
-          />
-
-          <Text className="text-sm font-extrabold text-gray-700 mb-3 ml-2">
-            Relationship to Child
-          </Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            className="mb-4"
-          >
-            {["Mother", "Father", "Guardian", "Grandparent", "Other"].map(
-              (rel) => {
-                const isSelected = formData.relationship === rel;
-                return (
-                  <Pressable
-                    key={rel}
-                    onPress={() =>
-                      setFormData({
-                        ...formData,
-                        relationship: rel as any,
-                        customRelationship:
-                          rel === "Other" ? formData.customRelationship : null,
-                      })
-                    }
-                    className={`mr-3 px-5 py-3 rounded-xl border active:opacity-85 ${
-                      isSelected
-                        ? "bg-teal-600 border-teal-600"
-                        : "bg-white border-gray-300"
-                    }`}
-                  >
-                    <Text
-                      className={`font-black text-sm ${
-                        isSelected ? "text-white" : "text-gray-800"
-                      }`}
-                    >
-                      {rel}
-                    </Text>
-                  </Pressable>
-                );
-              },
-            )}
-          </ScrollView>
-
-          {formData.relationship === "Other" && (
-            <>
-              <Text className="text-sm font-extrabold text-gray-700 mb-2 ml-2">
-                Specify Relationship *
-              </Text>
-              <TextInput
-                value={formData.customRelationship || ""}
-                onChangeText={(t) =>
-                  setFormData({ ...formData, customRelationship: t })
-                }
-                placeholder="e.g. Uncle, Nanny, Family Friend"
-                placeholderTextColor="#9CA3AF"
-                maxLength={50}
-                className="bg-white border border-gray-200 rounded-2xl px-5 py-4 mb-4 text-base text-gray-900 font-semibold"
-              />
-            </>
-          )}
-
-          <Text className="text-sm font-extrabold text-gray-700 mb-2 ml-2">
-            Contact Phone Number *
-          </Text>
-          <TextInput
-            value={formData.phone}
-            onChangeText={(t) => setFormData({ ...formData, phone: t })}
-            placeholder="0912 345 6789"
-            placeholderTextColor="#9CA3AF"
-            keyboardType="phone-pad"
-            className="bg-white border border-gray-200 rounded-2xl px-5 py-4 mb-5 text-base text-gray-900 font-semibold"
-          />
-
-          <Text className="text-sm font-extrabold text-gray-700 mb-2 ml-2">
-            Valid ID *
-          </Text>
-          <Pressable
-            onPress={handlePickGuardianId}
-            className="bg-white border border-gray-200 rounded-2xl px-5 py-4 mb-5 items-center justify-center"
-          >
-            <Text className="text-base font-bold text-gray-800">
-              {guardianIdFile ? "ID selected" : "Upload valid ID"}
-            </Text>
-          </Pressable>
-
-          <View className="flex-row gap-3">
-            <Pressable
-              onPress={resetForm}
-              className="flex-1 items-center justify-center py-4 rounded-2xl border border-gray-300 bg-white active:opacity-85"
-            >
-              <Text className="text-gray-700 font-black text-base">Cancel</Text>
-            </Pressable>
-            <Pressable
-              onPress={handleSave}
-              disabled={isMutating}
-              className={`flex-1 items-center justify-center py-4 rounded-2xl shadow-sm active:opacity-90 ${
-                isMutating ? "bg-teal-400" : "bg-teal-600"
-              }`}
-            >
-              {isMutating ? (
-                <ActivityIndicator size="small" color="white" />
-              ) : (
-                <Text className="text-white font-black text-base">
-                  Save Guardian
-                </Text>
-              )}
-            </Pressable>
-          </View>
-        </View>
-      )}
-
-      {/* Empty State */}
-      {activeGuardians.length === 0 && !isFormOpen && (
-        <View className="py-8 px-4 items-center justify-center bg-gray-50/80 rounded-2xl border border-dashed border-gray-200">
-          <View className="h-12 w-12 rounded-full bg-gray-100 items-center justify-center mb-2">
+      {activeGuardians.length === 0 ? (
+        <View className="items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50/80 px-4 py-8">
+          <View className="mb-2 h-12 w-12 items-center justify-center rounded-full bg-gray-100">
             <ShieldCheck size={24} color="#9CA3AF" />
           </View>
-          <Text className="text-gray-700 font-bold text-sm">
+          <Text className="text-sm font-bold text-gray-700">
             No Guardians Configured
           </Text>
-          <Text className="text-gray-400 text-xs text-center mt-1">
-            {readOnly
-              ? "No guardians have been authorized by the parent for pickup."
-              : 'Tap "Add Guardian" above to authorize family members or guardians for pickup.'}
+          <Text className="mt-1 text-center text-xs text-gray-400">
+            No guardians have been authorized for pickup.
           </Text>
         </View>
-      )}
-
-      {/* Guardian List */}
-      {!isFormOpen &&
-        activeGuardians.map((guardian, idx) => {
-          const originalIndex = guardians.findIndex((g) => g === guardian);
-          const initials =
-            `${guardian.firstName?.[0] || ""}${guardian.lastName?.[0] || ""}`.toUpperCase();
-
+      ) : (
+        activeGuardians.map((guardian, index) => {
+          const relationship =
+            guardian.relationship === "Other" && guardian.customRelationship
+              ? guardian.customRelationship
+              : guardian.relationship;
           return (
             <View
-              key={idx}
-              className="flex-row items-center justify-between bg-white border border-gray-200/80 p-4 rounded-2xl mb-3 shadow-sm"
+              key={guardian._id || index}
+              className="mb-3 flex-row rounded-2xl border border-gray-100 bg-white p-4"
             >
-              <View className="h-12 w-12 rounded-2xl bg-teal-50 items-center justify-center mr-4 border border-teal-100">
-                <Text className="text-teal-800 font-black text-base">
-                  {initials || "G"}
-                </Text>
+              <View className="mr-3 h-11 w-11 items-center justify-center rounded-full bg-teal-50">
+                <UserRound size={22} color="#0D9488" />
               </View>
-
-              <View className="flex-1 mr-2">
-                <Text className="text-lg font-black text-gray-900">
-                  {guardian.firstName} {guardian.lastName}
+              <View className="flex-1">
+                <Text className="font-bold text-gray-900">
+                  {[guardian.firstName, guardian.middleName, guardian.lastName]
+                    .filter(Boolean)
+                    .join(" ")}
                 </Text>
-                <View className="flex-row items-center mt-2">
-                  <View className="bg-teal-50 px-3 py-1 rounded-lg mr-3 border border-teal-100">
-                    <Text className="text-teal-800 font-bold text-xs">
-                      {guardian.relationship === "Other" &&
-                      guardian.customRelationship
-                        ? guardian.customRelationship
-                        : guardian.relationship}
-                    </Text>
-                  </View>
-                  <View className="flex-row items-center">
-                    <Phone size={13} color="#6B7280" />
-                    <Text className="text-gray-600 text-sm ml-2 font-medium">
-                      {guardian.phone}
-                    </Text>
-                  </View>
+                <Text className="mt-0.5 text-sm text-gray-500">
+                  {relationship}
+                </Text>
+                <View className="mt-2 flex-row items-center">
+                  <Phone size={14} color="#6B7280" />
+                  <Text className="ml-2 text-sm text-gray-700">
+                    {guardian.phone}
+                  </Text>
                 </View>
               </View>
-
-              {!readOnly && (
-                <View className="flex-row gap-2">
-                  <Pressable
-                    onPress={() => startEdit(guardian, originalIndex)}
-                    className="p-2.5 bg-blue-50 rounded-xl active:opacity-85"
-                    accessibilityRole="button"
-                    accessibilityLabel={`Edit ${guardian.firstName} ${guardian.lastName}`}
-                  >
-                    <Edit2 size={18} color="#2563EB" />
-                  </Pressable>
-                  <Pressable
-                    onPress={() =>
-                      handleRemove(
-                        originalIndex,
-                        `${guardian.firstName} ${guardian.lastName}`,
-                      )
-                    }
-                    className="p-2.5 bg-red-50 rounded-xl active:opacity-85"
-                    accessibilityRole="button"
-                    accessibilityLabel={`Remove ${guardian.firstName} ${guardian.lastName}`}
-                  >
-                    <Trash2 size={18} color="#DC2626" />
-                  </Pressable>
-                </View>
-              )}
             </View>
           );
-        })}
+        })
+      )}
     </View>
   );
 }

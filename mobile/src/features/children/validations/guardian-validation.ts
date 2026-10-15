@@ -23,6 +23,13 @@ const nameSchema = (label: string) =>
 export const guardianSchema = z
   .object({
     firstName: nameSchema("First name"),
+    middleName: z
+      .string()
+      .trim()
+      .max(30, "Middle name must be at most 30 characters.")
+      .regex(NAME_REGEX, "Middle name contains invalid characters.")
+      .or(z.literal(""))
+      .optional(),
     lastName: nameSchema("Last name"),
     relationship: z.enum(
       ["Mother", "Father", "Guardian", "Grandparent", "Other"],

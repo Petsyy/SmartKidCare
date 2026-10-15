@@ -19,6 +19,7 @@ import {
   Phone,
   UserRound,
   IdCard,
+  UserPlus,
 } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGuardians } from "../hooks/useGuardian";
@@ -31,6 +32,7 @@ interface ViewGuardiansBottomSheetProps {
   visible: boolean;
   onClose: () => void;
   onEditGuardian?: (guardian: Guardian, index: number) => void;
+  onAddGuardian?: () => void;
   readOnly?: boolean;
 }
 
@@ -40,6 +42,7 @@ export function ViewGuardiansBottomSheet({
   visible,
   onClose,
   onEditGuardian,
+  onAddGuardian,
   readOnly = false,
 }: ViewGuardiansBottomSheetProps) {
   const insets = useSafeAreaInsets();
@@ -186,7 +189,13 @@ export function ViewGuardiansBottomSheet({
                             {/* Name & Actions */}
                             <View className="flex-row items-start justify-between">
                               <Text className="text-lg font-bold text-gray-900 flex-1 mr-2 mt-1">
-                                {guardian.firstName} {guardian.lastName}
+                                {[
+                                  guardian.firstName,
+                                  guardian.middleName,
+                                  guardian.lastName,
+                                ]
+                                  .filter(Boolean)
+                                  .join(" ")}
                               </Text>
 
                               <View className="flex-row gap-1">
@@ -205,7 +214,13 @@ export function ViewGuardiansBottomSheet({
                                     onPress={() =>
                                       handleRemove(
                                         originalIndex,
-                                        `${guardian.firstName} ${guardian.lastName}`,
+                                        [
+                                          guardian.firstName,
+                                          guardian.middleName,
+                                          guardian.lastName,
+                                        ]
+                                          .filter(Boolean)
+                                          .join(" "),
                                       )
                                     }
                                     className="p-2 rounded-full active:bg-red-50"
@@ -262,6 +277,19 @@ export function ViewGuardiansBottomSheet({
                   );
                 })
               )}
+              {!readOnly && onAddGuardian && activeGuardians.length < 5 ? (
+                <Pressable
+                  onPress={onAddGuardian}
+                  accessibilityRole="button"
+                  accessibilityLabel="Add guardian"
+                  className="mt-2 flex-row items-center justify-center rounded-xl border border-teal-200 bg-teal-50 px-4 py-4 active:opacity-85"
+                >
+                  <UserPlus size={20} color="#0D9488" />
+                  <Text className="ml-2 font-bold text-teal-800">
+                    Add Guardian
+                  </Text>
+                </Pressable>
+              ) : null}
             </ScrollView>
           </View>
         </View>

@@ -1,11 +1,10 @@
-import { useMemo, useState, useRef } from "react";
-import { Text, View, ScrollView, Pressable, Animated } from "react-native";
+import { useMemo } from "react";
+import { Text, View, ScrollView, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { getChildren } from "@/src/api/teacher.api";
 import { getTodayAttendance, getTodayFeeding } from "@/src/api/records.api";
 import { useAuth } from "@/src/hooks/use-auth";
-import ChildCard from "@/src/components/ui/child-card";
-import { Search, Users, AlertCircle, ShieldPlus } from "lucide-react-native";
+import { Search, Users, AlertCircle, Archive } from "lucide-react-native";
 import { useQuery } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
@@ -17,9 +16,12 @@ import {
   SearchBar,
 } from "@/src/components/ui";
 import { SwipeableChildCard } from "@/src/components/ui/swipeable-child-card";
-import { AddGuardianBottomSheet } from "../components/add-guardian-bottom-sheet";
 import { useOffline } from "@/src/offline/offline-context";
-import { onlineWithOfflineFallback, readOfflineRecordForDate, readOfflineResource } from "@/src/offline/offline-read";
+import {
+  onlineWithOfflineFallback,
+  readOfflineRecordForDate,
+  readOfflineResource,
+} from "@/src/offline/offline-read";
 import { getManilaDateKey } from "@/src/utils/manila-date";
 import type { Child } from "@/src/api/api.types";
 
@@ -33,9 +35,6 @@ export default function ChildScreen() {
   const router = useRouter();
   const { isAuthenticated, user } = useAuth();
   const { isConnected, isInternetReachable } = useOffline();
-  
-  const [selectedChildForGuardian, setSelectedChildForGuardian] = useState<{ id: string; name: string } | null>(null);
-  const [statusFilter, setStatusFilter] = useState<"Active" | "All">("Active");
 
   const {
     childrenSearchQuery: searchQuery,
@@ -51,19 +50,30 @@ export default function ChildScreen() {
     networkMode: "always",
     enabled: isAuthenticated,
     queryFn: async () => {
-      if (!user?.id) return { children: [], attendanceRecord: null, feedingRecord: null };
+      if (!user?.id)
+        return { children: [], attendanceRecord: null, feedingRecord: null };
       const offline = !isConnected || !isInternetReachable;
       const today = getManilaDateKey();
       const [children, attendanceRecord, feedingRecord] = await Promise.all([
-        onlineWithOfflineFallback(offline, getChildren, () => readOfflineResource<Child>(user.id, "children")),
-        onlineWithOfflineFallback(offline, () => getTodayAttendance(), () => readOfflineRecordForDate<any>(user.id, "attendance", today)),
-        onlineWithOfflineFallback(offline, () => getTodayFeeding(), () => readOfflineRecordForDate<any>(user.id, "feeding", today)),
+        onlineWithOfflineFallback(offline, getChildren, () =>
+          readOfflineResource<Child>(user.id, "children"),
+        ),
+        onlineWithOfflineFallback(
+          offline,
+          () => getTodayAttendance(),
+          () => readOfflineRecordForDate<any>(user.id, "attendance", today),
+        ),
+        onlineWithOfflineFallback(
+          offline,
+          () => getTodayFeeding(),
+          () => readOfflineRecordForDate<any>(user.id, "feeding", today),
+        ),
       ]);
       return { children, attendanceRecord, feedingRecord };
     },
   });
 
-  const children = data?.children ?? [];
+  const children = useMemo(() => data?.children ?? [], [data?.children]);
   const attendanceRecord = data?.attendanceRecord ?? null;
   const feedingRecord = data?.feedingRecord ?? null;
 
@@ -108,10 +118,6 @@ export default function ChildScreen() {
   // Filter children based on search query and status
   const filteredChildren = useMemo(() => {
     let result = children;
-    
-    if (statusFilter === "Active") {
-      result = result.filter((child) => child.status !== "Inactive");
-    }
 
     if (!searchQuery.trim()) return result;
 
@@ -121,7 +127,7 @@ export default function ChildScreen() {
         `${child.firstName} ${child.middleName || ""} ${child.lastName}`.toLowerCase();
       return fullName.includes(query);
     });
-  }, [children, searchQuery, statusFilter]);
+  }, [children, searchQuery]);
 
   if (loading) {
     return (
@@ -175,122 +181,104 @@ export default function ChildScreen() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ScreenShell edges={[]}>
-      <ScreenHeader
-        backgroundVariant="teacherGradient"
-        title="Children List"
-        subtitle={`${children.length} Enrolled Children`}
-      />
+        <ScreenHeader
+          backgroundVariant="teacherGradient"
+          title="Children List"
+          subtitle={`${children.length} Active Children`}
+          rightAction={
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="View archived children"
+              onPress={() => router.push("/(teacher)/archived-children")}
+              className="h-11 w-11 items-center justify-center rounded-full bg-white/20 active:bg-white/30"
+            >
+              <Archive size={22} color="white" />
+            </Pressable>
+          }
+        />
 
-      <SearchBar
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-        placeholder="Search by name..."
-        containerClassName="px-5 pt-4 pb-2 bg-gray-50"
-        iconSize={24}
-        iconColor="#9CA3AF"
-      />
+        <SearchBar
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder="Search by name..."
+          containerClassName="px-5 pt-4 pb-2 bg-gray-50"
+          iconSize={24}
+          iconColor="#9CA3AF"
+        />
 
-      {/* Status Filter Toggle */}
-      <View className="flex-row gap-3 px-5 pb-4 bg-gray-50">
-        <Pressable
-          onPress={() => setStatusFilter("Active")}
-          className={`flex-1 rounded-xl py-3 border items-center justify-center ${
-            statusFilter === "Active" 
-              ? "bg-teal-600 border-teal-600" 
-              : "bg-white border-gray-200"
-          }`}
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ paddingBottom: 24 }}
+          showsVerticalScrollIndicator={false}
         >
-          <Text className={`font-bold ${statusFilter === "Active" ? "text-white" : "text-gray-600"}`}>
-            Active
-          </Text>
-        </Pressable>
-        <Pressable
-          onPress={() => setStatusFilter("All")}
-          className={`flex-1 rounded-xl py-3 border items-center justify-center ${
-            statusFilter === "All" 
-              ? "bg-teal-600 border-teal-600" 
-              : "bg-white border-gray-200"
-          }`}
-        >
-          <Text className={`font-bold ${statusFilter === "All" ? "text-white" : "text-gray-600"}`}>
-            All Students
-          </Text>
-        </Pressable>
-      </View>
+          <View className="px-5 pt-2">
+            {filteredChildren.length === 0 ? (
+              <View className="items-center justify-center py-16 px-6">
+                {searchQuery ? (
+                  <>
+                    <View className="h-16 w-16 items-center justify-center rounded-2xl bg-gray-100 mb-4">
+                      <Search size={40} color="#9CA3AF" />
+                    </View>
+                    <Text className="text-2xl font-black text-gray-800 mb-2 text-center">
+                      No Children Found
+                    </Text>
+                    <Text className="text-lg font-bold text-gray-500 text-center leading-7">
+                      No children match your search.{"\n"}
+                      Try a different search term.
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <View className="h-20 w-20 items-center justify-center rounded-3xl bg-teal-50 mb-4">
+                      <Users size={56} color="#14B8A6" />
+                    </View>
+                    <Text className="text-2xl font-black text-gray-800 mb-2 text-center">
+                      No Children Enrolled Yet
+                    </Text>
+                    <Text className="text-lg font-bold text-gray-500 text-center mb-6 leading-7">
+                      Enroll a child from the Enrollment tab to see them here.
+                    </Text>
+                  </>
+                )}
+              </View>
+            ) : (
+              <View className="flex flex-col">
+                {filteredChildren.map((child, index) => {
+                  const status = getChildStatus(child._id);
+                  const activeGuardians = (
+                    child.authorizedPickupPersons || []
+                  ).filter((g) => g.isActive !== false).length;
+                  const childName = `${child.firstName} ${child.middleName ? child.middleName + " " : ""}${child.lastName}`;
 
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ paddingBottom: 24 }}
-        showsVerticalScrollIndicator={false}
-      >
-        <View className="px-5 pt-2">
-          {filteredChildren.length === 0 ? (
-            <View className="items-center justify-center py-16 px-6">
-              {searchQuery ? (
-                <>
-                  <View className="h-16 w-16 items-center justify-center rounded-2xl bg-gray-100 mb-4">
-                    <Search size={40} color="#9CA3AF" />
-                  </View>
-                  <Text className="text-2xl font-black text-gray-800 mb-2 text-center">
-                    No Children Found
-                  </Text>
-                  <Text className="text-lg font-bold text-gray-500 text-center leading-7">
-                    No children match your search.{"\n"}
-                    Try a different search term.
-                  </Text>
-                </>
-              ) : (
-                <>
-                  <View className="h-20 w-20 items-center justify-center rounded-3xl bg-teal-50 mb-4">
-                    <Users size={56} color="#14B8A6" />
-                  </View>
-                  <Text className="text-2xl font-black text-gray-800 mb-2 text-center">
-                    No Children Enrolled Yet
-                  </Text>
-                  <Text className="text-lg font-bold text-gray-500 text-center mb-6 leading-7">
-                    Enroll a child from the Enrollment tab to see them here.
-                  </Text>
-                </>
-              )}
-            </View>
-          ) : (
-            <View className="flex flex-col">
-              {filteredChildren.map((child, index) => {
-                const status = getChildStatus(child._id);
-                const activeGuardians = (child.authorizedPickupPersons || []).filter(g => g.isActive !== false).length;
-                const childName = `${child.firstName} ${child.middleName ? child.middleName + " " : ""}${child.lastName}`;
-                
-                return (
-                  <SwipeableChildCard
-                    key={child._id}
-                    index={index}
-                    name={childName}
-                    age={child.age}
-                    gender={child.gender}
-                    attendance={status.attendance}
-                    feeding={status.feeding}
-                    lastUpdated={status.lastUpdated}
-                    guardianCount={activeGuardians}
-                    isInactive={child.status === "Inactive"}
-                    onAddGuardian={() => setSelectedChildForGuardian({ id: child._id, name: childName })}
-                    onPress={() =>
-                      router.push(`/(teacher)/child-details/${child._id}`)
-                    }
-                  />
-                );
-              })}
-            </View>
-          )}
-        </View>
-      </ScrollView>
-      
-      <AddGuardianBottomSheet
-        childId={selectedChildForGuardian?.id || null}
-        childName={selectedChildForGuardian?.name || ""}
-        visible={!!selectedChildForGuardian}
-        onClose={() => setSelectedChildForGuardian(null)}
-      />
-    </ScreenShell>
+                  return (
+                    <SwipeableChildCard
+                      key={child._id}
+                      index={index}
+                      name={childName}
+                      age={child.age}
+                      gender={child.gender}
+                      attendance={status.attendance}
+                      feeding={status.feeding}
+                      lastUpdated={status.lastUpdated}
+                      guardianCount={activeGuardians}
+                      isInactive={child.status === "Inactive"}
+                      onAddGuardian={() =>
+                        router.push({
+                          pathname: "/(teacher)/child-details/guardian",
+                          params: { childId: child._id },
+                        })
+                      }
+                      onPress={() =>
+                        router.push(`/(teacher)/child-details/${child._id}`)
+                      }
+                    />
+                  );
+                })}
+              </View>
+            )}
+          </View>
+        </ScrollView>
+      </ScreenShell>
     </GestureHandlerRootView>
   );
 }

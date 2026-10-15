@@ -7,14 +7,13 @@ import { getMyChildren, type Child } from "@/src/api/parent.api";
 import { getTodayAttendance, getTodayFeeding } from "@/src/api/records.api";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { useOffline } from "@/src/offline/offline-context";
-import { onlineWithOfflineFallback, readOfflineRecordForDate, readOfflineResource } from "@/src/offline/offline-read";
+import {
+  onlineWithOfflineFallback,
+  readOfflineRecordForDate,
+  readOfflineResource,
+} from "@/src/offline/offline-read";
 import { getManilaDateKey } from "@/src/utils/manila-date";
 
-/**
- * Derives a specific child's record status from a batch record.
- * Returns the status string (e.g. "present", "absent", "completed", "missed")
- * or null if no matching entry exists for this child.
- */
 function getChildRecordStatus(
   record: any,
   childId: string | undefined,
@@ -40,13 +39,24 @@ export const useParentChildrenData = () => {
     networkMode: "always",
     enabled: isAuthenticated,
     queryFn: async () => {
-      if (!user?.id) return { children: [], todayAttendance: null, todayFeeding: null };
+      if (!user?.id)
+        return { children: [], todayAttendance: null, todayFeeding: null };
       const offline = !isConnected || !isInternetReachable;
       const today = getManilaDateKey();
       const [children, todayAttendance, todayFeeding] = await Promise.all([
-        onlineWithOfflineFallback(offline, getMyChildren, () => readOfflineResource<Child>(user.id, "children")),
-        onlineWithOfflineFallback(offline, () => getTodayAttendance(), () => readOfflineRecordForDate<any>(user.id, "attendance", today)),
-        onlineWithOfflineFallback(offline, () => getTodayFeeding(), () => readOfflineRecordForDate<any>(user.id, "feeding", today)),
+        onlineWithOfflineFallback(offline, getMyChildren, () =>
+          readOfflineResource<Child>(user.id, "children"),
+        ),
+        onlineWithOfflineFallback(
+          offline,
+          () => getTodayAttendance(),
+          () => readOfflineRecordForDate<any>(user.id, "attendance", today),
+        ),
+        onlineWithOfflineFallback(
+          offline,
+          () => getTodayFeeding(),
+          () => readOfflineRecordForDate<any>(user.id, "feeding", today),
+        ),
       ]);
       return { children, todayAttendance, todayFeeding };
     },

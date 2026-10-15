@@ -1,1 +1,1 @@
-export { useParentChildrenData } from "./useParentChildrenData";
+export { useParentChildrenData } from "./use-parent-children-data";

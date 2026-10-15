@@ -3,13 +3,17 @@ import { Stack } from "expo-router";
 export default function ChildDetailsLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen 
+      <Stack.Screen
         name="[id]"
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen name="competencies/[childId]" options={{ headerShown: false }} />
+      <Stack.Screen name="guardian" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="competencies/[childId]"
+        options={{ headerShown: false }}
+      />
     </Stack>
   );
 }

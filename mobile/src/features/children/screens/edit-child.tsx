@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { MapPin, UserRound, UsersRound } from "lucide-react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Child } from "@/src/api/api.types";
 
@@ -31,7 +31,7 @@ import {
   formatYmd,
 } from "@/src/features/enrollment/utils/enrollment-utils";
 import { useDatePicker } from "@/src/features/enrollment/hooks/useDatePicker";
-import { useEditChild } from "../hooks/useEditChild";
+import { useEditChild } from "../hooks/use-edit-child";
 import { getChildById } from "@/src/api/parent.api";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 import {
@@ -41,13 +41,18 @@ import {
   ScreenShell,
 } from "@/src/components/ui";
 import { useOffline } from "@/src/offline/offline-context";
+import { useSafeBack } from "@/src/hooks/use-safe-back";
 
 export default function EditChildScreen() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
   const queryClient = useQueryClient();
   const { id } = useLocalSearchParams();
   const childId = typeof id === "string" ? id : null;
+  const handleBack = useSafeBack(
+    childId
+      ? { pathname: "/(teacher)/child-details/[id]", params: { id: childId } }
+      : "/(teacher)/children",
+  );
   const { isConnected, isInternetReachable } = useOffline();
   const isOffline = !isConnected || !isInternetReachable;
 
@@ -143,7 +148,7 @@ export default function EditChildScreen() {
   const onSubmit = (data: EditChildFormValues) => {
     updateChild(data, {
       onSuccess: () => {
-        router.back();
+        handleBack();
       },
     });
   };
@@ -155,7 +160,7 @@ export default function EditChildScreen() {
           title="Edit Child"
           subtitle="Internet connection required"
           backgroundVariant="teacherGradient"
-          onBack={() => router.back()}
+          onBack={handleBack}
         />
         <View className="flex-1 items-center justify-center bg-gray-50 px-6">
           <View className="w-full rounded-3xl border border-amber-200 bg-amber-50 p-6">
@@ -168,7 +173,7 @@ export default function EditChildScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Return to child details"
-              onPress={() => router.back()}
+              onPress={handleBack}
               className="mt-5 min-h-12 items-center justify-center rounded-2xl bg-teal-600 px-4"
             >
               <Text className="font-semibold text-white">Back to Child Details</Text>
@@ -186,7 +191,7 @@ export default function EditChildScreen() {
           title="Edit Child"
           subtitle="Update profile information"
           backgroundVariant="teacherGradient"
-          onBack={() => router.back()}
+          onBack={handleBack}
         />
         <ScreenLoadingState
           variant="form"
@@ -204,7 +209,7 @@ export default function EditChildScreen() {
           title="Edit Child"
           subtitle="Update profile information"
           backgroundVariant="teacherGradient"
-          onBack={() => router.back()}
+          onBack={handleBack}
         />
         <View className="flex-1 items-center justify-center p-6">
           <Text className="text-xl font-bold text-gray-900 text-center mb-2">
@@ -224,7 +229,7 @@ export default function EditChildScreen() {
         title="Edit Child"
         subtitle="Update profile information"
         backgroundVariant="teacherGradient"
-        onBack={() => router.back()}
+        onBack={handleBack}
       />
 
       <KeyboardAvoidingView

@@ -491,6 +491,14 @@ export default function ParentChildrenScreen() {
             ) : null}
 
             {/* ── Profile Card (always visible) ── */}
+            {selectedChild.status === "Inactive" ? (
+              <View className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                <Text className="text-lg font-bold text-amber-900">Archived enrollment</Text>
+                <Text className="mt-1 text-sm leading-5 text-amber-800">
+                  This profile is read-only. Historical records remain available.{selectedChild.archiveReason ? ` Reason: ${selectedChild.archiveReason}.` : " Reason unavailable."}
+                </Text>
+              </View>
+            ) : null}
             <View className="mb-4 overflow-hidden rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
               <View className="flex-row items-start justify-between">
                 <View
