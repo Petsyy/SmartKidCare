@@ -1,8 +1,6 @@
-export type DocumentType = "birthCertificate" | "parentId";
+export type DocumentType = "birthCertificate" | "parentId" | "guardianId";
 export type VerificationStatus =
-  | "verified"
-  | "teacher_confirmation_required"
-  | "rejected";
+  "verified" | "teacher_confirmation_required" | "rejected";
 export type DetectedType =
   | "birth_certificate"
   | "government_id"

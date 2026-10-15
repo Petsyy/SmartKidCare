@@ -13,6 +13,7 @@ import { requireRole } from "../../../shared/middleware/role.middleware";
 import { documentVerificationLimiter } from "../../../shared/lib/rate-limit";
 import { validate } from "../../../shared/middleware/validate.middleware";
 import {
+  confirmationBodySchema,
   confirmationParamsSchema,
   verifyDocumentBodySchema,
 } from "../validators/document-verification.validator";
@@ -36,6 +37,7 @@ router.post(
   "/documents/:verificationId/confirm",
   requireRole("teacher"),
   validate(confirmationParamsSchema, "params"),
+  validate(confirmationBodySchema),
   confirmDocument,
 );
 

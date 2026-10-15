@@ -51,6 +51,14 @@ const parentIdBody = z
     }
   });
 
+const guardianIdBody = z
+  .object({
+    documentType: z.literal("guardianId"),
+    guardianFirstName: name,
+    guardianLastName: name,
+  })
+  .strict();
+
 export const verifyDocumentBodySchema = z.union([
   z
     .object({
@@ -60,6 +68,7 @@ export const verifyDocumentBodySchema = z.union([
     })
     .strict(),
   parentIdBody,
+  guardianIdBody,
 ]);
 
 export const confirmationParamsSchema = z.object({
@@ -67,3 +76,11 @@ export const confirmationParamsSchema = z.object({
     .string()
     .regex(/^[a-f\d]{24}$/i, "Invalid verification ID."),
 });
+
+export const confirmationBodySchema = z
+  .object({
+    reviewAcknowledged: z.literal(true, {
+      error: "Teacher review acknowledgment is required.",
+    }),
+  })
+  .strict();

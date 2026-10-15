@@ -6,10 +6,10 @@ import { documentVerificationService } from "../services/document-verification.s
 
 const toUploadedFiles = (req: Request) =>
   req.files as
-  | {
-    [fieldname: string]: Express.Multer.File[];
-  }
-  | undefined;
+    | {
+        [fieldname: string]: Express.Multer.File[];
+      }
+    | undefined;
 
 export const submitChildEnrollment = asyncHandler(
   async (req: Request, res: Response) => {
@@ -28,12 +28,24 @@ export const getCenters = asyncHandler(async (_req: Request, res: Response) => {
   res.json({ centers });
 });
 
-export const verifyDocument = asyncHandler(async (req: Request, res: Response) => {
-  const result = await documentVerificationService.verifyEnrollmentDocument(req.user, req.body, req.file);
-  res.status(200).json(result);
-});
+export const verifyDocument = asyncHandler(
+  async (req: Request, res: Response) => {
+    const result = await documentVerificationService.verifyEnrollmentDocument(
+      req.user,
+      req.body,
+      req.file,
+    );
+    res.status(200).json(result);
+  },
+);
 
-export const confirmDocument = asyncHandler(async (req: Request, res: Response) => {
-  const result = await documentVerificationService.confirmEnrollmentDocument(req.user, String(req.params.verificationId));
-  res.status(200).json(result);
-});
+export const confirmDocument = asyncHandler(
+  async (req: Request, res: Response) => {
+    const result = await documentVerificationService.confirmEnrollmentDocument(
+      req.user,
+      String(req.params.verificationId),
+      req.body.reviewAcknowledged,
+    );
+    res.status(200).json(result);
+  },
+);

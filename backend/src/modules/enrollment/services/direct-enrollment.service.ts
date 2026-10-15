@@ -60,7 +60,7 @@ export const directEnrollChild = async (command: DirectEnrollmentCommand) => {
   const parentIdFile = files?.parentId?.[0];
   if (!birthFile || !parentIdFile)
     throw new ValidationError(
-      "Birth certificate and Parent ID images are required.",
+      "Birth certificate and parent government-issued photo ID images are required.",
     );
   const birthDocumentHash = birthFile ? hashFileBuffer(birthFile.buffer) : null;
   const parentIdDocumentHash = parentIdFile
@@ -298,7 +298,7 @@ export const directEnrollChild = async (command: DirectEnrollmentCommand) => {
         String(plannedChildId),
       );
       throw new ConflictError(
-        "Parent ID verification was already used. Please verify again.",
+        "Parent government-issued photo ID verification was already used. Please verify again.",
       );
     }
     verificationsClaimed = true;
@@ -389,7 +389,7 @@ export const directEnrollChild = async (command: DirectEnrollmentCommand) => {
       ["parentId", parentUpload],
     ] as const) {
       if (!upload) continue;
-      logger.info("Enrollment document encrypted and stored.", {
+      logger.debug("Enrollment document encrypted and stored.", {
         childId: String(created.child._id),
         documentType,
         keyId: String((upload as any).encryption?.keyId || "unknown"),
@@ -426,6 +426,7 @@ export const directEnrollChild = async (command: DirectEnrollmentCommand) => {
       modelVersion: birthVerification.modelVersion,
       policyVersion: birthVerification.policyVersion,
       reasonCodes: birthVerification.reasonCodes,
+      confirmedBy: birthVerification.confirmedBy,
       confirmedAt: birthVerification.confirmedAt,
     });
     created.child.set("documents.parentId.verification", {
@@ -434,6 +435,7 @@ export const directEnrollChild = async (command: DirectEnrollmentCommand) => {
       modelVersion: parentVerification.modelVersion,
       policyVersion: parentVerification.policyVersion,
       reasonCodes: parentVerification.reasonCodes,
+      confirmedBy: parentVerification.confirmedBy,
       confirmedAt: parentVerification.confirmedAt,
     });
     await created.child.save();
@@ -443,6 +445,10 @@ export const directEnrollChild = async (command: DirectEnrollmentCommand) => {
       childId: String(created.child._id),
       studentId: String(created.child.studentId || ""),
       childName: buildFullName([firstName, middleName, lastName]),
+    });
+
+    logger.info("Child enrollment submitted successfully.", {
+      blockchainStatus: "pending",
     });
 
     return {

@@ -9,7 +9,7 @@ const DocumentVerificationSchema = new mongoose.Schema(
     },
     documentType: {
       type: String,
-      enum: ["birthCertificate", "parentId"],
+      enum: ["birthCertificate", "parentId", "guardianId"],
       required: true,
     },
     fileHash: { type: String, required: true },
@@ -40,6 +40,17 @@ const DocumentVerificationSchema = new mongoose.Schema(
       parentFirstName: { type: Boolean, default: undefined },
       parentMiddleName: { type: Boolean, default: undefined },
       parentLastName: { type: Boolean, default: undefined },
+      guardianName: { type: Boolean, default: undefined },
+      guardianFirstName: { type: Boolean, default: undefined },
+      guardianLastName: { type: Boolean, default: undefined },
+    },
+    extractedFields: {
+      childFullName: { type: String, default: null },
+      dateOfBirth: { type: String, default: null },
+      parentFullName: { type: String, default: null },
+      parentFirstName: { type: String, default: null },
+      parentMiddleName: { type: String, default: null },
+      parentLastName: { type: String, default: null },
     },
     teacherConfirmed: { type: Boolean, default: false },
     confirmedBy: {

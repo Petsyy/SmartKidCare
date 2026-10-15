@@ -68,6 +68,18 @@ const detectedTypeAliases: Record<string, DetectedType> = {
   unknown: "unknown",
 };
 
+export const canTeacherConfirmDocumentVerification = (record: {
+  status: VerificationStatus;
+  documentType: DocumentType;
+  isTransientFailure?: boolean;
+  consumedAt?: Date | null;
+  expiresAt: Date;
+}) =>
+  record.status === "teacher_confirmation_required" &&
+  (!record.isTransientFailure || record.documentType === "guardianId") &&
+  !record.consumedAt &&
+  record.expiresAt > new Date();
+
 export class DocumentVerificationService {
   public parseGeminiDocumentObservations(
     raw: string,
@@ -76,7 +88,9 @@ export class DocumentVerificationService {
       raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, ""),
     );
     const quality =
-      parsed?.quality && typeof parsed.quality === "object" ? parsed.quality : {};
+      parsed?.quality && typeof parsed.quality === "object"
+        ? parsed.quality
+        : {};
     const extracted =
       parsed?.extractedFields && typeof parsed.extractedFields === "object"
         ? parsed.extractedFields
@@ -122,12 +136,7 @@ export class DocumentVerificationService {
     });
   }
 
-  private envNumber(
-    name: string,
-    fallback: number,
-    min: number,
-    max: number,
-  ) {
+  private envNumber(name: string, fallback: number, min: number, max: number) {
     const value = Number(process.env[name]);
     return Number.isFinite(value) && value >= min && value <= max
       ? value
@@ -135,7 +144,7 @@ export class DocumentVerificationService {
   }
 
   private policyVersion() {
-    return String(process.env.DOCUMENT_VERIFICATION_POLICY_VERSION || "4");
+    return String(process.env.DOCUMENT_VERIFICATION_POLICY_VERSION || "5");
   }
 
   private modelVersion() {
@@ -157,22 +166,33 @@ export class DocumentVerificationService {
   }
 
   private canonicalExpected(body: any) {
-    return body.documentType === "birthCertificate"
+    if (body.documentType === "birthCertificate") {
+      return {
+        childFullName: this.normalizeVerificationName(body.childFullName),
+        dateOfBirth: body.dateOfBirth,
+      };
+    }
+    if (body.documentType === "guardianId") {
+      return {
+        guardianFirstName: this.normalizeVerificationName(
+          body.guardianFirstName,
+        ),
+        guardianLastName: this.normalizeVerificationName(body.guardianLastName),
+      };
+    }
+    return body.parentFirstName && body.parentLastName
       ? {
-          childFullName: this.normalizeVerificationName(body.childFullName),
-          dateOfBirth: body.dateOfBirth,
+          parentFirstName: this.normalizeVerificationName(body.parentFirstName),
+          parentMiddleName: this.normalizeVerificationName(
+            body.parentMiddleName || "",
+          ),
+          parentLastName: this.normalizeVerificationName(body.parentLastName),
         }
-      : body.parentFirstName && body.parentLastName
-        ? {
-            parentFirstName: this.normalizeVerificationName(body.parentFirstName),
-            parentMiddleName: this.normalizeVerificationName(
-              body.parentMiddleName || "",
-            ),
-            parentLastName: this.normalizeVerificationName(body.parentLastName),
-          }
-        : {
-            parentFullName: this.normalizeVerificationName(body.parentFullName || ""),
-          };
+      : {
+          parentFullName: this.normalizeVerificationName(
+            body.parentFullName || "",
+          ),
+        };
   }
 
   public buildExpectedFieldsHash(body: any) {
@@ -214,7 +234,9 @@ export class DocumentVerificationService {
     expectedComponent: string,
   ) {
     if (this.fuzzyMatch(observedComponent, expectedComponent)) return true;
-    const observedTokens = this.normalizeVerificationName(observedFullName || "")
+    const observedTokens = this.normalizeVerificationName(
+      observedFullName || "",
+    )
       .split(" ")
       .filter(Boolean);
     const expectedTokens = this.normalizeVerificationName(expectedComponent)
@@ -238,30 +260,40 @@ export class DocumentVerificationService {
       confidence: record.confidence ?? null,
       reasonCodes: record.reasonCodes || [],
       fieldMatches: record.fieldMatches || {},
+      extractedFields: record.extractedFields || {},
       teacherConfirmed: Boolean(record.teacherConfirmed),
       message:
-        record.status === "verified" && record.documentType === "parentId"
-          ? "National ID and parent name verified."
+        record.status === "verified" &&
+        record.documentType !== "birthCertificate"
+          ? `Government-issued photo ID and ${record.documentType === "guardianId" ? "guardian" : "parent"} name verified.`
           : record.status === "verified"
-            ? "Document image verified for enrollment."
-            : record.status === "rejected"
-              ? "This image cannot be used for the required document."
-              : record.reasonCodes?.includes(
-                    "PARENT_FIRST_NAME_MISMATCH_OR_UNREADABLE",
-                  ) &&
-                  record.reasonCodes?.includes(
-                    "PARENT_LAST_NAME_MISMATCH_OR_UNREADABLE",
-                  )
-                ? "National ID recognized, but the parent name could not be matched automatically."
-                : record.reasonCodes?.includes(
-                      "PARENT_FIRST_NAME_MISMATCH_OR_UNREADABLE",
+            ? "AI checks passed for this birth certificate."
+            : record.status === "rejected" &&
+                record.reasonCodes?.includes("UNSUPPORTED_ID_DOCUMENT")
+              ? "This is not a supported government-issued photo ID."
+              : record.status === "rejected"
+                ? "This image cannot be used for the required document."
+                : record.documentType === "guardianId" &&
+                    record.reasonCodes?.some((code: string) =>
+                      code.startsWith("GUARDIAN_"),
                     )
-                  ? "National ID recognized, but the given name could not be matched."
+                  ? "Government-issued photo ID recognized, but the guardian name could not be matched automatically."
                   : record.reasonCodes?.includes(
+                        "PARENT_FIRST_NAME_MISMATCH_OR_UNREADABLE",
+                      ) &&
+                      record.reasonCodes?.includes(
                         "PARENT_LAST_NAME_MISMATCH_OR_UNREADABLE",
                       )
-                    ? "National ID recognized, but the surname could not be matched."
-                    : "Inspect the original document and confirm to continue.",
+                    ? "Government-issued photo ID recognized, but the parent name could not be matched automatically."
+                    : record.reasonCodes?.includes(
+                          "PARENT_FIRST_NAME_MISMATCH_OR_UNREADABLE",
+                        )
+                      ? "Government-issued photo ID recognized, but the given name could not be matched."
+                      : record.reasonCodes?.includes(
+                            "PARENT_LAST_NAME_MISMATCH_OR_UNREADABLE",
+                          )
+                        ? "Government-issued photo ID recognized, but the surname could not be matched."
+                        : "Inspect the original document and confirm to continue.",
       expiresAt: new Date(record.expiresAt).toISOString(),
     };
   }
@@ -276,14 +308,21 @@ export class DocumentVerificationService {
       return "image/jpeg";
     if (
       buffer.length >= 8 &&
-      buffer.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
+      buffer
+        .subarray(0, 8)
+        .equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
     )
       return "image/png";
     throw new ValidationError("Only valid JPG and PNG images are allowed.");
   }
 
   private makePrompt(type: DocumentType) {
-    return `Observe this enrollment image. Return one JSON object only with exactly this shape: {"documentVisible":boolean,"detectedType":"birth_certificate|government_id|other_document|person_photo|unrelated_image|unknown","readable":boolean,"cropped":boolean,"glare":boolean,"blurred":boolean,"rotated":boolean,"confidence":number,"extractedFields":{"childFullName":string|null,"dateOfBirth":string|null,"parentFullName":string|null,"parentFirstName":string|null,"parentMiddleName":string|null,"parentLastName":string|null},"reasonCodes":string[]}. Do not approve, reject, authenticate, or declare validity. Expected type: ${type === "birthCertificate" ? "birth_certificate" : "government_id"}. Philippine PhilID, ePhilID, Digital National ID, passports, driver licenses, and other government photo IDs must use detectedType government_id. Use other_document for a real document that is not a birth certificate or government photo ID. ${type === "birthCertificate" ? "Extract only childFullName and dateOfBirth; set all parent name fields null." : "Extract the ID holder's given/first name into parentFirstName, middle name into parentMiddleName when printed, and surname/last name into parentLastName. Also set parentFullName only if clearly printed as one field; set child fields null."} Never extract ID numbers, addresses, signatures, serial numbers, or barcode/QR contents.`;
+    const documentInstructions =
+      type === "birthCertificate"
+        ? "Philippine PSA and older NSO birth certificates often contain dense, small, noisy, or handwritten-looking text. If the form is recognizable as a birth certificate but its fields are difficult to read, keep detectedType birth_certificate, set readable false, and report the quality flags. Extract only childFullName and dateOfBirth when legible; set all parent name fields null."
+        : "Accepted government-issued photo IDs are Philippine National ID/PhilID, ePhilID, Digital National ID, Philippine passport, LTO driver's license or card-format student permit, UMID/SSS/GSIS card, PRC ID, valid Postal ID, Senior Citizen ID, and PWD ID; classify these as government_id when they show the holder's photograph. Classify employee/company IDs, school IDs, cedulas, barangay certificates, bank cards, membership cards, documents without a holder photograph, and other unsupported documents as other_document. Use person_photo for a selfie or portrait without an ID and unrelated_image for unrelated content. Extract the ID holder's given/first name into parentFirstName, middle name into parentMiddleName when printed, and surname/last name into parentLastName. Also set parentFullName only if clearly printed as one field; set child fields null.";
+
+    return `Observe this enrollment image. Return one JSON object only with exactly this shape: {"documentVisible":boolean,"detectedType":"birth_certificate|government_id|other_document|person_photo|unrelated_image|unknown","readable":boolean,"cropped":boolean,"glare":boolean,"blurred":boolean,"rotated":boolean,"confidence":number,"extractedFields":{"childFullName":string|null,"dateOfBirth":string|null,"parentFullName":string|null,"parentFirstName":string|null,"parentMiddleName":string|null,"parentLastName":string|null},"reasonCodes":string[]}. Do not approve, reject, authenticate, or declare validity. Expected type: ${type === "birthCertificate" ? "birth_certificate" : "government_id"}. ${documentInstructions} Never extract ID numbers, addresses, signatures, serial numbers, or barcode/QR contents.`;
   }
 
   public decideDocumentVerification(
@@ -315,8 +354,33 @@ export class DocumentVerificationService {
         birthDate: obs.extractedFields.dateOfBirth === expected.dateOfBirth,
       };
       requiredFieldsMatch = Object.values(fieldMatches).every(Boolean);
-      if (!requiredFieldsMatch)
-        matchReasonCodes = ["FIELD_MISMATCH_OR_UNCERTAIN"];
+      if (!fieldMatches.childName)
+        matchReasonCodes.push("CHILD_NAME_MISMATCH_OR_UNREADABLE");
+      if (!fieldMatches.birthDate)
+        matchReasonCodes.push("BIRTH_DATE_MISMATCH_OR_UNREADABLE");
+    } else if (type === "guardianId") {
+      const firstNameMatch = this.componentMatch(
+        obs.extractedFields.parentFirstName,
+        obs.extractedFields.parentFullName,
+        expected.guardianFirstName,
+      );
+      const lastNameMatch = this.componentMatch(
+        obs.extractedFields.parentLastName,
+        obs.extractedFields.parentFullName,
+        expected.guardianLastName,
+      );
+      requiredFieldsMatch = firstNameMatch && lastNameMatch;
+      fieldMatches = {
+        guardianFirstName: firstNameMatch,
+        guardianLastName: lastNameMatch,
+        guardianName: requiredFieldsMatch,
+      };
+      if (!firstNameMatch)
+        matchReasonCodes.push("GUARDIAN_FIRST_NAME_MISMATCH_OR_UNREADABLE");
+      if (!lastNameMatch)
+        matchReasonCodes.push("GUARDIAN_LAST_NAME_MISMATCH_OR_UNREADABLE");
+      if (requiredFieldsMatch)
+        matchReasonCodes.push("GUARDIAN_NAME_COMPONENTS_MATCHED");
     } else if (expected.parentFirstName && expected.parentLastName) {
       const firstNameMatch = this.componentMatch(
         obs.extractedFields.parentFirstName,
@@ -368,8 +432,17 @@ export class DocumentVerificationService {
     const unrelated = ["person_photo", "unrelated_image"].includes(
       obs.detectedType,
     );
+    const classificationReasonCodes =
+      type !== "birthCertificate" &&
+      obs.detectedType === "other_document" &&
+      obs.confidence >= rejectThreshold
+        ? ["UNSUPPORTED_ID_DOCUMENT"]
+        : [];
     const qualityReasonCodes = [
       ...(!obs.readable ? ["IMAGE_NOT_READABLE"] : []),
+      ...(type === "birthCertificate" && !obs.readable
+        ? ["BIRTH_CERTIFICATE_TEXT_UNREADABLE"]
+        : []),
       ...(obs.cropped ? ["IMAGE_CROPPED"] : []),
       ...(obs.glare ? ["IMAGE_GLARE_DETECTED"] : []),
       ...(obs.blurred ? ["IMAGE_BLURRED"] : []),
@@ -378,7 +451,7 @@ export class DocumentVerificationService {
     // A readable government ID can still have minor quality observations while
     // its type and required name components remain clearly identifiable.
     const qualityAllowsVerification =
-      type === "parentId"
+      type !== "birthCertificate"
         ? obs.readable
         : obs.readable && !obs.cropped && !obs.glare && !obs.blurred;
     let status: VerificationStatus = "teacher_confirmation_required";
@@ -398,6 +471,7 @@ export class DocumentVerificationService {
     const reasonCodes = [
       ...new Set([
         ...(obs.reasonCodes || []),
+        ...classificationReasonCodes,
         ...qualityReasonCodes,
         ...matchReasonCodes,
       ]),
@@ -459,7 +533,7 @@ export class DocumentVerificationService {
     };
     const cached = await documentVerificationRepository.findReusable(cacheKey);
     if (cached) {
-      logger.info("⚡ [Verification] Document verification completed.", {
+      logger.debug("[Verification] Document verification completed.", {
         source: "cache",
         documentType: body.documentType,
         totalMs: Date.now() - verificationStartedAt,
@@ -523,6 +597,7 @@ export class DocumentVerificationService {
         ...decision,
         detectedType: obs.detectedType,
         confidence: obs.confidence,
+        extractedFields: obs.extractedFields,
         isTransientFailure: false,
       };
     } catch (error) {
@@ -542,13 +617,24 @@ export class DocumentVerificationService {
                 : "AI_SERVICE_UNAVAILABLE",
         ],
         fieldMatches: {},
+        extractedFields: {},
         isTransientFailure: true,
       };
     }
     const aiMs = Date.now() - aiStartedAt;
     const minutes = values.isTransientFailure
-      ? this.envNumber("DOCUMENT_VERIFICATION_FAILURE_EXPIRY_MINUTES", 10, 1, 120)
-      : this.envNumber("DOCUMENT_VERIFICATION_NORMAL_EXPIRY_MINUTES", 30, 1, 1440);
+      ? this.envNumber(
+          "DOCUMENT_VERIFICATION_FAILURE_EXPIRY_MINUTES",
+          10,
+          1,
+          120,
+        )
+      : this.envNumber(
+          "DOCUMENT_VERIFICATION_NORMAL_EXPIRY_MINUTES",
+          30,
+          1,
+          1440,
+        );
     const record = await documentVerificationRepository.create({
       ...cacheKey,
       ...values,
@@ -556,36 +642,47 @@ export class DocumentVerificationService {
       modelVersion: this.modelVersion(),
       expiresAt: new Date(Date.now() + minutes * 60_000),
     });
-    logger.info("🤖 [Verification] Document verification completed.", {
-      source: "ai",
-      documentType: body.documentType,
-      inputBytes: file.size,
-      analysisBytes: analysis.length,
-      imageProcessingMs,
-      aiMs,
-      totalMs: Date.now() - verificationStartedAt,
-      outcome: values.status,
-      transientFailure: values.isTransientFailure,
-    });
+    const totalMs = Date.now() - verificationStartedAt;
+    if (values.isTransientFailure) {
+      const documentLabel =
+        body.documentType === "birthCertificate"
+          ? "birth certificate"
+          : body.documentType === "parentId"
+            ? "parent ID"
+            : "guardian ID";
+      logger.warn(
+        `[Verification] AI verification unavailable for ${documentLabel}.`,
+      );
+    } else {
+      logger.debug("[Verification] Document verification completed.", {
+        source: "ai",
+        documentType: body.documentType,
+        inputBytes: file.size,
+        analysisBytes: analysis.length,
+        imageProcessingMs,
+        aiMs,
+        totalMs,
+        outcome: values.status,
+      });
+    }
     return this.toResponse(record);
   }
 
   public async confirmEnrollmentDocument(
     user: any,
     verificationId: string,
+    reviewAcknowledged: boolean,
   ) {
     if (!user?.id || user.role !== "teacher")
       throw new ForbiddenError("Teachers only");
+    if (reviewAcknowledged !== true)
+      throw new ValidationError("Teacher review acknowledgment is required.");
     const record = await documentVerificationRepository.findOwned(
       verificationId,
       user.id,
     );
     if (!record) throw new NotFoundError("Document verification");
-    if (
-      record.status !== "teacher_confirmation_required" ||
-      record.consumedAt ||
-      record.expiresAt <= new Date()
-    )
+    if (!canTeacherConfirmDocumentVerification(record as any))
       throw new ValidationError("This verification cannot be confirmed.");
     record.teacherConfirmed = true;
     record.confirmedBy = user.id as any;
@@ -626,6 +723,45 @@ export class DocumentVerificationService {
       );
     return record;
   }
+
+  public async consumeVerification(
+    verificationId: string,
+    teacherId: string,
+    childId: string,
+  ) {
+    const consumed = await documentVerificationRepository.consume(
+      verificationId,
+      teacherId,
+      childId,
+    );
+    if (!consumed)
+      throw new ValidationError(
+        "Document verification is expired, used, or unavailable.",
+      );
+    return consumed;
+  }
 }
 
 export const documentVerificationService = new DocumentVerificationService();
+export const parseGeminiDocumentObservations =
+  documentVerificationService.parseGeminiDocumentObservations.bind(
+    documentVerificationService,
+  );
+export const normalizeVerificationName =
+  documentVerificationService.normalizeVerificationName.bind(
+    documentVerificationService,
+  );
+export const buildExpectedFieldsHash =
+  documentVerificationService.buildExpectedFieldsHash.bind(
+    documentVerificationService,
+  );
+export const fuzzyMatch = documentVerificationService.fuzzyMatch.bind(
+  documentVerificationService,
+);
+export const detectImage = documentVerificationService.detectImage.bind(
+  documentVerificationService,
+);
+export const decideDocumentVerification =
+  documentVerificationService.decideDocumentVerification.bind(
+    documentVerificationService,
+  );
