@@ -46,7 +46,7 @@ export const validateManualReleaseGuardianVerification = (
 
   if (!hasValidId) {
     throw new ValidationError(
-      "Guardian must have a stored valid ID on file before manual release.",
+      "Guardian must have a stored government-issued photo ID on file before manual release.",
     );
   }
 
@@ -58,7 +58,10 @@ export const validateManualReleaseGuardianVerification = (
 };
 
 export const validateManualReleaseParentVerification = (
-  parentIdDocument: { publicId?: string | null; resourceType?: string | null } | null | undefined,
+  parentIdDocument:
+    | { publicId?: string | null; resourceType?: string | null }
+    | null
+    | undefined,
   isVisuallyVerified: boolean,
 ) => {
   if (!parentIdDocument?.publicId || !parentIdDocument.resourceType) {
@@ -69,7 +72,7 @@ export const validateManualReleaseParentVerification = (
 
   if (!isVisuallyVerified) {
     throw new ValidationError(
-      "Manual release requires a visual verification match against the stored parent ID.",
+      "Manual release requires a visual verification match against the stored parent government-issued photo ID.",
     );
   }
 };
@@ -134,6 +137,9 @@ class PickupService {
 
     const child = await Child.findById(input.childId);
     if (!child) throw new NotFoundError("Child");
+    if (child.status !== "Active") {
+      throw new ValidationError("This child is archived and cannot receive new records.");
+    }
 
     this.assertParentCanAccessChild(user, child);
 
@@ -174,7 +180,13 @@ class PickupService {
           "Selected guardian is not authorized or inactive.",
         );
       }
-      intendedGuardianName = `${guardian.firstName} ${guardian.lastName}`;
+      intendedGuardianName = [
+        guardian.firstName,
+        guardian.middleName,
+        guardian.lastName,
+      ]
+        .filter(Boolean)
+        .join(" ");
     }
 
     const code = generatePickupCode();
@@ -227,6 +239,9 @@ class PickupService {
 
     const child = await Child.findById(input.childId).populate("parent");
     if (!child) throw new NotFoundError("Child");
+    if (child.status !== "Active") {
+      throw new ValidationError("This child is archived and cannot receive new records.");
+    }
 
     this.assertTeacherCanAccessChild(user, child);
 
@@ -272,7 +287,9 @@ class PickupService {
           "Selected guardian is not authorized or inactive.",
         );
       }
-      name = `${guardian.firstName} ${guardian.lastName}`;
+      name = [guardian.firstName, guardian.middleName, guardian.lastName]
+        .filter(Boolean)
+        .join(" ");
       phone = guardian.phone;
       relationship = guardian.relationship;
     } else if (parentUser) {
@@ -324,6 +341,9 @@ class PickupService {
 
     const child = await Child.findById(input.childId).populate("parent");
     if (!child) throw new NotFoundError("Child");
+    if (child.status !== "Active") {
+      throw new ValidationError("This child is archived and cannot receive new records.");
+    }
 
     this.assertTeacherCanAccessChild(user, child);
 
@@ -353,7 +373,9 @@ class PickupService {
         guardian,
         Boolean(input.isVisuallyVerified),
       );
-      name = `${guardian.firstName} ${guardian.lastName}`;
+      name = [guardian.firstName, guardian.middleName, guardian.lastName]
+        .filter(Boolean)
+        .join(" ");
       phone = guardian.phone;
       relationship = guardian.relationship;
       guardian.verificationStatus = "verified";
@@ -440,6 +462,7 @@ class PickupService {
       _id: { $in: eligibleIds },
       teacher: user.id,
       daycareCenter: this.getTeacherCenterId(user),
+      status: "Active",
     })
       .select(
         "firstName lastName studentId authorizedPickupPersons parent documents.parentId.publicId documents.parentId.resourceType",
@@ -540,4 +563,3 @@ class PickupService {
 }
 
 export const pickupService = new PickupService();
-

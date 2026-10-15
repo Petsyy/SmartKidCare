@@ -210,6 +210,9 @@ export class NutritionService {
     const child = await Child.findById(childId);
     if (!child) throw new NotFoundError("Child not found");
     assertCanAccessChild(user, child);
+    if (child.status !== "Active") {
+      throw new ValidationError("This child is archived and cannot receive new records.");
+    }
 
     const normalizedMeasurementDate = measurementDate
       ? new Date(measurementDate)

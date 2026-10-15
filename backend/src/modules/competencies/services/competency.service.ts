@@ -146,6 +146,9 @@ export class CompetencyService {
     if (validUser.role !== "teacher") throw new ForbiddenError("Teachers only");
 
     const child = await this.getAccessibleChild(validUser, input.childId);
+    if (child.status !== "Active") {
+      throw new ValidationError("This child is archived and cannot receive new records.");
+    }
     const parsedDay = this.parseEvaluationDay(input.evaluationDate);
     const activeDefinitions = await this.definitionRepository.findActive();
     const activeIds = new Set(

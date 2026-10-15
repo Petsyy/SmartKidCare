@@ -1,7 +1,14 @@
 import { randomUUID } from "crypto";
 import { logger } from "../../../shared/lib/logger";
-import { buildChildIdHash, documentsRegistryAddress, SEPOLIA_CHAIN_ID } from "../utils/ethers";
-import { blockchainRepository, type BlockchainRepository } from "../repositories/blockchain.repository";
+import {
+  buildChildIdHash,
+  documentsRegistryAddress,
+  SEPOLIA_CHAIN_ID,
+} from "../utils/ethers";
+import {
+  blockchainRepository,
+  type BlockchainRepository,
+} from "../repositories/blockchain.repository";
 import {
   blockchainClient,
   type BlockchainClient,
@@ -9,9 +16,18 @@ import {
   resolveDocumentHashes,
   ZERO_HASH,
 } from "./blockchain.service";
-import type { BlockchainErrorCode, ClaimedBlockchainChild } from "../types/blockchain-proof.types";
+import type {
+  BlockchainErrorCode,
+  ClaimedBlockchainChild,
+} from "../types/blockchain-proof.types";
 
-const RETRY_DELAYS_MS = [60_000, 5 * 60_000, 15 * 60_000, 60 * 60_000, 6 * 60 * 60_000];
+const RETRY_DELAYS_MS = [
+  60_000,
+  5 * 60_000,
+  15 * 60_000,
+  60 * 60_000,
+  6 * 60 * 60_000,
+];
 const MAX_ATTEMPTS = RETRY_DELAYS_MS.length + 1;
 const PROCESSING_LEASE_MS = 2 * 60_000;
 const WRITER_LEASE_MS = 2 * 60_000;
@@ -49,11 +65,7 @@ export class BlockchainAnchorService {
 
     const delay = RETRY_DELAYS_MS[Math.max(0, attemptCount - 1)];
     const nextAttemptAt = new Date(this.deps.now().getTime() + delay);
-    await this.deps.repository.markRetry(
-      childId,
-      errorCode,
-      nextAttemptAt,
-    );
+    await this.deps.repository.markRetry(childId, errorCode, nextAttemptAt);
     logger.warn("🔁 [Blockchain] Enrollment document anchor retry scheduled.", {
       childId,
       attemptCount,
@@ -82,7 +94,8 @@ export class BlockchainAnchorService {
     txHash: string | null,
     blockNumber: number | null,
   ): Promise<boolean> {
-    const storedHash = await this.deps.client.getStoredDocumentsHash(childIdHash);
+    const storedHash =
+      await this.deps.client.getStoredDocumentsHash(childIdHash);
     if (storedHash !== documentsHash.toLowerCase()) return false;
 
     await this.deps.repository.markConfirmed(childId, {
@@ -94,19 +107,23 @@ export class BlockchainAnchorService {
       contractAddress: documentsRegistryAddress,
       anchoredAt: this.deps.now(),
     });
-    logger.info("✅ [Blockchain] Enrollment documents confirmed on Sepolia.", {
-      childId,
-      txHash,
-      blockNumber,
-      status: "confirmed",
-    });
+    if (txHash) {
+      logger.info("Blockchain transaction confirmed.", {
+        blockchainStatus: "confirmed",
+        transactionHash: txHash,
+      });
+    } else {
+      logger.debug("Blockchain documents already confirmed on-chain.", {
+        blockchainStatus: "confirmed",
+      });
+    }
     return true;
   }
 
   async processClaimedChild(child: ClaimedBlockchainChild): Promise<void> {
     const childId = String(child._id);
     const attemptCount = Number(child.documentIntegrity?.attemptCount || 1);
-    logger.info("⛓️ [Blockchain] Processing enrollment document anchor.", {
+    logger.debug("[Blockchain] Processing enrollment document anchor.", {
       childId,
       attemptCount,
       status: "processing",
@@ -126,7 +143,8 @@ export class BlockchainAnchorService {
 
     try {
       if (existingTxHash) {
-        const receipt = await this.deps.client.getTransactionReceipt(existingTxHash);
+        const receipt =
+          await this.deps.client.getTransactionReceipt(existingTxHash);
         if (!receipt) {
           await this.deferOrFail(childId, attemptCount, "TRANSACTION_PENDING");
           return;
@@ -150,7 +168,8 @@ export class BlockchainAnchorService {
         return;
       }
 
-      const onChainHash = await this.deps.client.getStoredDocumentsHash(childIdHash);
+      const onChainHash =
+        await this.deps.client.getStoredDocumentsHash(childIdHash);
       if (onChainHash === resolved.documentsHash.toLowerCase()) {
         await this.confirmFromReceipt(
           childId,
@@ -171,12 +190,13 @@ export class BlockchainAnchorService {
         resolved.documentsHash,
       );
       await this.deps.repository.markBroadcast(childId, transaction.hash);
-      logger.info("📡 [Blockchain] Sepolia transaction broadcast.", {
-        childId,
-        attemptCount,
-        txHash: transaction.hash,
+      logger.info("Blockchain transaction submitted.", {
+        blockchainStatus: "submitted",
+        transactionHash: transaction.hash,
       });
-      const receipt = await this.deps.client.waitForTransaction(transaction.hash);
+      const receipt = await this.deps.client.waitForTransaction(
+        transaction.hash,
+      );
       if (!receipt) {
         await this.deferOrFail(childId, attemptCount, "TRANSACTION_PENDING");
         return;

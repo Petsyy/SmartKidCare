@@ -8,7 +8,12 @@ import {
   calculateBmi,
   classifyNutritionalStatus,
 } from "../../../shared/utils/nutrition.utils";
-import type { ChildDocumentUploads, CreateChildRecordPayload, ChildAnchorResult, ChildRecordCreationResult } from "../types/child-record.types";
+import type {
+  ChildDocumentUploads,
+  CreateChildRecordPayload,
+  ChildAnchorResult,
+  ChildRecordCreationResult,
+} from "../types/child-record.types";
 
 const buildDocumentsPayload = (uploads: ChildDocumentUploads) => {
   const birthCertificate = extractUploadedDocument(
@@ -70,7 +75,7 @@ export const createChildRecord = async (
   });
 
   if (documents) {
-    logger.info("📄 [Blockchain] Enrollment documents queued for anchoring.", {
+    logger.debug("[Blockchain] Enrollment documents queued for anchoring.", {
       childId: String(child._id),
       status: "pending",
     });

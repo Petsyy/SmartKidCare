@@ -7,12 +7,35 @@ const levelIcon = {
   debug: "🔎",
 } as const;
 
-const serializeMeta = (meta: LogMeta): string => {
+const formatLabel = (key: string) =>
+  key
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/_/g, " ")
+    .replace(/^./, (character) => character.toUpperCase());
+
+const formatValue = (value: unknown): string => {
+  if (Array.isArray(value)) return value.map(formatValue).join(", ");
+  if (value instanceof Date) return value.toISOString();
+  if (value && typeof value === "object") {
+    return Object.entries(value as Record<string, unknown>)
+      .map(
+        ([key, nestedValue]) =>
+          `${formatLabel(key)}=${formatValue(nestedValue)}`,
+      )
+      .join(", ");
+  }
+  return String(value);
+};
+
+const formatMeta = (meta: LogMeta): string => {
   if (!meta) return "";
   try {
-    return ` ${JSON.stringify(meta)}`;
+    const details = Object.entries(meta)
+      .map(([key, value]) => `${formatLabel(key)}: ${formatValue(value)}`)
+      .join(" | ");
+    return details ? ` | ${details}` : "";
   } catch {
-    return " {\"logMeta\":\"unserializable\"}";
+    return " | Details unavailable";
   }
 };
 
@@ -21,10 +44,13 @@ const writeLog = (
   message: string,
   meta?: LogMeta,
 ) => {
-  const payload = `${new Date().toISOString()} ${levelIcon[method]} ${message}${serializeMeta(meta)}`;
+  const payload = `${levelIcon[method]} ${message}${formatMeta(meta)}`;
 
   if (method === "debug") {
-    if (process.env.NODE_ENV !== "production") {
+    if (
+      process.env.NODE_ENV !== "production" &&
+      process.env.LOG_LEVEL?.toLowerCase() === "debug"
+    ) {
       console.debug(payload);
     }
     return;

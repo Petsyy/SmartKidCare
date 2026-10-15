@@ -18,6 +18,7 @@ export class ChildRepository extends BaseRepository<any> {
       .find({
         _id: { $in: childIds },
         teacher: teacherId,
+        status: "Active",
         ...(daycareCenterId ? { daycareCenter: daycareCenterId } : {}),
       })
       .select("_id")

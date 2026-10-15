@@ -1,5 +1,9 @@
 import mongoose from "mongoose";
-import { ConflictError, NotFoundError, ValidationError } from "../../../shared/errors/app-error";
+import {
+  ConflictError,
+  NotFoundError,
+  ValidationError,
+} from "../../../shared/errors/app-error";
 import { logger } from "../../../shared/lib/logger";
 import { type UploadResult } from "../../../shared/utils/upload-cloudinary";
 import { storageService } from "../../../shared/services/storage.service";
@@ -20,15 +24,23 @@ export class ChildOnboardingService {
   public async registerChild(body: Record<string, any>, files: UploadedFiles) {
     const birthFile = files?.birthCertificate?.[0];
     const parentIdFile = files?.parentId?.[0];
-    const birthDocumentHash = birthFile ? hashFileBuffer(birthFile.buffer) : null;
-    const parentIdDocumentHash = parentIdFile ? hashFileBuffer(parentIdFile.buffer) : null;
+    const birthDocumentHash = birthFile
+      ? hashFileBuffer(birthFile.buffer)
+      : null;
+    const parentIdDocumentHash = parentIdFile
+      ? hashFileBuffer(parentIdFile.buffer)
+      : null;
 
     const normalizedDateOfBirth = parseDate(body.dateOfBirth);
     const normalizedEnrollmentDate = parseDate(body.enrollmentDate);
-    const hasParentInfo = Boolean(body.parentFirstName && body.parentLastName && body.parentEmail);
+    const hasParentInfo = Boolean(
+      body.parentFirstName && body.parentLastName && body.parentEmail,
+    );
 
     if (!normalizedDateOfBirth || !normalizedEnrollmentDate) {
-      throw new ValidationError("Invalid date format provided for birth or enrollment.");
+      throw new ValidationError(
+        "Invalid date format provided for birth or enrollment.",
+      );
     }
 
     let resolvedTeacherId: mongoose.Types.ObjectId | null = null;
@@ -36,22 +48,35 @@ export class ChildOnboardingService {
 
     if (body.teacherId) {
       try {
-        const teacherAssignment = await resolveTeacherAssignment(body.teacherId);
+        const teacherAssignment = await resolveTeacherAssignment(
+          body.teacherId,
+        );
         resolvedTeacherId = teacherAssignment?.teacherId || null;
         resolvedDaycareCenterId = teacherAssignment?.daycareCenterId || null;
       } catch (error: unknown) {
-        if (error instanceof Error && error.message === "invalid_teacher_id") throw new ValidationError("Invalid teacher ID");
-        if (error instanceof Error && error.message === "teacher_not_found") throw new NotFoundError("Teacher");
+        if (error instanceof Error && error.message === "invalid_teacher_id")
+          throw new ValidationError("Invalid teacher ID");
+        if (error instanceof Error && error.message === "teacher_not_found")
+          throw new NotFoundError("Teacher");
         throw error;
       }
     }
 
     // Delegate check to child service
-    await childService.ensureNoDuplicate(body.firstName, body.lastName, normalizedDateOfBirth);
+    await childService.ensureNoDuplicate(
+      body.firstName,
+      body.lastName,
+      normalizedDateOfBirth,
+    );
 
-    const existingUserByEmail = hasParentInfo && body.parentEmail ? await parentService.findUserByEmail(body.parentEmail) : null;
+    const existingUserByEmail =
+      hasParentInfo && body.parentEmail
+        ? await parentService.findUserByEmail(body.parentEmail)
+        : null;
     if (existingUserByEmail && existingUserByEmail.role !== "parent") {
-      throw new ConflictError("Parent email is already used by a non-parent account.");
+      throw new ConflictError(
+        "Parent email is already used by a non-parent account.",
+      );
     }
 
     if (hasParentInfo && !existingUserByEmail && !body.parentPhone) {
@@ -66,15 +91,31 @@ export class ChildOnboardingService {
     try {
       // 1. Storage Service
       if (birthFile) {
-        birthUpload = await storageService.uploadEncryptedDocument(birthFile.buffer, "child-records/birth-certificates", birthFile.mimetype, birthFile.originalname);
+        birthUpload = await storageService.uploadEncryptedDocument(
+          birthFile.buffer,
+          "child-records/birth-certificates",
+          birthFile.mimetype,
+          birthFile.originalname,
+        );
       }
       if (parentIdFile) {
-        parentUpload = await storageService.uploadEncryptedDocument(parentIdFile.buffer, "child-records/parent-ids", parentIdFile.mimetype, parentIdFile.originalname);
+        parentUpload = await storageService.uploadEncryptedDocument(
+          parentIdFile.buffer,
+          "child-records/parent-ids",
+          parentIdFile.mimetype,
+          parentIdFile.originalname,
+        );
       }
 
       const documents = {
-        birthCertificate: extractUploadedDocument(birthUpload || null, birthDocumentHash || null),
-        parentId: extractUploadedDocument(parentUpload || null, parentIdDocumentHash || null),
+        birthCertificate: extractUploadedDocument(
+          birthUpload || null,
+          birthDocumentHash || null,
+        ),
+        parentId: extractUploadedDocument(
+          parentUpload || null,
+          parentIdDocumentHash || null,
+        ),
       };
 
       const payload = {
@@ -92,10 +133,15 @@ export class ChildOnboardingService {
         weight: body.weight ? Number(body.weight) : null,
         height: body.height ? Number(body.height) : null,
         status: body.status || "Active",
-        studentId: body.studentId || generateStudentId(normalizedEnrollmentDate.getFullYear()),
+        studentId:
+          body.studentId ||
+          generateStudentId(normalizedEnrollmentDate.getFullYear()),
         teacher: resolvedTeacherId,
         daycareCenter: resolvedDaycareCenterId,
-        documents: (documents.birthCertificate || documents.parentId) ? documents : undefined,
+        documents:
+          documents.birthCertificate || documents.parentId
+            ? documents
+            : undefined,
         documentIntegrity:
           documents.birthCertificate || documents.parentId
             ? {
@@ -124,7 +170,10 @@ export class ChildOnboardingService {
           });
           createdParentId = String(createdParent.parent._id);
           (payload as any).parent = createdParent.parent._id;
-          parentCredentials = { email: body.parentEmail, tempPassword: createdParent.tempPassword };
+          parentCredentials = {
+            email: body.parentEmail,
+            tempPassword: createdParent.tempPassword,
+          };
         }
       }
 
@@ -136,7 +185,7 @@ export class ChildOnboardingService {
         ["parentId", parentUpload],
       ] as const) {
         if (!upload) continue;
-        logger.info("Enrollment document encrypted and stored.", {
+        logger.debug("Enrollment document encrypted and stored.", {
           childId: String(childRecord._id),
           documentType,
           keyId: String((upload as any).encryption?.keyId || "unknown"),
@@ -146,23 +195,33 @@ export class ChildOnboardingService {
       }
 
       if (documents.birthCertificate || documents.parentId) {
-        logger.info("📄 [Blockchain] Enrollment documents queued for anchoring.", {
-          childId: String(childRecord._id),
-          status: "pending",
-        });
+        logger.debug(
+          "[Blockchain] Enrollment documents queued for anchoring.",
+          {
+            childId: String(childRecord._id),
+            status: "pending",
+          },
+        );
       }
 
       return { child: childRecord, parentCredentials, documentAnchor: null };
-
     } catch (error) {
       if (!childRecord && createdParentId) {
         // Rollback Parent
-        await authUserRepository.deleteById(createdParentId).catch((cleanupError: unknown) => {
-          logger.error("Failed to clean up parent after child creation error.", {
-            parentId: createdParentId,
-            error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
+        await authUserRepository
+          .deleteById(createdParentId)
+          .catch((cleanupError: unknown) => {
+            logger.error(
+              "Failed to clean up parent after child creation error.",
+              {
+                parentId: createdParentId,
+                error:
+                  cleanupError instanceof Error
+                    ? cleanupError.message
+                    : String(cleanupError),
+              },
+            );
           });
-        });
       }
       if (!childRecord) {
         // Rollback Storage

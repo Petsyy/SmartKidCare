@@ -23,7 +23,10 @@ const checksum = (items: unknown[]) =>
 const idString = (value: unknown) => String(value ?? "");
 const manilaDateKey = (value: Date | string) =>
   new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Manila", year: "numeric", month: "2-digit", day: "2-digit",
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
   }).format(new Date(value));
 
 class OfflineSyncService {
@@ -40,56 +43,84 @@ class OfflineSyncService {
     const user = this.assertUser(userInput);
     const childFilter =
       user.role === "teacher"
-        ? { teacher: user.id, ...(user.daycareCenterId ? { daycareCenter: user.daycareCenterId } : {}) }
+        ? {
+            teacher: user.id,
+            ...(user.daycareCenterId
+              ? { daycareCenter: user.daycareCenterId }
+              : {}),
+          }
         : { parent: user.id };
     const children = await offlineSyncRepository.findChildren(childFilter);
     const childIds = children.map((child) => child._id);
     const childIdSet = new Set(childIds.map(String));
-    const [attendanceRaw, feedingRaw, nutrition, definitions, evaluations, profile, pickupHistory] =
-      await Promise.all([
-        offlineSyncRepository.findAttendance(
-          user.role === "teacher"
-            ? { teacher: user.id }
-            : { "records.child": { $in: childIds } },
-        ),
-        offlineSyncRepository.findFeeding(
-          user.role === "teacher"
-            ? { teacher: user.id }
-            : { "records.child": { $in: childIds } },
-        ),
-        offlineSyncRepository.findNutrition(childIds),
-        offlineSyncRepository.findDefinitions(),
-        offlineSyncRepository.findEvaluations(childIds),
-        offlineSyncRepository.findProfile(user.id),
-        offlineSyncRepository.findPickupHistory(childIds),
-      ]);
+    const [
+      attendanceRaw,
+      feedingRaw,
+      nutrition,
+      definitions,
+      evaluations,
+      profile,
+      pickupHistory,
+    ] = await Promise.all([
+      offlineSyncRepository.findAttendance(
+        user.role === "teacher"
+          ? { teacher: user.id }
+          : { "records.child": { $in: childIds } },
+      ),
+      offlineSyncRepository.findFeeding(
+        user.role === "teacher"
+          ? { teacher: user.id }
+          : { "records.child": { $in: childIds } },
+      ),
+      offlineSyncRepository.findNutrition(childIds),
+      offlineSyncRepository.findDefinitions(),
+      offlineSyncRepository.findEvaluations(childIds),
+      offlineSyncRepository.findProfile(user.id),
+      offlineSyncRepository.findPickupHistory(childIds),
+    ]);
     const attendance = attendanceRaw
-      .map((record) => ({ ...record, records: record.records.filter((entry) => childIdSet.has(idString(entry.child))) }))
+      .map((record) => ({
+        ...record,
+        records: record.records.filter((entry) =>
+          childIdSet.has(idString(entry.child)),
+        ),
+      }))
       .filter((record) => record.records.length > 0);
     const feeding = feedingRaw
-      .map((record) => ({ ...record, records: record.records.filter((entry) => childIdSet.has(idString(entry.child))) }))
+      .map((record) => ({
+        ...record,
+        records: record.records.filter((entry) =>
+          childIdSet.has(idString(entry.child)),
+        ),
+      }))
       .filter((record) => record.records.length > 0);
     const guardianSummaries = children.flatMap((child: any) =>
-      (child.authorizedPickupPersons || []).map((guardian: any, index: number) => ({
-        _id: `${idString(child._id)}:${index}`,
-        childId: idString(child._id),
-        guardianIndex: index,
-        firstName: guardian.firstName,
-        lastName: guardian.lastName,
-        relationship: guardian.relationship,
-        customRelationship: guardian.customRelationship ?? null,
-        phone: guardian.phone,
-        verificationStatus: guardian.verificationStatus,
-        isActive: guardian.isActive !== false,
-      })),
+      (child.authorizedPickupPersons || []).map(
+        (guardian: any, index: number) => ({
+          _id: `${idString(child._id)}:${index}`,
+          childId: idString(child._id),
+          guardianIndex: index,
+          firstName: guardian.firstName,
+          middleName: guardian.middleName ?? null,
+          lastName: guardian.lastName,
+          relationship: guardian.relationship,
+          customRelationship: guardian.customRelationship ?? null,
+          phone: guardian.phone,
+          verificationStatus: guardian.verificationStatus,
+          isActive: guardian.isActive !== false,
+        }),
+      ),
     );
     const latestPickupByChild = new Map<string, any>();
     for (const pickup of pickupHistory as any[]) {
       const childId = idString((pickup.child as any)?._id ?? pickup.child);
-      if (!latestPickupByChild.has(childId)) latestPickupByChild.set(childId, pickup);
+      if (!latestPickupByChild.has(childId))
+        latestPickupByChild.set(childId, pickup);
     }
     const todayKey = manilaDateKey(new Date());
-    const attendanceToday = attendance.find((entry: any) => manilaDateKey(entry.date) === todayKey) as any;
+    const attendanceToday = attendance.find(
+      (entry: any) => manilaDateKey(entry.date) === todayKey,
+    ) as any;
     const presentChildIds = new Set(
       (attendanceToday?.records || [])
         .filter((entry: any) => entry.status === "present")
@@ -98,13 +129,22 @@ class OfflineSyncService {
     const pickupStatuses = children.map((child: any) => {
       const childId = idString(child._id);
       const latestPickup = latestPickupByChild.get(childId);
-      const pickup = latestPickup && manilaDateKey(latestPickup.pickedUpAt) === todayKey ? latestPickup : null;
-      return { _id: childId, childId, eligible: presentChildIds.has(childId),
-        status: pickup ? "released" : "pending", pickup };
+      const pickup =
+        latestPickup && manilaDateKey(latestPickup.pickedUpAt) === todayKey
+          ? latestPickup
+          : null;
+      return {
+        _id: childId,
+        childId,
+        eligible: presentChildIds.has(childId),
+        status: pickup ? "released" : "pending",
+        pickup,
+      };
     });
-    const notificationFeed = user.role === "teacher"
-      ? await getTeacherNotificationsFeed({ teacherId: user.id })
-      : await getParentNotificationsFeed({ parentId: user.id });
+    const notificationFeed =
+      user.role === "teacher"
+        ? await getTeacherNotificationsFeed({ teacherId: user.id })
+        : await getParentNotificationsFeed({ parentId: user.id });
     const notifications = notificationFeed.notifications.map((item) => ({
       ...item,
       _id: item.id,
@@ -119,12 +159,14 @@ class OfflineSyncService {
       competencyEvaluations: evaluations,
       profiles: profile ? [profile] : [],
       guardianSummaries,
-      enrollmentReference: [{
-        _id: user.id,
-        childCount: children.length,
-        daycareCenter: (profile as any)?.daycareCenter ?? null,
-        generatedAt: new Date().toISOString(),
-      }],
+      enrollmentReference: [
+        {
+          _id: user.id,
+          childCount: children.length,
+          daycareCenter: (profile as any)?.daycareCenter ?? null,
+          generatedAt: new Date().toISOString(),
+        },
+      ],
       pickupStatuses,
       pickupHistory,
       notifications,

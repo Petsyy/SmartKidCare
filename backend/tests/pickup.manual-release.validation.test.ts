@@ -26,7 +26,7 @@ test("guardian manual release requires visual verification and valid guardian re
         },
         true,
       ),
-    /valid ID/i,
+    /government-issued photo ID/i,
   );
 
   assert.throws(
