@@ -80,7 +80,6 @@ export const getParentCredentials = asyncHandler(
 
     const child = await childRepository.findByIdWithParentCredentials(id);
     if (!child) throw new NotFoundError("Child");
-
     if (!ensureCanAccessChild(withDerivedDaycareCenter(child), req)) {
       throw new ForbiddenError();
     }
@@ -106,6 +105,9 @@ export const resetParentCredentials = asyncHandler(
 
     const child = await childRepository.findByIdWithParentCredentials(id);
     if (!child) throw new NotFoundError("Child");
+    if (child.status !== "Active") {
+      throw new ValidationError("This child is archived and cannot receive new records.");
+    }
 
     if (!ensureCanAccessChild(withDerivedDaycareCenter(child), req)) {
       throw new ForbiddenError();
@@ -144,6 +146,18 @@ export const updateChild = asyncHandler(async (req: Request, res: Response) => {
     req.user,
   );
   res.json(withDerivedDaycareCenter(updatedChild));
+});
+
+export const archiveChild = asyncHandler(async (req: Request, res: Response) => {
+  if (req.user?.role !== "teacher") throw new ForbiddenError("Teachers only");
+  const child = await childService.archiveChild(req.params.id as string, req.body, req.user);
+  res.json(withDerivedDaycareCenter(child));
+});
+
+export const restoreChild = asyncHandler(async (req: Request, res: Response) => {
+  if (req.user?.role !== "teacher") throw new ForbiddenError("Teachers only");
+  const child = await childService.restoreChild(req.params.id as string, req.user);
+  res.json(withDerivedDaycareCenter(child));
 });
 
 export const deleteChild = asyncHandler(async (req: Request, res: Response) => {

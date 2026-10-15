@@ -12,11 +12,14 @@ import {
   updateGuardianHandler,
   removeGuardianHandler,
   getGuardiansHandler,
+  archiveChild,
+  restoreChild,
 } from "../controllers";
 import {
   validateCreateChild,
   validateUpdateChild,
   validateGetChildrenQuery,
+  validateArchiveChild,
 } from "../validators/child.validator";
 import { validateGuardian } from "../../pickup/validators/pickup.validator";
 import { requireRole } from "../../../shared/middleware/role.middleware";
@@ -57,6 +60,8 @@ router.post(
 );
 
 router.patch("/:id", requireRole("teacher"), validateUpdateChild, updateChild);
+router.patch("/:id/archive", requireRole("teacher"), validateArchiveChild, archiveChild);
+router.patch("/:id/restore", requireRole("teacher"), restoreChild);
 router.delete("/:id", requireRole("teacher"), deleteChild);
 
 router.post(

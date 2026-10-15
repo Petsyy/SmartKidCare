@@ -27,16 +27,59 @@ const ChildSchema = new mongoose.Schema(
     weight: { type: Number, default: null },
     height: { type: Number, default: null },
     bmi: { type: Number, default: null },
-      nutritionalStatus: {
-        type: String,
-        enum: ["Normal", "Underweight", "Severely Underweight", "Overweight", "Obese", null],
-        default: null,
-      },
+    nutritionalStatus: {
+      type: String,
+      enum: [
+        "Normal",
+        "Underweight",
+        "Severely Underweight",
+        "Overweight",
+        "Obese",
+        null,
+      ],
+      default: null,
+    },
     status: {
       type: String,
       enum: ["Active", "Inactive"],
       default: "Active",
     },
+    archivedAt: { type: Date, default: null },
+    archivedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    archiveReason: {
+      type: String,
+      enum: [
+        "Completed program",
+        "Transferred",
+        "Withdrawn",
+        "Duplicate enrollment",
+        "Other",
+        null,
+      ],
+      default: null,
+    },
+    archiveNote: { type: String, trim: true, maxlength: 300, default: null },
+    statusHistory: [
+      {
+        action: {
+          type: String,
+          enum: ["archived", "restored"],
+          required: true,
+        },
+        reason: { type: String, default: null },
+        note: { type: String, trim: true, maxlength: 300, default: null },
+        actor: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
+        occurredAt: { type: Date, required: true, default: Date.now },
+      },
+    ],
 
     parent: {
       type: mongoose.Schema.Types.ObjectId,
@@ -57,6 +100,7 @@ const ChildSchema = new mongoose.Schema(
     authorizedPickupPersons: [
       {
         firstName: { type: String, required: true, trim: true },
+        middleName: { type: String, trim: true, default: null },
         lastName: { type: String, required: true, trim: true },
         relationship: {
           type: String,
@@ -73,6 +117,15 @@ const ChildSchema = new mongoose.Schema(
           type: String,
           enum: ["pending", "verified"],
           default: "pending",
+        },
+        idVerification: {
+          status: String,
+          teacherConfirmed: Boolean,
+          modelVersion: String,
+          policyVersion: String,
+          reasonCodes: [String],
+          confirmedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+          confirmedAt: Date,
         },
         isActive: { type: Boolean, default: true },
       },
@@ -99,8 +152,13 @@ const ChildSchema = new mongoose.Schema(
           cleanupPending: { type: Boolean, default: false },
         },
         verification: {
-          status: String, teacherConfirmed: Boolean, modelVersion: String,
-          policyVersion: String, reasonCodes: [String], confirmedAt: Date,
+          status: String,
+          teacherConfirmed: Boolean,
+          modelVersion: String,
+          policyVersion: String,
+          reasonCodes: [String],
+          confirmedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+          confirmedAt: Date,
         },
       },
       parentId: {
@@ -123,8 +181,13 @@ const ChildSchema = new mongoose.Schema(
           cleanupPending: { type: Boolean, default: false },
         },
         verification: {
-          status: String, teacherConfirmed: Boolean, modelVersion: String,
-          policyVersion: String, reasonCodes: [String], confirmedAt: Date,
+          status: String,
+          teacherConfirmed: Boolean,
+          modelVersion: String,
+          policyVersion: String,
+          reasonCodes: [String],
+          confirmedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+          confirmedAt: Date,
         },
       },
     },
@@ -157,5 +220,6 @@ ChildSchema.index({
   "documentIntegrity.nextAttemptAt": 1,
   "documentIntegrity.leaseUntil": 1,
 });
+ChildSchema.index({ teacher: 1, status: 1, archivedAt: -1 });
 
 export default mongoose.model("Child", ChildSchema);

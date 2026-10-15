@@ -60,9 +60,21 @@ export const updateChildSchema = z.object({
   weight: z.coerce.number().min(5).max(50).optional(),
   height: z.coerce.number().min(60).max(150).optional(),
   schoolYear: z.string().trim().optional(),
-  status: z.enum(["Active", "Inactive"]).optional(),
+  status: z.never({ message: "Use the archive or restore endpoint to change child status." }).optional(),
+});
+
+export const archiveChildSchema = z.object({
+  reason: z.enum([
+    "Completed program",
+    "Transferred",
+    "Withdrawn",
+    "Duplicate enrollment",
+    "Other",
+  ]),
+  note: z.string().trim().max(300, "Archive note must be 300 characters or fewer.").optional(),
 });
 
 export const validateCreateChild = validate(createChildSchema);
 export const validateUpdateChild = validate(updateChildSchema);
 export const validateGetChildrenQuery = validate(getChildrenQuerySchema, "query");
+export const validateArchiveChild = validate(archiveChildSchema);

@@ -10,6 +10,7 @@ import {
   calculateBmi,
   classifyNutritionalStatus,
 } from "../../../shared/utils/nutrition.utils";
+import { pickupCodeRepository } from "../../pickup/repositories/pickup.repository";
 
 export class ChildService {
   public async ensureNoDuplicate(
@@ -39,6 +40,9 @@ export class ChildService {
     const child = await childRepository.findById(id);
     if (!child) throw new NotFoundError("Child");
     assertCanAccessChild(user, child);
+    if (child.status !== "Active") {
+      throw new ValidationError("This child is archived and cannot receive new records.");
+    }
 
     if (body.firstName !== undefined) child.firstName = body.firstName;
     if (body.middleName !== undefined) child.middleName = body.middleName;
@@ -67,10 +71,64 @@ export class ChildService {
       }
     }
     if (body.schoolYear !== undefined) child.schoolYear = body.schoolYear;
-    if (body.status !== undefined) child.status = body.status;
-
     await child.save();
     return await childRepository.findByIdWithDetails(child._id.toString());
+  }
+
+  async archiveChild(
+    id: string,
+    body: { reason: string; note?: string },
+    user: AuthenticatedUser | undefined,
+  ) {
+    const child = await childRepository.findById(id);
+    if (!child) throw new NotFoundError("Child");
+    assertCanAccessChild(user, child);
+    if (!user?.id) throw new ValidationError("Authenticated teacher is required");
+    if (child.status === "Inactive") {
+      throw new ConflictError("Child is already archived");
+    }
+
+    const occurredAt = new Date();
+    child.status = "Inactive";
+    child.archivedAt = occurredAt;
+    child.archivedBy = user.id;
+    child.archiveReason = body.reason;
+    child.archiveNote = body.note?.trim() || null;
+    child.statusHistory = child.statusHistory || [];
+    child.statusHistory.push({
+      action: "archived",
+      reason: body.reason,
+      note: body.note?.trim() || null,
+      actor: user.id,
+      occurredAt,
+    });
+    await child.save();
+    await pickupCodeRepository.invalidatePreviousCodes(id);
+    return childRepository.findByIdWithDetails(id);
+  }
+
+  async restoreChild(id: string, user: AuthenticatedUser | undefined) {
+    const child = await childRepository.findById(id);
+    if (!child) throw new NotFoundError("Child");
+    assertCanAccessChild(user, child);
+    if (!user?.id) throw new ValidationError("Authenticated teacher is required");
+    if (child.status === "Active") {
+      throw new ConflictError("Child is already active");
+    }
+
+    child.status = "Active";
+    child.archivedAt = null;
+    child.archivedBy = null;
+    child.archiveReason = null;
+    child.archiveNote = null;
+    child.statusHistory = child.statusHistory || [];
+    child.statusHistory.push({
+      action: "restored",
+      actor: user.id,
+      occurredAt: new Date(),
+    });
+    await child.save();
+    return childRepository.findByIdWithDetails(id);
   }
 
   async deleteChild(id: string, user: AuthenticatedUser | undefined) {
