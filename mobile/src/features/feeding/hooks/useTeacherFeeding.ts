@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/src/hooks/use-auth";
 import { getChildren } from "@/src/api/teacher.api";
 import {
@@ -23,7 +23,7 @@ import {
   getDraft,
   getOutboxOperation,
   saveDraft,
-  getPendingOutboxByDate,
+  getOutboxByDate,
 } from "@/src/offline/offline-store";
 import type { FeedingDraftPayload } from "@/src/offline/offline.types";
 import {
@@ -76,10 +76,17 @@ const buildSnapshot = (
 
 export const useTeacherFeeding = () => {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const params = useLocalSearchParams();
-  const { isAuthenticated, user } = useAuth();
+  const { authState, isAuthenticated, user } = useAuth();
   const { isConnected, isInternetReachable, synchronize, refreshPendingCount } =
     useOffline();
+  const canReadFeeding =
+    isAuthenticated || authState === "offlineAuthenticated";
+  const mustUseOfflineData =
+    authState === "offlineAuthenticated" ||
+    !isConnected ||
+    !isInternetReachable;
 
   const [children, setChildren] = useState<Child[]>([]);
   const [feedingStatus, setFeedingStatus] = useState<
@@ -152,22 +159,21 @@ export const useTeacherFeeding = () => {
       presentChildrenIdsKey,
     ),
     networkMode: "always",
-    enabled: isAuthenticated,
+    enabled: canReadFeeding && Boolean(user?.id),
     queryFn: async () => {
       if (!user?.id) throw new Error("Please sign in again.");
-      const offline = !isConnected || !isInternetReachable;
       const [
         childrenData,
         serverFeedingRecord,
-        pendingFeedingOperation,
-        pendingAttendanceOperation,
+        localFeedingOperation,
+        localAttendanceOperation,
       ] =
         await Promise.all([
-          onlineWithOfflineFallback(offline, getChildren, () =>
+          onlineWithOfflineFallback(mustUseOfflineData, getChildren, () =>
             readOfflineResource<Child>(user.id, "children"),
           ),
           onlineWithOfflineFallback(
-            offline,
+            mustUseOfflineData,
             () => getFeedingForDate(attendanceDateKey),
             () =>
               readOfflineRecordForDate<any>(
@@ -176,20 +182,24 @@ export const useTeacherFeeding = () => {
                 attendanceDateKey,
               ),
           ),
-          getPendingOutboxByDate(user.id, "feeding.create", attendanceDateKey),
-          getPendingOutboxByDate(
+          getOutboxByDate(user.id, "feeding.create", attendanceDateKey),
+          getOutboxByDate(
             user.id,
             "attendance.create",
             attendanceDateKey,
           ),
         ]);
-      const feedingRecord = pendingFeedingOperation
+      const localFeedingRecord = localFeedingOperation
         ? {
             date: attendanceDateKey,
-            ...(pendingFeedingOperation.frozenPayload as any),
-            localPending: true,
+            ...(localFeedingOperation.frozenPayload as any),
+            localPending: localFeedingOperation.status !== "synced",
           }
-        : serverFeedingRecord;
+        : null;
+      const feedingRecord =
+        localFeedingOperation && localFeedingOperation.status !== "synced"
+          ? localFeedingRecord
+          : serverFeedingRecord ?? localFeedingRecord;
 
       if (feedingRecord) {
         const recordedChildIds = new Set(
@@ -225,24 +235,30 @@ export const useTeacherFeeding = () => {
           presentIds.has(child._id),
         );
       } else {
-        const attendanceRecord = pendingAttendanceOperation
+        const localAttendanceRecord = localAttendanceOperation
           ? {
               date: attendanceDateKey,
               records: (
-                pendingAttendanceOperation.frozenPayload as SubmitAttendanceData
+                localAttendanceOperation.frozenPayload as SubmitAttendanceData
               ).records,
-              localPending: true,
+              localPending: localAttendanceOperation.status !== "synced",
             }
-          : await onlineWithOfflineFallback(
-              offline,
-              () => getAttendanceForDate(attendanceDateKey),
-              () =>
-                readOfflineRecordForDate<any>(
-                  user.id,
-                  "attendance",
-                  attendanceDateKey,
-                ),
-            );
+          : null;
+        const storedAttendanceRecord = await onlineWithOfflineFallback(
+          mustUseOfflineData,
+          () => getAttendanceForDate(attendanceDateKey),
+          () =>
+            readOfflineRecordForDate<any>(
+              user.id,
+              "attendance",
+              attendanceDateKey,
+            ),
+        );
+        const attendanceRecord =
+          localAttendanceOperation &&
+          localAttendanceOperation.status !== "synced"
+            ? localAttendanceRecord
+            : storedAttendanceRecord ?? localAttendanceRecord;
         if (attendanceRecord?.records) {
           const presentIds = new Set(
             attendanceRecord.records
@@ -474,6 +490,12 @@ export const useTeacherFeeding = () => {
         },
       });
       await refreshPendingCount();
+      await queryClient.invalidateQueries({
+        queryKey: mobileQueryKeys.teacherFeedingSetup(
+          attendanceDateKey,
+          presentChildrenIdsKey,
+        ),
+      });
       setSavedSnapshot(snapshot);
       setIsReadOnly(true);
       Alert.alert(
@@ -504,6 +526,8 @@ export const useTeacherFeeding = () => {
     refreshPendingCount,
     isConnected,
     isInternetReachable,
+    presentChildrenIdsKey,
+    queryClient,
     synchronize,
   ]);
 
@@ -563,10 +587,15 @@ export const useTeacherFeeding = () => {
     user,
   ]);
 
+  const isHydrating =
+    !!data &&
+    ((children.length === 0 && data.childrenToShow.length > 0) ||
+      (data.isReadOnly && !isReadOnly));
+
   return {
     router,
     children,
-    loading: isLoading,
+    loading: isLoading || isHydrating,
     feedingStatus,
     feedingNotes,
     foodServed,
@@ -595,6 +624,6 @@ export const useTeacherFeeding = () => {
     handleSubmit,
     submitBeforeLeaving,
     foodMenuOptions,
-    isOffline: !isConnected || !isInternetReachable,
+    isOffline: mustUseOfflineData,
   };
 };

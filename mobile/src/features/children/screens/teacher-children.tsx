@@ -33,8 +33,14 @@ interface ChildStatus {
 
 export default function ChildScreen() {
   const router = useRouter();
-  const { isAuthenticated, user } = useAuth();
+  const { authState, isAuthenticated, user } = useAuth();
   const { isConnected, isInternetReachable } = useOffline();
+  const canReadChildren =
+    isAuthenticated || authState === "offlineAuthenticated";
+  const mustUseOfflineData =
+    authState === "offlineAuthenticated" ||
+    !isConnected ||
+    !isInternetReachable;
 
   const {
     childrenSearchQuery: searchQuery,
@@ -48,23 +54,22 @@ export default function ChildScreen() {
   } = useQuery({
     queryKey: mobileQueryKeys.teacherChildrenOverview(),
     networkMode: "always",
-    enabled: isAuthenticated,
+    enabled: canReadChildren && Boolean(user?.id),
     queryFn: async () => {
       if (!user?.id)
         return { children: [], attendanceRecord: null, feedingRecord: null };
-      const offline = !isConnected || !isInternetReachable;
       const today = getManilaDateKey();
       const [children, attendanceRecord, feedingRecord] = await Promise.all([
-        onlineWithOfflineFallback(offline, getChildren, () =>
+        onlineWithOfflineFallback(mustUseOfflineData, getChildren, () =>
           readOfflineResource<Child>(user.id, "children"),
         ),
         onlineWithOfflineFallback(
-          offline,
+          mustUseOfflineData,
           () => getTodayAttendance(),
           () => readOfflineRecordForDate<any>(user.id, "attendance", today),
         ),
         onlineWithOfflineFallback(
-          offline,
+          mustUseOfflineData,
           () => getTodayFeeding(),
           () => readOfflineRecordForDate<any>(user.id, "feeding", today),
         ),

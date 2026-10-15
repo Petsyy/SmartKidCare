@@ -158,6 +158,23 @@ export const finalizeDraft = async (input: {
   return operation;
 };
 
+const toOutboxOperation = (row: any): OutboxOperation => ({
+  clientOperationId: row.operation_id,
+  sourceDraftId: row.source_draft_id,
+  userId: row.user_id,
+  operationType: row.operation_type,
+  dateKey: row.date_key,
+  frozenPayload: JSON.parse(row.payload_json),
+  payloadHash: row.payload_hash,
+  status: row.status,
+  attemptCount: row.attempt_count,
+  firstAttemptedAt: row.first_attempted_at ?? undefined,
+  lastAttemptedAt: row.last_attempted_at ?? undefined,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+  lastErrorCode: row.last_error_code ?? undefined,
+});
+
 export const listOutboxOperations = async (userId: string) => {
   const database = await getOfflineDatabase();
   const rows = await database.getAllAsync<any>(
@@ -167,34 +184,24 @@ export const listOutboxOperations = async (userId: string) => {
        CASE operation_type WHEN 'attendance.create' THEN 0 ELSE 1 END ASC`,
     userId,
   );
-  return rows.map((row): OutboxOperation => ({
-    clientOperationId: row.operation_id,
-    sourceDraftId: row.source_draft_id,
-    userId: row.user_id,
-    operationType: row.operation_type,
-    dateKey: row.date_key,
-    frozenPayload: JSON.parse(row.payload_json),
-    payloadHash: row.payload_hash,
-    status: row.status,
-    attemptCount: row.attempt_count,
-    firstAttemptedAt: row.first_attempted_at ?? undefined,
-    lastAttemptedAt: row.last_attempted_at ?? undefined,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    lastErrorCode: row.last_error_code ?? undefined,
-  }));
+  return rows.map(toOutboxOperation);
 };
 
-export const getPendingOutboxByDate = async (
+export const getOutboxByDate = async (
   userId: string,
   operationType: OutboxOperation["operationType"],
   dateKey: string,
-) => {
-  const operations = await listOutboxOperations(userId);
-  return operations.find(
-    (operation) =>
-      operation.operationType === operationType && operation.dateKey === dateKey,
-  ) ?? null;
+): Promise<OutboxOperation | null> => {
+  const database = await getOfflineDatabase();
+  const row = await database.getFirstAsync<any>(
+    `SELECT * FROM offline_outbox
+     WHERE user_id = ? AND operation_type = ? AND date_key = ?
+     LIMIT 1`,
+    userId,
+    operationType,
+    dateKey,
+  );
+  return row ? toOutboxOperation(row) : null;
 };
 
 export const getOutboxOperation = async (operationId: string) => {

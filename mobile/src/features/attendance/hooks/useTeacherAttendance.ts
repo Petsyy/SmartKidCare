@@ -18,7 +18,7 @@ import {
   getDraft,
   getOutboxOperation,
   saveDraft,
-  getPendingOutboxByDate,
+  getOutboxByDate,
 } from "@/src/offline/offline-store";
 import type { AttendanceDraftPayload } from "@/src/offline/offline.types";
 import {
@@ -36,9 +36,15 @@ type AttendanceChildStatus = "present" | "absent";
 export const useTeacherAttendance = () => {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { isAuthenticated, user } = useAuth();
+  const { authState, isAuthenticated, user } = useAuth();
   const { isConnected, isInternetReachable, synchronize, refreshPendingCount } =
     useOffline();
+  const canReadAttendance =
+    isAuthenticated || authState === "offlineAuthenticated";
+  const mustUseOfflineData =
+    authState === "offlineAuthenticated" ||
+    !isConnected ||
+    !isInternetReachable;
   const [attendance, setAttendance] = useState<
     Record<string, AttendanceChildStatus | undefined>
   >({});
@@ -59,17 +65,16 @@ export const useTeacherAttendance = () => {
   const { data, isLoading } = useQuery({
     queryKey: mobileQueryKeys.teacherAttendanceSetup(selectedDateKey),
     networkMode: "always",
-    enabled: isAuthenticated,
+    enabled: canReadAttendance && Boolean(user?.id),
     queryFn: async () => {
       if (!user?.id) return { childrenData: [], attendanceRecord: null };
-      const offline = !isConnected || !isInternetReachable;
-      const [childrenData, serverAttendanceRecord, pendingOperation] =
+      const [childrenData, serverAttendanceRecord, localOperation] =
         await Promise.all([
-          onlineWithOfflineFallback(offline, getChildren, () =>
+          onlineWithOfflineFallback(mustUseOfflineData, getChildren, () =>
             readOfflineResource<Child>(user.id, "children"),
           ),
           onlineWithOfflineFallback(
-            offline,
+            mustUseOfflineData,
             () => getAttendanceForDate(selectedDateKey),
             () =>
               readOfflineRecordForDate<any>(
@@ -78,15 +83,19 @@ export const useTeacherAttendance = () => {
                 selectedDateKey,
               ),
           ),
-          getPendingOutboxByDate(user.id, "attendance.create", selectedDateKey),
+          getOutboxByDate(user.id, "attendance.create", selectedDateKey),
         ]);
-      const attendanceRecord = pendingOperation
+      const localAttendanceRecord = localOperation
         ? {
             date: selectedDateKey,
-            records: (pendingOperation.frozenPayload as any).records,
-            localPending: true,
+            records: (localOperation.frozenPayload as any).records,
+            localPending: localOperation.status !== "synced",
           }
-        : serverAttendanceRecord;
+        : null;
+      const attendanceRecord =
+        localOperation && localOperation.status !== "synced"
+          ? localAttendanceRecord
+          : serverAttendanceRecord ?? localAttendanceRecord;
       return { childrenData, attendanceRecord };
     },
   });
@@ -271,6 +280,9 @@ export const useTeacherAttendance = () => {
         completePayload: { date: selectedDateKey, records },
       });
       await refreshPendingCount();
+      await queryClient.invalidateQueries({
+        queryKey: mobileQueryKeys.teacherAttendanceSetup(selectedDateKey),
+      });
       setIsReadOnly(true);
       Alert.alert(
         "Queued for synchronization",
@@ -326,9 +338,12 @@ export const useTeacherAttendance = () => {
     router.replace("/(teacher)");
   };
 
+  const isHydratingSubmittedRecord =
+    Boolean(data?.attendanceRecord) && !isReadOnly;
+
   return {
     children,
-    loading: isLoading,
+    loading: isLoading || isHydratingSubmittedRecord,
     attendance,
     searchQuery,
     setSearchQuery,
@@ -344,7 +359,7 @@ export const useTeacherAttendance = () => {
     markAllAbsent,
     handleSubmit,
     saveDraftAndLeave,
-    isOffline: !isConnected || !isInternetReachable,
+    isOffline: mustUseOfflineData,
     isSubmitting: false,
     showSuccessFeedback,
     dismissSuccessFeedback: () => setShowSuccessFeedback(false),

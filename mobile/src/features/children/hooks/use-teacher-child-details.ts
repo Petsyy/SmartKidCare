@@ -20,14 +20,20 @@ interface DailyCareRecord {
 
 export function useTeacherChildDetails(childId: string | null) {
   const queryClient = useQueryClient();
-  const { isAuthenticated, user } = useAuth();
+  const { authState, isAuthenticated, user } = useAuth();
   const { isConnected, isInternetReachable } = useOffline();
-  const isOffline = !isConnected || !isInternetReachable;
+  const canReadChildDetails =
+    isAuthenticated || authState === "offlineAuthenticated";
+  const mustUseOfflineData =
+    authState === "offlineAuthenticated" ||
+    !isConnected ||
+    !isInternetReachable;
 
   const query = useQuery({
     queryKey: mobileQueryKeys.teacherChildDetails(childId),
     networkMode: "always",
-    enabled: isAuthenticated && Boolean(childId),
+    enabled:
+      canReadChildDetails && Boolean(user?.id) && Boolean(childId),
     queryFn: async () => {
       if (!childId) throw new Error("Missing required data");
       if (!user?.id) throw new Error("Please sign in again.");
@@ -49,7 +55,7 @@ export function useTeacherChildDetails(childId: string | null) {
         const offlineChild = children.find((entry) => entry._id === childId);
         if (!offlineChild) {
           throw new Error(
-            isOffline
+            mustUseOfflineData
               ? "This child is not available in the offline data on this device."
               : "Child details could not be loaded. Please try again.",
           );
@@ -59,9 +65,9 @@ export function useTeacherChildDetails(childId: string | null) {
 
       const today = getManilaDateKey();
       const [child, attendanceRecord, feedingRecord] = await Promise.all([
-        onlineWithOfflineFallback(isOffline, () => getChildById(childId), readCachedOrOfflineChild),
-        onlineWithOfflineFallback(isOffline, () => getTodayAttendance(), () => readOfflineRecordForDate<DailyCareRecord & { date: string }>(user.id, "attendance", today)),
-        onlineWithOfflineFallback(isOffline, () => getTodayFeeding(), () => readOfflineRecordForDate<DailyCareRecord & { date: string }>(user.id, "feeding", today)),
+        onlineWithOfflineFallback(mustUseOfflineData, () => getChildById(childId), readCachedOrOfflineChild),
+        onlineWithOfflineFallback(mustUseOfflineData, () => getTodayAttendance(), () => readOfflineRecordForDate<DailyCareRecord & { date: string }>(user.id, "attendance", today)),
+        onlineWithOfflineFallback(mustUseOfflineData, () => getTodayFeeding(), () => readOfflineRecordForDate<DailyCareRecord & { date: string }>(user.id, "feeding", today)),
       ]);
       return { child, attendanceRecord, feedingRecord };
     },
@@ -89,7 +95,7 @@ export function useTeacherChildDetails(childId: string | null) {
     status,
     fullName: child ? [child.firstName, child.middleName, child.lastName].filter(Boolean).join(" ") : "",
     isInactive: child?.status === "Inactive",
-    isOffline,
+    isOffline: mustUseOfflineData,
     isLoading: query.isLoading,
     error: query.error,
     refetch: query.refetch,
