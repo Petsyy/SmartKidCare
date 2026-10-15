@@ -9,7 +9,7 @@ import {
   formatManilaDateLabel,
   getManilaDateKey,
 } from "@/src/utils/manila-date";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { useTeacherUi } from "@/src/context/teacher-ui-context";
 import { useOffline } from "@/src/offline/offline-context";
@@ -35,6 +35,7 @@ type AttendanceChildStatus = "present" | "absent";
 
 export const useTeacherAttendance = () => {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { isAuthenticated, user } = useAuth();
   const { isConnected, isInternetReachable, synchronize, refreshPendingCount } =
     useOffline();
@@ -280,6 +281,9 @@ export const useTeacherAttendance = () => {
         if (
           (await getOutboxOperation(operation.clientOperationId)) === "synced"
         ) {
+          await queryClient.invalidateQueries({
+            queryKey: ["pickupEligibleChildren"],
+          });
           setShowSuccessFeedback(true);
         }
       }

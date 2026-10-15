@@ -55,7 +55,9 @@ export function PickupPersonSelector({
         return (
           <PickupPersonCard
             key={guardian._id || `guardian-${index}`}
-            name={`${guardian.firstName} ${guardian.lastName}`}
+            name={[guardian.firstName, guardian.middleName, guardian.lastName]
+              .filter(Boolean)
+              .join(" ")}
             subtitle={`${relationshipLabel} • ${guardian.phone}`}
             isSelected={selectedGuardianIndex === index}
             onPress={() => onSelect(index)}

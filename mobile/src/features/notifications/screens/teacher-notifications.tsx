@@ -63,6 +63,7 @@ export default function TeacherNotificationsScreen() {
 
   return (
     <NotificationFeedScreen<TeacherNotificationFeedItem>
+      fallbackRoute="/(teacher)"
       subtitle="Teacher alerts and reminders"
       headerBackgroundVariant="teacherGradient"
       date={feed.date}

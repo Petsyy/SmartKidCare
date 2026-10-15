@@ -69,6 +69,7 @@ export interface BlockchainProofResponse {
 export interface Guardian {
   _id?: string;
   firstName: string;
+  middleName?: string | null;
   lastName: string;
   relationship: "Mother" | "Father" | "Guardian" | "Grandparent" | "Other";
   customRelationship?: string | null;
@@ -76,6 +77,16 @@ export interface Guardian {
   idUrl?: string | null;
   idPublicId?: string | null;
   verificationStatus?: "pending" | "verified";
+  documentVerificationId?: string;
+  idVerification?: {
+    status?: DocumentVerificationStatus;
+    teacherConfirmed?: boolean;
+    reasonCodes?: string[];
+    modelVersion?: string;
+    policyVersion?: string;
+    confirmedBy?: string | null;
+    confirmedAt?: string | null;
+  };
   isActive?: boolean;
 }
 
@@ -92,6 +103,11 @@ export interface Child {
   studentId: string;
   schoolYear: string;
   status: string;
+  archivedAt?: string | null;
+  archivedBy?: string | null;
+  archiveReason?: string | null;
+  archiveNote?: string | null;
+  updatedAt?: string;
   enrollmentDate: string;
   dateOfBirth?: string;
   weight?: number;
@@ -454,6 +470,17 @@ export interface DocumentVerificationResponse {
     parentFirstName?: boolean;
     parentMiddleName?: boolean;
     parentLastName?: boolean;
+    guardianName?: boolean;
+    guardianFirstName?: boolean;
+    guardianLastName?: boolean;
+  };
+  extractedFields: {
+    childFullName?: string | null;
+    dateOfBirth?: string | null;
+    parentFullName?: string | null;
+    parentFirstName?: string | null;
+    parentMiddleName?: string | null;
+    parentLastName?: string | null;
   };
   teacherConfirmed: boolean;
   message: string;

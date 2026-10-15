@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import { useRouter } from "expo-router";
+import type { Href } from "expo-router";
 import { AlertCircle, Archive, Bell, CheckCircle2, RotateCcw, Trash2 } from "lucide-react-native";
 import {
   Alert,
@@ -19,6 +19,7 @@ import {
   RefreshableScrollView,
 } from "@/src/components/ui";
 import type { ScreenHeaderBackgroundVariant } from "@/src/components/ui";
+import { useSafeBack } from "@/src/hooks/use-safe-back";
 
 type NotificationItemBase = {
   id: string;
@@ -43,6 +44,7 @@ type CardUI = {
 };
 
 type Props<T extends NotificationItemBase> = {
+  fallbackRoute: Href;
   subtitle: string;
   headerBackgroundVariant?: ScreenHeaderBackgroundVariant;
   date: string | null;
@@ -74,6 +76,7 @@ const defaultResolveTitle = <T extends NotificationItemBase>(
 ) => item.title || fallbackTitle;
 
 export function NotificationFeedScreen<T extends NotificationItemBase>({
+  fallbackRoute,
   subtitle,
   headerBackgroundVariant = "solid",
   date,
@@ -98,7 +101,7 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
   cardUi,
   resolveTitle = defaultResolveTitle,
 }: Props<T>) {
-  const router = useRouter();
+  const handleBack = useSafeBack(fallbackRoute);
   const fallbackUi: CardUI = {
     fallbackTitle: "Notification",
     icon: AlertCircle,
@@ -114,7 +117,7 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
           backgroundVariant={headerBackgroundVariant}
           title="Notifications"
           subtitle={subtitle}
-          onBack={() => router.back()}
+          onBack={handleBack}
         />
         <ScreenLoadingState
           title="Loading notifications"
@@ -130,7 +133,7 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
         backgroundVariant={headerBackgroundVariant}
         title="Notifications"
         subtitle={subtitle}
-        onBack={() => router.back()}
+        onBack={handleBack}
       />
 
       <RefreshableScrollView

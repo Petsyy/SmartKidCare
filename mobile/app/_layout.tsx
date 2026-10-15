@@ -40,7 +40,6 @@ configureReanimatedLogger({
 
 LogBox.ignoreLogs([
   "DateTimePicker: `onChange` is deprecated.",
-  "SafeAreaView has been deprecated and will be removed in a future release.",
   "[Reanimated] Reduced motion setting is enabled on this device.",
 ]);
 

@@ -5,6 +5,7 @@ import {
   usePreventRemove,
   type NavigationAction,
 } from "expo-router/react-navigation";
+import { useRouter, type Href } from "expo-router";
 
 type UnsavedChangesGuardOptions = {
   hasUnsavedChanges: boolean;
@@ -13,6 +14,7 @@ type UnsavedChangesGuardOptions = {
   title?: string;
   message?: string;
   saveLabel?: string;
+  fallbackRoute: Href;
 };
 
 export function useUnsavedChangesGuard({
@@ -22,8 +24,10 @@ export function useUnsavedChangesGuard({
   title = "Unsaved Progress",
   message = "You have unsaved progress. Save it as a draft before leaving?",
   saveLabel = "Save Draft",
+  fallbackRoute,
 }: UnsavedChangesGuardOptions) {
   const navigation = useNavigation();
+  const router = useRouter();
   const pendingAction = useRef<NavigationAction | null>(null);
   const [allowRemoval, setAllowRemoval] = useState(false);
 
@@ -32,8 +36,12 @@ export function useUnsavedChangesGuard({
 
     const action = pendingAction.current;
     pendingAction.current = null;
+    if (action.type === "GO_BACK" && !navigation.canGoBack()) {
+      router.replace(fallbackRoute);
+      return;
+    }
     navigation.dispatch(action);
-  }, [allowRemoval, navigation]);
+  }, [allowRemoval, fallbackRoute, navigation, router]);
 
   usePreventRemove(hasUnsavedChanges && !allowRemoval, ({ data }) => {
     if (isSaving) return;
@@ -49,7 +57,9 @@ export function useUnsavedChangesGuard({
       {
         text: saveLabel,
         onPress: () => {
-          void onSave().then(leave).catch(() => undefined);
+          void onSave()
+            .then(leave)
+            .catch(() => undefined);
         },
       },
     ]);

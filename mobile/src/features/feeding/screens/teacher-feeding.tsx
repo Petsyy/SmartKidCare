@@ -66,6 +66,7 @@ export default function RecordFeeding() {
     hasUnsavedChanges,
     isSaving: isSubmitting,
     onSave: submitBeforeLeaving,
+    fallbackRoute: "/(teacher)",
     saveLabel: "Save Draft",
     message:
       "You have unsaved feeding progress. Save it securely as a draft before leaving?",

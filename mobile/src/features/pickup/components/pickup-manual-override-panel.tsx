@@ -89,16 +89,20 @@ export function PickupManualOverridePanel({
     onToggleVisualVerification(false);
     try {
       const url = await getParentIdDocumentUrl(childId);
-      setSelectedImage({ url, title: "Parent ID", kind: "parent" });
+      setSelectedImage({
+        url,
+        title: "Parent Government-Issued Photo ID",
+        kind: "parent",
+      });
     } catch (error: unknown) {
       reportHandledError("pickup.parent-id.access", error);
       setParentIdLoadFailed(true);
       onToggleVisualVerification(false);
       Alert.alert(
-        "Parent ID Unavailable",
+        "Parent Government ID Unavailable",
         getUserFriendlyErrorMessage(
           error,
-          "The parent ID could not be loaded. Please try again.",
+          "The parent government-issued photo ID could not be loaded. Please try again.",
         ),
       );
     } finally {
@@ -113,8 +117,8 @@ export function PickupManualOverridePanel({
     setHasViewedParentId(false);
     onToggleVisualVerification(false);
     Alert.alert(
-      "Parent ID Unavailable",
-      "The parent ID could not be displayed. Request a fresh copy and try again.",
+      "Parent Government ID Unavailable",
+      "The parent government-issued photo ID could not be displayed. Request a fresh copy and try again.",
     );
   };
 
@@ -129,16 +133,16 @@ export function PickupManualOverridePanel({
 
     if (isParentSelected && !parent?.hasIdDocument) {
       Alert.alert(
-        "Parent ID Required",
-        "Manual release is unavailable because this parent has no stored ID. Use pickup-code verification or correct the enrollment record.",
+        "Parent Government ID Required",
+        "Manual release is unavailable because this parent has no stored government-issued photo ID. Use pickup-code verification or correct the enrollment record.",
       );
       return;
     }
 
     if (isParentSelected && parentIdLoadFailed) {
       Alert.alert(
-        "Parent ID Required",
-        "Reload and review the stored parent ID before confirming release.",
+        "Parent Government ID Required",
+        "Reload and review the stored parent government-issued photo ID before confirming release.",
       );
       return;
     }
@@ -146,7 +150,7 @@ export function PickupManualOverridePanel({
     if (selectedGuardian && !selectedGuardian.idUrl) {
       Alert.alert(
         "Missing Documents",
-        "This guardian is missing a required valid ID. They cannot be verified for pickup.",
+        "This guardian is missing a required government-issued photo ID. They cannot be verified for pickup.",
       );
       return;
     }
@@ -224,8 +228,9 @@ export function PickupManualOverridePanel({
               <View className="flex-row items-start">
                 <AlertCircle size={18} color="#DC2626" />
                 <Text className="text-red-700 text-sm font-semibold ml-2 flex-1 leading-5">
-                  No parent ID is stored. Manual release is blocked; use the
-                  pickup code or update the enrollment record.
+                  No parent government-issued photo ID is stored. Manual release
+                  is blocked; use the pickup code or update the enrollment
+                  record.
                 </Text>
               </View>
             </View>
@@ -241,8 +246,8 @@ export function PickupManualOverridePanel({
               accessibilityRole="button"
               accessibilityLabel={
                 parentIdLoadFailed
-                  ? "Retry loading parent ID"
-                  : "View parent ID"
+                  ? "Retry loading parent government-issued photo ID"
+                  : "View parent government-issued photo ID"
               }
               accessibilityState={{ disabled: isLoadingParentId }}
             >
@@ -257,18 +262,18 @@ export function PickupManualOverridePanel({
                 className={`ml-2 font-black text-sm ${parentIdLoadFailed ? "text-amber-700" : "text-teal-700"}`}
               >
                 {isLoadingParentId
-                  ? "Loading Parent ID..."
+                  ? "Loading Parent Government ID..."
                   : parentIdLoadFailed
-                    ? "Retry Parent ID"
-                    : "View Parent ID"}
+                    ? "Retry Parent Government ID"
+                    : "View Parent Government ID"}
               </Text>
             </Pressable>
           )}
 
           {parent.hasIdDocument && !parentIdLoadFailed && (
             <Text className="text-xs font-semibold text-gray-500 mt-3 leading-5">
-              Open the stored ID and compare it with the physical government ID
-              presented by the parent.
+              Open the stored government-issued photo ID and compare it with the
+              physical government ID presented by the parent.
             </Text>
           )}
 
@@ -286,7 +291,7 @@ export function PickupManualOverridePanel({
                 : "bg-white border-gray-200"
             }`}
             accessibilityRole="checkbox"
-            accessibilityLabel="Confirm the parent and presented physical ID match the stored parent ID"
+            accessibilityLabel="Confirm the parent and presented physical ID match the stored parent government-issued photo ID"
             accessibilityState={{
               checked: isVisuallyVerified,
               disabled:
@@ -305,10 +310,10 @@ export function PickupManualOverridePanel({
               className={`ml-2 font-black text-sm ${isVisuallyVerified ? "text-emerald-700" : "text-gray-700"}`}
             >
               {isVisuallyVerified
-                ? "Parent ID Match Confirmed"
+                ? "Parent Government ID Match Confirmed"
                 : hasViewedParentId
-                  ? "Confirm Parent ID Match"
-                  : "View Parent ID First"}
+                  ? "Confirm Parent Government ID Match"
+                  : "View Parent Government ID First"}
             </Text>
           </Pressable>
         </View>
@@ -323,7 +328,7 @@ export function PickupManualOverridePanel({
             {selectedGuardian.idUrl ? (
               <View>
                 <Text className="text-xs font-bold text-gray-500 mb-2">
-                  Valid ID
+                  Guardian Government-Issued Photo ID
                 </Text>
                 <Pressable
                   onPress={() =>

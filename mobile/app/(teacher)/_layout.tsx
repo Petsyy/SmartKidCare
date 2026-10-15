@@ -5,7 +5,7 @@ import { StyleSheet, View } from "react-native";
 import { House, UserPlus, UserRound, Users, ShieldCheck } from "lucide-react-native";
 import { getTabBarScreenOptions, getTabBarStyle } from "@/src/config/tab-bar";
 import { TeacherUiProvider } from "@/src/context/teacher-ui-context";
-import { ScreenLoadingState } from "@/src/components/ui";
+import { ScreenLoadingState, SnackbarProvider } from "@/src/components/ui";
 
 export default function TeacherLayout() {
   const { user, role, loading } = useAuth();
@@ -18,6 +18,7 @@ export default function TeacherLayout() {
 
   return (
     <TeacherUiProvider>
+      <SnackbarProvider>
       <Tabs screenOptions={getTabBarScreenOptions(bottomInset)}>
         <Tabs.Screen
           name="index"
@@ -101,6 +102,10 @@ export default function TeacherLayout() {
           options={{ href: null, tabBarStyle: { display: "none" } }}
         />
         <Tabs.Screen
+          name="archived-children"
+          options={{ href: null, tabBarStyle: { display: "none" } }}
+        />
+        <Tabs.Screen
           name="edit-child/[id]"
           options={{ href: null, tabBarStyle: { display: "none" } }}
         />
@@ -117,6 +122,7 @@ export default function TeacherLayout() {
           />
         </View>
       ) : null}
+      </SnackbarProvider>
     </TeacherUiProvider>
   );
 }

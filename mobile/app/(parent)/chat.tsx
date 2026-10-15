@@ -18,7 +18,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
 import * as Icons from "lucide-react-native";
 import { useAuth } from "@/src/hooks/use-auth";
 import { sendAIChat } from "@/src/api/ai.api";
@@ -45,6 +44,7 @@ import {
   getUserFriendlyErrorMessage,
   reportHandledError,
 } from "@/src/lib/error-reporting";
+import { useSafeBack } from "@/src/hooks/use-safe-back";
 
 const SUGGESTIONS = [
   "Was my child present today?",
@@ -72,7 +72,7 @@ function getChildFullName(child: Child): string {
 }
 
 export default function ParentChatScreen() {
-  const router = useRouter();
+  const handleBack = useSafeBack("/(parent)");
   const { isAuthenticated } = useAuth();
   const { user } = useAuth();
   const { isConnected, isInternetReachable } = useOffline();
@@ -531,7 +531,7 @@ export default function ParentChatScreen() {
           backgroundVariant="brandGradient"
           title="AI Assistant"
           subtitle="Ask about attendance and meals"
-          onBack={() => router.back()}
+          onBack={handleBack}
           rightAction={
             messages.length ? (
               <Pressable

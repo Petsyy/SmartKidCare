@@ -53,6 +53,7 @@ export default function ParentNotificationsScreen() {
 
   return (
     <NotificationFeedScreen<ParentNotificationFeedItem>
+      fallbackRoute="/(parent)"
       headerBackgroundVariant="brandGradient"
       subtitle="Parent alerts and updates"
       date={feed.date}

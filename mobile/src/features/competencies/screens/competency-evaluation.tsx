@@ -6,7 +6,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, type Href } from "expo-router";
 import { ClipboardCheck, CheckCircle2, Lock } from "lucide-react-native";
 import {
   ScreenHeader,
@@ -22,6 +22,7 @@ import {
 import { useUnsavedChangesGuard } from "../../../hooks/use-unsaved-changes-guard";
 import { CompetencyDatePicker } from "../components/competency-date-picker";
 import { useAndroidBackRoute } from "../../../hooks/use-android-back-route";
+import { useSafeBack } from "../../../hooks/use-safe-back";
 
 export default function CompetencyEvaluationScreen() {
   const params = useLocalSearchParams<{
@@ -30,6 +31,15 @@ export default function CompetencyEvaluationScreen() {
   }>();
   const childId = typeof params.childId === "string" ? params.childId : null;
   const isParentView = params.isParentView === "true";
+  const fallbackRoute: Href = isParentView
+    ? "/(parent)/children"
+    : childId
+      ? {
+          pathname: "/(teacher)/child-details/[id]",
+          params: { id: childId },
+        }
+      : "/(teacher)/children";
+  const handleBack = useSafeBack(fallbackRoute);
   useAndroidBackRoute("/(parent)/children", isParentView);
   const evaluation = useCompetencyEvaluation(childId, { isParentView });
   const child = evaluation.data?.child;
@@ -38,6 +48,7 @@ export default function CompetencyEvaluationScreen() {
     hasUnsavedChanges: evaluation.hasUnsavedChanges,
     isSaving: evaluation.isSubmitting,
     onSave: evaluation.saveDraft,
+    fallbackRoute,
   });
 
   const periods: { value: EvaluationPeriod; label: string }[] = [
@@ -55,13 +66,7 @@ export default function CompetencyEvaluationScreen() {
             ? `${child.firstName} ${child.lastName}`
             : "Individual skill checklist"
         }
-        onBack={() => {
-          if (isParentView) {
-            router.replace("/(parent)/children");
-          } else {
-            router.back();
-          }
-        }}
+        onBack={handleBack}
       />
       {evaluation.isLoading ? (
         <ScreenLoadingState

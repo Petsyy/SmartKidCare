@@ -52,6 +52,8 @@ export const notificationsQueryKeys = {
 export const childrenQueryKeys = {
   teacherChildrenOverview: () =>
     ["teacherChildrenOverview"] as const,
+  teacherArchivedChildren: () =>
+    ["teacherArchivedChildren"] as const,
   teacherChildDetails: (childId: string | null) =>
     ["teacherChildDetails", childId] as const,
   teacherChildEdit: (childId: string | null) =>
