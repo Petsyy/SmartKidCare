@@ -91,6 +91,7 @@ export const useTeacherFeeding = () => {
     authState === "offlineAuthenticated" ||
     !isConnected ||
     !isInternetReachable;
+  const feedingDataSource = mustUseOfflineData ? "offline" : "online";
 
   const [children, setChildren] = useState<Child[]>([]);
   const [feedingStatus, setFeedingStatus] = useState<
@@ -151,8 +152,12 @@ export const useTeacherFeeding = () => {
 
   const { data: feedingDateStatusMap = {}, isLoading: isLoadingDateStatuses } =
     useQuery({
-    queryKey: mobileQueryKeys.teacherFeedingDateStatuses(todayDateKey),
+    queryKey: mobileQueryKeys.teacherFeedingDateStatuses(
+      todayDateKey,
+      feedingDataSource,
+    ),
     networkMode: "always",
+    refetchOnMount: "always",
     enabled: canReadFeeding && Boolean(user?.id),
     queryFn: async (): Promise<Record<string, FeedingDateStatus>> => {
       if (!user?.id) return {};
@@ -236,8 +241,15 @@ export const useTeacherFeeding = () => {
       })),
     [feedingDateKeys, feedingDateStatusMap, todayDateKey],
   );
-  const selectedDateStatus =
-    feedingDateStatusMap[attendanceDateKey] ?? "attendanceMissing";
+  const changeAttendanceDate = useCallback((nextDateKey: string) => {
+    setChildren([]);
+    setFeedingStatus({});
+    setFeedingNotes({});
+    setFoodServed("");
+    setIsReadOnly(false);
+    setSavedSnapshot(null);
+    setAttendanceDateKey(nextDateKey);
+  }, []);
 
   const attendanceDateLabel = useMemo(() => {
     const explicitLabel = String(params.attendanceDateLabel || "").trim();
@@ -260,6 +272,7 @@ export const useTeacherFeeding = () => {
     queryKey: mobileQueryKeys.teacherFeedingSetup(
       attendanceDateKey,
       presentChildrenIdsKey,
+      feedingDataSource,
     ),
     networkMode: "always",
     refetchOnMount: "always",
@@ -324,6 +337,8 @@ export const useTeacherFeeding = () => {
         });
 
         return {
+          dateKey: attendanceDateKey,
+          hasAttendanceRecord: true,
           childrenToShow,
           isReadOnly: true,
           foodServed: String(feedingRecord.foodServed || ""),
@@ -333,7 +348,9 @@ export const useTeacherFeeding = () => {
       }
 
       let childrenToShow: Child[] = [];
+      let hasAttendanceRecord = false;
       if (!isHistoricalDate && presentChildrenIds.length > 0) {
+        hasAttendanceRecord = true;
         const presentIds = new Set(presentChildrenIds.map(String));
         childrenToShow = childrenData.filter((child) =>
           presentIds.has(child._id),
@@ -364,6 +381,7 @@ export const useTeacherFeeding = () => {
             ? localAttendanceRecord
             : storedAttendanceRecord ?? localAttendanceRecord;
         if (attendanceRecord?.records) {
+          hasAttendanceRecord = true;
           const presentIds = new Set(
             attendanceRecord.records
               .filter((record: any) => record.status === "present")
@@ -383,6 +401,8 @@ export const useTeacherFeeding = () => {
       });
 
       return {
+        dateKey: attendanceDateKey,
+        hasAttendanceRecord,
         childrenToShow,
         isReadOnly: false,
         foodServed: "",
@@ -391,6 +411,11 @@ export const useTeacherFeeding = () => {
       };
     },
   });
+
+  const attendancePrerequisiteMet = Boolean(
+    data?.dateKey === attendanceDateKey &&
+      (data.isReadOnly || data.hasAttendanceRecord),
+  );
 
   useEffect(() => {
     if (!data) return;
@@ -439,27 +464,38 @@ export const useTeacherFeeding = () => {
     );
   }, [attendanceDateKey, data, user?.id]);
 
+  const availableChildren = useMemo(
+    () => (attendancePrerequisiteMet || isReadOnly ? children : []),
+    [attendancePrerequisiteMet, children, isReadOnly],
+  );
+
   const filteredChildren = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
-    if (!query) return children;
+    if (!query) return availableChildren;
 
-    return children.filter((child) => {
+    return availableChildren.filter((child) => {
       const fullName =
         `${child.lastName}, ${child.firstName} ${child.middleName || ""}`.toLowerCase();
       return fullName.includes(query);
     });
-  }, [children, searchQuery]);
+  }, [availableChildren, searchQuery]);
 
   const stats = useMemo(() => {
-    const missed = Object.values(feedingStatus).filter(
-      (status) => status === "missed",
+    const missed = availableChildren.filter(
+      (child) => feedingStatus[child._id] === "missed",
     ).length;
-    const fed = children.length - missed;
-    return { fed, missed, total: children.length };
-  }, [feedingStatus, children.length]);
+    const fed = availableChildren.length - missed;
+    return { fed, missed, total: availableChildren.length };
+  }, [availableChildren, feedingStatus]);
 
   const hasUnsavedChanges = useMemo(() => {
-    if (!data || isReadOnly || savedSnapshot === null) return false;
+    if (
+      !data ||
+      !attendancePrerequisiteMet ||
+      isReadOnly ||
+      savedSnapshot === null
+    )
+      return false;
     return (
       buildSnapshot(
         children.map((child) => child._id),
@@ -471,6 +507,7 @@ export const useTeacherFeeding = () => {
   }, [
     children,
     data,
+    attendancePrerequisiteMet,
     feedingNotes,
     feedingStatus,
     foodServed,
@@ -479,7 +516,13 @@ export const useTeacherFeeding = () => {
   ]);
 
   useEffect(() => {
-    if (!user?.id || isReadOnly || children.length === 0) return;
+    if (
+      !user?.id ||
+      !attendancePrerequisiteMet ||
+      isReadOnly ||
+      children.length === 0
+    )
+      return;
     const timeout = setTimeout(() => {
       const payload: FeedingDraftPayload = {
         dateKey: attendanceDateKey,
@@ -504,6 +547,7 @@ export const useTeacherFeeding = () => {
     return () => clearTimeout(timeout);
   }, [
     attendanceDateKey,
+    attendancePrerequisiteMet,
     children.length,
     feedingNotes,
     feedingStatus,
@@ -545,7 +589,7 @@ export const useTeacherFeeding = () => {
     if (!user?.id) {
       throw new Error("You must be logged in to submit feeding records.");
     }
-    if (children.length === 0) {
+    if (!attendancePrerequisiteMet || children.length === 0) {
       throw new Error(
         "Submit attendance for this date before recording feeding.",
       );
@@ -601,10 +645,14 @@ export const useTeacherFeeding = () => {
         queryKey: mobileQueryKeys.teacherFeedingSetup(
           attendanceDateKey,
           presentChildrenIdsKey,
+          feedingDataSource,
         ),
       });
       await queryClient.invalidateQueries({
-        queryKey: mobileQueryKeys.teacherFeedingDateStatuses(todayDateKey),
+        queryKey: mobileQueryKeys.teacherFeedingDateStatuses(
+          todayDateKey,
+          feedingDataSource,
+        ),
       });
       setSavedSnapshot(snapshot);
       setIsReadOnly(true);
@@ -625,10 +673,12 @@ export const useTeacherFeeding = () => {
     }
   }, [
     attendanceDateKey,
+    attendancePrerequisiteMet,
     children,
     feedingNotes,
     feedingStatus,
     foodServed,
+    feedingDataSource,
     isAuthenticated,
     isReadOnly,
     isSubmitting,
@@ -715,7 +765,7 @@ export const useTeacherFeeding = () => {
 
   return {
     router,
-    children,
+    children: availableChildren,
     loading: isLoading || isLoadingDateStatuses || isHydrating,
     feedingStatus,
     feedingNotes,
@@ -733,9 +783,9 @@ export const useTeacherFeeding = () => {
     attendanceDateKey,
     attendanceDateLabel,
     feedingDateOptions,
-    selectedDateStatus,
+    attendancePrerequisiteMet,
     isHistoricalDate,
-    setAttendanceDateKey,
+    setAttendanceDateKey: changeAttendanceDate,
     interactionDisabled,
     filteredChildren,
     stats,

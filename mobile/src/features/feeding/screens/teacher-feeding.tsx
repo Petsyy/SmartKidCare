@@ -47,7 +47,7 @@ export default function RecordFeeding() {
     setAttendanceDateKey,
     attendanceDateLabel,
     feedingDateOptions,
-    selectedDateStatus,
+    attendancePrerequisiteMet,
     interactionDisabled,
     filteredChildren,
     stats,
@@ -356,7 +356,7 @@ export default function RecordFeeding() {
   }
 
   if (children.length === 0) {
-    const attendanceMissing = selectedDateStatus === "attendanceMissing";
+    const attendanceMissing = !attendancePrerequisiteMet;
     return (
       <ScreenShell withKeyboardAvoiding={false}>
         <ScreenHeader

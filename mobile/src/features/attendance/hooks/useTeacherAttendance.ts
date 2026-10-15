@@ -296,7 +296,7 @@ export const useTeacherAttendance = () => {
         queryKey: mobileQueryKeys.teacherAttendanceSetup(selectedDateKey),
       });
       await queryClient.invalidateQueries({
-        queryKey: mobileQueryKeys.teacherFeedingDateStatuses(getManilaDateKey()),
+        queryKey: ["teacherFeedingDateStatuses"],
       });
       setIsReadOnly(true);
       Alert.alert(

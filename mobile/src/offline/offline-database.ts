@@ -1,6 +1,7 @@
 import * as Crypto from "expo-crypto";
 import * as SecureStore from "expo-secure-store";
 import * as SQLite from "expo-sqlite";
+import { toManilaDateKey } from "@/src/utils/manila-date";
 
 const DATABASE_NAME = "smartkidcare-offline.db";
 const DATABASE_KEY = "offlineDatabaseKey.v1";
@@ -182,6 +183,37 @@ const initializeDatabase = async () => {
     CREATE INDEX IF NOT EXISTS idx_offline_nutrition_child ON offline_nutrition(user_id, snapshot_id, child_id, school_year, period);
     CREATE INDEX IF NOT EXISTS idx_offline_competency_child ON offline_competency_evaluations(user_id, snapshot_id, child_id, school_year, period);
   `);
+  const databaseVersionRow = await database.getFirstAsync<{
+    user_version: number;
+  }>("PRAGMA user_version");
+  const databaseVersion = Number(databaseVersionRow?.user_version ?? 0);
+  if (databaseVersion < 3) {
+    await database.withTransactionAsync(async () => {
+      for (const table of ["offline_attendance", "offline_feeding"] as const) {
+        const rows = await database.getAllAsync<{
+          rowid: number;
+          data_json: string;
+        }>(`SELECT rowid, data_json FROM ${table}`);
+        for (const row of rows) {
+          try {
+            const record = JSON.parse(row.data_json) as { date?: unknown };
+            const correctedDateKey = record.date
+              ? toManilaDateKey(String(record.date))
+              : null;
+            if (correctedDateKey) {
+              await database.runAsync(
+                `UPDATE ${table} SET date_key = ? WHERE rowid = ?`,
+                correctedDateKey,
+                row.rowid,
+              );
+            }
+          } catch {
+            // A future snapshot refresh will replace an unreadable row.
+          }
+        }
+      }
+    });
+  }
   const metadataColumns = await database.getAllAsync<{ name: string }>(
     "PRAGMA table_info(offline_sync_metadata)",
   );
@@ -201,7 +233,7 @@ const initializeDatabase = async () => {
   await database.runAsync(
     "UPDATE offline_outbox SET status = 'failedRetryable' WHERE status = 'attempting'",
   );
-  await database.execAsync("PRAGMA user_version = 2;");
+  await database.execAsync("PRAGMA user_version = 3;");
   return database;
 };
 

@@ -1,5 +1,6 @@
 import type { OfflineResource } from "@/src/api/offline-sync.api";
 import { readActiveOfflineRecords } from "./offline-record-store";
+import { toManilaDateKey } from "@/src/utils/manila-date";
 
 export const readOfflineResource = <T>(userId: string, resource: OfflineResource) =>
   readActiveOfflineRecords<T>(userId, resource);
@@ -10,7 +11,9 @@ export const readOfflineRecordForDate = async <T extends { date: string }>(
   dateKey: string,
 ) => {
   const records = await readOfflineResource<T>(userId, resource);
-  return records.find((record) => String(record.date).slice(0, 10) === dateKey) ?? null;
+  return (
+    records.find((record) => toManilaDateKey(record.date) === dateKey) ?? null
+  );
 };
 
 export const readOfflineMonth = async <T extends { date: string }>(
@@ -19,7 +22,9 @@ export const readOfflineMonth = async <T extends { date: string }>(
   monthKey: string,
 ) => {
   const records = await readOfflineResource<T>(userId, resource);
-  return records.filter((record) => String(record.date).slice(0, 7) === monthKey);
+  return records.filter(
+    (record) => toManilaDateKey(record.date)?.slice(0, 7) === monthKey,
+  );
 };
 
 export const onlineWithOfflineFallback = async <T>(

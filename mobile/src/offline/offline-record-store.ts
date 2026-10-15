@@ -1,5 +1,6 @@
 import { getOfflineDatabase } from "./offline-database";
 import type { OfflineResource } from "@/src/api/offline-sync.api";
+import { toManilaDateKey } from "@/src/utils/manila-date";
 
 const TABLES: Record<OfflineResource, string> = {
   children: "offline_children",
@@ -110,7 +111,7 @@ export const writeRecordSnapshotPage = async (
         await database.runAsync(
           `INSERT OR REPLACE INTO ${table} (user_id, server_id, snapshot_id, date_key, server_updated_at, data_json) VALUES (?, ?, ?, ?, ?, ?)`,
           ...common,
-          dateKey(item.date),
+          item.date ? toManilaDateKey(String(item.date)) : null,
           text(item.updatedAt),
           JSON.stringify(item),
         );

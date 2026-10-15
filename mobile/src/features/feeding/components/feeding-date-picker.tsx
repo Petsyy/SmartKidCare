@@ -1,6 +1,14 @@
-import { Modal, Pressable, Text, View } from "react-native";
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { AlertCircle, Calendar, CheckCircle2, Clock3 } from "lucide-react-native";
 import { useState } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export type FeedingDateStatus =
   | "attendanceMissing"
@@ -54,6 +62,8 @@ export function FeedingDatePicker({
   onDateChange,
 }: FeedingDatePickerProps) {
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const { height: windowHeight } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const selectedStatus =
     dateOptions.find((option) => option.dateKey === dateKey)?.status ??
     "attendanceMissing";
@@ -83,7 +93,9 @@ export function FeedingDatePicker({
               <Text className="mt-0.5 text-base font-bold text-orange-950">
                 {dateLabel}
               </Text>
-              <Text className={`mt-0.5 text-sm font-semibold ${selectedPresentation.textClass}`}>
+              <Text
+                className={`mt-0.5 text-sm font-semibold ${selectedPresentation.textClass}`}
+              >
                 {selectedPresentation.label}
               </Text>
             </View>
@@ -99,7 +111,13 @@ export function FeedingDatePicker({
         onRequestClose={() => setShowDatePicker(false)}
       >
         <View className="flex-1 justify-end bg-black/40">
-          <View className="rounded-t-3xl bg-white px-6 pb-8 pt-6">
+          <View
+            className="rounded-t-3xl bg-white px-6 pt-6"
+            style={{
+              maxHeight: windowHeight * 0.85,
+              paddingBottom: Math.max(insets.bottom, 24),
+            }}
+          >
             <View className="mb-4 flex-row items-center justify-between">
               <View className="flex-1 pr-4">
                 <Text className="text-xl font-bold text-gray-900">
@@ -115,11 +133,18 @@ export function FeedingDatePicker({
                 accessibilityLabel="Close feeding date selection"
                 className="min-h-11 justify-center px-2"
               >
-                <Text className="text-base font-semibold text-gray-500">Close</Text>
+                <Text className="text-base font-semibold text-gray-500">
+                  Close
+                </Text>
               </Pressable>
             </View>
 
-            <View className="gap-2">
+            <ScrollView
+              className="shrink"
+              contentContainerStyle={{ gap: 8, paddingBottom: 8 }}
+              showsVerticalScrollIndicator
+              bounces={false}
+            >
               {dateOptions.map((option) => {
                 const presentation = statusPresentation[option.status];
                 const StatusIcon = presentation.Icon;
@@ -140,17 +165,21 @@ export function FeedingDatePicker({
                       <Text className="text-base font-bold text-gray-900">
                         {option.label}
                       </Text>
-                      <Text className={`mt-0.5 text-sm font-semibold ${presentation.textClass}`}>
+                      <Text
+                        className={`mt-0.5 text-sm font-semibold ${presentation.textClass}`}
+                      >
                         {presentation.label}
                       </Text>
                     </View>
                     {selected ? (
-                      <Text className="text-sm font-bold text-orange-700">Selected</Text>
+                      <Text className="text-sm font-bold text-orange-700">
+                        Selected
+                      </Text>
                     ) : null}
                   </Pressable>
                 );
               })}
-            </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>
