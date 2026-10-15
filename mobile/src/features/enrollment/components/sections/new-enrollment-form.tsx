@@ -30,9 +30,11 @@ import {
   useDatePicker,
   useDocumentPicker,
   useEnrollmentSubmit,
-  useDocumentVerification,
 } from "@/src/features/enrollment/hooks";
-import { getVerificationDisplay } from "@/src/features/enrollment/hooks/useDocumentVerification";
+import {
+  getVerificationDisplay,
+  useDocumentVerification,
+} from "@/src/features/documents/hooks";
 import type { Step } from "@/src/features/enrollment/types";
 import { getDaycareCenterDisplay } from "@/src/utils/daycare-center-format";
 
@@ -164,7 +166,9 @@ export function NewEnrollmentForm({
       documentVerification.clear("parentId");
       await documentVerification.verify("parentId", file, {
         parentFirstName: form.parentFirstName,
-        ...(form.parentMiddleName ? { parentMiddleName: form.parentMiddleName } : {}),
+        ...(form.parentMiddleName
+          ? { parentMiddleName: form.parentMiddleName }
+          : {}),
         parentLastName: form.parentLastName,
       });
     }
@@ -279,6 +283,8 @@ export function NewEnrollmentForm({
               {step === 4 && (
                 <DocumentsStepSection
                   isWide={Boolean(isWide)}
+                  parentFirstName={form.parentFirstName}
+                  parentLastName={form.parentLastName}
                   birthCertificateFile={form.birthCertificateFile}
                   parentIdFile={form.parentIdFile}
                   onPickBirthCertificate={handlePickBirthCertificate}
@@ -314,7 +320,9 @@ export function NewEnrollmentForm({
                     form.parentIdFile &&
                     documentVerification.verify("parentId", form.parentIdFile, {
                       parentFirstName: form.parentFirstName,
-                      ...(form.parentMiddleName ? { parentMiddleName: form.parentMiddleName } : {}),
+                      ...(form.parentMiddleName
+                        ? { parentMiddleName: form.parentMiddleName }
+                        : {}),
                       parentLastName: form.parentLastName,
                     })
                   }
@@ -337,8 +345,18 @@ export function NewEnrollmentForm({
                   parentRelationship={form.parentRelationship}
                   hasBirthCertificate={Boolean(form.birthCertificateFile)}
                   hasParentId={Boolean(form.parentIdFile)}
-                  birthCertificateVerification={getVerificationDisplay(documentVerification.birthCertificate).label}
-                  parentIdVerification={getVerificationDisplay(documentVerification.parentId).label}
+                  birthCertificateVerification={
+                    getVerificationDisplay(
+                      documentVerification.birthCertificate,
+                      "birthCertificate",
+                    ).label
+                  }
+                  parentIdVerification={
+                    getVerificationDisplay(
+                      documentVerification.parentId,
+                      "parentId",
+                    ).label
+                  }
                 />
               )}
 

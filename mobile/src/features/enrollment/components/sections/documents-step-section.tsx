@@ -1,88 +1,15 @@
 import { FileText } from "lucide-react-native";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import type * as DocumentPicker from "expo-document-picker";
 import { DocumentUploadField } from "@/src/features/enrollment/components/form";
 import {
+  DocumentVerificationMessage,
+  GovernmentIdUploadVerificationField,
+} from "@/src/features/documents/components";
+import {
   getVerificationDisplay,
   type VerificationView,
-} from "@/src/features/enrollment/hooks/useDocumentVerification";
-
-const VerificationMessage = ({
-  value,
-  onConfirm,
-  onRetry,
-  onReplace,
-}: {
-  value: VerificationView;
-  onConfirm: () => void;
-  onRetry: () => void;
-  onReplace: () => void;
-}) => {
-  if (value.state === "idle") return null;
-  const isPending = Boolean(value.pendingAction);
-  if (
-    value.state === "checking" ||
-    value.state === "verified" ||
-    value.result?.teacherConfirmed ||
-    isPending
-  )
-    return null;
-
-  return (
-    <View className="mb-4 rounded-xl bg-gray-50 p-3">
-      {value.message ? (
-        <Text className="text-sm text-gray-600">{value.message}</Text>
-      ) : null}
-      {(value.state === "confirmation_required" ||
-        value.state === "service_error") &&
-      !value.result?.teacherConfirmed &&
-      !isPending ? (
-        <View className="mt-3 gap-2">
-          {value.state === "service_error" ? (
-            <Pressable
-              onPress={onRetry}
-              accessibilityRole="button"
-              accessibilityLabel="Retry document verification"
-              className="min-h-[44px] items-center justify-center rounded-xl bg-teal-700 px-4 py-3"
-            >
-              <Text className="font-bold text-white">Retry Verification</Text>
-            </Pressable>
-          ) : null}
-          {value.result ? (
-            <Pressable
-              onPress={onConfirm}
-              accessibilityRole="button"
-              accessibilityLabel="Confirm document after inspecting the original"
-              className="min-h-[44px] items-center justify-center rounded-xl bg-amber-600 px-4 py-3"
-            >
-              <Text className="text-center font-bold text-white">
-                Complete Teacher Verification
-              </Text>
-            </Pressable>
-          ) : null}
-          <Pressable
-            onPress={onReplace}
-            accessibilityRole="button"
-            accessibilityLabel="Replace document image"
-            className="min-h-[44px] items-center justify-center rounded-xl border border-gray-300 bg-white px-4 py-3"
-          >
-            <Text className="font-bold text-gray-700">Replace Image</Text>
-          </Pressable>
-        </View>
-      ) : null}
-      {value.state === "rejected" ? (
-        <Pressable
-          onPress={onReplace}
-          accessibilityRole="button"
-          accessibilityLabel="Replace rejected document image"
-          className="mt-3 min-h-[44px] items-center justify-center rounded-xl bg-red-600 px-4 py-3"
-        >
-          <Text className="font-bold text-white">Replace Image</Text>
-        </Pressable>
-      ) : null}
-    </View>
-  );
-};
+} from "@/src/features/documents/hooks";
 
 type Props = {
   isWide: boolean;
@@ -98,12 +25,16 @@ type Props = {
   onConfirmParent: () => void;
   onRetryBirth: () => void;
   onRetryParent: () => void;
+  parentFirstName: string;
+  parentLastName: string;
 };
 
 export function DocumentsStepSection(props: Props) {
   const fieldStyle = props.isWide ? { flex: 1 } : undefined;
-  const birthDisplay = getVerificationDisplay(props.birthVerification);
-  const parentDisplay = getVerificationDisplay(props.parentVerification);
+  const birthDisplay = getVerificationDisplay(
+    props.birthVerification,
+    "birthCertificate",
+  );
   return (
     <View
       className="rounded-3xl border border-gray-200 bg-white p-4"
@@ -124,8 +55,9 @@ export function DocumentsStepSection(props: Props) {
         </Text>
       </View>
       <Text className="mt-2 text-lg leading-7 text-gray-600">
-        Choose a clear image of each required enrollment document from your
-        gallery.
+        Upload the complete documents presented during enrollment. AI provides a
+        secondary check; uncertain birth certificates can be reviewed by the
+        teacher.
       </Text>
       <View
         className="mt-4"
@@ -142,44 +74,50 @@ export function DocumentsStepSection(props: Props) {
             verificationBadge={birthDisplay}
             labelStyle={{ fontSize: 15, lineHeight: 22, fontWeight: "700" }}
           />
-          <VerificationMessage
+          <DocumentVerificationMessage
+            key={
+              props.birthVerification.result?.verificationId ||
+              props.birthVerification.state
+            }
             value={props.birthVerification}
+            documentType="birthCertificate"
             onConfirm={props.onConfirmBirth}
             onRetry={props.onRetryBirth}
             onReplace={props.onClearBirthCertificate}
           />
         </View>
-        <View style={fieldStyle}>
-          <DocumentUploadField
-            label="Parent ID *"
-            file={props.parentIdFile}
-            showPhotoOption={false}
-            onUploadFile={props.onPickParentId}
-            allowImagePreview
-            onClear={props.onClearParentId}
-            verificationBadge={parentDisplay}
-            labelStyle={{ fontSize: 15, lineHeight: 22, fontWeight: "700" }}
-          />
-          <VerificationMessage
-            value={props.parentVerification}
-            onConfirm={props.onConfirmParent}
-            onRetry={props.onRetryParent}
-            onReplace={props.onClearParentId}
-          />
-        </View>
+        <GovernmentIdUploadVerificationField
+          holder="parent"
+          label="Parent Government-Issued Photo ID *"
+          file={props.parentIdFile}
+          verification={props.parentVerification}
+          expectedFirstName={props.parentFirstName}
+          expectedLastName={props.parentLastName}
+          onPick={props.onPickParentId}
+          onClear={props.onClearParentId}
+          onRetry={props.onRetryParent}
+          onConfirm={props.onConfirmParent}
+          className={props.isWide ? "flex-1" : ""}
+        />
       </View>
       <View className="rounded-2xl bg-gray-100 p-4">
         <Text className="text-xl font-bold text-gray-900">
           Tips for uploading:
         </Text>
         <Text className="mt-2 text-base leading-6 text-gray-600">
-          - Make sure all text is clearly readable
+          - Capture the complete document with all four edges visible
         </Text>
         <Text className="text-base leading-6 text-gray-600">
-          - Photos should be well-lit without glare
+          - Use good lighting and avoid glare or heavy shadows
         </Text>
         <Text className="text-base leading-6 text-gray-600">
-          - Include all edges of the document
+          - Hold the camera directly above the document
+        </Text>
+        <Text className="text-base leading-6 text-gray-600">
+          - Use the original photo instead of a compressed screenshot
+        </Text>
+        <Text className="text-base leading-6 text-gray-600">
+          - Small text is acceptable if the document is recognizable
         </Text>
       </View>
     </View>

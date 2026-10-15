@@ -24,6 +24,8 @@ export type VerificationView = {
   pendingAction?: "verify" | "retry" | "confirm";
   progressStage?: "uploading" | "retrying" | "analyzing";
 };
+export type VerificationDocumentType =
+  "birthCertificate" | "parentId" | "guardianId";
 const initial: VerificationView = { state: "idle", result: null };
 const RETRY_DELAYS_MS = [1_000, 2_000];
 const ANALYZING_MESSAGE_DELAY_MS = 8_000;
@@ -38,8 +40,13 @@ const isTransientUploadError = (error: unknown) =>
     error.status === 502 ||
     error.status === 503 ||
     error.status === 504);
+const isDocumentValidationError = (error: unknown) =>
+  error instanceof ApiError && error.status === 400;
 
-export const getVerificationDisplay = (value: VerificationView) => {
+export const getVerificationDisplay = (
+  value: VerificationView,
+  type: VerificationDocumentType = "parentId",
+) => {
   if (value.pendingAction === "confirm")
     return {
       label: "Saving Teacher Verification...",
@@ -70,19 +77,28 @@ export const getVerificationDisplay = (value: VerificationView) => {
     };
   if (value.result?.teacherConfirmed)
     return {
-      label: "Verified by Teacher",
+      label:
+        type === "birthCertificate"
+          ? "Reviewed and Confirmed by Teacher"
+          : "Verified by Teacher",
       tone: "success" as const,
       loading: false,
     };
   if (value.state === "verified")
     return {
-      label: "Automatically Verified",
+      label:
+        type === "birthCertificate"
+          ? "AI Checks Passed"
+          : "Automatically Verified",
       tone: "success" as const,
       loading: false,
     };
   if (value.state === "rejected")
     return {
-      label: "Document Not Accepted",
+      label:
+        type === "birthCertificate"
+          ? "Invalid or Unrelated Document"
+          : "Document Not Accepted",
       tone: "error" as const,
       loading: false,
     };
@@ -94,7 +110,7 @@ export const getVerificationDisplay = (value: VerificationView) => {
     };
   if (value.state === "confirmation_required")
     return {
-      label: "Teacher Verification Required",
+      label: "Teacher Review Required",
       tone: "warning" as const,
       loading: false,
     };
@@ -109,20 +125,32 @@ export const useDocumentVerification = () => {
   const [birthCertificate, setBirthCertificate] =
     useState<VerificationView>(initial);
   const [parentId, setParentId] = useState<VerificationView>(initial);
-  const inFlight = useRef<Record<"birthCertificate" | "parentId", boolean>>({
+  const [guardianId, setGuardianId] = useState<VerificationView>(initial);
+  const inFlight = useRef<Record<VerificationDocumentType, boolean>>({
     birthCertificate: false,
     parentId: false,
+    guardianId: false,
   });
-  const setter = (type: "birthCertificate" | "parentId") =>
-    type === "birthCertificate" ? setBirthCertificate : setParentId;
+  const setter = (type: VerificationDocumentType) =>
+    type === "birthCertificate"
+      ? setBirthCertificate
+      : type === "parentId"
+        ? setParentId
+        : setGuardianId;
+  const currentValue = (type: VerificationDocumentType) =>
+    type === "birthCertificate"
+      ? birthCertificate
+      : type === "parentId"
+        ? parentId
+        : guardianId;
   const verify = async (
-    type: "birthCertificate" | "parentId",
+    type: VerificationDocumentType,
     file: { uri: string; name: string },
     expected: Record<string, string>,
   ) => {
     if (inFlight.current[type]) return null;
     inFlight.current[type] = true;
-    const current = type === "birthCertificate" ? birthCertificate : parentId;
+    const current = currentValue(type);
     const set = setter(type);
     set({
       state: "checking",
@@ -174,9 +202,12 @@ export const useDocumentVerification = () => {
       set({ state, result, message: result.message });
       return result;
     } catch (error: unknown) {
-      reportHandledError("enrollment.document.verify", error);
+      const isValidationError = isDocumentValidationError(error);
+      if (!isValidationError) {
+        reportHandledError("enrollment.document.verify", error);
+      }
       set({
-        state: "service_error",
+        state: isValidationError ? "rejected" : "service_error",
         result: null,
         message: getUserFriendlyErrorMessage(
           error,
@@ -189,8 +220,8 @@ export const useDocumentVerification = () => {
       inFlight.current[type] = false;
     }
   };
-  const confirm = async (type: "birthCertificate" | "parentId") => {
-    const current = type === "birthCertificate" ? birthCertificate : parentId;
+  const confirm = async (type: VerificationDocumentType) => {
+    const current = currentValue(type);
     if (!current.result) return;
     const set = setter(type);
     set({
@@ -218,11 +249,23 @@ export const useDocumentVerification = () => {
       });
     }
   };
-  const clear = useCallback((type: "birthCertificate" | "parentId") => {
-    (type === "birthCertificate" ? setBirthCertificate : setParentId)(initial);
+  const clear = useCallback((type: VerificationDocumentType) => {
+    (type === "birthCertificate"
+      ? setBirthCertificate
+      : type === "parentId"
+        ? setParentId
+        : setGuardianId)(initial);
   }, []);
   const isEligible = (value: VerificationView) =>
     value.result?.status === "verified" ||
     Boolean(value.result?.teacherConfirmed);
-  return { birthCertificate, parentId, verify, confirm, clear, isEligible };
+  return {
+    birthCertificate,
+    parentId,
+    guardianId,
+    verify,
+    confirm,
+    clear,
+    isEligible,
+  };
 };

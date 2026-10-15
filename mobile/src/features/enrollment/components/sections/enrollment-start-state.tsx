@@ -22,7 +22,8 @@ export function EnrollmentStartState({ onStart }: { onStart: () => void }) {
           Direct Enrollment
         </Text>
         <Text className="text-center text-base leading-6 text-gray-500 mb-8 px-2 font-medium">
-          Enroll a child directly into your center. This will immediately create their profile and allow you to track their progress and care.
+          Enroll a child directly into your center. This will immediately create
+          their profile and allow you to track their progress and care.
         </Text>
         <Pressable
           onPress={onStart}
@@ -55,14 +56,15 @@ export function EnrollmentStartState({ onStart }: { onStart: () => void }) {
         <View className="gap-4">
           <RequirementRow text="Child's basic details and physical measurements (Height, Weight)" />
           <RequirementRow text="Child's birth certificate (photo or scan)" />
-          <RequirementRow text="Parent or guardian's valid ID (photo or scan)" />
+          <RequirementRow text="Parent's government-issued photo ID (photo or scan)" />
           <RequirementRow text="Parent's contact details for active communication" />
         </View>
 
         <View className="mt-6 rounded-2xl bg-blue-50 border border-blue-100 p-4 flex-row items-start">
           <Info size={20} color="#2563EB" className="mt-0.5 shrink-0" />
           <Text className="ml-3 flex-1 text-sm leading-5 text-blue-900 font-semibold">
-            Make sure you have all documents ready. You can take photos of the physical documents directly during the process.
+            Make sure you have all documents ready. You can take photos of the
+            physical documents directly during the process.
           </Text>
         </View>
       </View>
@@ -82,4 +84,3 @@ function RequirementRow({ text }: { text: string }) {
     </View>
   );
 }
-

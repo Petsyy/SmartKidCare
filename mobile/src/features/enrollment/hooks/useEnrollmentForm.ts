@@ -215,7 +215,10 @@ export const useEnrollmentForm = () => {
 
     const parentIdError = validateDocument(parentIdFile);
     if (parentIdError) {
-      Alert.alert("Validation", `Parent ID: ${parentIdError}`);
+      Alert.alert(
+        "Validation",
+        `Parent government-issued photo ID: ${parentIdError}`,
+      );
       return false;
     }
     return true;

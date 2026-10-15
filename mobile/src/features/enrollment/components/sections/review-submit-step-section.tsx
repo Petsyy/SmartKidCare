@@ -1,6 +1,9 @@
 import { CheckCircle2, Info } from "lucide-react-native";
 import { Text, View } from "react-native";
-import {ReviewRow,ReviewSection} from "@/src/features/enrollment/components/ui";
+import {
+  ReviewRow,
+  ReviewSection,
+} from "@/src/features/enrollment/components/ui";
 import type { ProgramType } from "@/src/features/enrollment/types";
 import { displayDate } from "@/src/features/enrollment/utils/enrollment-utils";
 
@@ -96,16 +99,21 @@ export function ReviewSubmitStepSection({
         />
         <ReviewRow label="Login Email" value="Generated after submission" />
         <ReviewRow label="Phone" value={parentPhone || "Not provided"} />
-        <ReviewRow label="Relationship" value={parentRelationship || "Not provided"} />
+        <ReviewRow
+          label="Relationship"
+          value={parentRelationship || "Not provided"}
+        />
       </ReviewSection>
 
       <ReviewSection title="Documents">
         <ReviewRow
           label="Birth Certificate"
-          value={hasBirthCertificate ? birthCertificateVerification : "Not uploaded"}
+          value={
+            hasBirthCertificate ? birthCertificateVerification : "Not uploaded"
+          }
         />
         <ReviewRow
-          label="Parent ID"
+          label="Parent Government-Issued Photo ID"
           value={hasParentId ? parentIdVerification : "Not uploaded"}
         />
       </ReviewSection>
