@@ -1,6 +1,7 @@
 import type { RecordServiceSupport } from "../../../shared/services/record-service-support";
 import type { notifyFeedingSubmitted } from "../../notifications/services/record-event-notification.service";
 import type { childRepository, feedingRepository, findChildIdsByParent, findFeedingById, findFeedingHistory } from "../repositories/feeding.repository";
+import type { attendanceRepository } from "../../attendance/repositories/attendance.repository";
 export type FeedingAuthUser = {
   id: string;
   role: string;
@@ -38,6 +39,7 @@ export type PaginatedResult<T> = {
 export interface FeedingServiceDependencies {
   support: RecordServiceSupport;
   childRepository: typeof childRepository;
+  attendanceRepository: typeof attendanceRepository;
   feedingRepository: typeof feedingRepository;
   findChildIdsByParent: typeof findChildIdsByParent;
   findHistory: typeof findFeedingHistory;

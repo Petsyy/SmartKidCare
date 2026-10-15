@@ -6,7 +6,9 @@ import { useAuth } from "@/src/hooks/use-auth";
 import { getChildren } from "@/src/api/teacher.api";
 import {
   getAttendanceForDate,
+  getAttendanceHistory,
   getFeedingForDate,
+  getFeedingHistory,
   type FeedingRecord,
 } from "@/src/api/records.api";
 import type { Child, SubmitAttendanceData } from "@/src/api/api.types";
@@ -14,7 +16,9 @@ import {
   formatManilaDateLabel,
   getManilaDateKey,
   isValidManilaDateKey,
+  toManilaDateKey,
 } from "@/src/utils/manila-date";
+import type { FeedingDateStatus } from "@/src/features/feeding/components/feeding-date-picker";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { useTeacherUi } from "@/src/context/teacher-ui-context";
 import { useOffline } from "@/src/offline/offline-context";
@@ -135,6 +139,105 @@ export const useTeacherFeeding = () => {
 
   const todayDateKey = useMemo(() => getManilaDateKey(), []);
   const isHistoricalDate = attendanceDateKey !== todayDateKey;
+  const feedingDateKeys = useMemo(
+    () =>
+      Array.from({ length: 7 }, (_, offset) => {
+        const date = new Date(`${todayDateKey}T12:00:00+08:00`);
+        date.setUTCDate(date.getUTCDate() - offset);
+        return getManilaDateKey(date);
+      }),
+    [todayDateKey],
+  );
+
+  const { data: feedingDateStatusMap = {}, isLoading: isLoadingDateStatuses } =
+    useQuery({
+    queryKey: mobileQueryKeys.teacherFeedingDateStatuses(todayDateKey),
+    networkMode: "always",
+    enabled: canReadFeeding && Boolean(user?.id),
+    queryFn: async (): Promise<Record<string, FeedingDateStatus>> => {
+      if (!user?.id) return {};
+      const oldestDateKey = feedingDateKeys[feedingDateKeys.length - 1];
+      const [attendanceRecords, feedingRecords, localOperations] =
+        await Promise.all([
+          onlineWithOfflineFallback(
+            mustUseOfflineData,
+            () => getAttendanceHistory(oldestDateKey, todayDateKey),
+            async () =>
+              (await Promise.all(
+                feedingDateKeys.map((dateKey) =>
+                  readOfflineRecordForDate<any>(user.id, "attendance", dateKey),
+                ),
+              )).filter(Boolean),
+          ),
+          onlineWithOfflineFallback(
+            mustUseOfflineData,
+            () => getFeedingHistory(oldestDateKey, todayDateKey),
+            async () =>
+              (await Promise.all(
+                feedingDateKeys.map((dateKey) =>
+                  readOfflineRecordForDate<any>(user.id, "feeding", dateKey),
+                ),
+              )).filter(Boolean),
+          ),
+          Promise.all(
+            feedingDateKeys.map(async (dateKey) => ({
+              dateKey,
+              attendance: await getOutboxByDate(
+                user.id,
+                "attendance.create",
+                dateKey,
+              ),
+              feeding: await getOutboxByDate(
+                user.id,
+                "feeding.create",
+                dateKey,
+              ),
+            })),
+          ),
+        ]);
+
+      const attendanceDates = new Set(
+        attendanceRecords
+          .map((record: any) => toManilaDateKey(record.date))
+          .filter(Boolean),
+      );
+      const feedingDates = new Set(
+        feedingRecords
+          .map((record: any) => toManilaDateKey(record.date))
+          .filter(Boolean),
+      );
+      localOperations.forEach(({ dateKey, attendance, feeding }) => {
+        if (attendance) attendanceDates.add(dateKey);
+        if (feeding) feedingDates.add(dateKey);
+      });
+
+      return Object.fromEntries(
+        feedingDateKeys.map((dateKey) => [
+          dateKey,
+          feedingDates.has(dateKey)
+            ? "feedingSubmitted"
+            : attendanceDates.has(dateKey)
+              ? "attendanceSubmitted"
+              : "attendanceMissing",
+        ]),
+      );
+    },
+  });
+
+  const feedingDateOptions = useMemo(
+    () =>
+      feedingDateKeys.map((dateKey) => ({
+        dateKey,
+        label:
+          dateKey === todayDateKey
+            ? `Today · ${formatManilaDateLabel(dateKey)}`
+            : formatManilaDateLabel(dateKey),
+        status: feedingDateStatusMap[dateKey] ?? "attendanceMissing",
+      })),
+    [feedingDateKeys, feedingDateStatusMap, todayDateKey],
+  );
+  const selectedDateStatus =
+    feedingDateStatusMap[attendanceDateKey] ?? "attendanceMissing";
 
   const attendanceDateLabel = useMemo(() => {
     const explicitLabel = String(params.attendanceDateLabel || "").trim();
@@ -159,6 +262,7 @@ export const useTeacherFeeding = () => {
       presentChildrenIdsKey,
     ),
     networkMode: "always",
+    refetchOnMount: "always",
     enabled: canReadFeeding && Boolean(user?.id),
     queryFn: async () => {
       if (!user?.id) throw new Error("Please sign in again.");
@@ -268,8 +372,6 @@ export const useTeacherFeeding = () => {
           childrenToShow = childrenData.filter((child) =>
             presentIds.has(child._id),
           );
-        } else if (isHistoricalDate) {
-          childrenToShow = childrenData;
         }
       }
 
@@ -443,6 +545,11 @@ export const useTeacherFeeding = () => {
     if (!user?.id) {
       throw new Error("You must be logged in to submit feeding records.");
     }
+    if (children.length === 0) {
+      throw new Error(
+        "Submit attendance for this date before recording feeding.",
+      );
+    }
     if (!foodServed.trim()) {
       throw new Error("Please select the food served before submitting.");
     }
@@ -496,6 +603,9 @@ export const useTeacherFeeding = () => {
           presentChildrenIdsKey,
         ),
       });
+      await queryClient.invalidateQueries({
+        queryKey: mobileQueryKeys.teacherFeedingDateStatuses(todayDateKey),
+      });
       setSavedSnapshot(snapshot);
       setIsReadOnly(true);
       Alert.alert(
@@ -529,7 +639,18 @@ export const useTeacherFeeding = () => {
     presentChildrenIdsKey,
     queryClient,
     synchronize,
+    todayDateKey,
   ]);
+
+  const openAttendanceForSelectedDate = useCallback(() => {
+    router.push({
+      pathname: "/(teacher)/teacher-record-data/attendance",
+      params: {
+        selectedDateKey: attendanceDateKey,
+        returnToFeeding: "true",
+      },
+    });
+  }, [attendanceDateKey, router]);
 
   const handleSubmit = useCallback(async () => {
     if (isReadOnly) {
@@ -595,7 +716,7 @@ export const useTeacherFeeding = () => {
   return {
     router,
     children,
-    loading: isLoading || isHydrating,
+    loading: isLoading || isLoadingDateStatuses || isHydrating,
     feedingStatus,
     feedingNotes,
     foodServed,
@@ -611,6 +732,8 @@ export const useTeacherFeeding = () => {
     presentChildrenIds,
     attendanceDateKey,
     attendanceDateLabel,
+    feedingDateOptions,
+    selectedDateStatus,
     isHistoricalDate,
     setAttendanceDateKey,
     interactionDisabled,
@@ -622,6 +745,7 @@ export const useTeacherFeeding = () => {
     markAllAsCompleted,
     markAllAsMissed,
     handleSubmit,
+    openAttendanceForSelectedDate,
     submitBeforeLeaving,
     foodMenuOptions,
     isOffline: mustUseOfflineData,

@@ -12,7 +12,12 @@ import React, {
 import { AppState } from "react-native";
 import { useAuthContext } from "@/src/context/auth-context";
 import { ApiError } from "@/src/api/client";
-import { submitAttendance, submitFeeding } from "@/src/api/records.api";
+import {
+  getAttendanceForDate,
+  getFeedingForDate,
+  submitAttendance,
+  submitFeeding,
+} from "@/src/api/records.api";
 import type {
   SubmitAttendanceData,
   SubmitFeedingData,
@@ -50,6 +55,20 @@ const OfflineContext = createContext<OfflineContextValue | null>(null);
 const retryableStatus = (error: unknown) =>
   !(error instanceof ApiError) || error.status >= 500 || error.status === 408;
 const AUTO_RECORD_REFRESH_INTERVAL_MS = 15 * 60 * 1000;
+const OUTBOX_RETRY_DELAY_MS = 5 * 1000;
+
+const serverAlreadyHasRecord = async (
+  operation: Awaited<ReturnType<typeof listOutboxOperations>>[number],
+) => {
+  try {
+    if (operation.operationType === "attendance.create") {
+      return Boolean(await getAttendanceForDate(operation.dateKey));
+    }
+    return Boolean(await getFeedingForDate(operation.dateKey));
+  } catch {
+    return false;
+  }
+};
 
 export const OfflineProvider = ({
   children,
@@ -102,7 +121,17 @@ export const OfflineProvider = ({
     try {
       const operations = await listOutboxOperations(user.id);
       for (const operation of operations) {
-        if (operation.status === "needsAttention") continue;
+        if (operation.status === "needsAttention") {
+          if (
+            operation.lastErrorCode === "RECORD_ALREADY_EXISTS" &&
+            (await serverAlreadyHasRecord(operation))
+          ) {
+            await updateOutboxStatus(operation.clientOperationId, "synced");
+            didSynchronize = true;
+            await queryClient.invalidateQueries();
+          }
+          continue;
+        }
         await updateOutboxStatus(operation.clientOperationId, "attempting");
         try {
           if (operation.operationType === "attendance.create") {
@@ -120,6 +149,17 @@ export const OfflineProvider = ({
           didSynchronize = true;
           await queryClient.invalidateQueries();
         } catch (error) {
+          if (
+            error instanceof ApiError &&
+            error.status === 409 &&
+            error.code === "RECORD_ALREADY_EXISTS" &&
+            (await serverAlreadyHasRecord(operation))
+          ) {
+            await updateOutboxStatus(operation.clientOperationId, "synced");
+            didSynchronize = true;
+            await queryClient.invalidateQueries();
+            continue;
+          }
           if (error instanceof ApiError && error.status === 401) {
             await updateOutboxStatus(
               operation.clientOperationId,
@@ -256,6 +296,30 @@ export const OfflineProvider = ({
     }, 0);
     return () => clearTimeout(timeout);
   }, [isConnected, isInternetReachable, synchronize, synchronizeRecords]);
+
+  useEffect(() => {
+    if (
+      syncState !== "error" ||
+      !isConnected ||
+      !isInternetReachable ||
+      !token
+    ) {
+      return;
+    }
+    const timeout = setTimeout(() => {
+      void synchronize().then((didSynchronize) =>
+        synchronizeRecords(didSynchronize),
+      );
+    }, OUTBOX_RETRY_DELAY_MS);
+    return () => clearTimeout(timeout);
+  }, [
+    isConnected,
+    isInternetReachable,
+    syncState,
+    synchronize,
+    synchronizeRecords,
+    token,
+  ]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (state) => {

@@ -10,6 +10,8 @@ export const attendanceQueryKeys = {
 };
 
 export const feedingQueryKeys = {
+  teacherFeedingDateStatuses: (todayDateKey: string) =>
+    ["teacherFeedingDateStatuses", todayDateKey] as const,
   teacherFeedingSetup: (
     attendanceDateKey: string,
     presentChildrenIdsKey: string,

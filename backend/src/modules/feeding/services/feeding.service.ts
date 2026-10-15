@@ -29,6 +29,7 @@ import {
 } from "../../../shared/services/record-service-support";
 import type { FeedingAuthUser, AuthUser, SubmitFeedingInput, FeedingResult, PaginatedResult, FeedingServiceDependencies } from "../types/feeding.types";
 import { assertTeacherCenter } from "../../../shared/services/child-access.service";
+import { attendanceRepository } from "../../attendance/repositories/attendance.repository";
 
 const submitFeedingOperation = async (
   user: AuthUser,
@@ -126,6 +127,28 @@ const submitFeedingOperation = async (
     throw new ConflictError(
       "Feeding has already been submitted for this date.",
       "RECORD_ALREADY_EXISTS",
+    );
+  }
+
+  const attendance = await dependencies.attendanceRepository.findByTeacherAndDay(
+    user.id,
+    dayRange,
+    daycareCenterId,
+  );
+  if (!attendance) {
+    throw new ValidationError(
+      "Attendance must be submitted for this date before recording feeding.",
+    );
+  }
+
+  const presentChildIds = new Set(
+    (attendance.records ?? [])
+      .filter((record: any) => record.status === "present")
+      .map((record: any) => dependencies.support.resolveChildId(record.child)),
+  );
+  if (childIds.some((childId) => !presentChildIds.has(childId))) {
+    throw new ValidationError(
+      "Feeding can only be recorded for children marked present in attendance.",
     );
   }
 
@@ -432,6 +455,7 @@ const deleteFeedingRecordOperation = async (
 const defaultFeedingDependencies: FeedingServiceDependencies = {
   support: recordServiceSupport,
   childRepository,
+  attendanceRepository,
   feedingRepository,
   findChildIdsByParent,
   findHistory: findFeedingHistory,

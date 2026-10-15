@@ -1,108 +1,90 @@
-import {
-  Alert,
-  Modal,
-  Platform,
-  Pressable,
-  Text,
-  View,
-} from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
-import { Calendar } from "lucide-react-native";
+import { Modal, Pressable, Text, View } from "react-native";
+import { AlertCircle, Calendar, CheckCircle2, Clock3 } from "lucide-react-native";
 import { useState } from "react";
-import {
-  getManilaDateKey,
-  isValidManilaDateKey,
-} from "@/src/utils/manila-date";
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+export type FeedingDateStatus =
+  | "attendanceMissing"
+  | "attendanceSubmitted"
+  | "feedingSubmitted";
+
+export type FeedingDateOption = {
+  dateKey: string;
+  label: string;
+  status: FeedingDateStatus;
+};
 
 interface FeedingDatePickerProps {
   dateKey: string;
   dateLabel: string;
+  dateOptions: FeedingDateOption[];
   onDateChange: (dateKey: string) => void;
 }
+
+const statusPresentation = {
+  attendanceMissing: {
+    label: "Attendance required",
+    textClass: "text-amber-700",
+    bgClass: "bg-amber-50",
+    borderClass: "border-amber-200",
+    Icon: AlertCircle,
+    color: "#B45309",
+  },
+  attendanceSubmitted: {
+    label: "Attendance ready",
+    textClass: "text-emerald-700",
+    bgClass: "bg-emerald-50",
+    borderClass: "border-emerald-200",
+    Icon: Clock3,
+    color: "#047857",
+  },
+  feedingSubmitted: {
+    label: "Feeding recorded",
+    textClass: "text-teal-700",
+    bgClass: "bg-teal-50",
+    borderClass: "border-teal-200",
+    Icon: CheckCircle2,
+    color: "#0F766E",
+  },
+} as const;
 
 export function FeedingDatePicker({
   dateKey,
   dateLabel,
+  dateOptions,
   onDateChange,
 }: FeedingDatePickerProps) {
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [pickerDate, setPickerDate] = useState(() => new Date());
-  const [dateBounds] = useState(() => {
-    const maximumDate = new Date();
-    return {
-      minimumDate: new Date(maximumDate.getTime() - 6 * DAY_MS),
-      maximumDate,
-    };
-  });
-  const selectedDate = new Date(`${dateKey}T12:00:00+08:00`);
-  const { minimumDate, maximumDate } = dateBounds;
+  const selectedStatus =
+    dateOptions.find((option) => option.dateKey === dateKey)?.status ??
+    "attendanceMissing";
+  const selectedPresentation = statusPresentation[selectedStatus];
 
-  const openDatePicker = () => {
-    setPickerDate(selectedDate);
-    setShowDatePicker(true);
-  };
-
-  const applySelectedDate = (date: Date) => {
-    const selectedDateKey = getManilaDateKey(date);
-    const todayDateKey = getManilaDateKey();
-    const minimumDateKey = getManilaDateKey(minimumDate);
-
-    if (
-      !isValidManilaDateKey(selectedDateKey) ||
-      selectedDateKey < minimumDateKey ||
-      selectedDateKey > todayDateKey
-    ) {
-      Alert.alert(
-        "Invalid Feeding Date",
-        `Feeding records can only be recorded from ${minimumDateKey} through ${todayDateKey}.`,
-      );
-      return false;
-    }
-
-    onDateChange(selectedDateKey);
-    return true;
-  };
-
-  const handleDateValueChange = (_event: unknown, date: Date) => {
-    if (Platform.OS === "android") {
-      setShowDatePicker(false);
-      applySelectedDate(date);
-      return;
-    }
-
-    setPickerDate(date);
-  };
-
-  const handleDateDismiss = () => {
-    if (Platform.OS === "android") setShowDatePicker(false);
-  };
-
-  const confirmDate = () => {
-    if (applySelectedDate(pickerDate)) {
-      setShowDatePicker(false);
-    }
+  const selectDate = (nextDateKey: string) => {
+    onDateChange(nextDateKey);
+    setShowDatePicker(false);
   };
 
   return (
     <>
       <View className="px-6 pb-2 pt-4">
         <Pressable
-          onPress={openDatePicker}
+          onPress={() => setShowDatePicker(true)}
           accessibilityRole="button"
-          accessibilityLabel={`Feeding date: ${dateLabel}`}
-          accessibilityHint="Opens a date picker. Past dates can be selected."
+          accessibilityLabel={`Feeding date: ${dateLabel}. ${selectedPresentation.label}`}
+          accessibilityHint="Opens feeding dates from the last seven days with attendance and feeding status."
           className="flex-row items-center justify-between rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3.5 active:opacity-85"
         >
-          <View className="flex-row items-center">
+          <View className="flex-1 flex-row items-center">
             <Calendar size={20} color="#C2410C" />
-            <View className="ml-3">
+            <View className="ml-3 flex-1">
               <Text className="text-xs font-semibold uppercase tracking-wide text-orange-700">
                 Feeding date
               </Text>
               <Text className="mt-0.5 text-base font-bold text-orange-950">
                 {dateLabel}
+              </Text>
+              <Text className={`mt-0.5 text-sm font-semibold ${selectedPresentation.textClass}`}>
+                {selectedPresentation.label}
               </Text>
             </View>
           </View>
@@ -111,61 +93,67 @@ export function FeedingDatePicker({
       </View>
 
       <Modal
-        visible={showDatePicker && Platform.OS === "ios"}
+        visible={showDatePicker}
         transparent
         animationType="slide"
         onRequestClose={() => setShowDatePicker(false)}
       >
         <View className="flex-1 justify-end bg-black/40">
-          <View className="rounded-t-3xl bg-white p-6">
+          <View className="rounded-t-3xl bg-white px-6 pb-8 pt-6">
             <View className="mb-4 flex-row items-center justify-between">
-              <Text className="text-xl font-bold text-gray-900">
-                Select feeding date
-              </Text>
+              <View className="flex-1 pr-4">
+                <Text className="text-xl font-bold text-gray-900">
+                  Select feeding date
+                </Text>
+                <Text className="mt-1 text-sm text-gray-500">
+                  Attendance is required before feeding can be recorded.
+                </Text>
+              </View>
               <Pressable
                 onPress={() => setShowDatePicker(false)}
                 accessibilityRole="button"
-                accessibilityLabel="Cancel date selection"
+                accessibilityLabel="Close feeding date selection"
+                className="min-h-11 justify-center px-2"
               >
-                <Text className="text-base font-semibold text-gray-500">
-                  Cancel
-                </Text>
+                <Text className="text-base font-semibold text-gray-500">Close</Text>
               </Pressable>
             </View>
-            <DateTimePicker
-              value={pickerDate}
-              mode="date"
-              display="spinner"
-              minimumDate={minimumDate}
-              maximumDate={maximumDate}
-              onValueChange={handleDateValueChange}
-              onDismiss={handleDateDismiss}
-              themeVariant="light"
-            />
-            <Pressable
-              onPress={confirmDate}
-              accessibilityRole="button"
-              accessibilityLabel="Use selected feeding date"
-              className="mt-4 min-h-14 items-center justify-center rounded-2xl bg-orange-600 px-5 py-4 active:opacity-85"
-            >
-              <Text className="text-lg font-bold text-white">
-                Use This Date
-              </Text>
-            </Pressable>
+
+            <View className="gap-2">
+              {dateOptions.map((option) => {
+                const presentation = statusPresentation[option.status];
+                const StatusIcon = presentation.Icon;
+                const selected = option.dateKey === dateKey;
+                return (
+                  <Pressable
+                    key={option.dateKey}
+                    onPress={() => selectDate(option.dateKey)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${option.label}. ${presentation.label}`}
+                    accessibilityState={{ selected }}
+                    className={`min-h-16 flex-row items-center rounded-2xl border px-4 py-3 ${presentation.bgClass} ${
+                      selected ? "border-orange-500" : presentation.borderClass
+                    }`}
+                  >
+                    <StatusIcon size={22} color={presentation.color} />
+                    <View className="ml-3 flex-1">
+                      <Text className="text-base font-bold text-gray-900">
+                        {option.label}
+                      </Text>
+                      <Text className={`mt-0.5 text-sm font-semibold ${presentation.textClass}`}>
+                        {presentation.label}
+                      </Text>
+                    </View>
+                    {selected ? (
+                      <Text className="text-sm font-bold text-orange-700">Selected</Text>
+                    ) : null}
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
         </View>
       </Modal>
-
-      {showDatePicker && Platform.OS === "android" ? (
-        <DateTimePicker
-          value={pickerDate}
-          mode="date"
-          minimumDate={minimumDate}
-          maximumDate={maximumDate}
-          onValueChange={handleDateValueChange}
-          onDismiss={handleDateDismiss}
-        />
-      ) : null}
     </>
   );
 }

@@ -46,6 +46,8 @@ export default function RecordFeeding() {
     attendanceDateKey,
     setAttendanceDateKey,
     attendanceDateLabel,
+    feedingDateOptions,
+    selectedDateStatus,
     interactionDisabled,
     filteredChildren,
     stats,
@@ -54,6 +56,7 @@ export default function RecordFeeding() {
     markAllAsCompleted,
     markAllAsMissed,
     handleSubmit,
+    openAttendanceForSelectedDate,
     submitBeforeLeaving,
     foodMenuOptions,
     isOffline,
@@ -162,6 +165,7 @@ export default function RecordFeeding() {
       <FeedingDatePicker
         dateKey={attendanceDateKey}
         dateLabel={attendanceDateLabel}
+        dateOptions={feedingDateOptions}
         onDateChange={setAttendanceDateKey}
       />
 
@@ -352,21 +356,44 @@ export default function RecordFeeding() {
   }
 
   if (children.length === 0) {
+    const attendanceMissing = selectedDateStatus === "attendanceMissing";
     return (
       <ScreenShell withKeyboardAvoiding={false}>
         <ScreenHeader
           backgroundVariant="teacherGradient"
           title="Record Feeding"
+          subtitle={attendanceDateLabel}
           onBack={() => router.replace("/(teacher)")}
+        />
+        <FeedingDatePicker
+          dateKey={attendanceDateKey}
+          dateLabel={attendanceDateLabel}
+          dateOptions={feedingDateOptions}
+          onDateChange={setAttendanceDateKey}
         />
         <View className="flex-1 items-center justify-center px-6">
           <CheckCircle2 size={64} color="#D1D5DB" />
           <Text className="mt-4 text-2xl font-bold text-gray-800">
-            No Present Children
+            {attendanceMissing ? "Attendance Required" : "No Present Children"}
           </Text>
           <Text className="mt-2 text-center text-gray-600">
-            Please mark attendance first to record feeding.
+            {attendanceMissing
+              ? `Submit attendance for ${attendanceDateLabel} before recording feeding.`
+              : `Attendance for ${attendanceDateLabel} has no children marked present.`}
           </Text>
+          {attendanceMissing ? (
+            <Pressable
+              onPress={openAttendanceForSelectedDate}
+              accessibilityRole="button"
+              accessibilityLabel={`Record attendance for ${attendanceDateLabel}`}
+              accessibilityHint="Opens attendance and returns to feeding after submission"
+              className="mt-6 min-h-14 items-center justify-center rounded-2xl bg-emerald-600 px-6 py-4 active:opacity-90"
+            >
+              <Text className="text-lg font-bold text-white">
+                Record Attendance
+              </Text>
+            </Pressable>
+          ) : null}
         </View>
       </ScreenShell>
     );

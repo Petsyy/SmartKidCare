@@ -30,8 +30,9 @@ export default function RecordAttendance() {
     isSubmitting,
     showSuccessFeedback,
     dismissSuccessFeedback,
+    backRoute,
   } = useTeacherAttendance();
-  useAndroidBackRoute("/(teacher)");
+  useAndroidBackRoute(backRoute);
   const presentPercentage =
     stats.total > 0 ? Math.round((stats.present / stats.total) * 100) : 0;
 
@@ -41,7 +42,7 @@ export default function RecordAttendance() {
         <ScreenHeader
           backgroundVariant="teacherGradient"
           title="Record Attendance"
-          onBack={() => router.replace("/(teacher)")}
+          onBack={() => router.replace(backRoute)}
         />
         <ScreenLoadingState
           title="Loading attendance"
@@ -57,7 +58,7 @@ export default function RecordAttendance() {
         backgroundVariant="teacherGradient"
         title="Record Attendance"
         subtitle={selectedDateLabel}
-        onBack={() => router.replace("/(teacher)")}
+        onBack={() => router.replace(backRoute)}
       />
 
       <ScrollView className="flex-1" keyboardDismissMode="on-drag">

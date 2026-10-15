@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Alert } from "react-native";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAuth } from "@/src/hooks/use-auth";
 import { getChildren } from "@/src/api/teacher.api";
 import { getAttendanceForDate } from "@/src/api/records.api";
@@ -35,6 +35,7 @@ type AttendanceChildStatus = "present" | "absent";
 
 export const useTeacherAttendance = () => {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const queryClient = useQueryClient();
   const { authState, isAuthenticated, user } = useAuth();
   const { isConnected, isInternetReachable, synchronize, refreshPendingCount } =
@@ -55,9 +56,19 @@ export const useTeacherAttendance = () => {
     setAttendanceSearchQuery: setSearchQuery,
   } = useTeacherUi();
 
-  const [selectedDateKey, setSelectedDateKey] = useState(() =>
-    getManilaDateKey(),
-  );
+  const [selectedDateKey, setSelectedDateKey] = useState(() => {
+    const requestedDateKey = String(params.selectedDateKey || "").trim();
+    return /^\d{4}-\d{2}-\d{2}$/.test(requestedDateKey)
+      ? requestedDateKey
+      : getManilaDateKey();
+  });
+  const returnToFeeding = String(params.returnToFeeding || "") === "true";
+  const backRoute = returnToFeeding
+    ? ({
+        pathname: "/(teacher)/teacher-record-data/feeding",
+        params: { attendanceDateKey: selectedDateKey },
+      } as const)
+    : ("/(teacher)" as const);
   const selectedDateLabel = useMemo(
     () => formatManilaDateLabel(selectedDateKey),
     [selectedDateKey],
@@ -65,6 +76,7 @@ export const useTeacherAttendance = () => {
   const { data, isLoading } = useQuery({
     queryKey: mobileQueryKeys.teacherAttendanceSetup(selectedDateKey),
     networkMode: "always",
+    refetchOnMount: "always",
     enabled: canReadAttendance && Boolean(user?.id),
     queryFn: async () => {
       if (!user?.id) return { childrenData: [], attendanceRecord: null };
@@ -283,6 +295,9 @@ export const useTeacherAttendance = () => {
       await queryClient.invalidateQueries({
         queryKey: mobileQueryKeys.teacherAttendanceSetup(selectedDateKey),
       });
+      await queryClient.invalidateQueries({
+        queryKey: mobileQueryKeys.teacherFeedingDateStatuses(getManilaDateKey()),
+      });
       setIsReadOnly(true);
       Alert.alert(
         "Queued for synchronization",
@@ -298,6 +313,12 @@ export const useTeacherAttendance = () => {
           });
           setShowSuccessFeedback(true);
         }
+      }
+      if (returnToFeeding) {
+        router.replace({
+          pathname: "/(teacher)/teacher-record-data/feeding",
+          params: { attendanceDateKey: selectedDateKey },
+        });
       }
     } catch (error: unknown) {
       reportHandledError("attendance.submit", error);
@@ -364,5 +385,6 @@ export const useTeacherAttendance = () => {
     showSuccessFeedback,
     dismissSuccessFeedback: () => setShowSuccessFeedback(false),
     router,
+    backRoute,
   };
 };

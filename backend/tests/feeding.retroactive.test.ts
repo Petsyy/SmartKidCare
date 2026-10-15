@@ -3,7 +3,12 @@ import test from "node:test";
 import { FeedingService } from "../src/modules/feeding/services/feeding.service";
 import { RecordServiceSupport } from "../src/shared/services/record-service-support";
 
-const createService = (findByTeacherAndDay: () => Promise<any>) => {
+const createService = (
+  findByTeacherAndDay: () => Promise<any>,
+  findAttendanceByTeacherAndDay: () => Promise<any> = async () => ({
+    records: [{ child: "child-1", status: "present" }],
+  }),
+) => {
   let createdData: any = null;
   let notifications = 0;
 
@@ -11,6 +16,9 @@ const createService = (findByTeacherAndDay: () => Promise<any>) => {
     support: new RecordServiceSupport(),
     childRepository: {
       findAssignedChildIds: async () => ["child-1"],
+    } as any,
+    attendanceRepository: {
+      findByTeacherAndDay: findAttendanceByTeacherAndDay,
     } as any,
     feedingRepository: {
       findByOperationId: async () => null,
@@ -95,5 +103,27 @@ test("teacher cannot replace an existing past feeding session", async () => {
       ),
     (error: any) =>
       error?.statusCode === 409 && error?.code === "RECORD_ALREADY_EXISTS",
+  );
+});
+
+test("teacher cannot submit past feeding before attendance", async () => {
+  const harness = createService(async () => null, async () => null);
+  const date = getRecentManilaDate();
+
+  await assert.rejects(
+    () =>
+      harness.service.submit(
+        { id: "teacher-1", role: "teacher", daycareCenterId: "center-1" },
+        {
+          clientOperationId: "33333333-3333-4333-8333-333333333333",
+          date,
+          foodServed: "Chicken Tinola",
+          records: [{ child: "child-1", status: "completed", notes: "" }],
+        },
+      ),
+    (error: any) =>
+      error?.statusCode === 400 &&
+      error?.message ===
+        "Attendance must be submitted for this date before recording feeding.",
   );
 });
