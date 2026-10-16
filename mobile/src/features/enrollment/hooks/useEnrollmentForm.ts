@@ -52,6 +52,7 @@ export const useEnrollmentForm = () => {
       parentLastName: "",
       parentPhone: "",
       parentRelationship: "Mother",
+      parentCustomRelationship: "",
     },
     mode: "onChange",
   });
@@ -192,6 +193,7 @@ export const useEnrollmentForm = () => {
       "parentLastName",
       "parentPhone",
       "parentRelationship",
+      "parentCustomRelationship",
     ]);
     if (!isValid) {
       const errors = form.formState.errors;
@@ -249,6 +251,10 @@ export const useEnrollmentForm = () => {
         parentLastName: values.parentLastName.trim(),
         parentPhone: values.parentPhone.trim(),
         parentRelationship: values.parentRelationship,
+        parentCustomRelationship:
+          values.parentRelationship === "Other"
+            ? values.parentCustomRelationship?.trim()
+            : undefined,
       },
       documentData: {
         birthCertificate: birthCertificateFile
@@ -284,6 +290,7 @@ export const useEnrollmentForm = () => {
     parentPhone: watch("parentPhone"),
     homeAddress: watch("homeAddress"),
     parentRelationship: watch("parentRelationship"),
+    parentCustomRelationship: watch("parentCustomRelationship"),
 
     setDateOfBirth: (val: string) =>
       setValue("dateOfBirth", val, { shouldValidate: true }),

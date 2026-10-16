@@ -17,6 +17,7 @@ export type CreateChildRecordPayload = {
   gender: string;
   homeAddress: string;
   parentRelationship: string;
+  parentCustomRelationship?: string;
   programType: string;
   enrollmentDate: Date | string;
   schoolYear: string;

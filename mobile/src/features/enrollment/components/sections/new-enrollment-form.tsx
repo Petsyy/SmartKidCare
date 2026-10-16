@@ -343,6 +343,7 @@ export function NewEnrollmentForm({
                   parentFullName={form.parentFullName}
                   parentPhone={form.parentPhone}
                   parentRelationship={form.parentRelationship}
+                  parentCustomRelationship={form.parentCustomRelationship}
                   hasBirthCertificate={Boolean(form.birthCertificateFile)}
                   hasParentId={Boolean(form.parentIdFile)}
                   birthCertificateVerification={

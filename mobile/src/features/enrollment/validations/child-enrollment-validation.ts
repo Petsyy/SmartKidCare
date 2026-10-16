@@ -76,16 +76,35 @@ export const childEnrollmentStepOneSchema = z
 
 // ─── Step 2: Parent / Guardian Information ───────────────────────────────────
 
-export const childEnrollmentStepTwoSchema = z.object({
-  parentFirstName: nameSchema("First name"),
-  parentMiddleName: nameSchema("Middle name").optional().or(z.literal("")),
-  parentLastName: nameSchema("Last name"),
-  parentPhone: phoneSchema(),
-  parentRelationship: z.enum(
-    ["Mother", "Father", "Guardian", "Grandparent", "Other"],
-    { required_error: "Relationship to the child is required." },
-  ),
-});
+export const childEnrollmentStepTwoSchema = z
+  .object({
+    parentFirstName: nameSchema("First name"),
+    parentMiddleName: nameSchema("Middle name").optional().or(z.literal("")),
+    parentLastName: nameSchema("Last name"),
+    parentPhone: phoneSchema(),
+    parentRelationship: z.enum(
+      ["Mother", "Father", "Guardian", "Grandparent", "Other"],
+      { required_error: "Relationship to the child is required." },
+    ),
+    parentCustomRelationship: z
+      .string()
+      .trim()
+      .max(50, "Relationship must be at most 50 characters.")
+      .optional()
+      .or(z.literal("")),
+  })
+  .superRefine((data, ctx) => {
+    if (
+      data.parentRelationship === "Other" &&
+      !data.parentCustomRelationship?.trim()
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["parentCustomRelationship"],
+        message: "Specify the relationship to the child.",
+      });
+    }
+  });
 
 // ─── Validate Helpers ────────────────────────────────────────────────────────
 
@@ -111,4 +130,5 @@ export const validateChildEnrollmentStepTwo = (payload: {
   parentPhone: string;
   parentRelationship:
     "Mother" | "Father" | "Guardian" | "Grandparent" | "Other";
+  parentCustomRelationship?: string;
 }) => childEnrollmentStepTwoSchema.safeParse(payload);

@@ -157,6 +157,7 @@ export interface ChildEnrollmentRequestPayload {
   parentPhone: string;
   parentRelationship:
     "Mother" | "Father" | "Guardian" | "Grandparent" | "Other";
+  parentCustomRelationship?: string;
 }
 
 export interface ChildEnrollmentRequestFiles {

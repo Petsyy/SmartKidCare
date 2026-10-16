@@ -20,6 +20,7 @@ export function ReviewSubmitStepSection({
   parentFullName,
   parentPhone,
   parentRelationship,
+  parentCustomRelationship,
   hasBirthCertificate,
   hasParentId,
   birthCertificateVerification,
@@ -37,6 +38,7 @@ export function ReviewSubmitStepSection({
   parentFullName: string;
   parentPhone: string;
   parentRelationship: string;
+  parentCustomRelationship?: string;
   hasBirthCertificate: boolean;
   hasParentId: boolean;
   birthCertificateVerification: string;
@@ -78,7 +80,10 @@ export function ReviewSubmitStepSection({
             computedChildAge > 0 ? String(computedChildAge) : "Not provided"
           }
         />
-        <ReviewRow label="Gender" value={gender === "male" ? "Boy" : "Girl"} />
+        <ReviewRow
+          label="Gender"
+          value={gender === "male" ? "Male" : "Female"}
+        />
         <ReviewRow label="Home Address" value={homeAddress || "Not provided"} />
         <ReviewRow
           label="Enrollment Date"
@@ -101,7 +106,11 @@ export function ReviewSubmitStepSection({
         <ReviewRow label="Phone" value={parentPhone || "Not provided"} />
         <ReviewRow
           label="Relationship"
-          value={parentRelationship || "Not provided"}
+          value={
+            parentRelationship === "Other" && parentCustomRelationship?.trim()
+              ? `Other - ${parentCustomRelationship.trim()}`
+              : parentRelationship || "Not provided"
+          }
         />
       </ReviewSection>
 

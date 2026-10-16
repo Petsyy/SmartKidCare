@@ -97,6 +97,9 @@ export const directEnrollChild = async (command: DirectEnrollmentCommand) => {
     "",
   );
   const parentRelationship = normalizeString(command.body.parentRelationship);
+  const parentCustomRelationship = normalizeOptionalString(
+    command.body.parentCustomRelationship,
+  );
   const weight = command.body.weight ? Number(command.body.weight) : null;
   const height = command.body.height ? Number(command.body.height) : null;
   const birthVerificationId = normalizeString(
@@ -136,6 +139,20 @@ export const directEnrollChild = async (command: DirectEnrollmentCommand) => {
   ];
   if (!allowedRelationships.includes(parentRelationship)) {
     throw new ValidationError("A valid parent relationship is required.");
+  }
+
+  if (parentRelationship === "Other") {
+    if (!parentCustomRelationship) {
+      throw new ValidationError("Specify the relationship to the child.");
+    }
+    if (
+      parentCustomRelationship.length > 50 ||
+      !/^[A-Za-z][A-Za-z\s'-]*$/.test(parentCustomRelationship)
+    ) {
+      throw new ValidationError(
+        "The specified relationship must be at most 50 letters.",
+      );
+    }
   }
 
   if (!Number.isFinite(inputAge) || inputAge <= 0) {
@@ -363,6 +380,10 @@ export const directEnrollChild = async (command: DirectEnrollmentCommand) => {
         gender,
         homeAddress,
         parentRelationship,
+        parentCustomRelationship:
+          parentRelationship === "Other"
+            ? parentCustomRelationship
+            : undefined,
         programType,
         enrollmentDate,
         schoolYear,

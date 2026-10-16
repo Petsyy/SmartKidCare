@@ -1,10 +1,15 @@
 import { Users } from "lucide-react-native";
 import { Text, View } from "react-native";
-import { type Control } from "react-hook-form";
+import { type Control, useWatch } from "react-hook-form";
 import { FormInput, FormSelectField } from "@/src/features/enrollment/components/form";
 import { enrollFieldStyles } from "@/src/features/enrollment/styles";
 
 export function ParentInfoStepSection({ control }: { control: Control<any> }) {
+  const parentRelationship = useWatch({
+    control,
+    name: "parentRelationship",
+  });
+
   return (
     <View
       className="rounded-3xl border border-gray-200 bg-white p-4"
@@ -84,6 +89,17 @@ export function ParentInfoStepSection({ control }: { control: Control<any> }) {
           { label: "Other", value: "Other" },
         ]}
       />
+
+      {parentRelationship === "Other" && (
+        <FormInput
+          control={control}
+          name="parentCustomRelationship"
+          label="Specify Relationship *"
+          placeholder="e.g. Aunt or Family Friend"
+          maxLength={50}
+          filterRegex={/[^a-zA-Z\s\-']/g}
+        />
+      )}
     </View>
   );
 }

@@ -34,6 +34,7 @@ interface SubmissionData {
     parentPhone: string;
     parentRelationship:
       "Mother" | "Father" | "Guardian" | "Grandparent" | "Other";
+    parentCustomRelationship?: string;
   };
   documentData: {
     birthCertificate: { uri: string; name: string; mimeType: string } | null;

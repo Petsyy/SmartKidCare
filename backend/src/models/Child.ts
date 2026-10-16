@@ -15,6 +15,12 @@ const ChildSchema = new mongoose.Schema(
       enum: ["Mother", "Father", "Guardian", "Grandparent", "Other"],
       required: true,
     },
+    parentCustomRelationship: {
+      type: String,
+      trim: true,
+      maxlength: 50,
+      default: null,
+    },
     programType: {
       type: String,
       enum: ["4Ps Beneficiary", "Regular Enrollee (Non-beneficiary)"],
