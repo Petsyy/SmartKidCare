@@ -355,7 +355,7 @@ test("high-confidence unsupported guardian documents are rejected", () => {
   assert.ok(result.reasonCodes.includes("UNSUPPORTED_ID_DOCUMENT"));
 });
 
-test("only guardian AI failures can be manually confirmed", () => {
+test("AI service failures can fall back to teacher confirmation", () => {
   const base = {
     status: "teacher_confirmation_required" as const,
     isTransientFailure: true,
@@ -373,6 +373,36 @@ test("only guardian AI failures can be manually confirmed", () => {
     canTeacherConfirmDocumentVerification({
       ...base,
       documentType: "parentId",
+    }),
+    true,
+  );
+  assert.equal(
+    canTeacherConfirmDocumentVerification({
+      ...base,
+      documentType: "birthCertificate",
+    }),
+    true,
+  );
+});
+
+test("manual confirmation remains blocked for rejected or expired documents", () => {
+  assert.equal(
+    canTeacherConfirmDocumentVerification({
+      status: "rejected",
+      documentType: "parentId",
+      isTransientFailure: false,
+      consumedAt: null,
+      expiresAt: new Date(Date.now() + 60_000),
+    }),
+    false,
+  );
+  assert.equal(
+    canTeacherConfirmDocumentVerification({
+      status: "teacher_confirmation_required",
+      documentType: "birthCertificate",
+      isTransientFailure: true,
+      consumedAt: null,
+      expiresAt: new Date(Date.now() - 1),
     }),
     false,
   );

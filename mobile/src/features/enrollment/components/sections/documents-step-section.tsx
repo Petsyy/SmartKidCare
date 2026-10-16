@@ -84,6 +84,7 @@ export function DocumentsStepSection(props: Props) {
             onConfirm={props.onConfirmBirth}
             onRetry={props.onRetryBirth}
             onReplace={props.onClearBirthCertificate}
+            allowManualConfirmationOnServiceError
           />
         </View>
         <GovernmentIdUploadVerificationField
@@ -97,6 +98,7 @@ export function DocumentsStepSection(props: Props) {
           onClear={props.onClearParentId}
           onRetry={props.onRetryParent}
           onConfirm={props.onConfirmParent}
+          allowManualConfirmationOnServiceError
           className={props.isWide ? "flex-1" : ""}
         />
       </View>

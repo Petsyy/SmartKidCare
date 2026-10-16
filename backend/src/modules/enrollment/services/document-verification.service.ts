@@ -76,7 +76,6 @@ export const canTeacherConfirmDocumentVerification = (record: {
   expiresAt: Date;
 }) =>
   record.status === "teacher_confirmation_required" &&
-  (!record.isTransientFailure || record.documentType === "guardianId") &&
   !record.consumedAt &&
   record.expiresAt > new Date();
 
