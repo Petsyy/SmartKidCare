@@ -112,7 +112,13 @@ export const usePickupTeacher = () => {
     );
   };
   const toggleSelectAll = () => {
-    setSelectedChildIds(allEligibleSelected ? [] : eligibleIds);
+    setSelectedChildIds(selectedChildIds.length > 0 ? [] : eligibleIds);
+  };
+  const selectAll = () => {
+    setSelectedChildIds(eligibleIds);
+  };
+  const clearSelection = () => {
+    setSelectedChildIds([]);
   };
 
   return {
@@ -127,6 +133,8 @@ export const usePickupTeacher = () => {
     allEligibleSelected,
     toggleChildSelection,
     toggleSelectAll,
+    selectAll,
+    clearSelection,
     notifyParents: notificationMutation.mutateAsync,
     isNotifying: notificationMutation.isPending,
     isOffline,

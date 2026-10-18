@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
-import { View, Text, Alert, Modal, ScrollView, Pressable } from "react-native";
+import { View, Text, Alert, Modal, ScrollView, Pressable, ActivityIndicator } from "react-native";
 import { useFocusEffect } from "expo-router";
-import { ShieldCheck, Search, Send } from "lucide-react-native";
+import { ShieldCheck, Search, Send, Check } from "lucide-react-native";
 import {
   ScreenHeader,
   ScreenLoadingState,
@@ -35,6 +35,8 @@ export function TeacherPickupScreen() {
     allEligibleSelected,
     toggleChildSelection,
     toggleSelectAll,
+    selectAll,
+    clearSelection,
     notifyParents,
     isNotifying,
     isOffline,
@@ -49,6 +51,9 @@ export function TeacherPickupScreen() {
   >(null);
   const [isVisuallyVerified, setIsVisuallyVerified] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSelectMode, setIsSelectMode] = useState(false);
+
+  const isInSelectionMode = isSelectMode || selectedChildIds.length > 0;
 
   useFocusEffect(
     React.useCallback(() => {
@@ -116,6 +121,13 @@ export function TeacherPickupScreen() {
     setIsVisuallyVerified(false);
   };
 
+  const handleExitSelectMode = () => {
+    setIsSelectMode(false);
+    if (selectedChildIds.length > 0) {
+      toggleSelectAll();
+    }
+  };
+
   const handleNotifyParents = () => {
     if (isOffline || selectedChildIds.length === 0 || isNotifying) return;
     Alert.alert(
@@ -132,6 +144,7 @@ export function TeacherPickupScreen() {
                   "Pickup Reminders Processed",
                   `${result.sent} in-app alert${result.sent === 1 ? "" : "s"} saved. ${result.pushDelivered} push delivered, ${result.pushFailed} push failed, and ${result.skipped} skipped.`,
                 );
+                setIsSelectMode(false);
               })
               .catch((error: unknown) => {
                 reportHandledError("pickup.bulk-notification", error);
@@ -187,37 +200,130 @@ export function TeacherPickupScreen() {
       />
 
       {eligibleChildren.length > 0 ? (
-        <View className="border-b border-gray-200 bg-white px-5 py-3">
-          <View className="flex-row items-center justify-between">
-            <Pressable
-              accessibilityRole="checkbox"
-              accessibilityLabel={allEligibleSelected ? "Clear child selection" : "Select all eligible children"}
-              accessibilityState={{ checked: allEligibleSelected, disabled: isNotifying }}
-              disabled={isNotifying}
-              onPress={toggleSelectAll}
-              className="min-h-11 justify-center rounded-xl px-2"
-            >
-              <Text className="text-sm font-black text-teal-700">
-                {allEligibleSelected ? "Clear Selection" : "Select All"}
-              </Text>
-            </Pressable>
-            <Text className="text-sm font-bold text-gray-500">
-              {selectedChildIds.length} selected
-            </Text>
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Notify selected parents"
-            accessibilityState={{ disabled: isOffline || isNotifying || selectedChildIds.length === 0, busy: isNotifying }}
-            disabled={isOffline || isNotifying || selectedChildIds.length === 0}
-            onPress={handleNotifyParents}
-            className={`mt-2 min-h-11 flex-row items-center justify-center gap-2 rounded-xl bg-teal-600 px-4 ${isOffline || isNotifying || selectedChildIds.length === 0 ? "opacity-40" : "opacity-100"}`}
+        <View className="bg-gray-50 px-5 pb-3 pt-2">
+          <View
+            className="rounded-2xl border border-gray-200 bg-white p-4"
+            style={{
+              shadowColor: "#0D9488",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.04,
+              shadowRadius: 6,
+              elevation: 2,
+            }}
           >
-            <Send size={16} color="#FFFFFF" />
-            <Text className="text-sm font-black text-white">
-              {isNotifying ? "Sending..." : "Notify Parents"}
-            </Text>
-          </Pressable>
+            <View className="flex-row items-center justify-between">
+              <View className="flex-1 pr-3">
+                <Text className="text-lg font-black text-gray-900">
+                  Pickup reminders
+                </Text>
+                <Text className="mt-1 text-sm font-semibold leading-5 text-gray-500">
+                  {isInSelectionMode
+                    ? `${selectedChildIds.length} of ${eligibleChildren.length} children selected`
+                    : "Send pickup reminders to parents at once."}
+                </Text>
+              </View>
+
+              {!isInSelectionMode ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Enable selection mode for bulk pickup reminders"
+                  onPress={() => setIsSelectMode(true)}
+                  className="min-h-10 items-center justify-center rounded-xl bg-teal-50 border border-teal-600 px-4 active:bg-teal-100"
+                >
+                  <Text className="text-sm font-bold text-teal-700">Select</Text>
+                </Pressable>
+              ) : (
+                <View className="flex-row items-center gap-2">
+                  <View className="rounded-full bg-teal-600 px-3 py-1">
+                    <Text className="text-xs font-bold text-white">
+                      {selectedChildIds.length} selected
+                    </Text>
+                  </View>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Exit selection mode"
+                    onPress={handleExitSelectMode}
+                    className="min-h-9 items-center justify-center rounded-xl bg-gray-100 px-3 active:bg-gray-200"
+                  >
+                    <Text className="text-xs font-bold text-gray-700">Cancel</Text>
+                  </Pressable>
+                </View>
+              )}
+            </View>
+
+            {isInSelectionMode ? (
+              <View className="mt-3 flex-row items-center gap-2.5">
+                {selectedChildIds.length > 0 ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Clear selection"
+                    accessibilityState={{ disabled: isNotifying }}
+                    disabled={isNotifying}
+                    onPress={clearSelection}
+                    className="min-h-11 items-center justify-center rounded-xl border border-gray-300 bg-white px-4 active:bg-gray-100"
+                  >
+                    <Text className="text-sm font-bold text-gray-700">Clear</Text>
+                  </Pressable>
+                ) : (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Select all eligible children"
+                    accessibilityState={{ disabled: isNotifying }}
+                    disabled={isNotifying}
+                    onPress={selectAll}
+                    className="min-h-11 items-center justify-center rounded-xl border border-teal-600 bg-teal-50 px-4 active:bg-teal-100"
+                  >
+                    <Text className="text-sm font-bold text-teal-700">Select All</Text>
+                  </Pressable>
+                )}
+
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Notify selected parents"
+                  accessibilityState={{
+                    disabled:
+                      isOffline || isNotifying || selectedChildIds.length === 0,
+                    busy: isNotifying,
+                  }}
+                  disabled={
+                    isOffline || isNotifying || selectedChildIds.length === 0
+                  }
+                  onPress={handleNotifyParents}
+                  className={`min-h-11 flex-1 flex-row items-center justify-center gap-2 rounded-xl px-4 ${
+                    isOffline || isNotifying || selectedChildIds.length === 0
+                      ? "bg-gray-200"
+                      : "bg-teal-600 active:bg-teal-700"
+                  }`}
+                >
+                  {isNotifying ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Send
+                      size={16}
+                      color={
+                        selectedChildIds.length === 0 || isOffline
+                          ? "#9CA3AF"
+                          : "#FFFFFF"
+                      }
+                    />
+                  )}
+                  <Text
+                    className={`text-sm font-bold ${
+                      selectedChildIds.length === 0 || isOffline
+                        ? "text-gray-400"
+                        : "text-white"
+                    }`}
+                  >
+                    {isNotifying
+                      ? "Sending..."
+                      : selectedChildIds.length > 0
+                        ? `Notify ${selectedChildIds.length} Parent${selectedChildIds.length > 1 ? "s" : ""}`
+                        : "Notify Parents"}
+                  </Text>
+                </Pressable>
+              </View>
+            ) : null}
+          </View>
         </View>
       ) : null}
 
@@ -272,6 +378,12 @@ export function TeacherPickupScreen() {
                     selected={selectedChildIds.includes(child._id)}
                     selectionDisabled={isOffline || isNotifying}
                     onToggleSelected={() => toggleChildSelection(child._id)}
+                    isSelectionActive={isInSelectionMode}
+                    showCheckbox={isInSelectionMode}
+                    onLongPress={() => {
+                      setIsSelectMode(true);
+                      toggleChildSelection(child._id);
+                    }}
                     onPress={() => {
                       if (isOffline) {
                         Alert.alert(
