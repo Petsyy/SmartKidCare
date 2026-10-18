@@ -40,7 +40,9 @@ export function TodayStatusCard({ status, feedingRecord }: TodayStatusCardProps)
               ? "bg-emerald-50 border border-emerald-100"
               : status.attendance === "Absent"
                 ? "bg-red-50 border border-red-100"
-                : "bg-gray-50 border border-gray-200"
+                : status.attendance === "Excused"
+                  ? "bg-amber-50 border border-amber-100"
+                  : "bg-gray-50 border border-gray-200"
           }`}
         >
           <Text className="text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -52,7 +54,9 @@ export function TodayStatusCard({ status, feedingRecord }: TodayStatusCardProps)
                 ? "text-emerald-700"
                 : status.attendance === "Absent"
                   ? "text-red-700"
-                  : "text-gray-600"
+                  : status.attendance === "Excused"
+                    ? "text-amber-700"
+                    : "text-gray-600"
             }`}
           >
             {status.attendance}

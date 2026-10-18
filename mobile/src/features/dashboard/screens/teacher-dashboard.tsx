@@ -308,7 +308,7 @@ export default function TeacherDashboardScreen() {
 
             <TeacherOverviewStatCard
               icon={UserCheck}
-              value={attendanceAvailable ? presentToday : "--"}
+              value={attendanceAvailable ? presentToday : 0}
               label="Present today"
               caption={
                 !hasChildren
@@ -340,7 +340,7 @@ export default function TeacherDashboardScreen() {
           <View className="mt-3 flex-row gap-3">
             <TeacherOverviewStatCard
               icon={UserX}
-              value={attendanceAvailable ? absentToday : "--"}
+              value={attendanceAvailable ? absentToday : 0}
               label="Absent today"
               caption={
                 !hasChildren
@@ -370,7 +370,7 @@ export default function TeacherDashboardScreen() {
 
             <TeacherOverviewStatCard
               icon={KeyRound}
-              value={!hasChildren ? pendingPickups : "--"}
+              value={pendingPickups}
               label="Pending pickups"
               caption={
                 !hasChildren
@@ -396,7 +396,7 @@ export default function TeacherDashboardScreen() {
           <View className="mt-3 flex-row gap-3">
             <TeacherOverviewStatCard
               icon={HeartPulse}
-              value={underweightCount + severelyUnderweightCount || "--"}
+              value={underweightCount + severelyUnderweightCount || 0}
               label="Underweight"
               caption="Latest health metrics"
               tone="rose"
@@ -408,7 +408,7 @@ export default function TeacherDashboardScreen() {
             />
             <TeacherOverviewStatCard
               icon={HeartPulse}
-              value={overweightCount + obeseCount || "--"}
+              value={overweightCount + obeseCount || 0}
               label="Overweight / Obese"
               caption="Latest health metrics"
               tone="orange"

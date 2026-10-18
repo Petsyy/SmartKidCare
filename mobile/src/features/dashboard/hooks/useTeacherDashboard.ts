@@ -35,6 +35,7 @@ export interface TeacherDashboardData {
   totalChildren: number;
   presentToday: number;
   absentToday: number;
+  excusedToday: number;
   feedingDone: number;
   feedingMissed: number;
   underweightCount: number;
@@ -171,6 +172,12 @@ export function useTeacherDashboard(): TeacherDashboardData {
       (record: any) => record.status === "absent",
     ).length;
   }, [attendanceData]);
+  const excusedToday = useMemo(() => {
+    if (!attendanceData?.records) return 0;
+    return attendanceData.records.filter(
+      (record: any) => record.status === "excused",
+    ).length;
+  }, [attendanceData]);
   const feedingDone = useMemo(() => {
     if (!feedingData?.records) return 0;
     return feedingData.records.filter(
@@ -239,6 +246,7 @@ export function useTeacherDashboard(): TeacherDashboardData {
     totalChildren,
     presentToday,
     absentToday,
+    excusedToday,
     feedingDone,
     feedingMissed,
     ...nutritionCounts,

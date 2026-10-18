@@ -83,7 +83,13 @@ export function useTeacherChildDetails(childId: string | null) {
     const attendance = attendanceRecord?.records?.find((record: CareRecord) => idOf(record) === child._id);
     const feeding = feedingRecord?.records?.find((record: CareRecord) => idOf(record) === child._id);
     return {
-      attendance: attendance ? (attendance.status === "present" ? "Present" : "Absent") : "Not Recorded",
+      attendance: attendance
+        ? attendance.status === "present"
+          ? "Present"
+          : attendance.status === "excused"
+            ? "Excused"
+            : "Absent"
+        : "Not Recorded",
       feeding: feeding ? (feeding.status === "completed" ? "Completed" : "Missed") : "Not Recorded",
     };
   }, [attendanceRecord, child, feedingRecord]);

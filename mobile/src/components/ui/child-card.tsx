@@ -1,11 +1,11 @@
 import { Text, View, Pressable } from "react-native";
-import { User, ChevronRight, CheckCircle2, XCircle, Shield, Plus } from "lucide-react-native";
+import { User, ChevronRight, CheckCircle2, XCircle, Shield } from "lucide-react-native";
 
 type Props = {
   name: string;
   age: number;
   gender: string;
-  attendance?: "Present" | "Absent" | "Not Recorded";
+  attendance?: "Present" | "Absent" | "Excused" | "Not Recorded";
   feeding?: "Finished" | "Missed" | "Not Recorded";
   lastUpdated?: string;
   guardianCount?: number;
@@ -75,12 +75,12 @@ export default function ChildCard({
           <View className="flex-row flex-wrap items-center gap-2 mt-3">
             <View
               className={`px-3 py-1.5 rounded-full ${
-                attendance === "Present" ? "bg-emerald-50" : attendance === "Absent" ? "bg-red-50" : "bg-gray-100"
+                attendance === "Present" ? "bg-emerald-50" : attendance === "Absent" ? "bg-red-50" : attendance === "Excused" ? "bg-amber-50" : "bg-gray-100"
               }`}
             >
               <Text
                 className={`text-sm font-black ${
-                  attendance === "Present" ? "text-emerald-700" : attendance === "Absent" ? "text-red-600" : "text-gray-500"
+                  attendance === "Present" ? "text-emerald-700" : attendance === "Absent" ? "text-red-600" : attendance === "Excused" ? "text-amber-700" : "text-gray-500"
                 }`}
               >
                 {attendance}

@@ -26,7 +26,7 @@ import { getManilaDateKey } from "@/src/utils/manila-date";
 import type { Child } from "@/src/api/api.types";
 
 interface ChildStatus {
-  attendance: "Present" | "Absent" | "Not Recorded";
+  attendance: "Present" | "Absent" | "Excused" | "Not Recorded";
   feeding: "Finished" | "Missed" | "Not Recorded";
   lastUpdated: string;
 }
@@ -84,7 +84,7 @@ export default function ChildScreen() {
 
   // Get status for a specific child
   const getChildStatus = (childId: string): ChildStatus => {
-    let attendance: "Present" | "Absent" | "Not Recorded" = "Not Recorded";
+    let attendance: "Present" | "Absent" | "Excused" | "Not Recorded" = "Not Recorded";
     let feeding: "Finished" | "Missed" | "Not Recorded" = "Not Recorded";
     let lastUpdated = "No data";
 
@@ -95,7 +95,11 @@ export default function ChildScreen() {
       );
       if (attendanceEntry) {
         attendance =
-          attendanceEntry.status === "present" ? "Present" : "Absent";
+          attendanceEntry.status === "present"
+            ? "Present"
+            : attendanceEntry.status === "excused"
+              ? "Excused"
+              : "Absent";
         lastUpdated = new Date(attendanceRecord.createdAt).toLocaleTimeString(
           "en-PH",
           {

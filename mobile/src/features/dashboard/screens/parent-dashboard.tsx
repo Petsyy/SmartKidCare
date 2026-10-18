@@ -157,7 +157,9 @@ export default function ParentDashboardScreen() {
       ? `Present — ${attendanceTime ? `Checked in at ${attendanceTime}` : "Checked in today"}`
       : attendanceStatus === "absent"
         ? `Absent — ${attendanceTime ? `Updated at ${attendanceTime}` : "Updated today"}`
-        : "Attendance update pending";
+        : attendanceStatus === "excused"
+          ? `Excused — ${attendanceTime ? `Updated at ${attendanceTime}` : "Updated today"}`
+          : "Attendance update pending";
 
   const mealStatus = useMemo(
     () => getChildRecordStatus(todayFeedingRecord, selectedChild?._id),
@@ -353,7 +355,7 @@ export default function ParentDashboardScreen() {
             <View className="mt-5 flex-row items-start">
               {attendanceStatus === "present" ? (
                 <CheckCircle2 size={20} color="#D1FAE5" />
-              ) : attendanceStatus === "absent" ? (
+              ) : attendanceStatus === "absent" || attendanceStatus === "excused" ? (
                 <AlertCircle size={20} color="#FED7AA" />
               ) : (
                 <Clock3 size={20} color="#D1FAE5" />
@@ -465,7 +467,7 @@ export default function ParentDashboardScreen() {
               <View className="mt-1.5 flex-row items-center">
                 {attendanceStatus === "present" ? (
                   <CheckCircle2 size={17} color="#047857" />
-                ) : attendanceStatus === "absent" ? (
+                ) : attendanceStatus === "absent" || attendanceStatus === "excused" ? (
                   <AlertCircle size={17} color="#BE123C" />
                 ) : (
                   <Clock3 size={17} color="#0F766E" />
@@ -476,7 +478,9 @@ export default function ParentDashboardScreen() {
                       ? "text-emerald-700"
                       : attendanceStatus === "absent"
                         ? "text-rose-600"
-                        : "text-teal-700"
+                        : attendanceStatus === "excused"
+                          ? "text-amber-700"
+                          : "text-teal-700"
                   }`}
                 >
                   Today: {attendanceStatus ? "Recorded" : "No update yet"}
