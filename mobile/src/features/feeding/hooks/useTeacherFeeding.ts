@@ -67,7 +67,7 @@ const buildSnapshot = (
     foodServed: foodServed.trim(),
     feedingStatus: childIds.reduce<Record<string, FeedingChildStatus>>(
       (acc, childId) => {
-        acc[childId] = feedingStatus[childId] ?? "missed";
+        acc[childId] = feedingStatus[childId] ?? "completed";
         return acc;
       },
       {},
@@ -152,82 +152,94 @@ export const useTeacherFeeding = () => {
 
   const { data: feedingDateStatusMap = {}, isLoading: isLoadingDateStatuses } =
     useQuery({
-    queryKey: mobileQueryKeys.teacherFeedingDateStatuses(
-      todayDateKey,
-      feedingDataSource,
-    ),
-    networkMode: "always",
-    refetchOnMount: "always",
-    enabled: canReadFeeding && Boolean(user?.id),
-    queryFn: async (): Promise<Record<string, FeedingDateStatus>> => {
-      if (!user?.id) return {};
-      const oldestDateKey = feedingDateKeys[feedingDateKeys.length - 1];
-      const [attendanceRecords, feedingRecords, localOperations] =
-        await Promise.all([
-          onlineWithOfflineFallback(
-            mustUseOfflineData,
-            () => getAttendanceHistory(oldestDateKey, todayDateKey),
-            async () =>
-              (await Promise.all(
-                feedingDateKeys.map((dateKey) =>
-                  readOfflineRecordForDate<any>(user.id, "attendance", dateKey),
-                ),
-              )).filter(Boolean),
-          ),
-          onlineWithOfflineFallback(
-            mustUseOfflineData,
-            () => getFeedingHistory(oldestDateKey, todayDateKey),
-            async () =>
-              (await Promise.all(
-                feedingDateKeys.map((dateKey) =>
-                  readOfflineRecordForDate<any>(user.id, "feeding", dateKey),
-                ),
-              )).filter(Boolean),
-          ),
-          Promise.all(
-            feedingDateKeys.map(async (dateKey) => ({
-              dateKey,
-              attendance: await getOutboxByDate(
-                user.id,
-                "attendance.create",
+      queryKey: mobileQueryKeys.teacherFeedingDateStatuses(
+        todayDateKey,
+        feedingDataSource,
+      ),
+      networkMode: "always",
+      refetchOnMount: "always",
+      enabled: canReadFeeding && Boolean(user?.id),
+      queryFn: async (): Promise<Record<string, FeedingDateStatus>> => {
+        if (!user?.id) return {};
+        const oldestDateKey = feedingDateKeys[feedingDateKeys.length - 1];
+        const [attendanceRecords, feedingRecords, localOperations] =
+          await Promise.all([
+            onlineWithOfflineFallback(
+              mustUseOfflineData,
+              () => getAttendanceHistory(oldestDateKey, todayDateKey),
+              async () =>
+                (
+                  await Promise.all(
+                    feedingDateKeys.map((dateKey) =>
+                      readOfflineRecordForDate<any>(
+                        user.id,
+                        "attendance",
+                        dateKey,
+                      ),
+                    ),
+                  )
+                ).filter(Boolean),
+            ),
+            onlineWithOfflineFallback(
+              mustUseOfflineData,
+              () => getFeedingHistory(oldestDateKey, todayDateKey),
+              async () =>
+                (
+                  await Promise.all(
+                    feedingDateKeys.map((dateKey) =>
+                      readOfflineRecordForDate<any>(
+                        user.id,
+                        "feeding",
+                        dateKey,
+                      ),
+                    ),
+                  )
+                ).filter(Boolean),
+            ),
+            Promise.all(
+              feedingDateKeys.map(async (dateKey) => ({
                 dateKey,
-              ),
-              feeding: await getOutboxByDate(
-                user.id,
-                "feeding.create",
-                dateKey,
-              ),
-            })),
-          ),
-        ]);
+                attendance: await getOutboxByDate(
+                  user.id,
+                  "attendance.create",
+                  dateKey,
+                ),
+                feeding: await getOutboxByDate(
+                  user.id,
+                  "feeding.create",
+                  dateKey,
+                ),
+              })),
+            ),
+          ]);
 
-      const attendanceDates = new Set(
-        attendanceRecords
-          .map((record: any) => toManilaDateKey(record.date))
-          .filter(Boolean),
-      );
-      const feedingDates = new Set(
-        feedingRecords
-          .map((record: any) => toManilaDateKey(record.date))
-          .filter(Boolean),
-      );
-      localOperations.forEach(({ dateKey, attendance, feeding }) => {
-        if (attendance) attendanceDates.add(dateKey);
-        if (feeding) feedingDates.add(dateKey);
-      });
+        const attendanceDates = new Set(
+          attendanceRecords
+            .map((record: any) => toManilaDateKey(record.date))
+            .filter(Boolean),
+        );
+        const feedingDates = new Set(
+          feedingRecords
+            .map((record: any) => toManilaDateKey(record.date))
+            .filter(Boolean),
+        );
+        localOperations.forEach(({ dateKey, attendance, feeding }) => {
+          if (attendance) attendanceDates.add(dateKey);
+          if (feeding) feedingDates.add(dateKey);
+        });
 
-      return Object.fromEntries(
-        feedingDateKeys.map((dateKey) => [
-          dateKey,
-          feedingDates.has(dateKey)
-            ? "feedingSubmitted"
-            : attendanceDates.has(dateKey)
-              ? "attendanceSubmitted"
-              : "attendanceMissing",
-        ]),
-      );
-    },
-  });
+        return Object.fromEntries(
+          feedingDateKeys.map((dateKey) => [
+            dateKey,
+            feedingDates.has(dateKey)
+              ? "feedingSubmitted"
+              : attendanceDates.has(dateKey)
+                ? "attendanceSubmitted"
+                : "attendanceMissing",
+          ]),
+        );
+      },
+    });
 
   const feedingDateOptions = useMemo(
     () =>
@@ -284,28 +296,23 @@ export const useTeacherFeeding = () => {
         serverFeedingRecord,
         localFeedingOperation,
         localAttendanceOperation,
-      ] =
-        await Promise.all([
-          onlineWithOfflineFallback(mustUseOfflineData, getChildren, () =>
-            readOfflineResource<Child>(user.id, "children"),
-          ),
-          onlineWithOfflineFallback(
-            mustUseOfflineData,
-            () => getFeedingForDate(attendanceDateKey),
-            () =>
-              readOfflineRecordForDate<any>(
-                user.id,
-                "feeding",
-                attendanceDateKey,
-              ),
-          ),
-          getOutboxByDate(user.id, "feeding.create", attendanceDateKey),
-          getOutboxByDate(
-            user.id,
-            "attendance.create",
-            attendanceDateKey,
-          ),
-        ]);
+      ] = await Promise.all([
+        onlineWithOfflineFallback(mustUseOfflineData, getChildren, () =>
+          readOfflineResource<Child>(user.id, "children"),
+        ),
+        onlineWithOfflineFallback(
+          mustUseOfflineData,
+          () => getFeedingForDate(attendanceDateKey),
+          () =>
+            readOfflineRecordForDate<any>(
+              user.id,
+              "feeding",
+              attendanceDateKey,
+            ),
+        ),
+        getOutboxByDate(user.id, "feeding.create", attendanceDateKey),
+        getOutboxByDate(user.id, "attendance.create", attendanceDateKey),
+      ]);
       const localFeedingRecord = localFeedingOperation
         ? {
             date: attendanceDateKey,
@@ -316,7 +323,7 @@ export const useTeacherFeeding = () => {
       const feedingRecord =
         localFeedingOperation && localFeedingOperation.status !== "synced"
           ? localFeedingRecord
-          : serverFeedingRecord ?? localFeedingRecord;
+          : (serverFeedingRecord ?? localFeedingRecord);
 
       if (feedingRecord) {
         const recordedChildIds = new Set(
@@ -379,7 +386,7 @@ export const useTeacherFeeding = () => {
           localAttendanceOperation &&
           localAttendanceOperation.status !== "synced"
             ? localAttendanceRecord
-            : storedAttendanceRecord ?? localAttendanceRecord;
+            : (storedAttendanceRecord ?? localAttendanceRecord);
         if (attendanceRecord?.records) {
           hasAttendanceRecord = true;
           const presentIds = new Set(
@@ -396,7 +403,7 @@ export const useTeacherFeeding = () => {
       const initialStatus: Record<string, FeedingChildStatus> = {};
       const initialNotes: Record<string, string> = {};
       childrenToShow.forEach((child) => {
-        initialStatus[child._id] = "missed";
+        initialStatus[child._id] = "completed";
         initialNotes[child._id] = "";
       });
 
@@ -414,7 +421,7 @@ export const useTeacherFeeding = () => {
 
   const attendancePrerequisiteMet = Boolean(
     data?.dateKey === attendanceDateKey &&
-      (data.isReadOnly || data.hasAttendanceRecord),
+    (data.isReadOnly || data.hasAttendanceRecord),
   );
 
   useEffect(() => {
@@ -439,10 +446,7 @@ export const useTeacherFeeding = () => {
       setFoodServed(payload.foodServed ?? "");
       setFeedingStatus(
         Object.fromEntries(
-          data.childrenToShow.map((child) => [
-            child._id,
-            payload.records[child._id]?.status ?? "missed",
-          ]),
+          data.childrenToShow.map((child) => [child._id, "completed"]),
         ),
       );
       setFeedingNotes(
@@ -480,13 +484,10 @@ export const useTeacherFeeding = () => {
     });
   }, [availableChildren, searchQuery]);
 
-  const stats = useMemo(() => {
-    const missed = availableChildren.filter(
-      (child) => feedingStatus[child._id] === "missed",
-    ).length;
-    const fed = availableChildren.length - missed;
-    return { fed, missed, total: availableChildren.length };
-  }, [availableChildren, feedingStatus]);
+  const stats = useMemo(
+    () => ({ fed: availableChildren.length, total: availableChildren.length }),
+    [availableChildren.length],
+  );
 
   const hasUnsavedChanges = useMemo(() => {
     if (
@@ -556,32 +557,9 @@ export const useTeacherFeeding = () => {
     user,
   ]);
 
-  const toggleChildFeeding = useCallback((childId: string) => {
-    setFeedingStatus((prev) => ({
-      ...prev,
-      [childId]: prev[childId] === "completed" ? "missed" : "completed",
-    }));
-  }, []);
-
   const setChildNote = useCallback((childId: string, value: string) => {
     setFeedingNotes((prev) => ({ ...prev, [childId]: value }));
   }, []);
-
-  const markAllAsCompleted = useCallback(() => {
-    const allFed: Record<string, FeedingChildStatus> = {};
-    children.forEach((child) => {
-      allFed[child._id] = "completed";
-    });
-    setFeedingStatus(allFed);
-  }, [children]);
-
-  const markAllAsMissed = useCallback(() => {
-    const allMissed: Record<string, FeedingChildStatus> = {};
-    children.forEach((child) => {
-      allMissed[child._id] = "missed";
-    });
-    setFeedingStatus(allMissed);
-  }, [children]);
 
   const submitFeedingRecord = useCallback(async () => {
     if (isSubmitting) return;
@@ -790,10 +768,7 @@ export const useTeacherFeeding = () => {
     filteredChildren,
     stats,
     hasUnsavedChanges,
-    toggleChildFeeding,
     setChildNote,
-    markAllAsCompleted,
-    markAllAsMissed,
     handleSubmit,
     openAttendanceForSelectedDate,
     submitBeforeLeaving,

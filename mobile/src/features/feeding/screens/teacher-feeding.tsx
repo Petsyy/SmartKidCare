@@ -7,13 +7,8 @@ import {
   Modal,
   Alert,
 } from "react-native";
-import {
-  ChevronDown,
-  Search,
-  CheckCircle2,
-  XCircle,
-} from "lucide-react-native";
-import { useCallback } from "react";
+import { ChevronDown, Search, CheckCircle2 } from "lucide-react-native";
+import { memo, useCallback } from "react";
 import { useTeacherFeeding } from "@/src/features/feeding/hooks";
 import { FeedingDatePicker } from "@/src/features/feeding/components/feeding-date-picker";
 import type { Child } from "@/src/api/parent.api";
@@ -27,12 +22,42 @@ import {
 } from "@/src/components/ui";
 import { useAndroidBackRoute } from "@/src/hooks/use-android-back-route";
 
+const FeedingChildRow = memo(function FeedingChildRow({
+  child,
+}: {
+  child: Child;
+}) {
+  return (
+    <View
+      className="mx-6 mb-3 flex-row items-center rounded-2xl border border-emerald-200 bg-white p-3 shadow-sm"
+      accessible
+      accessibilityLabel={`${child.lastName}, ${child.firstName}, included as completed`}
+    >
+      <View className="h-10 w-10 items-center justify-center rounded-full bg-slate-100">
+        <Text className="font-bold text-slate-700">
+          {child.firstName.charAt(0)}
+          {child.lastName.charAt(0)}
+        </Text>
+      </View>
+      <Text
+        className="ml-3 min-w-0 flex-1 text-base font-bold text-gray-900"
+        numberOfLines={2}
+      >
+        {child.lastName}, {child.firstName}
+        {child.middleName ? ` ${child.middleName}` : ""}
+      </Text>
+      <View className="h-11 w-11 items-center justify-center rounded-xl bg-emerald-50">
+        <CheckCircle2 size={24} color="#059669" />
+      </View>
+    </View>
+  );
+});
+
 export default function RecordFeeding() {
   const {
     router,
     children,
     loading,
-    feedingStatus,
     foodServed,
     setFoodServed,
     searchQuery,
@@ -52,9 +77,6 @@ export default function RecordFeeding() {
     filteredChildren,
     stats,
     hasUnsavedChanges,
-    toggleChildFeeding,
-    markAllAsCompleted,
-    markAllAsMissed,
     handleSubmit,
     openAttendanceForSelectedDate,
     submitBeforeLeaving,
@@ -62,8 +84,7 @@ export default function RecordFeeding() {
     isOffline,
   } = useTeacherFeeding();
   useAndroidBackRoute("/(teacher)");
-  const completedPercentage =
-    stats.total > 0 ? Math.round((stats.fed / stats.total) * 100) : 0;
+  const completedPercentage = stats.total > 0 ? 100 : 0;
 
   useUnsavedChangesGuard({
     hasUnsavedChanges,
@@ -76,88 +97,8 @@ export default function RecordFeeding() {
   });
 
   const renderChildCard = useCallback(
-    ({ item: child }: { item: Child }) => (
-      <View
-        className={`mx-6 mb-3 overflow-hidden rounded-2xl border shadow-sm ${
-          feedingStatus[child._id] === "completed"
-            ? "border-teal-200 bg-teal-50"
-            : "border-red-200 bg-red-50"
-        } ${interactionDisabled ? "opacity-90" : ""}`}
-      >
-        <Pressable
-          onPress={() => !interactionDisabled && toggleChildFeeding(child._id)}
-          disabled={interactionDisabled}
-          accessibilityRole="button"
-          accessibilityLabel={`${child.lastName}, ${child.firstName}${
-            child.middleName ? ` ${child.middleName}` : ""
-          }, ${feedingStatus[child._id] === "missed" ? "Missed" : "Completed"}`}
-          accessibilityHint={
-            interactionDisabled
-              ? "Submitted feeding records cannot be changed"
-              : `Double tap to mark ${
-                  feedingStatus[child._id] === "missed" ? "Completed" : "Missed"
-                }`
-          }
-          accessibilityState={{
-            disabled: interactionDisabled,
-            selected: feedingStatus[child._id] === "completed",
-          }}
-        >
-          <View className="flex-row items-center p-4">
-            <View
-              className={`mr-4 h-12 w-12 items-center justify-center rounded-full ${
-                feedingStatus[child._id] === "completed"
-                  ? "bg-teal-600"
-                  : "bg-red-500"
-              }`}
-            >
-              <Text className="text-xl font-bold text-white">
-                {child.firstName.charAt(0)}
-                {child.lastName.charAt(0)}
-              </Text>
-            </View>
-
-            <View className="flex-1">
-              <Text className="text-lg font-bold text-gray-800">
-                {child.lastName}, {child.firstName}
-                {child.middleName ? ` ${child.middleName}` : ""}
-              </Text>
-              <Text className="mt-0.5 text-base text-gray-600">
-                {child.age} years old - {child.gender}
-              </Text>
-              <View
-                className={`mt-2 self-start rounded-full px-2.5 py-1 ${
-                  feedingStatus[child._id] === "completed"
-                    ? "bg-teal-100"
-                    : "bg-red-100"
-                }`}
-              >
-                <Text
-                  className={`text-sm font-semibold ${
-                    feedingStatus[child._id] === "completed"
-                      ? "text-teal-700"
-                      : "text-red-700"
-                  }`}
-                >
-                  {feedingStatus[child._id] === "completed"
-                    ? "Completed"
-                    : "Missed"}
-                </Text>
-              </View>
-            </View>
-
-            <View className="items-center">
-              {feedingStatus[child._id] === "completed" ? (
-                <CheckCircle2 size={30} color="#0F766E" />
-              ) : (
-                <XCircle size={30} color="#B91C1C" />
-              )}
-            </View>
-          </View>
-        </Pressable>
-      </View>
-    ),
-    [feedingStatus, interactionDisabled, toggleChildFeeding],
+    ({ item: child }: { item: Child }) => <FeedingChildRow child={child} />,
+    [],
   );
 
   const headerSection = (
@@ -180,7 +121,7 @@ export default function RecordFeeding() {
                 Feeding overview
               </Text>
               <Text className="mt-1 text-base text-gray-600">
-                {completedPercentage}% of present children completed their meal
+                Present children are included as completed
               </Text>
             </View>
             <View className="h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
@@ -202,34 +143,14 @@ export default function RecordFeeding() {
             />
           </View>
 
-          <View className="mt-4 flex-row gap-3">
-            <View className="flex-1 flex-row items-center rounded-2xl bg-emerald-50 p-3">
-              <View className="h-10 w-10 items-center justify-center rounded-xl bg-emerald-100">
-                <CheckCircle2 size={22} color="#047857" />
-              </View>
-              <View className="ml-3">
-                <Text className="text-2xl font-extrabold text-emerald-800">
-                  {stats.fed}
-                </Text>
-                <Text className="text-sm font-semibold text-emerald-700">
-                  Completed
-                </Text>
-              </View>
+          <View className="mt-4 flex-row items-center rounded-2xl bg-emerald-50 p-3">
+            <View className="h-10 w-10 items-center justify-center rounded-xl bg-emerald-100">
+              <CheckCircle2 size={22} color="#047857" />
             </View>
-
-            <View className="flex-1 flex-row items-center rounded-2xl bg-red-50 p-3">
-              <View className="h-10 w-10 items-center justify-center rounded-xl bg-red-100">
-                <XCircle size={22} color="#B91C1C" />
-              </View>
-              <View className="ml-3">
-                <Text className="text-2xl font-extrabold text-red-800">
-                  {stats.missed}
-                </Text>
-                <Text className="text-sm font-semibold text-red-700">
-                  Missed
-                </Text>
-              </View>
-            </View>
+            <Text className="ml-3 flex-1 text-base font-semibold text-emerald-800">
+              {stats.fed} {stats.fed === 1 ? "child" : "children"} ready for
+              feeding submission
+            </Text>
           </View>
         </View>
       </View>
@@ -266,68 +187,19 @@ export default function RecordFeeding() {
         </Pressable>
       </View>
 
-      {!isReadOnly && (
-        <View className="px-6 pb-5">
-          <View className="flex-row gap-2">
-            <Pressable
-              onPress={markAllAsCompleted}
-              disabled={isSubmitting}
-              accessibilityRole="button"
-              accessibilityLabel="Mark all children as completed"
-              accessibilityHint="Changes every child in the feeding list to Completed"
-              accessibilityState={{ disabled: isSubmitting }}
-              className={`flex-1 flex-row items-center justify-center rounded-xl border py-3 shadow-sm ${
-                isSubmitting
-                  ? "border-emerald-300 bg-emerald-300"
-                  : "border-emerald-600 bg-emerald-600 active:opacity-85"
-              }`}
-            >
-              <CheckCircle2 size={16} color="white" />
-              <Text className="ml-1.5 text-base font-semibold text-white">
-                Mark All Completed
-              </Text>
-            </Pressable>
-
-            <Pressable
-              onPress={markAllAsMissed}
-              disabled={isSubmitting}
-              accessibilityRole="button"
-              accessibilityLabel="Mark all children as missed"
-              accessibilityHint="Changes every child in the feeding list to Missed"
-              accessibilityState={{ disabled: isSubmitting }}
-              className={`flex-1 flex-row items-center justify-center rounded-xl border py-3 shadow-sm ${
-                isSubmitting
-                  ? "border-slate-300 bg-slate-300"
-                  : "border-slate-600 bg-slate-600 active:opacity-85"
-              }`}
-            >
-              <XCircle size={16} color="white" />
-              <Text className="ml-1.5 text-base font-semibold text-white">
-                Mark All Missed
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-      )}
-
       <View className="px-6 pb-3">
-        <View className="flex-row items-center justify-between">
+        <View>
           <Text
             className="text-xl font-extrabold text-gray-900"
             accessibilityRole="header"
           >
             Feeding list
           </Text>
-          <View className="rounded-full bg-gray-200 px-3 py-1">
-            <Text className="text-sm font-semibold text-gray-700">
-              {children.length} {children.length === 1 ? "child" : "children"}
-            </Text>
-          </View>
         </View>
         <Text className="mt-1 text-base leading-6 text-gray-600">
           {isReadOnly
             ? "Submitted feeding records are read-only."
-            : "Tap a child to mark the meal Completed or Missed."}
+            : "Choose the food served, then review and submit."}
         </Text>
       </View>
 
@@ -518,34 +390,32 @@ export default function RecordFeeding() {
         </View>
       </Modal>
 
-      <View className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white/95 px-6 py-4">
-        <View className="gap-2">
-          {!isReadOnly ? (
-            <Pressable
-              onPress={() =>
-                void submitBeforeLeaving().then(() =>
-                  router.replace("/(teacher)"),
-                )
-              }
-              disabled={isSubmitting}
-              accessibilityRole="button"
-              accessibilityLabel="Save feeding draft and leave"
-              accessibilityState={{ disabled: isSubmitting }}
-              className={`min-h-14 items-center justify-center rounded-2xl border px-4 py-4 shadow-md ${
-                isSubmitting
-                  ? "border-gray-300 bg-gray-100"
-                  : "border-teal-600 bg-white active:bg-teal-50"
+      {!isReadOnly ? (
+        <View className="absolute bottom-0 left-0 right-0 flex-row gap-3 border-t border-gray-200 bg-white/95 px-6 py-4">
+          <Pressable
+            onPress={() =>
+              void submitBeforeLeaving().then(() =>
+                router.replace("/(teacher)"),
+              )
+            }
+            disabled={isSubmitting}
+            accessibilityRole="button"
+            accessibilityLabel="Save feeding draft and leave"
+            accessibilityState={{ disabled: isSubmitting }}
+            className={`min-h-14 flex-1 items-center justify-center rounded-2xl border px-3 shadow-sm ${
+              isSubmitting
+                ? "border-gray-300 bg-gray-100"
+                : "border-teal-600 bg-white active:bg-teal-50"
+            }`}
+          >
+            <Text
+              className={`text-center font-bold ${
+                isSubmitting ? "text-gray-400" : "text-teal-700"
               }`}
             >
-              <Text
-                className={`text-xl font-bold ${
-                  isSubmitting ? "text-gray-400" : "text-teal-700"
-                }`}
-              >
-                Save Draft &amp; Leave
-              </Text>
-            </Pressable>
-          ) : null}
+              Save Draft
+            </Text>
+          </Pressable>
           <Pressable
             onPress={() => {
               Alert.alert(
@@ -560,27 +430,23 @@ export default function RecordFeeding() {
                 ],
               );
             }}
-            disabled={isSubmitting || isReadOnly}
+            disabled={isSubmitting}
             accessibilityRole="button"
             accessibilityLabel={
-              isReadOnly
-                ? "Feeding record submitted"
-                : isSubmitting
-                  ? "Submitting feeding record"
-                  : "Submit feeding record"
+              isSubmitting
+                ? "Submitting feeding record"
+                : "Submit feeding record"
             }
             accessibilityHint={
-              isReadOnly
-                ? "The feeding record has already been submitted"
-                : "Submits today's feeding record to the focal person"
+              "Submits today's feeding record to the focal person"
             }
             accessibilityState={{
-              disabled: isSubmitting || isReadOnly,
+              disabled: isSubmitting,
               busy: isSubmitting,
             }}
             android_ripple={{ color: "transparent" }}
-            className={`min-h-14 items-center justify-center rounded-2xl py-4 shadow-md ${
-              isSubmitting || isReadOnly
+            className={`min-h-14 flex-[1.65] items-center justify-center rounded-2xl px-3 shadow-sm ${
+              isSubmitting
                 ? "bg-emerald-400"
                 : "bg-emerald-600 active:opacity-90"
             }`}
@@ -599,19 +465,17 @@ export default function RecordFeeding() {
                   style={{ marginRight: 8 }}
                 />
               )}
-              <Text className="text-xl font-bold text-white">
-                {isReadOnly
-                  ? "Feeding Record Submitted"
-                  : isSubmitting
-                    ? "Submitting..."
-                    : isOffline
-                      ? "Submit Offline"
-                      : "Submit Feeding Record"}
+              <Text className="text-center text-base font-bold text-white">
+                {isSubmitting
+                  ? "Submitting..."
+                  : isOffline
+                    ? "Submit Offline"
+                    : "Submit Feeding Record"}
               </Text>
             </View>
           </Pressable>
         </View>
-      </View>
+      ) : null}
     </ScreenShell>
   );
 }
