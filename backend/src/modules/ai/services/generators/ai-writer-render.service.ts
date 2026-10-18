@@ -20,22 +20,22 @@ export function renderWriterOutput(
   parts.push(...output.metricLines);
 
   if (policy.includeRiskLevel) {
-    const label = facts.language === "tl" ? "Antas ng Panganib" : "Risk Level";
-    parts.push(`${label}: ${output.riskLevel}`);
+    const label = facts.language === "fil" ? "Antas ng Panganib" : "Risk Level";
+    parts.push(`${label}: ${facts.riskLevel}`);
   }
 
   parts.push(output.analysis);
 
   if (policy.includeSuggestedActions && output.suggestedActions?.length) {
     const label =
-      facts.language === "tl" ? "Mga Mungkahing Hakbang" : "Suggested Actions";
+      facts.language === "fil" ? "Mga Mungkahing Hakbang" : "Suggested Actions";
     parts.push(
       `${label}:\n${output.suggestedActions.map((s) => `- ${s}`).join("\n")}`,
     );
   }
 
   if (policy.includeFollowUp && output.followUp) {
-    const label = facts.language === "tl" ? "Follow-up" : "Follow-up";
+    const label = facts.language === "fil" ? "Karagdagang tanong" : "Follow-up";
     parts.push(`${label}: ${output.followUp}`);
   }
 
@@ -52,20 +52,26 @@ export function buildDeterministicNarrative(
   const timeframe = facts.timeframe;
   const subject =
     facts.role === "parent"
-      ? facts.language === "tl"
-        ? "anak io"
+      ? facts.language === "fil"
+        ? "iyong anak"
         : "your child"
       : facts.childName;
 
   // Headline
-  if (facts.language === "tl") {
-    parts.push(`Narito ang update ng ${subject} para sa ${timeframe}.`);
+  if (facts.language === "fil") {
+    parts.push(`Narito ang update para sa ${subject} ${timeframe}.`);
   } else {
     parts.push(`Here is the update for ${subject} ${timeframe}.`);
   }
 
   // Metrics
   parts.push(...facts.metricLines);
+
+  if (policy.includeRiskLevel) {
+    const label =
+      facts.language === "fil" ? "Antas ng Panganib" : "Risk Level";
+    parts.push(`${label}: ${facts.riskLevel}`);
+  }
 
   // Analysms (Deterministic fallback)
   if (facts.observationLines.length > 0) {
@@ -75,7 +81,7 @@ export function buildDeterministicNarrative(
   // Actions
   if (policy.includeSuggestedActions && facts.recommendationLines.length > 0) {
     const label =
-      facts.language === "tl" ? "Mga Mungkahing Hakbang" : "Suggested Actions";
+      facts.language === "fil" ? "Mga Mungkahing Hakbang" : "Suggested Actions";
     parts.push(
       `${label}:\n${facts.recommendationLines
         .slice(0, 3)

@@ -3,80 +3,89 @@ import assert from "node:assert/strict";
 
 import {
   buildDomainSelectionPrompt,
-  buildGenericDomainSelectionPrompt,
   buildScopedFollowUpQuestion,
+  inferFollowUpChoice,
+} from "../src/modules/ai/services/core/ai-chat.service";
+import {
+  clearConversationState,
   clearPendingFollowUp,
   getPendingFollowUp,
-  inferFollowUpChoice,
-  recoverPendingFollowUpFromHistory,
+  runInConversationScope,
   setPendingFollowUp,
-} from "../src/modules/ai/chat-followup.service";
-import { remember } from "../src/modules/ai/ai-writer-helpers/writer.memory";
+} from "../src/modules/ai/repositories/ai-state.repository";
+import { buildConversationId } from "../src/modules/ai/services/generators/ai-writer.service";
 
 const uniqueId = (prefix: string) => `${prefix}-${Date.now()}-${Math.random()}`;
 
 test("set/get/clear pending follow-up state", () => {
   const conversationId = uniqueId("followup");
-
   setPendingFollowUp(conversationId, {
-    kind: "domain_selection",
+    type: "domain_selection",
+    action: "choose_domain",
     timeframe: "recent",
     domain: "both",
   });
-
-  const state = getPendingFollowUp(conversationId);
-  assert.ok(state);
-  assert.equal(state?.kind, "domain_selection");
-  assert.equal(state?.timeframe, "recent");
-  assert.equal(state?.domain, "both");
-
+  assert.equal(getPendingFollowUp(conversationId)?.domain, "both");
   clearPendingFollowUp(conversationId);
   assert.equal(getPendingFollowUp(conversationId), undefined);
 });
 
-test("inferFollowUpChoice detects attendance, feeding, both", () => {
+test("inferFollowUpChoice detects English, Filipino, and both", () => {
   assert.equal(inferFollowUpChoice("show attendance details"), "attendance");
-  assert.equal(inferFollowUpChoice("feeding update please"), "feeding");
-  assert.equal(inferFollowUpChoice("show both attendance and feeding"), "both");
+  assert.equal(inferFollowUpChoice("ipakita ang pagkain"), "feeding");
+  assert.equal(inferFollowUpChoice("ipakita ang pareho"), "both");
   assert.equal(inferFollowUpChoice("hello there"), null);
 });
 
-test("buildDomainSelectionPrompt includes scoped timeframe", () => {
-  const english = buildDomainSelectionPrompt({
-    role: "parent",
-    timeframe: "week",
-  });
-
-  assert.match(english, /attendance details/i);
-  assert.match(english, /this week/i);
+test("follow-up prompts honor language and timeframe", () => {
+  assert.match(buildDomainSelectionPrompt("parent", "week", "en"), /this week/i);
+  assert.match(
+    buildDomainSelectionPrompt("parent", "last_month", "fil"),
+    /nakaraang buwan/i,
+  );
+  assert.match(
+    buildScopedFollowUpQuestion("parent", "feeding", "yesterday", "fil"),
+    /pagkain.*kahapon/i,
+  );
 });
 
-test("buildGenericDomainSelectionPrompt and buildScopedFollowUpQuestion", () => {
-  const generic = buildGenericDomainSelectionPrompt({
+test("context ids isolate otherwise identical conversations", () => {
+  const first = buildConversationId({
+    requesterId: "parent-1",
     role: "parent",
+    childId: "child-1",
+    language: "fil",
+    contextId: "context-one",
   });
-  const scoped = buildScopedFollowUpQuestion("parent", "feeding", "month");
-
-  assert.match(generic, /feeding details/i);
-  assert.match(scoped, /feeding details/i);
-  assert.match(scoped, /this month/i);
+  const second = buildConversationId({
+    requesterId: "parent-1",
+    role: "parent",
+    childId: "child-1",
+    language: "fil",
+    contextId: "context-two",
+  });
+  assert.notEqual(first, second);
 });
 
-test("recoverPendingFollowUpFromHistory infers timeframe and domain", () => {
-  const conversationId = uniqueId("history");
-  remember(conversationId, {
-    role: "user",
-    content: "Can you show attendance and feeding for last week?",
-  });
-  remember(conversationId, {
-    role: "assistant",
-    content: "Sure, I can summarize attendance and feeding records.",
+test("a queued reset cannot be overwritten by an older scoped operation", async () => {
+  const conversationId = uniqueId("queue");
+  let releaseFirst!: () => void;
+  const firstGate = new Promise<void>((resolve) => {
+    releaseFirst = resolve;
   });
 
-  const state = recoverPendingFollowUpFromHistory(conversationId);
-
-  assert.ok(state);
-  assert.equal(state?.kind, "detailed_review_confirmation");
-  assert.equal(state?.timeframe, "last_week");
-  assert.equal(state?.domain, "both");
+  const first = runInConversationScope(conversationId, false, async () => {
+    await firstGate;
+    setPendingFollowUp(conversationId, {
+      type: "domain_selection",
+      action: "choose_domain",
+      timeframe: "week",
+      domain: "attendance",
+    });
+  });
+  const reset = runInConversationScope(conversationId, true, async () => undefined);
+  releaseFirst();
+  await Promise.all([first, reset]);
+  assert.equal(getPendingFollowUp(conversationId), undefined);
+  clearConversationState(conversationId);
 });

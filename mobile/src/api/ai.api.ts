@@ -4,9 +4,25 @@ import {
   sanitizeAIChildId,
   sanitizeAIMessageInput,
 } from "../utils/ai-input-sanitizer";
+import type {
+  AIChatPayload,
+  AIChatResponse,
+  AIRiskLevel,
+  AILanguageMode,
+  AIDataStatus,
+  AIContextStatus,
+} from "./api.types";
+import { ApiError } from "./client";
 
-export type { AIRole, AIChatPayload } from "./api.types";
-import type { AIChatPayload } from "./api.types";
+export type {
+  AIChatPayload,
+  AIChatResponse,
+  AIResponseLanguage,
+  AIRiskLevel,
+  AILanguageMode,
+  AIDataStatus,
+  AIContextStatus,
+} from "./api.types";
 
 function toShortDate(year: string, month: string, day: string): string {
   const monthNames = [
@@ -62,7 +78,7 @@ function normalizeAIReply(text: string): string {
 
 export const sendAIChat = async (
   payload: AIChatPayload,
-): Promise<string> => {
+): Promise<AIChatResponse> => {
   const sanitizedMessage = sanitizeAIMessageInput(
     payload.message,
     AI_INPUT_LIMITS.messageMaxLength,
@@ -76,7 +92,20 @@ export const sendAIChat = async (
     throw new Error("Invalid child reference.");
   }
 
-  const data = await apiClient<{ reply?: string }>("/api/ai/chat", {
+  const request = () => apiClient<{
+    reply?: unknown;
+    language?: unknown;
+    languageMode?: unknown;
+    contextId?: unknown;
+    contextExpiresAt?: unknown;
+    contextStatus?: unknown;
+    requestId?: unknown;
+    replayed?: unknown;
+    riskLevel?: unknown;
+    dataStatus?: unknown;
+    intent?: unknown;
+    followUp?: unknown;
+  }>("/api/ai/chat", {
     method: "POST",
     body: {
       ...payload,
@@ -85,6 +114,89 @@ export const sendAIChat = async (
     },
   });
 
-  const reply = data.reply ?? "No response.";
-  return normalizeAIReply(reply);
+  let data: Awaited<ReturnType<typeof request>>;
+  try {
+    data = await request();
+  } catch (error) {
+    if (
+      error instanceof ApiError &&
+      error.status === 409 &&
+      error.code === "AI_REQUEST_IN_PROGRESS"
+    ) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      data = await request();
+    } else {
+      throw error;
+    }
+  }
+
+  const reply =
+    typeof data.reply === "string" ? normalizeAIReply(data.reply) : "No response.";
+  const language =
+    data.language === "fil" || data.language === "en"
+      ? data.language
+      : payload.language ?? "en";
+  const languageMode: AILanguageMode =
+    data.languageMode === "explicit" ? "explicit" : "auto";
+  const contextId =
+    typeof data.contextId === "string"
+      ? data.contextId
+      : payload.contextId ?? "";
+  const contextExpiresAt =
+    typeof data.contextExpiresAt === "string"
+      ? data.contextExpiresAt
+      : new Date(0).toISOString();
+  const contextStatus: AIContextStatus =
+    data.contextStatus === "superseded" ||
+    data.contextStatus === "expired" ||
+    data.contextStatus === "invalidated"
+      ? data.contextStatus
+      : "active";
+  const dataStatus: AIDataStatus =
+    data.dataStatus === "AVAILABLE" ||
+    data.dataStatus === "PARTIAL" ||
+    data.dataStatus === "NO_DATA"
+      ? data.dataStatus
+      : "NOT_APPLICABLE";
+  const riskLevel: AIRiskLevel | undefined =
+    data.riskLevel === "LOW" ||
+    data.riskLevel === "MEDIUM" ||
+    data.riskLevel === "HIGH"
+      ? data.riskLevel
+      : undefined;
+  const followUp =
+    typeof data.followUp === "object" &&
+    data.followUp !== null &&
+    ((data.followUp as { type?: unknown }).type === "confirmation" ||
+      (data.followUp as { type?: unknown }).type === "domain_selection") &&
+    ((data.followUp as { action?: unknown }).action === "show_details" ||
+      (data.followUp as { action?: unknown }).action === "choose_domain") &&
+    typeof (data.followUp as { expiresAt?: unknown }).expiresAt === "string"
+      ? (data.followUp as AIChatResponse["followUp"])
+      : undefined;
+  return {
+    reply,
+    language,
+    languageMode,
+    contextId,
+    contextExpiresAt,
+    contextStatus,
+    requestId:
+      typeof data.requestId === "string"
+        ? data.requestId
+        : payload.requestId ?? "",
+    replayed: data.replayed === true,
+    riskLevel,
+    dataStatus,
+    intent: typeof data.intent === "string" ? data.intent : "unsupported",
+    followUp,
+  };
+};
+
+export const invalidateAIChatContext = async (
+  contextId: string,
+): Promise<void> => {
+  await apiClient(`/api/ai/chat/contexts/${encodeURIComponent(contextId)}`, {
+    method: "DELETE",
+  });
 };

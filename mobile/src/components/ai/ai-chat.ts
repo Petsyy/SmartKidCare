@@ -13,9 +13,9 @@ export type AIRiskBadgeStyle = {
   dotColor: string;
 };
 
-const RISK_LEVEL_LINE_REGEX = /^\s*Risk Level\s*:\s*(LOW|MEDIUM|HIGH)\s*$/im;
+const RISK_LEVEL_LINE_REGEX = /^\s*(?:Risk Level|Antas ng Panganib)\s*:\s*(LOW|MEDIUM|HIGH)\s*$/im;
 const RISK_LEVEL_LINE_REMOVE_REGEX =
-  /^\s*Risk Level\s*:\s*(LOW|MEDIUM|HIGH)\s*$/gim;
+  /^\s*(?:Risk Level|Antas ng Panganib)\s*:\s*(LOW|MEDIUM|HIGH)\s*$/gim;
 const AI_SECTION_LINE_REGEX =
   /^(Summary|Key Details|Suggested Actions|Follow-up|Buod|Mahahalagang Detalye|Mga Mungkahing Hakbang)\s*:/i;
 const AI_BULLET_LINE_REGEX = /^[-*]\s+(.*)$/;

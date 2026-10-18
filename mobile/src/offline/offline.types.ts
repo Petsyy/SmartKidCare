@@ -8,7 +8,18 @@ export type OfflineRecordType =
 
 export type AttendanceDraftPayload = {
   dateKey: string;
-  records: Record<string, { status?: "present" | "absent"; notes?: string }>;
+  records: Record<
+    string,
+    {
+      status?: "present" | "absent" | "excused";
+      excuseReason?:
+        | "sick"
+        | "medical_appointment"
+        | "family_emergency"
+        | "other";
+      notes?: string;
+    }
+  >;
 };
 
 export type FeedingDraftPayload = {

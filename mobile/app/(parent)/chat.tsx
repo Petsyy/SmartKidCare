@@ -18,9 +18,18 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
+import * as Crypto from "expo-crypto";
 import * as Icons from "lucide-react-native";
 import { useAuth } from "@/src/hooks/use-auth";
-import { sendAIChat } from "@/src/api/ai.api";
+import {
+  invalidateAIChatContext,
+  sendAIChat,
+} from "@/src/api/ai.api";
+import type {
+  AILanguageMode,
+  AIResponseLanguage,
+  AIRiskLevel,
+} from "@/src/api/api.types";
 import { getMyChildren, type Child } from "@/src/api/parent.api";
 import {
   extractAIBulletText,
@@ -45,13 +54,18 @@ import {
   reportHandledError,
 } from "@/src/lib/error-reporting";
 import { useSafeBack } from "@/src/hooks/use-safe-back";
-
-const SUGGESTIONS = [
-  "Was my child present today?",
-  "How many absences did my child have last week?",
-  "What did my child eat this week?",
-  "Summarize my child's attendance and feeding last week.",
-];
+import {
+  AI_CHAT_COPY,
+  getRiskLabel,
+} from "@/src/components/ai/ai-chat-copy";
+import {
+  deleteOfflineChatInvalidation,
+  deleteOfflineChatSession,
+  queueOfflineChatInvalidation,
+  readOfflineChatInvalidations,
+  readOfflineChatSession,
+  saveOfflineChatSession,
+} from "@/src/offline/offline-chat-session-store";
 
 type Message = {
   id: string;
@@ -59,6 +73,8 @@ type Message = {
   content: string;
   childId?: string | null;
   createdAt: string;
+  language?: AIResponseLanguage;
+  riskLevel?: AIRiskLevel;
 };
 
 const messageKeyExtractor = (message: Message) => message.id;
@@ -73,8 +89,7 @@ function getChildFullName(child: Child): string {
 
 export default function ParentChatScreen() {
   const handleBack = useSafeBack("/(parent)");
-  const { isAuthenticated } = useAuth();
-  const { user } = useAuth();
+  const { isAuthenticated, user, token } = useAuth();
   const { isConnected, isInternetReachable } = useOffline();
   const isOffline = !isConnected || !isInternetReachable;
   const [messages, setMessages] = useState<Message[]>([]);
@@ -85,7 +100,29 @@ export default function ParentChatScreen() {
   const [children, setChildren] = useState<Child[]>([]);
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
   const [historyReady, setHistoryReady] = useState(false);
+  const [historyOwnerUserId, setHistoryOwnerUserId] = useState<string | null>(null);
+  const [responseLanguage, setResponseLanguage] =
+    useState<AIResponseLanguage>("en");
+  const [languageMode, setLanguageMode] =
+    useState<AILanguageMode>("auto");
+  const [contextId, setContextId] = useState(() => Crypto.randomUUID());
+  const [contextExpiresAt, setContextExpiresAt] = useState<string | null>(null);
+  const [sessionReady, setSessionReady] = useState(false);
   const listRef = useRef<FlatList>(null);
+  const authGenerationRef = useRef(0);
+  const currentScopeRef = useRef({
+    userId: user?.id ?? null,
+    childId: selectedChildId,
+    contextId,
+  });
+
+  currentScopeRef.current = {
+    userId: user?.id ?? null,
+    childId: selectedChildId,
+    contextId,
+  };
+
+  const copy = AI_CHAT_COPY.en;
 
   const selectedChild = useMemo(() => {
     if (!children.length) return null;
@@ -104,19 +141,35 @@ export default function ParentChatScreen() {
     isAuthenticated &&
     !loading &&
     !contextLoading &&
+    historyReady &&
+    sessionReady &&
     !isOffline;
+
+  useEffect(() => {
+    ++authGenerationRef.current;
+    setContextId(Crypto.randomUUID());
+    setContextExpiresAt(null);
+    setResponseLanguage("en");
+    setLanguageMode("auto");
+    setSessionReady(false);
+    setLoading(false);
+  }, [isAuthenticated, token, user?.id]);
 
   useEffect(() => {
     let cancelled = false;
     if (!user?.id) {
       setMessages([]);
+      setHistoryOwnerUserId(null);
       setHistoryReady(true);
       return;
     }
     setHistoryReady(false);
+    setHistoryOwnerUserId(null);
+    setMessages([]);
     void readOfflineChatMessages(user.id).then((stored) => {
       if (!cancelled) {
         setMessages(stored);
+        setHistoryOwnerUserId(user.id);
         setHistoryReady(true);
       }
     });
@@ -126,13 +179,19 @@ export default function ParentChatScreen() {
   }, [user?.id]);
 
   useEffect(() => {
-    if (!historyReady || !user?.id) return;
+    if (
+      !historyReady ||
+      !user?.id ||
+      historyOwnerUserId !== user.id
+    ) {
+      return;
+    }
     const timeout = setTimeout(
       () => void replaceOfflineChatMessages(user.id, messages),
       300,
     );
     return () => clearTimeout(timeout);
-  }, [historyReady, messages, user?.id]);
+  }, [historyOwnerUserId, historyReady, messages, user?.id]);
 
   const scrollToEnd = useCallback(() => {
     setTimeout(() => {
@@ -203,12 +262,133 @@ export default function ParentChatScreen() {
 
   useEffect(() => loadChildren(), [loadChildren]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const generation = authGenerationRef.current;
+    const userId = user?.id;
+    const childId = selectedChild?._id;
+    if (!userId || !childId || !isAuthenticated) {
+      setSessionReady(false);
+      return;
+    }
+    setSessionReady(false);
+    void readOfflineChatSession(userId, childId)
+      .then((saved) => {
+        if (
+          cancelled ||
+          authGenerationRef.current !== generation ||
+          currentScopeRef.current.userId !== userId ||
+          currentScopeRef.current.childId !== childId
+        ) {
+          return;
+        }
+        if (saved) {
+          setContextId(saved.contextId);
+          setContextExpiresAt(saved.contextExpiresAt);
+          setResponseLanguage(saved.responseLanguage);
+          setLanguageMode(saved.languageMode);
+        } else {
+          setContextId(Crypto.randomUUID());
+          setContextExpiresAt(null);
+          setResponseLanguage("en");
+          setLanguageMode("auto");
+        }
+      })
+      .catch((error: unknown) => {
+        reportHandledError("chat.session.load", error);
+        if (!cancelled && authGenerationRef.current === generation) {
+          setContextId(Crypto.randomUUID());
+          setContextExpiresAt(null);
+          setResponseLanguage("en");
+          setLanguageMode("auto");
+        }
+      })
+      .finally(() => {
+        if (!cancelled && authGenerationRef.current === generation) {
+          setSessionReady(true);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, selectedChild?._id, user?.id]);
+
+  useEffect(() => {
+    if (isOffline || !isAuthenticated || !user?.id) return;
+    const userId = user.id;
+    void readOfflineChatInvalidations(userId)
+      .then(async (pending) => {
+        for (const item of pending) {
+          try {
+            await invalidateAIChatContext(item.context_id);
+            await deleteOfflineChatInvalidation(userId, item.context_id);
+          } catch (error: unknown) {
+            reportHandledError("chat.context.invalidate.flush", error);
+            break;
+          }
+        }
+      })
+      .catch((error: unknown) => {
+        reportHandledError("chat.context.invalidate.read", error);
+      });
+  }, [isAuthenticated, isOffline, user?.id]);
+
+  const invalidateOrQueueContext = useCallback(
+    async (userId: string, staleContextId: string) => {
+      if (isOffline) {
+        await queueOfflineChatInvalidation(userId, staleContextId);
+        return;
+      }
+      try {
+        await invalidateAIChatContext(staleContextId);
+      } catch (error: unknown) {
+        reportHandledError("chat.context.invalidate", error);
+        await queueOfflineChatInvalidation(userId, staleContextId);
+      }
+    },
+    [isOffline],
+  );
+
   const sendMessage = useCallback(async () => {
     const text = input.trim();
     const childId = selectedChild?._id;
-    if (!text || !isAuthenticated || loading || contextLoading || !childId) {
+    if (
+      !text ||
+      !isAuthenticated ||
+      isOffline ||
+      loading ||
+      contextLoading ||
+      !historyReady ||
+      !childId ||
+      !user?.id ||
+      !sessionReady
+    ) {
       return;
     }
+
+    const requestContextId = contextId;
+    const requestId = Crypto.randomUUID();
+    const requestScope = {
+      generation: authGenerationRef.current,
+      userId: user.id,
+      childId,
+      contextId: requestContextId,
+    };
+    const requestOwnerIsCurrent = () => {
+      const currentScope = currentScopeRef.current;
+      return (
+        authGenerationRef.current === requestScope.generation &&
+        currentScope.userId === requestScope.userId &&
+        currentScope.childId === requestScope.childId
+      );
+    };
+    const requestScopeIsCurrent = () => {
+      const currentScope = currentScopeRef.current;
+      return (
+        requestOwnerIsCurrent() &&
+        currentScope.contextId === requestScope.contextId
+      );
+    };
 
     setInput("");
     const userMsg: Message = {
@@ -217,6 +397,7 @@ export default function ParentChatScreen() {
       content: text,
       childId,
       createdAt: new Date().toISOString(),
+      language: responseLanguage,
     };
     setMessages((prev) => [...prev, userMsg]);
     setLoading(true);
@@ -230,42 +411,144 @@ export default function ParentChatScreen() {
         content: "",
         childId,
         createdAt: new Date().toISOString(),
+        language: responseLanguage,
       },
     ]);
 
     try {
-      const reply = await sendAIChat({
-        role: "parent",
+      const response = await sendAIChat({
         message: text,
         childId,
+        languageMode: "auto",
+        contextId: requestContextId,
+        requestId,
+        resetContext: false,
       });
 
-      setMessages((prev) =>
-        prev.map((m) => (m.id === assistantId ? { ...m, content: reply } : m)),
-      );
-    } catch (error: unknown) {
-      reportHandledError("chat.message.send", error);
+      if (!requestScopeIsCurrent()) return;
+
       setMessages((prev) =>
         prev.map((m) =>
           m.id === assistantId
             ? {
                 ...m,
-                content: getUserFriendlyErrorMessage(
-                  error,
-                  "I couldn't send that message. Please try again.",
-                ),
+                content: response.reply,
+                language: response.language,
+                riskLevel: response.riskLevel,
+              }
+            : m,
+        ),
+      );
+      setResponseLanguage(response.language);
+      setLanguageMode(response.languageMode);
+      if (response.contextStatus === "active" && response.contextId) {
+        setContextId(response.contextId);
+        setContextExpiresAt(response.contextExpiresAt);
+        currentScopeRef.current = {
+          userId: user.id,
+          childId,
+          contextId: response.contextId,
+        };
+        void saveOfflineChatSession(user.id, childId, {
+          contextId: response.contextId,
+          contextExpiresAt: response.contextExpiresAt,
+          responseLanguage: response.language,
+          languageMode: response.languageMode,
+        }).catch((error: unknown) => {
+          reportHandledError("chat.session.save", error);
+        });
+      } else {
+        const replacementContextId = Crypto.randomUUID();
+        setContextId(replacementContextId);
+        setContextExpiresAt(null);
+        currentScopeRef.current = {
+          userId: user.id,
+          childId,
+          contextId: replacementContextId,
+        };
+        void deleteOfflineChatSession(user.id, childId).catch(
+          (error: unknown) => {
+            reportHandledError("chat.session.delete.unusable", error);
+          },
+        );
+      }
+    } catch (error: unknown) {
+      reportHandledError("chat.message.send", error);
+      if (!requestScopeIsCurrent()) return;
+      const errorStatus =
+        typeof error === "object" &&
+        error !== null &&
+        "status" in error &&
+        typeof error.status === "number"
+          ? error.status
+          : undefined;
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId
+            ? {
+                ...m,
+                content:
+                  errorStatus === 429
+                    ? copy.rateLimited
+                    : getUserFriendlyErrorMessage(error, copy.sendFailed),
               }
             : m,
         ),
       );
     } finally {
-      setLoading(false);
+      if (requestOwnerIsCurrent()) {
+        setLoading(false);
+      }
     }
-  }, [input, loading, contextLoading, isAuthenticated, selectedChild?._id]);
+  }, [
+    contextId,
+    contextLoading,
+    copy.rateLimited,
+    copy.sendFailed,
+    input,
+    historyReady,
+    isAuthenticated,
+    isOffline,
+    loading,
+    responseLanguage,
+    selectedChild?._id,
+    sessionReady,
+    user?.id,
+  ]);
 
   const onSuggestionPress = useCallback((text: string) => {
     setInput(text);
   }, []);
+
+  const selectChild = useCallback(
+    (childId: string) => {
+      if (loading || childId === selectedChild?._id) return;
+      const userId = user?.id;
+      const previousChildId = selectedChild?._id;
+      const staleContextId = contextId;
+      if (userId && previousChildId) {
+        void deleteOfflineChatSession(userId, previousChildId).catch(
+          (error: unknown) => {
+            reportHandledError("chat.session.delete.child-change", error);
+          },
+        );
+        void invalidateOrQueueContext(userId, staleContextId);
+      }
+      const nextContextId = Crypto.randomUUID();
+      setSelectedChildId(childId);
+      setContextId(nextContextId);
+      setContextExpiresAt(null);
+      setResponseLanguage("en");
+      setLanguageMode("auto");
+      setSessionReady(false);
+      currentScopeRef.current = {
+        userId: userId ?? null,
+        childId,
+        contextId: nextContextId,
+      };
+    },
+    [contextId, invalidateOrQueueContext, loading, selectedChild?._id, user?.id],
+  );
 
   const renderAssistantContent = useCallback((text: string) => {
     const lines = text.split(/\r?\n/);
@@ -337,7 +620,9 @@ export default function ParentChatScreen() {
     const isUser = item.role === "user";
     const isLoading = item.role === "assistant" && !item.content && loading;
     const riskLevel =
-      !isUser && !isLoading ? extractAIRiskLevel(item.content) : null;
+      !isUser && !isLoading
+        ? item.riskLevel ?? extractAIRiskLevel(item.content)
+        : null;
     const displayContent = riskLevel
       ? removeAIRiskLevelLine(item.content)
       : item.content;
@@ -375,7 +660,7 @@ export default function ParentChatScreen() {
             <View className="flex-row items-center gap-2.5 py-0.5">
               <ActivityIndicator size="small" color="#14B8A6" />
               <Text className="text-sm font-medium text-gray-500">
-                Thinking…
+                {copy.thinking}
               </Text>
             </View>
           ) : (
@@ -397,7 +682,7 @@ export default function ParentChatScreen() {
                       className="text-xs font-semibold"
                       style={{ color: riskBadgeStyle.textColor }}
                     >
-                      {riskBadgeStyle.label}
+                      {getRiskLabel(riskLevel!)}
                     </Text>
                   </View>
                 </View>
@@ -418,20 +703,46 @@ export default function ParentChatScreen() {
         </View>
       </View>
     );
-  }, [loading, renderAssistantContent]);
+  }, [copy.thinking, loading, renderAssistantContent]);
 
   const confirmClearHistory = () => {
     if (!user?.id || messages.length === 0) return;
     Alert.alert(
-      "Delete chat history?",
-      "This removes the encrypted chat history saved on this device.",
+      copy.deleteTitle,
+      copy.deleteBody,
       [
-        { text: "Cancel", style: "cancel" },
+        { text: copy.cancel, style: "cancel" },
         {
-          text: "Delete",
+          text: copy.delete,
           style: "destructive",
-          onPress: () =>
-            void clearOfflineChatMessages(user.id).then(() => setMessages([])),
+          onPress: () => {
+            const userId = user.id;
+            const childId = selectedChild?._id;
+            const staleContextId = contextId;
+            const replacementContextId = Crypto.randomUUID();
+            void Promise.all([
+              clearOfflineChatMessages(userId),
+              childId
+                ? deleteOfflineChatSession(userId, childId)
+                : Promise.resolve(),
+              invalidateOrQueueContext(userId, staleContextId),
+            ])
+              .then(() => {
+                setMessages([]);
+                setContextId(replacementContextId);
+                setContextExpiresAt(null);
+                setResponseLanguage("en");
+                setLanguageMode("auto");
+                currentScopeRef.current = {
+                  userId,
+                  childId: childId ?? null,
+                  contextId: replacementContextId,
+                };
+              })
+              .catch((error: unknown) => {
+                reportHandledError("chat.history.clear", error);
+              });
+          },
         },
       ],
     );
@@ -448,17 +759,17 @@ export default function ParentChatScreen() {
       </View>
       <Text className="text-center text-2xl font-extrabold text-gray-900">
         {contextError
-          ? "Couldn't load child context"
+          ? copy.loadErrorTitle
           : !contextLoading && !selectedChild
-            ? "No child linked yet"
-            : "How can I help?"}
+            ? copy.noChildTitle
+            : copy.emptyTitle}
       </Text>
       <Text className="mx-auto mt-2 max-w-[300px] text-center text-base leading-6 text-gray-500">
         {contextError
-          ? "Please try again so I can answer using the right child records."
+          ? copy.loadErrorBody
           : !contextLoading && !selectedChild
-            ? "Link a child to your parent account before using the AI assistant."
-            : `Ask about ${selectedChildName || "your child"}'s records or tap a suggestion below.`}
+            ? copy.noChildBody
+            : copy.emptyBody(selectedChildName)}
       </Text>
       {contextError ? (
         <Pressable
@@ -474,15 +785,15 @@ export default function ParentChatScreen() {
             <Icons.RefreshCw size={18} color="white" />
           )}
           <Text className="ml-2 text-sm font-bold text-white">
-            {contextLoading ? "Loading..." : "Try Again"}
+            {contextLoading ? copy.loading : copy.tryAgain}
           </Text>
         </Pressable>
       ) : null}
       <Text className="mt-6 text-sm font-bold uppercase tracking-wide text-gray-500">
-        Try asking
+        {copy.tryAsking}
       </Text>
       <View className="mt-2.5 w-full gap-2.5">
-        {SUGGESTIONS.map((s) => (
+        {copy.suggestions.map((s) => (
           <Pressable
             key={s}
             onPress={() => onSuggestionPress(s)}
@@ -504,6 +815,7 @@ export default function ParentChatScreen() {
   ), [
     contextError,
     contextLoading,
+    copy,
     loadChildren,
     onSuggestionPress,
     selectedChild,
@@ -530,7 +842,7 @@ export default function ParentChatScreen() {
         <ScreenHeader
           backgroundVariant="brandGradient"
           title="AI Assistant"
-          subtitle="Ask about attendance and meals"
+          subtitle={copy.subtitle}
           onBack={handleBack}
           rightAction={
             messages.length ? (
@@ -549,10 +861,10 @@ export default function ParentChatScreen() {
         {isOffline ? (
           <View className="border-b border-amber-200 bg-amber-50 px-5 py-4">
             <Text className="text-base font-bold text-amber-900">
-              Offline · saved chat history is read-only
+              {copy.offlineTitle}
             </Text>
             <Text className="mt-1 text-sm leading-5 text-amber-800">
-              Connect to the internet to send a new message.
+              {copy.offlineBody}
             </Text>
           </View>
         ) : null}
@@ -560,7 +872,7 @@ export default function ParentChatScreen() {
         {children.length > 1 ? (
           <View className="border-b border-gray-200 bg-white px-4 py-3">
             <Text className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">
-              Replying about
+              {copy.replyingAbout}
             </Text>
             <ScrollView
               horizontal
@@ -574,10 +886,12 @@ export default function ParentChatScreen() {
                 return (
                   <Pressable
                     key={child._id}
-                    onPress={() => setSelectedChildId(child._id)}
+                    onPress={() => selectChild(child._id)}
+                    disabled={loading}
                     accessibilityRole="button"
                     accessibilityLabel={`Use AI chat for ${childName}`}
-                    className={`rounded-full border px-4 py-2 ${
+                    accessibilityState={{ disabled: loading, selected: isSelected }}
+                    className={`min-h-11 rounded-full border px-4 py-2 ${
                       isSelected
                         ? "border-teal-600 bg-teal-50"
                         : "border-gray-200 bg-gray-50"
@@ -622,12 +936,12 @@ export default function ParentChatScreen() {
             onChangeText={setInput}
             placeholder={
               isOffline
-                ? "Connect to the internet to send a message"
+                ? copy.offlinePlaceholder
                 : contextLoading
-                  ? "Loading your child records..."
+                  ? copy.contextPlaceholder
                   : selectedChild
-                    ? `Ask about ${selectedChild.firstName}'s attendance or feeding...`
-                    : "Link a child before chatting..."
+                    ? copy.placeholder(selectedChild.firstName)
+                    : copy.noChildPlaceholder
             }
             placeholderTextColor="#9CA3AF"
             className="h-14 flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-4 text-[15px] text-gray-800"
@@ -642,6 +956,8 @@ export default function ParentChatScreen() {
               !isOffline &&
               !loading &&
               !contextLoading &&
+              historyReady &&
+              sessionReady &&
               Boolean(selectedChild)
             }
             onSubmitEditing={sendMessage}
@@ -651,7 +967,7 @@ export default function ParentChatScreen() {
             onPress={sendMessage}
             disabled={!canSend}
             accessibilityRole="button"
-            accessibilityLabel="Send message to AI assistant"
+            accessibilityLabel={copy.send}
             className="h-14 w-14 overflow-hidden rounded-full active:opacity-90 disabled:opacity-50"
             style={{
               shadowColor: "#0D9488",

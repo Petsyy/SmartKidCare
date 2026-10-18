@@ -6,6 +6,7 @@ import {
 } from "./agent-tools.service";
 import { ToolTimeframe } from "../../types/agent-tools.types";
 import type { AIResponseLanguage } from "../../types/core-ai-chat.types";
+import type { AIChatReply } from "../../types/core-ai-chat.types";
 import type { AttendanceComparisonResult, FeedingComparisonResult } from "../../types/generators-ai-writer-render.types";
 import { buildConversationId, writeToolNarrative } from "../generators/ai-writer.service";
 import { inputIsGibberish } from "../../../../shared/utils/ai-input-sanitizer";
@@ -17,7 +18,7 @@ abstract class BaseAgent {
     protected question: string,
   ) { }
 
-  abstract handle(): Promise<string>;
+  abstract handle(): Promise<AIChatReply>;
 
   protected get conversationId(): string {
     if (this.context.conversationId) return this.context.conversationId;
@@ -32,14 +33,16 @@ abstract class BaseAgent {
   protected inferTimeframe(): ToolTimeframe {
     const lower = this.question.toLowerCase();
     if (lower.includes("30 days")) return "recent";
-    if (lower.includes("month")) return "month";
-    if (lower.includes("last week") || lower.includes("previous week")) return "last_week";
-    if (lower.includes("today")) return "today";
-    if (lower.includes("week")) return "week";
+    if (lower.includes("nakaraang buwan") || lower.includes("last month")) return "last_month";
+    if (lower.includes("buwang ito") || lower.includes("this month") || lower.includes("month")) return "month";
+    if (lower.includes("nakaraang linggo") || lower.includes("last week") || lower.includes("previous week")) return "last_week";
+    if (lower.includes("kahapon") || lower.includes("yesterday")) return "yesterday";
+    if (lower.includes("ngayong araw") || lower.includes("ngayon") || lower.includes("today")) return "today";
+    if (lower.includes("linggong ito") || lower.includes("this week") || lower.includes("week")) return "week";
     return "recent";
   }
 
-  protected async respond(result: any): Promise<string> {
+  protected async respond(result: any): Promise<AIChatReply> {
     return writeToolNarrative({
       result,
       role: this.context.role,
@@ -120,16 +123,16 @@ export class AgentFactory {
 
     const lower = question.toLowerCase();
 
-    if (lower.match(/\b(trend|last 30 days|30 days)\b/)) {
+    if (lower.match(/\b(trend|last 30 days|30 days|uso|takbo)\b/)) {
       return new TrendAgent(context, question);
     }
 
     const hasAttendance =
-      /\b(attendance|attend|present|absent|absence|absences|check[- ]?in)\b/.test(
+      /\b(attendance|attend|present|absent|absence|absences|check[- ]?in|pasok|pumasok|liban|lumiban|pagpasok)\b/.test(
         lower,
       );
-    const hasFeeding = /\b(feeding|feed|food|meal|meals|eat|ate|eaten|served)\b/.test(lower);
-    const hasReportSignal = /\b(report|summary|overall|status|progress|risk)\b/.test(lower);
+    const hasFeeding = /\b(feeding|feed|food|meal|meals|eat|ate|eaten|served|pagkain|kain|kinain|pinakain|ulam)\b/.test(lower);
+    const hasReportSignal = /\b(report|summary|overall|status|progress|risk|ulat|buod|kalagayan|progreso|panganib)\b/.test(lower);
 
     if (hasAttendance && hasFeeding) return new ReportAgent(context, question);
     if (hasReportSignal) return new ReportAgent(context, question);
@@ -152,7 +155,7 @@ export async function tryHandleAgentQuery(params: {
   language?: AIResponseLanguage;
   conversationId?: string;
   suppressFollowUp?: boolean;
-}): Promise<string | null> {
+}): Promise<AIChatReply | null> {
   const childId = String(params.childId ?? "").trim();
   const hasAgentIntent = AgentFactory.create(params.question, {
     childId: childId || "tmp",
@@ -163,7 +166,14 @@ export async function tryHandleAgentQuery(params: {
     suppressFollowUp: params.suppressFollowUp,
   });
   if (!hasAgentIntent) return null;
-  if (!childId) return "Please specify which child you want to check.";
+  if (!childId) {
+    return {
+      reply:
+        (params.language || "en") === "fil"
+          ? "Piliin muna kung sinong anak ang nais mong tingnan."
+          : "Please specify which child you want to check.",
+    };
+  }
 
   const context: AgentContext = {
     childId,

@@ -175,7 +175,24 @@ const initializeDatabase = async () => {
     CREATE TABLE IF NOT EXISTS offline_chat_messages (
       user_id TEXT NOT NULL, message_id TEXT NOT NULL, child_id TEXT,
       role TEXT NOT NULL, content TEXT NOT NULL, created_at TEXT NOT NULL,
+      language TEXT, risk_level TEXT,
       PRIMARY KEY (user_id, message_id)
+    );
+    CREATE TABLE IF NOT EXISTS offline_chat_sessions (
+      user_id TEXT NOT NULL,
+      child_id TEXT NOT NULL,
+      context_id TEXT NOT NULL,
+      context_expires_at TEXT NOT NULL,
+      response_language TEXT NOT NULL,
+      language_mode TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY (user_id, child_id)
+    );
+    CREATE TABLE IF NOT EXISTS offline_chat_invalidations (
+      user_id TEXT NOT NULL,
+      context_id TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      PRIMARY KEY (user_id, context_id)
     );
     CREATE INDEX IF NOT EXISTS idx_offline_children_active ON offline_children(user_id, snapshot_id, child_id);
     CREATE INDEX IF NOT EXISTS idx_offline_attendance_date ON offline_attendance(user_id, snapshot_id, date_key);
@@ -233,7 +250,44 @@ const initializeDatabase = async () => {
   await database.runAsync(
     "UPDATE offline_outbox SET status = 'failedRetryable' WHERE status = 'attempting'",
   );
-  await database.execAsync("PRAGMA user_version = 3;");
+  if (databaseVersion < 4) {
+    const chatColumns = await database.getAllAsync<{ name: string }>(
+      "PRAGMA table_info(offline_chat_messages)",
+    );
+    const chatColumnNames = new Set(chatColumns.map((column) => column.name));
+    if (!chatColumnNames.has("language")) {
+      await database.execAsync(
+        "ALTER TABLE offline_chat_messages ADD COLUMN language TEXT;",
+      );
+    }
+    if (!chatColumnNames.has("risk_level")) {
+      await database.execAsync(
+        "ALTER TABLE offline_chat_messages ADD COLUMN risk_level TEXT;",
+      );
+    }
+    await database.execAsync("PRAGMA user_version = 4;");
+  }
+  if (databaseVersion < 5) {
+    await database.execAsync(`
+      CREATE TABLE IF NOT EXISTS offline_chat_sessions (
+        user_id TEXT NOT NULL,
+        child_id TEXT NOT NULL,
+        context_id TEXT NOT NULL,
+        context_expires_at TEXT NOT NULL,
+        response_language TEXT NOT NULL,
+        language_mode TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        PRIMARY KEY (user_id, child_id)
+      );
+      CREATE TABLE IF NOT EXISTS offline_chat_invalidations (
+        user_id TEXT NOT NULL,
+        context_id TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        PRIMARY KEY (user_id, context_id)
+      );
+      PRAGMA user_version = 5;
+    `);
+  }
   return database;
 };
 
@@ -271,6 +325,8 @@ export const clearOfflineDataForUser = async (userId: string) => {
       "offline_pickup_history",
       "offline_notifications",
       "offline_chat_messages",
+      "offline_chat_sessions",
+      "offline_chat_invalidations",
       "offline_sync_resources",
       "offline_sync_metadata",
     ]) {

@@ -19,14 +19,14 @@ import {
   AttendanceRow,
   FeedingRecordRow,
   FeedingRow,
+  AttendanceDetailsResult,
+  FeedingDetailsResult,
 } from "../../types/agent-tools.types";
 
 import {
   toLocalDayUtcRange,
   toLocalDateKey,
   getCurrentWeekStart,
-  buildWeekRange,
-  getCurrentMonthRange,
   weekStartKeyFromDate,
 } from "../../../../shared/utils/date.utils";
 
@@ -37,6 +37,7 @@ const WEEK_MS = WEEK_DAYS * DAY_MS;
 const RECENT_WINDOW_DAYS = 30;
 const DEFAULT_REPORT_TZ_OFFSET_MINUTES = 8 * 60;
 const MAX_TZ_OFFSET_MINUTES = 14 * 60;
+const DETAIL_ENTRY_LIMIT = 10;
 
 function reportTimezoneOffsetMinutes(): number {
   const raw = process.env.AI_REPORT_TZ_OFFSET_MINUTES;
@@ -102,9 +103,10 @@ function summarizeChildAttendanceRows(
   rows: AttendanceRow[],
   childId: string,
   offsetMinutes: number,
-): { present: number; absent: number; absentDates: string[] } {
+): { present: number; absent: number; excused: number; absentDates: string[] } {
   let present = 0;
   let absent = 0;
+  let excused = 0;
   const absentDateSet = new Set<string>();
 
   rows.forEach((row) => {
@@ -119,12 +121,14 @@ function summarizeChildAttendanceRows(
         absent += 1;
         absentDateSet.add(dateKey);
       }
+      if (record.status === "excused") excused += 1;
     });
   });
 
   return {
     present,
     absent,
+    excused,
     absentDates: toSortedList(absentDateSet),
   };
 }
@@ -195,14 +199,24 @@ function summarizeClassFeedingRows(rows: FeedingRow[]): {
   };
 }
 
-export async function getDateRange(timeframe: ToolTimeframe): Promise<DateRange> {
+export async function getDateRange(
+  timeframe: ToolTimeframe,
+  now = new Date(),
+): Promise<DateRange> {
   const offsetMinutes = reportTimezoneOffsetMinutes();
-  const todayRange = toLocalDayUtcRange(new Date(), offsetMinutes);
+  const todayRange = toLocalDayUtcRange(now, offsetMinutes);
   const todayStart = todayRange.start;
-  const todayEnd = todayRange.end;
+  const todayEndExclusive = new Date(todayStart.getTime() + DAY_MS);
 
   if (timeframe === "today") {
-    return { start: todayStart, end: todayEnd };
+    return { start: todayStart, endExclusive: todayEndExclusive };
+  }
+
+  if (timeframe === "yesterday") {
+    return {
+      start: new Date(todayStart.getTime() - DAY_MS),
+      endExclusive: todayStart,
+    };
   }
 
   if (timeframe === "week" || timeframe === "last_week") {
@@ -213,18 +227,32 @@ export async function getDateRange(timeframe: ToolTimeframe): Promise<DateRange>
         ? new Date(thisWeekStart.getTime() - WEEK_MS)
         : thisWeekStart;
 
-    return buildWeekRange(weekStart);
+    return {
+      start: weekStart,
+      endExclusive: new Date(weekStart.getTime() + WEEK_MS),
+    };
   }
 
-  if (timeframe === "month") {
-    return getCurrentMonthRange(todayStart, offsetMinutes);
+  if (timeframe === "month" || timeframe === "last_month") {
+    const shiftedToday = new Date(
+      todayStart.getTime() + offsetMinutes * MINUTE_MS,
+    );
+    const year = shiftedToday.getUTCFullYear();
+    const month = shiftedToday.getUTCMonth();
+    const targetMonth = timeframe === "last_month" ? month - 1 : month;
+    const startShifted = Date.UTC(year, targetMonth, 1);
+    const endShifted = Date.UTC(year, targetMonth + 1, 1);
+    return {
+      start: new Date(startShifted - offsetMinutes * MINUTE_MS),
+      endExclusive: new Date(endShifted - offsetMinutes * MINUTE_MS),
+    };
   }
 
   const recentStart = new Date(todayStart);
   recentStart.setUTCDate(recentStart.getUTCDate() - (RECENT_WINDOW_DAYS - 1));
   return {
     start: recentStart,
-    end: todayEnd,
+    endExclusive: todayEndExclusive,
   };
 }
 
@@ -238,7 +266,7 @@ export async function summarizeAttendanceTool(
   const childName = await fetchChildDisplayName(childId);
 
   const rows = await fetchAttendanceInRange(range, { "records.child": childObjectId });
-  const { present, absent, absentDates } = summarizeChildAttendanceRows(
+  const { present, absent, excused, absentDates } = summarizeChildAttendanceRows(
     rows,
     childId,
     offsetMinutes,
@@ -252,6 +280,7 @@ export async function summarizeAttendanceTool(
     childName,
     present,
     absent,
+    excused,
     totalDays,
     attendanceRate: safeRate(present, totalDays),
     absentDates,
@@ -280,6 +309,72 @@ export async function summarizeFeedingTool(
     totalMeals,
     feedingRate: safeRate(completed, totalMeals),
     foods,
+  };
+}
+
+export async function attendanceDetailsTool(
+  childId: string,
+  timeframe: ToolTimeframe,
+): Promise<AttendanceDetailsResult> {
+  const childObjectId = toObjectId(childId);
+  const range = await getDateRange(timeframe);
+  const offsetMinutes = reportTimezoneOffsetMinutes();
+  const [childName, rows] = await Promise.all([
+    fetchChildDisplayName(childId),
+    fetchAttendanceInRange(range, { "records.child": childObjectId }),
+  ]);
+  const entries = rows
+    .flatMap((row) =>
+      row.records
+        .filter((record) => childMatches(record.child, childId))
+        .map((record) => ({
+          date: toLocalDateKey(row.date, offsetMinutes),
+          status: record.status,
+          ...(record.excuseReason ? { excuseReason: record.excuseReason } : {}),
+          ...(record.notes ? { notes: record.notes } : {}),
+        })),
+    )
+    .sort((a, b) => b.date.localeCompare(a.date));
+  return {
+    tool: "attendance_details",
+    timeframe,
+    childName,
+    totalEntries: entries.length,
+    entries: entries.slice(0, DETAIL_ENTRY_LIMIT),
+    truncated: entries.length > DETAIL_ENTRY_LIMIT,
+  };
+}
+
+export async function feedingDetailsTool(
+  childId: string,
+  timeframe: ToolTimeframe,
+): Promise<FeedingDetailsResult> {
+  const childObjectId = toObjectId(childId);
+  const range = await getDateRange(timeframe);
+  const offsetMinutes = reportTimezoneOffsetMinutes();
+  const [childName, rows] = await Promise.all([
+    fetchChildDisplayName(childId),
+    fetchFeedingInRange(range, { "records.child": childObjectId }),
+  ]);
+  const entries = rows
+    .flatMap((row) =>
+      row.records
+        .filter((record) => childMatches(record.child, childId))
+        .map((record) => ({
+          date: toLocalDateKey(row.date, offsetMinutes),
+          status: record.status,
+          foodServed: String(row.foodServed ?? "").trim(),
+          ...(record.notes?.trim() ? { notes: record.notes.trim() } : {}),
+        })),
+    )
+    .sort((a, b) => b.date.localeCompare(a.date));
+  return {
+    tool: "feeding_details",
+    timeframe,
+    childName,
+    totalEntries: entries.length,
+    entries: entries.slice(0, DETAIL_ENTRY_LIMIT),
+    truncated: entries.length > DETAIL_ENTRY_LIMIT,
   };
 }
 
@@ -347,9 +442,25 @@ export async function summarizeChildTrendTool(
 
   const points = [...buckets.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
-    .slice(-5)
+    .slice(-6)
     .map(([periodStart, value]) => ({
       periodStart,
+      periodEnd: toLocalDateKey(
+        new Date(
+          new Date(`${periodStart}T00:00:00.000Z`).getTime() +
+            6 * DAY_MS,
+        ),
+        0,
+      ),
+      partial:
+        periodStart < toLocalDateKey(range.start, offsetMinutes) ||
+        toLocalDateKey(
+          new Date(
+            new Date(`${periodStart}T00:00:00.000Z`).getTime() +
+              7 * DAY_MS,
+          ),
+          0,
+        ) > toLocalDateKey(range.endExclusive, offsetMinutes),
       attendanceRate: safeRate(value.present, value.present + value.absent),
       feedingRate: safeRate(value.completed, value.completed + value.missed),
       attendanceTotal: value.present + value.absent,

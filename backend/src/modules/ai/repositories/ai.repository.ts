@@ -6,7 +6,7 @@ import { BaseRepository } from "../../../shared/repositories/base.repository";
 
 export type DateRange = {
   start: Date;
-  end: Date;
+  endExclusive: Date;
 };
 
 // ─── Attendance ───────────────────────────────────────────────────────────────
@@ -26,7 +26,7 @@ export class AIAttendanceRepository extends BaseRepository<any> {
   ): Promise<any[]> {
     return this.model
       .find(
-        { date: { $gte: range.start, $lte: range.end }, ...filter },
+        { date: { $gte: range.start, $lt: range.endExclusive }, ...filter },
         { date: 1, records: 1 },
       )
       .sort({ date: 1 })
@@ -51,7 +51,7 @@ export class AIFeedingRepository extends BaseRepository<any> {
   ): Promise<any[]> {
     return this.model
       .find(
-        { date: { $gte: range.start, $lte: range.end }, ...filter },
+        { date: { $gte: range.start, $lt: range.endExclusive }, ...filter },
         { date: 1, foodServed: 1, records: 1 },
       )
       .sort({ date: 1 })

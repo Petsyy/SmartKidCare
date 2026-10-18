@@ -1,8 +1,15 @@
-export type ToolTimeframe = "today" | "week" | "last_week" | "month" | "recent";
+export type ToolTimeframe =
+  | "today"
+  | "yesterday"
+  | "week"
+  | "last_week"
+  | "month"
+  | "last_month"
+  | "recent";
 
 export type DateRange = {
   start: Date;
-  end: Date;
+  endExclusive: Date;
 };
 
 export type SummarizeAttendanceResult = {
@@ -11,6 +18,7 @@ export type SummarizeAttendanceResult = {
   childName?: string;
   present: number;
   absent: number;
+  excused: number;
   totalDays: number;
   attendanceRate: number;
   absentDates: string[];
@@ -32,6 +40,7 @@ export type SummarizeAttendanceClassResult = {
   timeframe: ToolTimeframe;
   present: number;
   absent: number;
+  excused: number;
   totalRecords: number;
   totalChildren: number;
   attendanceRate: number;
@@ -59,6 +68,8 @@ export type GenerateChildReportResult = {
 
 export type ChildTrendPoint = {
   periodStart: string;
+  periodEnd?: string;
+  partial?: boolean;
   attendanceRate: number;
   feedingRate: number;
   attendanceTotal: number;
@@ -76,9 +87,43 @@ export type SummarizeChildTrendResult = {
   points: ChildTrendPoint[];
 };
 
+export type AttendanceDetailEntry = {
+  date: string;
+  status: "present" | "absent" | "excused";
+  excuseReason?: string;
+  notes?: string;
+};
+
+export type FeedingDetailEntry = {
+  date: string;
+  status: "completed" | "missed";
+  foodServed: string;
+  notes?: string;
+};
+
+export type AttendanceDetailsResult = {
+  tool: "attendance_details";
+  timeframe: ToolTimeframe;
+  childName?: string;
+  totalEntries: number;
+  entries: AttendanceDetailEntry[];
+  truncated: boolean;
+};
+
+export type FeedingDetailsResult = {
+  tool: "feeding_details";
+  timeframe: ToolTimeframe;
+  childName?: string;
+  totalEntries: number;
+  entries: FeedingDetailEntry[];
+  truncated: boolean;
+};
+
 export type AttendanceRecordRow = {
   child: unknown;
-  status: "present" | "absent";
+  status: "present" | "absent" | "excused";
+  excuseReason?: string;
+  notes?: string;
 };
 
 export type AttendanceRow = {
@@ -89,6 +134,7 @@ export type AttendanceRow = {
 export type FeedingRecordRow = {
   child: unknown;
   status: "completed" | "missed";
+  notes?: string;
 };
 
 export type FeedingRow = {

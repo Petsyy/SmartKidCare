@@ -1,7 +1,8 @@
 import type { AIResponseLanguage } from "./core-ai-chat.types";
+import type { AIRiskLevel } from "./core-ai-chat.types";
 export type AIRole = "parent";
 
-export type WriterRiskLevel = "LOW" | "MEDIUM" | "HIGH";
+export type WriterRiskLevel = AIRiskLevel;
 
 export type WriterResponseTemplate = "fact" | "advice" | "alert";
 
