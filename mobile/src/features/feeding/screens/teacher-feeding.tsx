@@ -110,7 +110,18 @@ export default function RecordFeeding() {
         onDateChange={setAttendanceDateKey}
       />
 
-      <View className="px-6 pb-5 pt-4">
+      <View className="px-6 pb-5 pt-2">
+        {isReadOnly ? (
+          <View className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+            <Text className="text-base font-bold text-emerald-900">
+              Feeding finalized
+            </Text>
+            <Text className="mt-1 text-sm text-emerald-800">
+              This record is read-only.
+            </Text>
+          </View>
+        ) : null}
+
         <View className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
           <View className="flex-row items-start justify-between">
             <View className="flex-1 pr-4">
@@ -148,8 +159,8 @@ export default function RecordFeeding() {
               <CheckCircle2 size={22} color="#047857" />
             </View>
             <Text className="ml-3 flex-1 text-base font-semibold text-emerald-800">
-              {stats.fed} {stats.fed === 1 ? "child" : "children"} ready for
-              feeding submission
+              {stats.fed} {stats.fed === 1 ? "child" : "children"}{" "}
+              {isReadOnly ? "completed" : "ready for feeding submission"}
             </Text>
           </View>
         </View>
@@ -157,7 +168,7 @@ export default function RecordFeeding() {
 
       <View className="px-6 pb-5">
         <Text className="mb-2 text-lg font-medium text-gray-700">
-          Food Served (Menu) <Text className="text-red-500">*</Text>
+          Food Served (Menu) {!isReadOnly && <Text className="text-red-500">*</Text>}
         </Text>
         <Pressable
           onPress={() => !interactionDisabled && setShowMenuModal(true)}
@@ -173,7 +184,7 @@ export default function RecordFeeding() {
           }
           accessibilityState={{ disabled: interactionDisabled }}
           className={`min-h-14 flex-row items-center justify-between rounded-2xl border border-gray-200 bg-white px-4 py-3.5 shadow-sm ${
-            interactionDisabled ? "opacity-75" : ""
+            interactionDisabled ? "opacity-75" : "active:bg-gray-50"
           }`}
         >
           <Text
@@ -188,18 +199,11 @@ export default function RecordFeeding() {
       </View>
 
       <View className="px-6 pb-3">
-        <View>
-          <Text
-            className="text-xl font-extrabold text-gray-900"
-            accessibilityRole="header"
-          >
-            Feeding list
-          </Text>
-        </View>
-        <Text className="mt-1 text-base leading-6 text-gray-600">
-          {isReadOnly
-            ? "Submitted feeding records are read-only."
-            : "Choose the food served, then review and submit."}
+        <Text
+          className="text-xl font-extrabold text-gray-900"
+          accessibilityRole="header"
+        >
+          Feeding list
         </Text>
       </View>
 
