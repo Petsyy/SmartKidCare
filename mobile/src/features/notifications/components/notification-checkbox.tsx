@@ -19,19 +19,19 @@ export function NotificationCheckbox({
       accessibilityRole="checkbox"
       accessibilityLabel={label}
       accessibilityState={{ checked: selected }}
-      hitSlop={8}
+      hitSlop={10}
       onPress={(event) => {
         event.stopPropagation();
         onPress();
       }}
-      className={`h-11 w-11 items-center justify-center ${className}`}
+      className={`items-center justify-center ${className}`}
     >
       <View
-        className={`h-6 w-6 items-center justify-center rounded-md border-2 ${
+        className={`h-5 w-5 items-center justify-center rounded-md border-2 ${
           selected ? "border-teal-600 bg-teal-600" : "border-gray-300 bg-white"
         }`}
       >
-        {selected ? <Check size={16} color="#FFFFFF" strokeWidth={3} /> : null}
+        {selected ? <Check size={13} color="#FFFFFF" strokeWidth={3} /> : null}
       </View>
     </Pressable>
   );

@@ -1,4 +1,4 @@
-import type { ComponentType } from "react";
+import { useState, type ComponentType } from "react";
 import { useRouter, type Href } from "expo-router";
 import { AlertCircle, Archive, Bell, CheckCircle2, ChevronLeft, ChevronRight, RotateCcw, Trash2 } from "lucide-react-native";
 import {
@@ -74,6 +74,8 @@ type Props<T extends NotificationItemBase> = {
   deleteArchivedNotification: (id: string) => void;
   toggleSelected: (id: string) => void;
   toggleSelectAll: () => void;
+  selectAll?: () => void;
+  clearSelection?: () => void;
   archiveSelectedNotifications: () => void;
   restoreSelectedNotifications: () => void;
   deleteSelectedNotifications: () => void;
@@ -115,6 +117,8 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
   deleteArchivedNotification,
   toggleSelected,
   toggleSelectAll,
+  selectAll,
+  clearSelection,
   archiveSelectedNotifications,
   restoreSelectedNotifications,
   deleteSelectedNotifications,
@@ -123,6 +127,32 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
 }: Props<T>) {
   const handleBack = useSafeBack(fallbackRoute);
   const router = useRouter();
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const selectableCount =
+    activeFilter === "archived" ? archivedItems.length : visibleActiveItems.length;
+  const isInSelectionMode = isSelectMode || selectedIds.length > 0;
+
+  const handleSelectAll = () => {
+    if (selectAll) {
+      selectAll();
+    } else {
+      toggleSelectAll();
+    }
+  };
+
+  const handleClear = () => {
+    if (clearSelection) {
+      clearSelection();
+    } else {
+      toggleSelectAll();
+    }
+  };
+
+  const handleExitSelectMode = () => {
+    setIsSelectMode(false);
+    handleClear();
+  };
+
   const fallbackUi: CardUI = {
     fallbackTitle: "Notification",
     icon: AlertCircle,
@@ -295,84 +325,153 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
             </Pressable>
           </View>
 
-          {/* Bulk action row */}
-          {(activeFilter === "archived" ? archivedItems.length : visibleActiveItems.length) > 0 ? (
-            <View className="mt-3 rounded-2xl border border-gray-200 bg-white p-3">
+          {/* Bulk action row matching pickup screen flow */}
+          {selectableCount > 0 ? (
+            <View
+              className="mt-3 rounded-2xl border border-gray-200 bg-white p-4"
+              style={{
+                shadowColor: "#0D9488",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.04,
+                shadowRadius: 6,
+                elevation: 2,
+              }}
+            >
               <View className="flex-row items-center justify-between">
-              <View className="min-h-11 flex-row items-center gap-2 rounded-xl px-2">
-                <NotificationCheckbox
-                  selected={allVisibleSelected}
-                  label={allVisibleSelected ? "Clear notification selection" : "Select all visible notifications"}
-                  onPress={toggleSelectAll}
-                  className="h-8 w-8"
-                />
+                <View className="flex-1 pr-3">
+                  <Text className="text-lg font-black text-gray-900">
+                    {activeFilter === "archived" ? "Archived items" : "Notification actions"}
+                  </Text>
+                  <Text className="mt-1 text-sm font-semibold leading-5 text-gray-500">
+                    {isInSelectionMode
+                      ? `${selectedIds.length} of ${selectableCount} items selected`
+                      : activeFilter === "archived"
+                        ? "Select items to restore or permanently delete."
+                        : "Select items to archive at once."}
+                  </Text>
+                </View>
+
+                {!isInSelectionMode ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Enable selection mode"
+                    onPress={() => setIsSelectMode(true)}
+                    className="min-h-10 items-center justify-center rounded-xl bg-teal-50 border border-teal-600 px-4 active:bg-teal-100"
+                  >
+                    <Text className="text-sm font-bold text-teal-700">Select</Text>
+                  </Pressable>
+                ) : (
+                  <View className="flex-row items-center gap-2">
+                    <View className="rounded-full bg-teal-600 px-3 py-1">
+                      <Text className="text-xs font-bold text-white">
+                        {selectedIds.length} selected
+                      </Text>
+                    </View>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Exit selection mode"
+                      onPress={handleExitSelectMode}
+                      className="min-h-9 items-center justify-center rounded-xl bg-gray-100 px-3 active:bg-gray-200"
+                    >
+                      <Text className="text-xs font-bold text-gray-700">Cancel</Text>
+                    </Pressable>
+                  </View>
+                )}
+              </View>
+
+              {isInSelectionMode ? (
+                <View className="mt-3 flex-row items-center gap-2.5">
+                  {selectedIds.length > 0 ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Clear selection"
+                      onPress={handleClear}
+                      className="min-h-11 items-center justify-center rounded-xl border border-gray-300 bg-white px-4 active:bg-gray-100"
+                    >
+                      <Text className="text-sm font-bold text-gray-700">Clear</Text>
+                    </Pressable>
+                  ) : (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Select all visible notifications"
+                      onPress={handleSelectAll}
+                      className="min-h-11 items-center justify-center rounded-xl border border-teal-600 bg-teal-50 px-4 active:bg-teal-100"
+                    >
+                      <Text className="text-sm font-bold text-teal-700">Select All</Text>
+                    </Pressable>
+                  )}
+
+                  {activeFilter === "archived" ? (
+                    <View className="flex-1 flex-row gap-2">
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="Restore selected notifications"
+                        disabled={selectedIds.length === 0}
+                        onPress={restoreSelectedNotifications}
+                        className={`min-h-11 flex-1 flex-row items-center justify-center gap-1.5 rounded-xl border px-3 ${
+                          selectedIds.length === 0
+                            ? "border-gray-200 bg-gray-100 opacity-60"
+                            : "border-teal-200 bg-teal-50 active:bg-teal-100"
+                        }`}
+                      >
+                        <RotateCcw size={15} color={selectedIds.length === 0 ? "#9CA3AF" : "#0F766E"} strokeWidth={2} />
+                        <Text className={`text-sm font-bold ${selectedIds.length === 0 ? "text-gray-400" : "text-teal-700"}`}>
+                          Restore
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="Delete selected notifications"
+                        disabled={selectedIds.length === 0}
+                        onPress={() => Alert.alert(
+                          "Delete Selected Notifications",
+                          `Permanently delete ${selectedIds.length} selected notification${selectedIds.length === 1 ? "" : "s"}? This cannot be undone.`,
+                          [
+                            { text: "Cancel", style: "cancel" },
+                            { text: "Delete", style: "destructive", onPress: deleteSelectedNotifications },
+                          ],
+                        )}
+                        className={`min-h-11 flex-1 flex-row items-center justify-center gap-1.5 rounded-xl border px-3 ${
+                          selectedIds.length === 0
+                            ? "border-gray-200 bg-gray-100 opacity-60"
+                            : "border-rose-200 bg-rose-50 active:bg-rose-100"
+                        }`}
+                      >
+                        <Trash2 size={15} color={selectedIds.length === 0 ? "#9CA3AF" : "#BE123C"} strokeWidth={2} />
+                        <Text className={`text-sm font-bold ${selectedIds.length === 0 ? "text-gray-400" : "text-rose-700"}`}>
+                          Delete
+                        </Text>
+                      </Pressable>
+                    </View>
+                  ) : (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Archive selected notifications"
+                      disabled={selectedIds.length === 0}
+                      onPress={archiveSelectedNotifications}
+                      className={`min-h-11 flex-1 flex-row items-center justify-center gap-2 rounded-xl px-4 ${
+                        selectedIds.length === 0
+                          ? "bg-gray-200"
+                          : "bg-teal-600 active:bg-teal-700"
+                      }`}
+                    >
+                      <Archive size={16} color={selectedIds.length === 0 ? "#9CA3AF" : "#FFFFFF"} strokeWidth={2} />
+                      <Text className={`text-sm font-bold ${selectedIds.length === 0 ? "text-gray-400" : "text-white"}`}>
+                        Archive {selectedIds.length > 0 ? `(${selectedIds.length})` : ""}
+                      </Text>
+                    </Pressable>
+                  )}
+                </View>
+              ) : activeFilter !== "archived" && unreadCount > 0 ? (
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={allVisibleSelected ? "Clear notification selection" : "Select all visible notifications"}
-                  onPress={toggleSelectAll}
-                  className="min-h-11 justify-center"
+                  accessibilityLabel="Mark all notifications as read"
+                  onPress={markAllAsRead}
+                  className="mt-3 min-h-10 items-center justify-center rounded-xl bg-gray-50 active:bg-gray-100"
                 >
-                <Text className="text-sm font-bold text-gray-700">
-                  {allVisibleSelected ? "Clear selection" : "Select all"}
-                </Text>
-                </Pressable>
-              </View>
-              <Text className="text-xs font-semibold text-gray-500">
-                {selectedIds.length} selected
-              </Text>
-              </View>
-              <View className="mt-2 flex-row justify-end gap-2">
-              {activeFilter === "archived" ? (
-                <>
-                  <Pressable
-                    disabled={selectedIds.length === 0}
-                    accessibilityRole="button"
-                    accessibilityLabel="Restore selected notifications"
-                    accessibilityState={{ disabled: selectedIds.length === 0 }}
-                    onPress={restoreSelectedNotifications}
-                    className={`min-h-11 flex-row items-center gap-1.5 rounded-full bg-teal-50 px-4 ${selectedIds.length === 0 ? "opacity-40" : "opacity-100"}`}
-                  >
-                    <RotateCcw size={14} color="#0F766E" strokeWidth={2} />
-                    <Text className="text-xs font-bold text-teal-700">Restore</Text>
-                  </Pressable>
-                  <Pressable
-                    disabled={selectedIds.length === 0}
-                    accessibilityRole="button"
-                    accessibilityLabel="Delete selected notifications"
-                    accessibilityState={{ disabled: selectedIds.length === 0 }}
-                    onPress={() => Alert.alert(
-                      "Delete Selected Notifications",
-                      `Permanently delete ${selectedIds.length} selected notification${selectedIds.length === 1 ? "" : "s"}? This cannot be undone.`,
-                      [
-                        { text: "Cancel", style: "cancel" },
-                        { text: "Delete", style: "destructive", onPress: deleteSelectedNotifications },
-                      ],
-                    )}
-                    className={`min-h-11 flex-row items-center gap-1.5 rounded-full bg-rose-50 px-4 ${selectedIds.length === 0 ? "opacity-40" : "opacity-100"}`}
-                  >
-                    <Trash2 size={14} color="#BE123C" strokeWidth={2} />
-                    <Text className="text-xs font-bold text-rose-700">Delete</Text>
-                  </Pressable>
-                </>
-              ) : (
-              <Pressable
-                disabled={selectedIds.length === 0}
-                accessibilityRole="button"
-                accessibilityLabel="Archive selected notifications"
-                accessibilityState={{ disabled: selectedIds.length === 0 }}
-                onPress={archiveSelectedNotifications}
-                className={`min-h-11 flex-row items-center gap-1.5 rounded-full bg-teal-50 px-4 ${selectedIds.length === 0 ? "opacity-40" : "opacity-100"}`}
-              >
-                <Archive size={14} color="#0F766E" strokeWidth={2} />
-                <Text className="text-xs font-bold text-teal-700">Archive</Text>
-              </Pressable>
-              )}
-              {activeFilter !== "archived" && unreadCount > 0 ? (
-                <Pressable onPress={markAllAsRead} className="min-h-11 justify-center rounded-full bg-gray-100 px-4">
-                  <Text className="text-xs font-bold text-gray-700">Mark all read</Text>
+                  <Text className="text-sm font-bold text-teal-700">Mark all as read</Text>
                 </Pressable>
               ) : null}
-              </View>
             </View>
           ) : null}
         </View>
@@ -452,29 +551,44 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
               return (
                 <Pressable
                   key={item.id}
-                  onPress={() => markAsRead(item.id)}
-                  className={`mb-3 rounded-2xl border p-4 ${
-                    isRead
-                      ? "border-gray-100 bg-white"
-                      : "border-teal-200 bg-white"
+                  onPress={() => {
+                    if (isInSelectionMode) {
+                      toggleSelected(item.id);
+                    } else {
+                      markAsRead(item.id);
+                    }
+                  }}
+                  onLongPress={() => {
+                    if (!isInSelectionMode) {
+                      setIsSelectMode(true);
+                      toggleSelected(item.id);
+                    }
+                  }}
+                  className={`mb-3 overflow-hidden rounded-2xl border p-4 active:scale-[0.99] ${
+                    selectedIds.includes(item.id)
+                      ? "border-teal-500 bg-teal-50/70"
+                      : isRead
+                        ? "border-gray-200 bg-white"
+                        : "border-teal-200 bg-white"
                   }`}
                   style={{
-                    borderLeftWidth: 4,
-                    borderLeftColor: isRead ? "#D1D5DB" : ui.accent,
-                    shadowColor: "#0F766E",
-                    shadowOpacity: isRead ? 0.03 : 0.08,
+                    shadowColor: "#0F172A",
+                    shadowOpacity: selectedIds.includes(item.id) ? 0.08 : isRead ? 0.03 : 0.06,
                     shadowRadius: 8,
                     shadowOffset: { width: 0, height: 2 },
                     elevation: isRead ? 1 : 2,
                   }}
                 >
-                  <View className="flex-row items-start">
-                    <NotificationCheckbox
-                      selected={selectedIds.includes(item.id)}
-                      label={`Select ${resolveTitle(item, ui.fallbackTitle)}`}
-                      onPress={() => toggleSelected(item.id)}
-                      className="mr-1"
-                    />
+                  <View className="flex-row items-center">
+                    {isInSelectionMode ? (
+                      <NotificationCheckbox
+                        selected={selectedIds.includes(item.id)}
+                        label={`Select ${resolveTitle(item, ui.fallbackTitle)}`}
+                        onPress={() => toggleSelected(item.id)}
+                        className="mr-3"
+                      />
+                    ) : null}
+
                     {/* Icon */}
                     <View
                       className="mr-3 h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl"
@@ -487,65 +601,68 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
                       />
                     </View>
 
-                    {/* Content */}
+                    {/* Content Header info */}
                     <View className="flex-1">
-                      {/* Title row with unread dot */}
-                      <View className="flex-row items-center gap-2">
+                      <View className="flex-row items-center gap-1.5">
                         {!isRead ? (
                           <View className="h-2 w-2 rounded-full bg-teal-500" />
                         ) : null}
                         <Text
-                          className={`flex-1 text-base font-bold ${
-                            isRead ? "text-gray-600" : "text-gray-900"
+                          className={`flex-1 text-base font-extrabold ${
+                            isRead ? "text-gray-700" : "text-gray-900"
                           }`}
-                          numberOfLines={2}
+                          numberOfLines={1}
                         >
                           {resolveTitle(item, ui.fallbackTitle)}
                         </Text>
                       </View>
+                    </View>
+                  </View>
 
-                      {/* Message */}
-                      <Text
-                        className={`mt-2 text-sm leading-5 ${
-                          isRead ? "text-gray-400" : "text-gray-600"
-                        }`}
-                        numberOfLines={3}
+                  {/* Body Content */}
+                  <View className={isInSelectionMode ? "pl-11" : "pl-15"}>
+                    <Text
+                      className={`mt-2 text-sm leading-5 ${
+                        isRead ? "text-gray-400" : "text-gray-600"
+                      }`}
+                      numberOfLines={3}
+                    >
+                      {item.message}
+                    </Text>
+
+                    {/* Footer: time + actions */}
+                    <View className="mt-3 flex-row items-center justify-between">
+                      <View
+                        className="rounded-full px-3 py-1"
+                        style={{ backgroundColor: ui.iconBg }}
                       >
-                        {item.message}
-                      </Text>
-
-                      {/* Footer: time + archive action */}
-                      <View className="mt-3 flex-row items-center justify-between">
-                        <View
-                          className="rounded-full px-3 py-1"
-                          style={{ backgroundColor: ui.iconBg }}
+                        <Text
+                          className="text-xs font-semibold"
+                          style={{ color: ui.iconColor }}
                         >
-                          <Text
-                            className="text-xs font-semibold"
-                            style={{ color: ui.iconColor }}
-                          >
-                            {item.timeLabel}
-                          </Text>
-                        </View>
+                          {item.timeLabel}
+                        </Text>
+                      </View>
 
-                        <View className="flex-row items-center gap-2">
-                          {item.actionPath ? (
-                            <Pressable
-                              accessibilityRole="button"
-                              accessibilityLabel={item.actionLabel}
-                              onPress={(event) => {
-                                event.stopPropagation();
-                                markAsRead(item.id);
-                                router.push(item.actionPath as Href);
-                              }}
-                              className="rounded-full border border-amber-200 bg-amber-50 px-3 py-2"
-                              style={{ minHeight: 36 }}
-                            >
-                              <Text className="text-xs font-bold text-amber-700">
-                                {item.actionLabel}
-                              </Text>
-                            </Pressable>
-                          ) : null}
+                      <View className="flex-row items-center gap-2">
+                        {item.actionPath ? (
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={item.actionLabel}
+                            onPress={(event) => {
+                              event.stopPropagation();
+                              markAsRead(item.id);
+                              router.push(item.actionPath as Href);
+                            }}
+                            className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5"
+                            style={{ minHeight: 32 }}
+                          >
+                            <Text className="text-xs font-bold text-amber-700">
+                              {item.actionLabel}
+                            </Text>
+                          </Pressable>
+                        ) : null}
+                        {!isInSelectionMode ? (
                           <Pressable
                             accessibilityRole="button"
                             accessibilityLabel={`Archive ${resolveTitle(item, ui.fallbackTitle)}`}
@@ -553,15 +670,15 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
                               event.stopPropagation();
                               archiveNotification(item);
                             }}
-                            className="flex-row items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-2"
-                            style={{ minHeight: 36 }}
+                            className="flex-row items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5"
+                            style={{ minHeight: 32 }}
                           >
-                            <Archive size={14} color="#6B7280" strokeWidth={2} />
+                            <Archive size={13} color="#6B7280" strokeWidth={2} />
                             <Text className="text-xs font-semibold text-gray-600">
                               Archive
                             </Text>
                           </Pressable>
-                        </View>
+                        ) : null}
                       </View>
                     </View>
                   </View>
@@ -581,32 +698,47 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
               const ui = cardUi[item.type] ?? fallbackUi;
               const Icon = ui.icon;
               return (
-                <View
+                <Pressable
                   key={item.id}
-                  className="mb-3 rounded-2xl border border-gray-100 bg-white p-4"
+                  onPress={() => {
+                    if (isInSelectionMode) {
+                      toggleSelected(item.id);
+                    }
+                  }}
+                  onLongPress={() => {
+                    if (!isInSelectionMode) {
+                      setIsSelectMode(true);
+                      toggleSelected(item.id);
+                    }
+                  }}
+                  className={`mb-3 overflow-hidden rounded-2xl border p-4 active:scale-[0.99] ${
+                    selectedIds.includes(item.id)
+                      ? "border-teal-500 bg-teal-50/70"
+                      : "border-gray-200 bg-white"
+                  }`}
                   style={{
-                    borderLeftWidth: 4,
-                    borderLeftColor: "#D1D5DB",
-                    shadowColor: "#6B7280",
-                    shadowOpacity: 0.04,
-                    shadowRadius: 6,
+                    shadowColor: "#0F172A",
+                    shadowOpacity: selectedIds.includes(item.id) ? 0.08 : 0.03,
+                    shadowRadius: 8,
                     shadowOffset: { width: 0, height: 2 },
                     elevation: 1,
                   }}
                 >
-                  <View className="flex-row items-start">
-                    <NotificationCheckbox
-                      selected={selectedIds.includes(item.id)}
-                      label={`Select ${resolveTitle(item, ui.fallbackTitle)}`}
-                      onPress={() => toggleSelected(item.id)}
-                      className="mr-1"
-                    />
+                  <View className="flex-row items-center">
+                    {isInSelectionMode ? (
+                      <NotificationCheckbox
+                        selected={selectedIds.includes(item.id)}
+                        label={`Select ${resolveTitle(item, ui.fallbackTitle)}`}
+                        onPress={() => toggleSelected(item.id)}
+                        className="mr-3"
+                      />
+                    ) : null}
                     {/* Icon */}
                     <View
                       className="mr-3 h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl"
                       style={{
                         backgroundColor: ui.iconBg,
-                        opacity: 0.6,
+                        opacity: 0.8,
                       }}
                     >
                       <Icon
@@ -616,44 +748,49 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
                       />
                     </View>
 
-                    {/* Content */}
+                    {/* Content Header */}
                     <View className="flex-1">
                       <Text
-                        className="text-base font-bold text-gray-600"
-                        numberOfLines={2}
+                        className="text-base font-extrabold text-gray-800"
+                        numberOfLines={1}
                       >
                         {resolveTitle(item, ui.fallbackTitle)}
                       </Text>
+                    </View>
+                  </View>
 
-                      <Text
-                        className="mt-2 text-sm leading-5 text-gray-400"
-                        numberOfLines={3}
-                      >
-                        {item.message}
+                  {/* Body Content */}
+                  <View className={isInSelectionMode ? "pl-11" : "pl-15"}>
+                    <Text
+                      className="mt-2 text-sm leading-5 text-gray-500"
+                      numberOfLines={3}
+                    >
+                      {item.message}
+                    </Text>
+
+                    {/* Source date badge */}
+                    <View className="mt-3 flex-row items-center">
+                      <View className="rounded-full bg-gray-100 px-3 py-1">
+                        <Text className="text-xs font-semibold text-gray-500">
+                          {item.sourceDate
+                            ? formatDateLabel(item.sourceDate)
+                            : item.timeLabel}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Footer: archived timestamp + actions */}
+                    <View className="mt-3 flex-row items-center justify-between border-t border-gray-100 pt-3">
+                      <Text className="text-xs text-gray-400">
+                        {formatArchivedAt(item.archivedAt)}
                       </Text>
 
-                      {/* Source date badge */}
-                      <View className="mt-3 flex-row items-center">
-                        <View className="rounded-full bg-gray-100 px-3 py-1">
-                          <Text className="text-xs font-semibold text-gray-500">
-                            {item.sourceDate
-                              ? formatDateLabel(item.sourceDate)
-                              : item.timeLabel}
-                          </Text>
-                        </View>
-                      </View>
-
-                      {/* Footer: archived timestamp + actions */}
-                      <View className="mt-3 flex-row items-center justify-between border-t border-gray-100 pt-3">
-                        <Text className="text-xs text-gray-400">
-                          {formatArchivedAt(item.archivedAt)}
-                        </Text>
-
+                      {!isInSelectionMode ? (
                         <View className="flex-row gap-2">
                           <Pressable
                             onPress={() => restoreNotification(item.id)}
-                            className="flex-row items-center gap-1.5 rounded-full border border-teal-200 bg-teal-50 px-3 py-2"
-                            style={{ minHeight: 36 }}
+                            className="flex-row items-center gap-1.5 rounded-full border border-teal-200 bg-teal-50 px-3 py-1.5"
+                            style={{ minHeight: 32 }}
                           >
                             <RotateCcw
                               size={13}
@@ -684,8 +821,8 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
                                 ],
                               );
                             }}
-                            className="flex-row items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-3 py-2"
-                            style={{ minHeight: 36 }}
+                            className="flex-row items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5"
+                            style={{ minHeight: 32 }}
                           >
                             <Trash2
                               size={13}
@@ -697,10 +834,10 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
                             </Text>
                           </Pressable>
                         </View>
-                      </View>
+                      ) : null}
                     </View>
                   </View>
-                </View>
+                </Pressable>
               );
             })}
           </View>

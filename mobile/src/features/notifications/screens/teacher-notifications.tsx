@@ -91,6 +91,8 @@ export default function TeacherNotificationsScreen() {
       deleteArchivedNotification={feed.deleteArchivedNotification}
       toggleSelected={feed.toggleSelected}
       toggleSelectAll={feed.toggleSelectAll}
+      selectAll={feed.selectAll}
+      clearSelection={feed.clearSelection}
       archiveSelectedNotifications={feed.archiveSelectedNotifications}
       restoreSelectedNotifications={feed.restoreSelectedNotifications}
       deleteSelectedNotifications={feed.deleteSelectedNotifications}

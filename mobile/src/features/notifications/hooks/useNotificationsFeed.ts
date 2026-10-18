@@ -140,6 +140,12 @@ export const useNotificationsFeed = <T extends NotificationArchiveBaseItem>({
       current.includes(id) ? current.filter((entry) => entry !== id) : [...current, id],
     );
   };
+  const selectAll = () => {
+    setSelectedIds(selectableIds);
+  };
+  const clearSelection = () => {
+    setSelectedIds([]);
+  };
   const toggleSelectAll = () => {
     setSelectedIds(allVisibleSelected ? [] : selectableIds);
   };
@@ -194,6 +200,7 @@ export const useNotificationsFeed = <T extends NotificationArchiveBaseItem>({
     goToNextDate: () => changeDate(1),
     activeItems, archivedItems, visibleActiveItems, unreadCount,
     selectedIds, allVisibleSelected, toggleSelected, toggleSelectAll,
+    selectAll, clearSelection,
     archiveSelectedNotifications, restoreSelectedNotifications,
     deleteSelectedNotifications,
     activeFilter, setActiveFilter, showEmptyState, markAsRead, markAllAsRead,
