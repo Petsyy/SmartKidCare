@@ -113,6 +113,9 @@ export async function getAdminAnalyticsReport(
           absent: {
             $sum: { $cond: [{ $eq: ["$records.status", "absent"] }, 1, 0] },
           },
+          excused: {
+            $sum: { $cond: [{ $eq: ["$records.status", "excused"] }, 1, 0] },
+          },
         },
       },
     ]),
@@ -158,6 +161,7 @@ export async function getAdminAnalyticsReport(
     const feeding = feedingByDate.get(dateKey);
     const present = attendance?.present ?? 0;
     const absent = attendance?.absent ?? 0;
+    const excused = attendance?.excused ?? 0;
     const completed = feeding?.completed ?? 0;
     const missed = feeding?.missed ?? 0;
     const attendanceTotal = present + absent;
@@ -170,6 +174,7 @@ export async function getAdminAnalyticsReport(
       feedingRate: feedingTotal ? Math.round((completed / feedingTotal) * 100) : 0,
       present,
       absent,
+      excused,
       completed,
       missed,
     };
@@ -177,11 +182,12 @@ export async function getAdminAnalyticsReport(
 
   const attendancePresent = attendanceDaily.reduce((sum, row) => sum + row.present, 0);
   const attendanceAbsent = attendanceDaily.reduce((sum, row) => sum + row.absent, 0);
+  const attendanceExcused = attendanceDaily.reduce((sum, row) => sum + row.excused, 0);
   const feedingCompleted = feedingDaily.reduce((sum, row) => sum + row.completed, 0);
   const feedingMissed = feedingDaily.reduce((sum, row) => sum + row.missed, 0);
   const attendanceRecords = attendancePresent + attendanceAbsent;
   const feedingRecords = feedingCompleted + feedingMissed;
-  const totalChecks = attendanceRecords + feedingRecords;
+  const totalChecks = attendanceRecords + attendanceExcused + feedingRecords;
 
   return {
     summary: {
@@ -194,6 +200,7 @@ export async function getAdminAnalyticsReport(
       activeChildren,
       totalTeachers: childDevelopmentWorkers,
       attendanceRecords,
+      attendanceExcused,
       feedingRecords,
       totalChecks,
       attendanceRate: attendanceRecords

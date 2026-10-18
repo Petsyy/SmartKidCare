@@ -72,12 +72,14 @@ export class ReportsService {
 
     let presentDays = 0;
     let absentDays = 0;
+    let excusedDays = 0;
 
     attendanceRecords.forEach((entry: any) => {
       const record = entry.records.find((r: any) => String(r.child) === childId);
       if (record) {
         if (record.status === "present") presentDays++;
         if (record.status === "absent") absentDays++;
+        if (record.status === "excused") excusedDays++;
       }
     });
 
@@ -100,6 +102,7 @@ export class ReportsService {
         attendance: {
           present: presentDays,
           absent: absentDays,
+          excused: excusedDays,
           total: presentDays + absentDays,
           rate:
             presentDays + absentDays > 0
@@ -138,11 +141,13 @@ export class ReportsService {
 
     let presentDays = 0;
     let absentDays = 0;
+    let excusedDays = 0;
 
     attendanceRecords.forEach((entry: any) => {
       entry.records.forEach((r: any) => {
         if (r.status === "present") presentDays++;
         if (r.status === "absent") absentDays++;
+        if (r.status === "excused") excusedDays++;
       });
     });
 
@@ -162,6 +167,7 @@ export class ReportsService {
         attendance: {
           present: presentDays,
           absent: absentDays,
+          excused: excusedDays,
           total: presentDays + absentDays,
         },
         feeding: {

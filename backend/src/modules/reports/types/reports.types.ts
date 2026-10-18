@@ -17,6 +17,7 @@ export type AttendanceDailyAggregate = {
   _id: string;
   present: number;
   absent: number;
+  excused: number;
 };
 
 export type FeedingDailyAggregate = {

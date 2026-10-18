@@ -238,7 +238,13 @@ export interface ChildEnrollmentSubmissionResponse {
 
 export interface AttendanceRecord {
   child: string;
-  status: "present" | "absent";
+  status: "present" | "absent" | "excused";
+  excuseReason?:
+    | "sick"
+    | "medical_appointment"
+    | "family_emergency"
+    | "other";
+  notes?: string;
 }
 
 export interface FeedingRecord {
@@ -273,11 +279,25 @@ export interface SubmitResponse {
   message: string;
   replayed?: boolean;
   onChain?: OnChainData;
+  attendance?: AttendanceDocument;
+}
+
+export interface AttendanceDocument {
+  _id: string;
+  date: string;
+  version?: number;
+  records: (AttendanceRecord & { child: string | { _id: string } })[];
 }
 
 export interface SubmitAttendanceData {
   clientOperationId?: string;
   date: string;
+  records: AttendanceRecord[];
+}
+
+export interface UpdateAttendanceData {
+  clientOperationId: string;
+  expectedVersion: number;
   records: AttendanceRecord[];
 }
 
@@ -288,12 +308,47 @@ export interface SubmitFeedingData {
   records: FeedingRecord[];
 }
 
-export type AIRole = "parent";
+export type AIResponseLanguage = "en" | "fil";
+export type AILanguageMode = "auto" | "explicit";
+export type AIRiskLevel = "LOW" | "MEDIUM" | "HIGH";
+export type AIDataStatus =
+  | "AVAILABLE"
+  | "PARTIAL"
+  | "NO_DATA"
+  | "NOT_APPLICABLE";
+export type AIContextStatus =
+  | "active"
+  | "superseded"
+  | "expired"
+  | "invalidated";
 
 export interface AIChatPayload {
-  role: AIRole;
   message: string;
   childId: string;
+  language?: AIResponseLanguage;
+  languageMode?: AILanguageMode;
+  resetContext?: boolean;
+  contextId?: string;
+  requestId?: string;
+}
+
+export interface AIChatResponse {
+  reply: string;
+  language: AIResponseLanguage;
+  languageMode: AILanguageMode;
+  contextId: string;
+  contextExpiresAt: string;
+  contextStatus: AIContextStatus;
+  requestId: string;
+  replayed: boolean;
+  riskLevel?: AIRiskLevel;
+  dataStatus: AIDataStatus;
+  intent: string;
+  followUp?: {
+    type: "confirmation" | "domain_selection";
+    action: "show_details" | "choose_domain";
+    expiresAt: string;
+  };
 }
 
 export type Platform = "ios" | "android" | "web" | "unknown";

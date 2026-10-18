@@ -8,6 +8,7 @@ import type {
   SubmitResponse,
   SubmitAttendanceData,
   SubmitFeedingData,
+  UpdateAttendanceData,
 } from "./api.types";
 
 export type {
@@ -19,6 +20,7 @@ export type {
   SubmitResponse,
   SubmitAttendanceData,
   SubmitFeedingData,
+  UpdateAttendanceData,
 } from "./api.types";
 
 export const submitAttendance = async (
@@ -29,6 +31,15 @@ export const submitAttendance = async (
     body: data,
   });
 };
+
+export const updateAttendance = async (
+  attendanceId: string,
+  data: UpdateAttendanceData,
+): Promise<SubmitResponse> =>
+  apiClient<SubmitResponse>(`/api/records/attendance/${attendanceId}`, {
+    method: "PATCH",
+    body: data,
+  });
 
 export const submitFeeding = async (
   data: SubmitFeedingData,

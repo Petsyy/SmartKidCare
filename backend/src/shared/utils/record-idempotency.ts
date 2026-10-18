@@ -3,6 +3,7 @@ import { createHash } from "crypto";
 type RecordInput = {
   child: unknown;
   status: unknown;
+  excuseReason?: unknown;
   notes?: unknown;
 };
 
@@ -11,6 +12,7 @@ const canonicalRecords = (records: RecordInput[]) =>
     .map((record) => ({
       child: String(record.child),
       status: String(record.status),
+      excuseReason: String(record.excuseReason ?? "").trim(),
       notes: String(record.notes ?? "").trim(),
     }))
     .sort((left, right) => left.child.localeCompare(right.child));

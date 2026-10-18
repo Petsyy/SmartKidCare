@@ -57,9 +57,13 @@ const buildAttendanceSummaryBody = (
 ): string => {
   if (records.length === 1) {
     const record = records[0];
-    return record.status === "present"
-      ? `${record.childName} was marked present on ${dateLabel}.`
-      : `${record.childName} was marked absent on ${dateLabel}.`;
+    if (record.status === "present") {
+      return `${record.childName} was marked present on ${dateLabel}.`;
+    }
+    if (record.status === "excused") {
+      return `${record.childName} was marked excused on ${dateLabel}.`;
+    }
+    return `${record.childName} was marked absent on ${dateLabel}.`;
   }
 
   return `Attendance submitted for ${dateLabel}.`;
@@ -173,6 +177,7 @@ export const notifyAttendanceSubmitted = async (params: {
   daycareCenterId: string;
   date: Date;
   records: Array<{ child: unknown; status: AttendanceStatus }>;
+  event?: "submitted" | "updated";
 }): Promise<void> => {
   await adminNotificationService.publishAttendanceAbsence({
     batchId: params.batchId,
@@ -194,11 +199,14 @@ export const notifyAttendanceSubmitted = async (params: {
     const absentRecords = target.records.filter(
       (record) => record.status === "absent",
     );
+    const excusedCount = target.records.filter(
+      (record) => record.status === "excused",
+    ).length;
     const total = target.records.length;
 
     const summaryResult = await sendExpoPushNotifications({
       tokens: target.tokens,
-      title: "Attendance Submitted",
+      title: params.event === "updated" ? "Attendance Updated" : "Attendance Submitted",
       body: buildAttendanceSummaryBody(target.records, dateLabel),
       data: {
         type: "attendance_submitted",
@@ -206,6 +214,7 @@ export const notifyAttendanceSubmitted = async (params: {
         total,
         present: presentCount,
         absent: absentRecords.length,
+        excused: excusedCount,
         audience: "parent",
       },
       channelId: "default",

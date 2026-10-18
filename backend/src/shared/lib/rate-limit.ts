@@ -170,6 +170,7 @@ export const parentAiChatLimiter = rateLimit({
   keyGenerator: authenticatedUserKeyGenerator,
   skip: (req: any) => String(req.user?.role || "").toLowerCase() !== "parent",
   message: {
+    code: "AI_CHAT_RATE_LIMITED",
     message: "Too many AI chat requests. Please wait before asking again.",
   },
   standardHeaders: true,

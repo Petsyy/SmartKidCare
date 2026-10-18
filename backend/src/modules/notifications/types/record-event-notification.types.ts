@@ -1,4 +1,4 @@
-export type AttendanceStatus = "present" | "absent";
+export type AttendanceStatus = "present" | "absent" | "excused";
 
 export type FeedingStatus = "completed" | "missed";
 
