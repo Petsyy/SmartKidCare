@@ -34,6 +34,7 @@ export const evaluationByPeriod = asyncHandler(
         req.user,
         req.params.childId as string,
         req.params.period as string,
+        req.query.date as string | undefined,
       ),
     );
   },

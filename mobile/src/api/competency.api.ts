@@ -11,16 +11,18 @@ export const getCompetencyDefinitions = () =>
 export const getCompetencyEvaluationByPeriod = (
   childId: string,
   period: string,
+  dateKey?: string,
 ) =>
   apiClient<CompetencyEvaluation | null>(
-    `/api/competencies/children/${childId}/evaluations/${period}`,
+    `/api/competencies/children/${childId}/evaluations/${period}${dateKey ? `?date=${encodeURIComponent(dateKey)}` : ""}`,
   );
 export const getCompetencyHistory = (childId: string) =>
   apiClient<CompetencyHistory>(
-    `/api/competencies/children/${childId}/evaluations?page=1&limit=10`,
+    `/api/competencies/children/${childId}/evaluations?page=1&limit=50`,
   );
 export const submitCompetencyEvaluation = (payload: {
   childId: string;
+  evaluationId?: string;
   evaluationDate: string;
   period: "quarterly" | "final";
   status: "draft" | "submitted";

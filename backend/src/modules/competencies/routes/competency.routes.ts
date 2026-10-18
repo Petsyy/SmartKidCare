@@ -12,6 +12,7 @@ import {
   validateChildParams,
   validateChildAndPeriodParams,
   validateEvaluation,
+  validateEvaluationQuery,
   validateHistoryQuery,
   validateAnalyticsQuery,
 } from "../validators/competency.validator";
@@ -39,6 +40,7 @@ router.get(
   "/children/:childId/evaluations/:period",
   requireRole("barangay_captain", "teacher", "parent"),
   validateChildAndPeriodParams,
+  validateEvaluationQuery,
   evaluationByPeriod,
 );
 router.get(

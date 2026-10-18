@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Alert } from "react-native";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -58,6 +58,15 @@ export function useCompetencyEvaluation(
   const { isConnected, isInternetReachable, refreshPendingCount } =
     useOffline();
   const queryClient = useQueryClient();
+  const [isEditing, setIsEditing] = useState(false);
+  const [loadedEvaluationId, setLoadedEvaluationId] = useState<string | null>(
+    null,
+  );
+  const [loadedEvaluationStatus, setLoadedEvaluationStatus] = useState<
+    CompetencyEvaluation["status"] | null
+  >(null);
+  const [isDateLookupPending, setIsDateLookupPending] = useState(false);
+  const dateLookupSequence = useRef(0);
   const [selectedPeriod, setSelectedPeriod] =
     useState<EvaluationPeriod>("quarterly");
   const [levels, setLevels] = useState<Record<string, CompetencyLevel>>({});
@@ -152,11 +161,16 @@ export function useCompetencyEvaluation(
 
   const selectedEvaluation = query.data?.evaluations[selectedPeriod] ?? null;
 
+  const [isCreatingNew, setIsCreatingNew] = useState(false);
+
   // Sync state when evaluation loads or period changes
   useEffect(() => {
     if (!childId) return;
     let cancelled = false;
     void (async () => {
+      // If user is actively creating a new evaluation, don't overwrite with existing record
+      if (isCreatingNew) return;
+
       const localDraft = user?.id
         ? await getScopedDraft(
             user.id,
@@ -166,18 +180,26 @@ export function useCompetencyEvaluation(
         : null;
       if (cancelled) return;
 
-      if (localDraft) {
-        const payload = localDraft.payload as CompetencyDraftPayload;
-        setLevels(payload.levels);
-        setRemarks(payload.remarks);
-        setGeneralNotes(payload.generalNotes || "");
-        setEvaluationDate(payload.evaluationDate);
+      const draftPayload = localDraft
+        ? (localDraft.payload as CompetencyDraftPayload)
+        : null;
+      if (
+        draftPayload &&
+        (!selectedEvaluation ||
+          Object.keys(draftPayload.levels || {}).length > 0)
+      ) {
+        setLevels(draftPayload.levels || {});
+        setRemarks(draftPayload.remarks || {});
+        setGeneralNotes(draftPayload.generalNotes || "");
+        setEvaluationDate(draftPayload.evaluationDate || getManilaDateKey());
+        setLoadedEvaluationId(draftPayload.evaluationId || null);
+        setLoadedEvaluationStatus(null);
         setSavedSnapshot(
           createSnapshot(
-            payload.levels,
-            payload.remarks,
-            payload.generalNotes || "",
-            payload.evaluationDate,
+            draftPayload.levels || {},
+            draftPayload.remarks || {},
+            draftPayload.generalNotes || "",
+            draftPayload.evaluationDate || getManilaDateKey(),
           ),
         );
         setHasLocalDraft(true);
@@ -187,6 +209,8 @@ export function useCompetencyEvaluation(
       setHasLocalDraft(false);
 
       if (selectedEvaluation) {
+        setLoadedEvaluationId(selectedEvaluation._id);
+        setLoadedEvaluationStatus(selectedEvaluation.status);
         const newLevels: Record<string, CompetencyLevel> = {};
         const newRemarks: Record<string, string> = {};
         for (const entry of selectedEvaluation.entries) {
@@ -209,6 +233,8 @@ export function useCompetencyEvaluation(
           ),
         );
       } else if (query.data) {
+        setLoadedEvaluationId(null);
+        setLoadedEvaluationStatus(null);
         const today = getManilaDateKey();
         setLevels({});
         setRemarks({});
@@ -220,7 +246,14 @@ export function useCompetencyEvaluation(
     return () => {
       cancelled = true;
     };
-  }, [childId, query.data, selectedEvaluation, selectedPeriod, user?.id]);
+  }, [
+    childId,
+    query.data,
+    selectedEvaluation,
+    selectedPeriod,
+    user?.id,
+    isCreatingNew,
+  ]);
 
   const groupedDefinitions = useMemo(() => {
     const groups = new Map<string, CompetencyDefinition[]>();
@@ -278,8 +311,17 @@ export function useCompetencyEvaluation(
   }, [query.data?.evaluations]);
 
   const selectedPeriodState = periodStates[selectedPeriod];
-  const isReadOnly =
-    options.isParentView || selectedEvaluation?.status === "submitted";
+  const isFinalized = Boolean(
+    !isCreatingNew &&
+    loadedEvaluationId &&
+    loadedEvaluationStatus === "submitted",
+  );
+  const isReadOnly = options.isParentView || (isFinalized && !isEditing);
+  const canEditFinalized = Boolean(
+    !options.isParentView &&
+    isFinalized &&
+    evaluationDate === getManilaDateKey(),
+  );
   const hasUnsavedChanges = Boolean(
     query.data &&
     !isReadOnly &&
@@ -288,7 +330,14 @@ export function useCompetencyEvaluation(
   );
 
   useEffect(() => {
-    if (!user?.id || !childId || isReadOnly || !query.data) return;
+    if (
+      !user?.id ||
+      !childId ||
+      isReadOnly ||
+      isDateLookupPending ||
+      !query.data
+    )
+      return;
     const currentSnapshot = createSnapshot(
       levels,
       remarks,
@@ -300,6 +349,7 @@ export function useCompetencyEvaluation(
     const timeout = setTimeout(() => {
       const payload: CompetencyDraftPayload = {
         childId,
+        evaluationId: loadedEvaluationId ?? undefined,
         period: selectedPeriod,
         evaluationDate,
         levels,
@@ -323,7 +373,9 @@ export function useCompetencyEvaluation(
     evaluationDate,
     generalNotes,
     isReadOnly,
+    isDateLookupPending,
     levels,
+    loadedEvaluationId,
     query.data,
     refreshPendingCount,
     remarks,
@@ -367,6 +419,7 @@ export function useCompetencyEvaluation(
 
       return submitCompetencyEvaluation({
         childId,
+        evaluationId: isEditing ? (loadedEvaluationId ?? undefined) : undefined,
         evaluationDate,
         period: selectedPeriod,
         status,
@@ -392,6 +445,10 @@ export function useCompetencyEvaluation(
           queryKey: mobileQueryKeys.competencyHistory(childId),
         }),
       ]);
+      setLoadedEvaluationId(data.evaluation._id);
+      setLoadedEvaluationStatus(data.evaluation.status);
+      setIsCreatingNew(false);
+      setIsEditing(false);
       Alert.alert(
         status === "draft"
           ? "Draft saved on this device"
@@ -465,7 +522,68 @@ export function useCompetencyEvaluation(
         ],
       );
     } else {
+      setIsEditing(false);
       setSelectedPeriod(newPeriod);
+    }
+  };
+
+  const loadEvaluationIntoForm = (evaluation: CompetencyEvaluation) => {
+    setIsCreatingNew(false);
+    setLoadedEvaluationId(evaluation._id);
+    setLoadedEvaluationStatus(evaluation.status);
+    setSelectedPeriod(evaluation.period);
+    const newLevels: Record<string, CompetencyLevel> = {};
+    const newRemarks: Record<string, string> = {};
+    for (const entry of evaluation.entries || []) {
+      newLevels[entry.competency._id] = entry.level;
+      if (entry.remarks) newRemarks[entry.competency._id] = entry.remarks;
+    }
+    setLevels(newLevels);
+    setRemarks(newRemarks);
+    setGeneralNotes(evaluation.generalNotes || "");
+    const savedDate =
+      toManilaDateKey(evaluation.evaluationDate) || getManilaDateKey();
+    setEvaluationDate(savedDate);
+    setIsEditing(false);
+    setSavedSnapshot(
+      createSnapshot(
+        newLevels,
+        newRemarks,
+        evaluation.generalNotes || "",
+        savedDate,
+      ),
+    );
+  };
+
+  const handleEvaluationDateChange = async (value: string) => {
+    if (isReadOnly) return;
+    setEvaluationDate(value);
+    if (!childId || isOffline) return;
+
+    const lookupSequence = ++dateLookupSequence.current;
+    setIsDateLookupPending(true);
+    try {
+      const existingEvaluation = await getCompetencyEvaluationByPeriod(
+        childId,
+        selectedPeriod,
+        value,
+      );
+      if (lookupSequence !== dateLookupSequence.current) return;
+      if (existingEvaluation) loadEvaluationIntoForm(existingEvaluation);
+    } catch (error) {
+      if (lookupSequence !== dateLookupSequence.current) return;
+      reportHandledError("competency.evaluation.date_lookup", error);
+      Alert.alert(
+        "Unable to Load Evaluation",
+        getUserFriendlyErrorMessage(
+          error,
+          "The evaluation for this date could not be loaded. Please try again.",
+        ),
+      );
+    } finally {
+      if (lookupSequence === dateLookupSequence.current) {
+        setIsDateLookupPending(false);
+      }
     }
   };
 
@@ -484,6 +602,59 @@ export function useCompetencyEvaluation(
     progress,
     summary,
     isReadOnly,
+    isFinalized,
+    isEditing,
+    loadedEvaluationId,
+    canEditFinalized,
+    isCreatingNew,
+    startEditing: () => {
+      if (!canEditFinalized) return;
+      setIsCreatingNew(false);
+      setIsEditing(true);
+    },
+    cancelEditing: () => {
+      setIsEditing(false);
+      setIsCreatingNew(false);
+      // Revert to selectedEvaluation if available
+      if (selectedEvaluation) {
+        setLoadedEvaluationId(selectedEvaluation._id);
+        setLoadedEvaluationStatus(selectedEvaluation.status);
+        const newLevels: Record<string, CompetencyLevel> = {};
+        const newRemarks: Record<string, string> = {};
+        for (const entry of selectedEvaluation.entries) {
+          newLevels[entry.competency._id] = entry.level;
+          if (entry.remarks) newRemarks[entry.competency._id] = entry.remarks;
+        }
+        setLevels(newLevels);
+        setRemarks(newRemarks);
+        setGeneralNotes(selectedEvaluation.generalNotes || "");
+        const savedDate =
+          toManilaDateKey(selectedEvaluation.evaluationDate) ||
+          getManilaDateKey();
+        setEvaluationDate(savedDate);
+        setSavedSnapshot(
+          createSnapshot(
+            newLevels,
+            newRemarks,
+            selectedEvaluation.generalNotes || "",
+            savedDate,
+          ),
+        );
+      }
+    },
+    loadEvaluation: loadEvaluationIntoForm,
+    startNewEvaluation: () => {
+      setIsCreatingNew(true);
+      setLoadedEvaluationId(null);
+      setLoadedEvaluationStatus(null);
+      const today = getManilaDateKey();
+      setLevels({});
+      setRemarks({});
+      setGeneralNotes("");
+      setEvaluationDate(today);
+      setIsEditing(true);
+      setSavedSnapshot(createSnapshot({}, {}, "", today));
+    },
     hasUnsavedChanges,
     hasLocalDraft,
     isOffline,
@@ -500,8 +671,7 @@ export function useCompetencyEvaluation(
       setGeneralNotes(val);
     },
     setEvaluationDate: (value: string) => {
-      if (isReadOnly) return;
-      setEvaluationDate(value);
+      void handleEvaluationDateChange(value);
     },
     saveDraft: async () => {
       try {
@@ -547,7 +717,7 @@ export function useCompetencyEvaluation(
         );
       }
     },
-    isSubmitting: mutation.isPending,
+    isSubmitting: mutation.isPending || isDateLookupPending,
   };
 }
 

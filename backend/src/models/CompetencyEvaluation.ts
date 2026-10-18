@@ -36,7 +36,7 @@ CompetencyEvaluationSchema.index({ child: 1, evaluationDate: -1 });
 CompetencyEvaluationSchema.index({ teacher: 1, evaluationDate: -1 });
 CompetencyEvaluationSchema.index({ daycareCenter: 1, evaluationDate: -1 });
 CompetencyEvaluationSchema.index(
-  { child: 1, schoolYear: 1, period: 1 },
+  { child: 1, evaluationDate: 1, period: 1 },
   { unique: true, partialFilterExpression: { status: "submitted" } },
 );
 

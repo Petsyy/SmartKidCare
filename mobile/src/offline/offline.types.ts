@@ -39,6 +39,7 @@ export type NutritionDraftPayload = {
 
 export type CompetencyDraftPayload = {
   childId: string;
+  evaluationId?: string;
   period: "quarterly" | "final";
   evaluationDate: string;
   levels: Record<

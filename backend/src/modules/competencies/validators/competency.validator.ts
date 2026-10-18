@@ -10,6 +10,7 @@ const entry = z.object({
 
 export const competencyEvaluationSchema = z.object({
   childId: objectId,
+  evaluationId: objectId.optional(),
   evaluationDate: z.string().trim().min(1),
   period: z.enum(["quarterly", "final"]),
   status: z.enum(["draft", "submitted"]).default("submitted"),
@@ -44,6 +45,9 @@ export const competencyEvaluationSchema = z.object({
 
 const childParams = z.object({ childId: objectId });
 const childAndPeriodParams = z.object({ childId: objectId, period: z.enum(["quarterly", "final"]) });
+const evaluationQuery = z.object({
+  date: z.string().trim().optional(),
+});
 const historyQuery = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(50).default(10),
@@ -57,5 +61,6 @@ const analyticsQuery = z.object({
 export const validateEvaluation = validate(competencyEvaluationSchema);
 export const validateChildParams = validate(childParams, "params");
 export const validateChildAndPeriodParams = validate(childAndPeriodParams, "params");
+export const validateEvaluationQuery = validate(evaluationQuery, "query");
 export const validateHistoryQuery = validate(historyQuery, "query");
 export const validateAnalyticsQuery = validate(analyticsQuery, "query");

@@ -6,6 +6,7 @@ export type CompetencyAuthUser = {
 
 export type CompetencyEvaluationInput = {
   childId: string;
+  evaluationId?: string;
   evaluationDate: string;
   period: "quarterly" | "final";
   status: "draft" | "submitted";
@@ -26,6 +27,13 @@ export interface CompetencyDefinitionRepositoryContract {
 export interface CompetencyEvaluationRepositoryContract {
   removeLegacyIndexes(): Promise<void>;
   create(data: Record<string, unknown>): Promise<any>;
+  findById(id: string): Promise<any | null>;
+  findByChildAndDate(
+    childId: string,
+    startOfDay: Date,
+    endOfDay: Date,
+    period?: string,
+  ): Promise<any | null>;
   findByChildSchoolYearAndPeriod(
     childId: string,
     schoolYear: string,

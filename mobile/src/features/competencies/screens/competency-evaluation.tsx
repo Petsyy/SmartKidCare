@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -7,7 +8,12 @@ import {
   View,
 } from "react-native";
 import { useLocalSearchParams, type Href } from "expo-router";
-import { ClipboardCheck, CheckCircle2, Lock } from "lucide-react-native";
+import {
+  ClipboardCheck,
+  CheckCircle2,
+  Lock,
+  History,
+} from "lucide-react-native";
 import {
   ScreenHeader,
   ScreenLoadingState,
@@ -21,6 +27,7 @@ import {
 } from "../hooks/useCompetencyEvaluation";
 import { useUnsavedChangesGuard } from "../../../hooks/use-unsaved-changes-guard";
 import { CompetencyDatePicker } from "../components/competency-date-picker";
+import { CompetencyHistoryBottomSheet } from "../components/competency-history-bottom-sheet";
 import { useAndroidBackRoute } from "../../../hooks/use-android-back-route";
 import { useSafeBack } from "../../../hooks/use-safe-back";
 
@@ -31,6 +38,7 @@ export default function CompetencyEvaluationScreen() {
   }>();
   const childId = typeof params.childId === "string" ? params.childId : null;
   const isParentView = params.isParentView === "true";
+  const [isHistoryVisible, setIsHistoryVisible] = useState(false);
   const fallbackRoute: Href = isParentView
     ? "/(parent)/children"
     : childId
@@ -67,6 +75,16 @@ export default function CompetencyEvaluationScreen() {
             : "Individual skill checklist"
         }
         onBack={handleBack}
+        rightAction={
+          <Pressable
+            onPress={() => setIsHistoryVisible(true)}
+            accessibilityRole="button"
+            accessibilityLabel="View evaluation timeline"
+            className="h-10 w-10 items-center justify-center rounded-full bg-white/20 active:bg-white/30"
+          >
+            <History size={20} color="white" />
+          </Pressable>
+        }
       />
       {evaluation.isLoading ? (
         <ScreenLoadingState
@@ -184,7 +202,11 @@ export default function CompetencyEvaluationScreen() {
           <CompetencyDatePicker
             dateKey={evaluation.evaluationDate}
             dateLabel={evaluation.evaluationDateLabel}
-            disabled={evaluation.isSubmitting || evaluation.isReadOnly}
+            disabled={
+              evaluation.isSubmitting ||
+              evaluation.isReadOnly ||
+              evaluation.isFinalized
+            }
             onDateChange={evaluation.setEvaluationDate}
           />
 
@@ -219,15 +241,67 @@ export default function CompetencyEvaluationScreen() {
             </View>
           </View>
 
-          {evaluation.isReadOnly && (
-            <View className="mb-4 rounded-xl bg-amber-50 p-3 border border-amber-200">
-              <Text className="text-center text-sm font-semibold text-amber-800">
-                {isParentView
-                  ? "This is a read-only view of your child's competency evaluation."
-                  : "This evaluation has been submitted and is now read-only."}
+          {evaluation.isFinalized ? (
+            <View className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+              <View className="flex-row items-center justify-between">
+                <Text className="text-base font-bold text-emerald-900">
+                  {evaluation.isEditing
+                    ? "Editing Submitted Evaluation"
+                    : "Submitted Evaluation"}
+                </Text>
+                <View className="rounded-full bg-emerald-100 px-2.5 py-0.5">
+                  <Text className="text-xs font-semibold text-emerald-800">
+                    {evaluation.evaluationDateLabel}
+                  </Text>
+                </View>
+              </View>
+              <Text className="mt-1 text-sm text-emerald-800">
+                {evaluation.isEditing
+                  ? "Updating record for this evaluation date. Changes will replace this submission."
+                  : isParentView
+                    ? "This is a read-only view of your child's competency evaluation."
+                    : evaluation.canEditFinalized
+                      ? "Viewing completed record. You can edit this record or record a new evaluation for another date."
+                      : "Past evaluations are read-only. You can record a new evaluation for another date."}
               </Text>
+              {!isParentView && !evaluation.isEditing ? (
+                <View className="mt-3 flex-row gap-2">
+                  {evaluation.canEditFinalized ? (
+                    <Pressable
+                      onPress={evaluation.startEditing}
+                      accessibilityRole="button"
+                      accessibilityLabel="Edit submitted evaluation"
+                      className="min-h-11 flex-1 items-center justify-center rounded-xl bg-emerald-700 px-4 active:bg-emerald-800"
+                    >
+                      <Text className="font-bold text-white">Edit Record</Text>
+                    </Pressable>
+                  ) : null}
+                  <Pressable
+                    onPress={evaluation.startNewEvaluation}
+                    accessibilityRole="button"
+                    accessibilityLabel="Record new evaluation"
+                    className="min-h-11 flex-1 items-center justify-center rounded-xl bg-teal-600 px-4 active:bg-teal-700"
+                  >
+                    <Text className="font-bold text-white">
+                      + New Evaluation
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : null}
+              {evaluation.isEditing ? (
+                <Pressable
+                  onPress={evaluation.cancelEditing}
+                  accessibilityRole="button"
+                  accessibilityLabel="Cancel editing evaluation"
+                  className="mt-3 min-h-10 items-center justify-center rounded-xl bg-emerald-100 px-4 active:bg-emerald-200"
+                >
+                  <Text className="text-xs font-bold text-emerald-800">
+                    Cancel Editing
+                  </Text>
+                </Pressable>
+              ) : null}
             </View>
-          )}
+          ) : null}
 
           {evaluation.hasLocalDraft && !evaluation.isReadOnly && (
             <View className="mb-4 rounded-xl border border-teal-100 bg-teal-50 p-3">
@@ -341,6 +415,14 @@ export default function CompetencyEvaluationScreen() {
           )}
         </ScrollView>
       )}
+
+      <CompetencyHistoryBottomSheet
+        childId={childId}
+        childName={child ? `${child.firstName} ${child.lastName}` : "Child"}
+        visible={isHistoryVisible}
+        onClose={() => setIsHistoryVisible(false)}
+        onSelectEvaluation={evaluation.loadEvaluation}
+      />
     </ScreenShell>
   );
 }

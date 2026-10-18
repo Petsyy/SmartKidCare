@@ -34,7 +34,7 @@ export function CompetencyDatePicker({
   const [dateBounds] = useState(() => {
     const maximumDate = new Date();
     return {
-      minimumDate: new Date(maximumDate.getTime() - 30 * DAY_MS),
+      minimumDate: new Date(maximumDate.getTime() - 365 * DAY_MS),
       maximumDate,
     };
   });
@@ -59,7 +59,7 @@ export function CompetencyDatePicker({
     ) {
       Alert.alert(
         "Invalid Evaluation Date",
-        `Competency evaluations can only be backdated up to 30 days (from ${minimumDateKey} to ${todayDateKey}).`,
+        `Evaluation date cannot be in the future and must be within the current school year.`,
       );
       return false;
     }

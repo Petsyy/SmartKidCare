@@ -62,12 +62,33 @@ export class CompetencyEvaluationRepository extends BaseRepository<any> {
   }
 
   async removeLegacyIndexes(): Promise<void> {
-    const legacyIndexName = "child_1_teacher_1_evaluationDate_1";
+    const legacyIndexNames = [
+      "child_1_teacher_1_evaluationDate_1",
+      "child_1_schoolYear_1_period_1",
+    ];
     const indexes = await this.model.collection.indexes();
 
-    if (indexes.some((index) => index.name === legacyIndexName)) {
-      await this.model.collection.dropIndex(legacyIndexName);
+    for (const name of legacyIndexNames) {
+      if (indexes.some((index) => index.name === name)) {
+        await this.model.collection.dropIndex(name);
+      }
     }
+  }
+
+  async findByChildAndDate(
+    childId: string,
+    startOfDay: Date,
+    endOfDay: Date,
+    period?: string,
+  ): Promise<any | null> {
+    const query: Record<string, unknown> = {
+      child: childId,
+      evaluationDate: { $gte: startOfDay, $lte: endOfDay },
+    };
+    if (period) {
+      query.period = periodFilter(period);
+    }
+    return this.model.findOne(query).populate(EVALUATION_POPULATE).lean();
   }
 
   async findByChildSchoolYearAndPeriod(
@@ -89,6 +110,7 @@ export class CompetencyEvaluationRepository extends BaseRepository<any> {
   ): Promise<any | null> {
     return this.model
       .findOne({ child: childId, schoolYear, period: periodFilter(period) })
+      .sort({ evaluationDate: -1, updatedAt: -1 })
       .populate(EVALUATION_POPULATE)
       .lean();
   }

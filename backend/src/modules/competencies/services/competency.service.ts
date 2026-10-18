@@ -24,7 +24,10 @@ import type {
 import { canAccessChild } from "../../../shared/services/child-access.service";
 import { getSingleCenterId } from "../../../shared/services/single-center.service";
 import { logger } from "../../../shared/lib/logger";
+import { toLocalDateKey } from "../../../shared/utils/date.utils";
 import { competencyNotificationService } from "./competency-notification.service";
+
+const MANILA_OFFSET_MINUTES = 8 * 60;
 
 const COMPETENCY_LEVELS = [
   "not_demonstrated",
@@ -90,7 +93,9 @@ export const compareCompetencyPeriods = (
   const finalByChild = new Map(
     finalEvaluations.map((evaluation) => [pairKey(evaluation), evaluation]),
   );
-  const levelRank = new Map(COMPETENCY_LEVELS.map((level, index) => [level, index]));
+  const levelRank = new Map(
+    COMPETENCY_LEVELS.map((level, index) => [level, index]),
+  );
   let matchedStudents = 0;
   let improvedRatings = 0;
   let unchangedRatings = 0;
@@ -101,18 +106,23 @@ export const compareCompetencyPeriods = (
     if (!final) return;
     matchedStudents += 1;
     const finalEntries = new Map(
-      (final.entries || []).map((entry) => [String(entry.competency), entry.level]),
+      (final.entries || []).map((entry) => [
+        String(entry.competency),
+        entry.level,
+      ]),
     );
     quarterly.entries?.forEach((entry) => {
       const finalLevel = finalEntries.get(String(entry.competency));
       if (!finalLevel) return;
-      const change = (levelRank.get(finalLevel) ?? 0) - (levelRank.get(entry.level) ?? 0);
+      const change =
+        (levelRank.get(finalLevel) ?? 0) - (levelRank.get(entry.level) ?? 0);
       if (change > 0) improvedRatings += 1;
       else if (change < 0) declinedRatings += 1;
       else unchangedRatings += 1;
     });
   });
-  const totalComparedRatings = improvedRatings + unchangedRatings + declinedRatings;
+  const totalComparedRatings =
+    improvedRatings + unchangedRatings + declinedRatings;
   return {
     matchedStudents,
     totalComparedRatings,
@@ -131,6 +141,7 @@ export class CompetencyService {
     private readonly evaluationRepository: CompetencyEvaluationRepositoryContract,
     private readonly childRepository: CompetencyChildRepository,
     private readonly notificationService: CompetencyNotificationServiceContract,
+    private readonly now: () => Date = () => new Date(),
   ) {}
 
   async initializeCatalog(): Promise<void> {
@@ -152,7 +163,9 @@ export class CompetencyService {
 
     const child = await this.getAccessibleChild(validUser, input.childId);
     if (child.status !== "Active") {
-      throw new ValidationError("This child is archived and cannot receive new records.");
+      throw new ValidationError(
+        "This child is archived and cannot receive new records.",
+      );
     }
     const parsedDay = this.parseEvaluationDay(input.evaluationDate);
     const activeDefinitions = await this.definitionRepository.findActive();
@@ -178,28 +191,59 @@ export class CompetencyService {
     }
 
     const schoolYear = String(child.schoolYear || "Not set");
-    const existing =
-      await this.evaluationRepository.findByChildSchoolYearAndPeriod(
+    let existing: any = null;
+    if (input.evaluationId) {
+      existing = await this.evaluationRepository.findById(input.evaluationId);
+    }
+    if (!existing) {
+      existing = await this.evaluationRepository.findByChildAndDate(
         input.childId,
-        schoolYear,
+        parsedDay.start,
+        parsedDay.end,
         input.period,
       );
+    }
 
-    if (existing?.status === "submitted") {
-      throw new ConflictError(
-        `A submitted evaluation already exists for this child in the ${input.period} period.`,
+    if (existing) {
+      const existingChildId = String(
+        existing.child?._id || existing.child || "",
       );
+      if (existingChildId !== input.childId) {
+        throw new ForbiddenError(
+          "This evaluation does not belong to the selected child.",
+        );
+      }
+      if (
+        existing.period !== input.period &&
+        !(existing.period === "midyear" && input.period === "quarterly")
+      ) {
+        throw new ConflictError("The evaluation period cannot be changed.");
+      }
+      if (existing.status === "submitted") {
+        const existingDateKey = new Date(existing.evaluationDate)
+          .toISOString()
+          .slice(0, 10);
+        const todayKey = toLocalDateKey(this.now(), MANILA_OFFSET_MINUTES);
+        if (existingDateKey !== todayKey) {
+          throw new ConflictError(
+            "Submitted evaluations can only be edited on their evaluation date.",
+          );
+        }
+        if (input.evaluationDate !== existingDateKey) {
+          throw new ConflictError(
+            "The date of a submitted evaluation cannot be changed.",
+          );
+        }
+      }
     }
 
     const prerequisitePeriod = input.period === "final" ? "quarterly" : null;
 
     if (prerequisitePeriod) {
-      const prerequisite =
-        await this.evaluationRepository.findByChildSchoolYearAndPeriod(
-          input.childId,
-          schoolYear,
-          prerequisitePeriod,
-        );
+      const prerequisite = await this.evaluationRepository.findByChildAndPeriod(
+        input.childId,
+        prerequisitePeriod,
+      );
       if (prerequisite?.status !== "submitted") {
         throw new ConflictError(
           "Final evaluation is locked until the Quarterly evaluation is submitted.",
@@ -261,14 +305,18 @@ export class CompetencyService {
           })),
         });
       } catch (error) {
-        logger.error("Competency parent notification failed after evaluation save.", {
-          evaluationId: String(evaluation._id),
-          childId: input.childId,
-          error: error instanceof Error ? error.message : String(error),
-        });
+        logger.error(
+          "Competency parent notification failed after evaluation save.",
+          {
+            evaluationId: String(evaluation._id),
+            childId: input.childId,
+            error: error instanceof Error ? error.message : String(error),
+          },
+        );
         notification = {
           status: "skipped",
-          reason: "Evaluation saved, but the parent notification could not be created.",
+          reason:
+            "Evaluation saved, but the parent notification could not be created.",
         };
       }
     }
@@ -280,9 +328,19 @@ export class CompetencyService {
     user: CompetencyAuthUser | undefined,
     childId: string,
     period: string,
+    dateKey?: string,
   ): Promise<any | null> {
     const validUser = this.assertReader(user);
     const child = await this.getAccessibleChild(validUser, childId);
+    if (dateKey) {
+      const parsedDay = this.parseEvaluationDay(dateKey);
+      return this.evaluationRepository.findByChildAndDate(
+        childId,
+        parsedDay.start,
+        parsedDay.end,
+        period,
+      );
+    }
     const schoolYear = String(child.schoolYear || "Not set");
     return this.evaluationRepository.findViewByChildSchoolYearAndPeriod(
       childId,
@@ -330,16 +388,27 @@ export class CompetencyService {
       filters.schoolYear && filters.schoolYear !== "all"
         ? filters.schoolYear
         : schoolYears[0] || "all";
-    const schoolYearFilter = selectedSchoolYear === "all" ? undefined : selectedSchoolYear;
+    const schoolYearFilter =
+      selectedSchoolYear === "all" ? undefined : selectedSchoolYear;
     const baseFilters = { centerId, schoolYear: schoolYearFilter };
-    const [evaluations, quarterlyEvaluations, finalEvaluations] = await Promise.all([
-      this.evaluationRepository.aggregateLatestSubmitted({
-        ...baseFilters,
-        period: filters.period && filters.period !== "all" ? filters.period : undefined,
-      }),
-      this.evaluationRepository.aggregateLatestSubmitted({ ...baseFilters, period: "quarterly" }),
-      this.evaluationRepository.aggregateLatestSubmitted({ ...baseFilters, period: "final" }),
-    ]);
+    const [evaluations, quarterlyEvaluations, finalEvaluations] =
+      await Promise.all([
+        this.evaluationRepository.aggregateLatestSubmitted({
+          ...baseFilters,
+          period:
+            filters.period && filters.period !== "all"
+              ? filters.period
+              : undefined,
+        }),
+        this.evaluationRepository.aggregateLatestSubmitted({
+          ...baseFilters,
+          period: "quarterly",
+        }),
+        this.evaluationRepository.aggregateLatestSubmitted({
+          ...baseFilters,
+          period: "final",
+        }),
+      ]);
     const competencies = summarizeCompetencyRatings(definitions, evaluations);
 
     return {
@@ -354,14 +423,23 @@ export class CompetencyService {
       periods: {
         quarterly: {
           totalStudents: quarterlyEvaluations.length,
-          competencies: summarizeCompetencyRatings(definitions, quarterlyEvaluations),
+          competencies: summarizeCompetencyRatings(
+            definitions,
+            quarterlyEvaluations,
+          ),
         },
         final: {
           totalStudents: finalEvaluations.length,
-          competencies: summarizeCompetencyRatings(definitions, finalEvaluations),
+          competencies: summarizeCompetencyRatings(
+            definitions,
+            finalEvaluations,
+          ),
         },
       },
-      comparison: compareCompetencyPeriods(quarterlyEvaluations, finalEvaluations),
+      comparison: compareCompetencyPeriods(
+        quarterlyEvaluations,
+        finalEvaluations,
+      ),
     };
   }
 
@@ -369,7 +447,11 @@ export class CompetencyService {
     user?: CompetencyAuthUser,
   ): Required<CompetencyAuthUser> {
     if (!user?.id) throw new UnauthorizedError();
-    if (user.role !== "teacher" && user.role !== "barangay_captain" && user.role !== "parent")
+    if (
+      user.role !== "teacher" &&
+      user.role !== "barangay_captain" &&
+      user.role !== "parent"
+    )
       throw new ForbiddenError();
     return user as Required<CompetencyAuthUser>;
   }
@@ -400,7 +482,9 @@ export class CompetencyService {
     ) {
       throw new ValidationError("Invalid evaluation date.");
     }
-    if (date.getTime() > Date.now())
+    const dateKey = value;
+    const todayKey = toLocalDateKey(this.now(), MANILA_OFFSET_MINUTES);
+    if (dateKey > todayKey)
       throw new ValidationError("Evaluation date cannot be in the future.");
     return {
       date,
