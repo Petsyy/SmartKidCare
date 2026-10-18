@@ -1,14 +1,16 @@
 import { Pressable, Text, View } from "react-native";
-import { UserCheck, UserX, Calendar, Clock, User, X } from "lucide-react-native";
+import { UserCheck, UserX, Calendar, Clock, User, X, ShieldCheck } from "lucide-react-native";
 import { MonthlyRecordViewer } from "@/src/components/ui/monthly-record-viewer";
 import { useParentAttendance } from "@/src/features/attendance/hooks";
 import { useAndroidBackRoute } from "@/src/hooks/use-android-back-route";
 
 type AttendanceDay = {
   day: number;
-  status: "Present" | "Absent" | null;
+  status: "Present" | "Absent" | "Excused" | null;
   teacherName?: string;
   recordedAt?: string;
+  excuseReason?: string;
+  notes?: string;
 };
 
 export default function ViewAttendanceDetails() {
@@ -40,7 +42,7 @@ export default function ViewAttendanceDetails() {
 
   const summary = calculateMonthlySummary();
   const attendanceRate = calculateAttendanceRate();
-  const totalLoggedDays = summary.present + summary.absent;
+  const rateEligibleDays = summary.present + summary.absent;
 
   return (
     <MonthlyRecordViewer<AttendanceDay>
@@ -80,6 +82,13 @@ export default function ViewAttendanceDetails() {
             dotClass: "bg-rose-500",
           };
         }
+        if (status === "Excused") {
+          return {
+            cellClass: "bg-amber-50 border-amber-200/80 shadow-sm shadow-amber-500/10",
+            textClass: "text-amber-900",
+            dotClass: "bg-amber-500",
+          };
+        }
         if (isToday) {
           return {
             cellClass: "bg-teal-50/70 border-teal-300",
@@ -109,6 +118,10 @@ export default function ViewAttendanceDetails() {
             <View className="flex-row items-center bg-rose-50 border border-rose-200/60 px-3 py-1.5 rounded-full">
               <View className="w-2.5 h-2.5 rounded-full bg-rose-500 mr-2" />
               <Text className="text-xs font-bold text-rose-800">Absent</Text>
+            </View>
+            <View className="flex-row items-center bg-amber-50 border border-amber-200/60 px-3 py-1.5 rounded-full">
+              <View className="w-2.5 h-2.5 rounded-full bg-amber-500 mr-2" />
+              <Text className="text-xs font-bold text-amber-800">Excused</Text>
             </View>
             <View className="flex-row items-center bg-teal-50 border border-teal-200/60 px-3 py-1.5 rounded-full">
               <View className="w-2.5 h-2.5 rounded-full bg-teal-500 mr-2" />
@@ -167,6 +180,10 @@ export default function ViewAttendanceDetails() {
               </Text>
             </View>
           </View>
+          <View className="mb-5 flex-row items-center rounded-2xl border border-amber-100 bg-amber-50/80 p-4">
+            <ShieldCheck size={22} color="#D97706" />
+            <Text className="ml-3 font-bold text-amber-900">{summary.excused} days excused</Text>
+          </View>
 
           {/* Rate Progress Bar */}
           <View className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
@@ -187,8 +204,8 @@ export default function ViewAttendanceDetails() {
               />
             </View>
             <Text className="text-xs text-gray-500">
-              {totalLoggedDays > 0
-                ? `${summary.present} out of ${totalLoggedDays} recorded school days present.`
+              {rateEligibleDays > 0
+                ? `${summary.present} out of ${rateEligibleDays} non-excused recorded days present.`
                 : "No attendance entries recorded for this month."}
             </Text>
           </View>
@@ -285,14 +302,18 @@ export default function ViewAttendanceDetails() {
                       className={`px-3 py-1 rounded-full ${
                         dayDetails?.status === "Present"
                           ? "bg-emerald-100"
-                          : "bg-rose-100"
+                          : dayDetails?.status === "Excused"
+                            ? "bg-amber-100"
+                            : "bg-rose-100"
                       }`}
                     >
                       <Text
                         className={`text-sm font-extrabold ${
                           dayDetails?.status === "Present"
                             ? "text-emerald-800"
-                            : "text-rose-800"
+                            : dayDetails?.status === "Excused"
+                              ? "text-amber-800"
+                              : "text-rose-800"
                         }`}
                       >
                         {dayDetails?.status}

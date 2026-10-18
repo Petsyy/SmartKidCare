@@ -20,12 +20,14 @@ interface AttendanceDatePickerProps {
   dateKey: string;
   dateLabel: string;
   onDateChange: (dateKey: string) => void;
+  disabled?: boolean;
 }
 
 export function AttendanceDatePicker({
   dateKey,
   dateLabel,
   onDateChange,
+  disabled = false,
 }: AttendanceDatePickerProps) {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [pickerDate, setPickerDate] = useState(() => new Date());
@@ -40,6 +42,7 @@ export function AttendanceDatePicker({
   const { minimumDate, maximumDate } = dateBounds;
 
   const openDatePicker = () => {
+    if (disabled) return;
     setPickerDate(selectedDate);
     setShowDatePicker(true);
   };
@@ -90,10 +93,12 @@ export function AttendanceDatePicker({
       <View className="px-6 pb-2 pt-4">
         <Pressable
           onPress={openDatePicker}
+          disabled={disabled}
           accessibilityRole="button"
           accessibilityLabel={`Attendance date: ${dateLabel}`}
           accessibilityHint="Opens a date picker. Dates from the last seven days can be selected."
-          className="flex-row items-center justify-between rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3.5 active:opacity-85"
+          accessibilityState={{ disabled }}
+          className={`flex-row items-center justify-between rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3.5 active:opacity-85 ${disabled ? "opacity-60" : ""}`}
         >
           <View className="flex-row items-center">
             <Calendar size={20} color="#047857" />
@@ -106,7 +111,7 @@ export function AttendanceDatePicker({
               </Text>
             </View>
           </View>
-          <Text className="text-sm font-bold text-emerald-700">Change</Text>
+          <Text className="text-sm font-bold text-emerald-700">{disabled ? "Locked" : "Change"}</Text>
         </Pressable>
       </View>
 

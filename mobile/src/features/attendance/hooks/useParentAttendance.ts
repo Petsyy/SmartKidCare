@@ -9,13 +9,15 @@ import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { useOffline } from "@/src/offline/offline-context";
 import { onlineWithOfflineFallback, readOfflineMonth, readOfflineResource } from "@/src/offline/offline-read";
 
-export type AttendanceStatus = "Present" | "Absent" | null;
+export type AttendanceStatus = "Present" | "Absent" | "Excused" | null;
 
 export interface AttendanceDay {
   day: number;
   status: AttendanceStatus;
   teacherName?: string;
   recordedAt?: string;
+  excuseReason?: string;
+  notes?: string;
 }
 
 const EMPTY_CHILDREN: Child[] = [];
@@ -90,7 +92,11 @@ export const useParentAttendance = () => {
         );
         if (entry) {
           const status: AttendanceStatus =
-            entry.status === "present" ? "Present" : "Absent";
+            entry.status === "present"
+              ? "Present"
+              : entry.status === "excused"
+                ? "Excused"
+                : "Absent";
           const teacher = record.teacher;
           const teacherName = teacher
             ? `${teacher.firstName} ${teacher.lastName}`
@@ -101,6 +107,8 @@ export const useParentAttendance = () => {
             status,
             teacherName,
             recordedAt,
+            excuseReason: entry.excuseReason,
+            notes: entry.notes,
           });
         }
       });
@@ -147,16 +155,19 @@ export const useParentAttendance = () => {
         return "bg-green-500";
       case "Absent":
         return "bg-red-500";
+      case "Excused":
+        return "bg-amber-500";
       default:
         return "bg-transparent";
     }
   };
 
   const calculateMonthlySummary = () => {
-    const summary = { present: 0, absent: 0 };
+    const summary = { present: 0, absent: 0, excused: 0 };
     attendanceData.forEach((day) => {
       if (day.status === "Present") summary.present++;
       else if (day.status === "Absent") summary.absent++;
+      else if (day.status === "Excused") summary.excused++;
     });
     return summary;
   };

@@ -8,9 +8,14 @@ const AttendanceRecordSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["present", "absent"],
+    enum: ["present", "absent", "excused"],
     required: true,
   },
+  excuseReason: {
+    type: String,
+    enum: ["sick", "medical_appointment", "family_emergency", "other"],
+  },
+  notes: { type: String, trim: true, maxlength: 250 },
 });
 
 const AttendanceSchema = new mongoose.Schema(
@@ -38,6 +43,7 @@ const AttendanceSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    version: { type: Number, default: 0, min: 0 },
     records: [AttendanceRecordSchema],
   },
   { timestamps: true }

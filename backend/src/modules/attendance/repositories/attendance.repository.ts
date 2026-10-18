@@ -1,4 +1,5 @@
 import Attendance from "../../../models/Attendance";
+import AttendanceRevision from "../../../models/AttendanceRevision";
 import Child from "../../../models/Child";
 import { BaseRepository } from "../../../shared/repositories/base.repository";
 
@@ -24,6 +25,18 @@ export class ChildRepository extends BaseRepository<any> {
       .select("_id")
       .lean();
     return children.map((c: any) => String(c._id));
+  }
+
+  async findAllAssignedChildIds(teacherId: string, daycareCenterId: string) {
+    const children = await this.model
+      .find({
+        teacher: teacherId,
+        daycareCenter: daycareCenterId,
+        status: "Active",
+      })
+      .select("_id")
+      .lean();
+    return children.map((child: any) => String(child._id));
   }
 
   async findChildIdsByParent(parentId: string): Promise<string[]> {
@@ -54,6 +67,67 @@ export class AttendanceRepository extends BaseRepository<any> {
 
   async findByOperationId(clientOperationId: string) {
     return this.model.findOne({ clientOperationId });
+  }
+
+  async findById(attendanceId: string) {
+    return this.model.findById(attendanceId);
+  }
+
+  async findRevisionByOperationId(teacherId: string, clientOperationId: string) {
+    return AttendanceRevision.findOne({ teacher: teacherId, clientOperationId });
+  }
+
+  async updateWithRevision(input: {
+    attendanceId: string;
+    teacherId: string;
+    daycareCenterId: string;
+    expectedVersion: number;
+    clientOperationId: string;
+    payloadHash: string;
+    records: unknown[];
+    changes: unknown[];
+  }) {
+    const session = await this.model.db.startSession();
+    let updated: any = null;
+    try {
+      await session.withTransaction(async () => {
+        const versionCondition =
+          input.expectedVersion === 0
+            ? { $or: [{ version: 0 }, { version: { $exists: false } }] }
+            : { version: input.expectedVersion };
+        updated = await this.model.findOneAndUpdate(
+          {
+            _id: input.attendanceId,
+            teacher: input.teacherId,
+            daycareCenter: input.daycareCenterId,
+            ...versionCondition,
+          },
+          {
+            $set: { records: input.records },
+            $inc: { version: 1 },
+          },
+          { new: true, runValidators: true, session },
+        );
+        if (!updated) return;
+        await AttendanceRevision.create(
+          [
+            {
+              attendance: input.attendanceId,
+              teacher: input.teacherId,
+              daycareCenter: input.daycareCenterId,
+              revision: input.expectedVersion + 1,
+              clientOperationId: input.clientOperationId,
+              payloadHash: input.payloadHash,
+              changes: input.changes,
+            },
+          ],
+          { session },
+        );
+      });
+      return updated;
+    } finally {
+      await session.endSession();
+    }
   }
 
   async findHistory(query: Record<string, unknown>) {

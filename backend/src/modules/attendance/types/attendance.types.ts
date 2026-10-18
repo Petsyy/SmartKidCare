@@ -15,6 +15,26 @@ export type SubmitAttendanceInput = {
   records: unknown;
 };
 
+export type AttendanceStatus = "present" | "absent" | "excused";
+export type ExcuseReason =
+  | "sick"
+  | "medical_appointment"
+  | "family_emergency"
+  | "other";
+
+export type AttendanceRecordInput = {
+  child: string;
+  status: AttendanceStatus;
+  excuseReason?: ExcuseReason;
+  notes?: string;
+};
+
+export type UpdateAttendanceInput = {
+  clientOperationId: string;
+  expectedVersion: number;
+  records: AttendanceRecordInput[];
+};
+
 export type AttendanceResult = {
   isUpdate: boolean;
   replayed: boolean;

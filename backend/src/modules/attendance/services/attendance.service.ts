@@ -3,6 +3,7 @@ import {
   ValidationError,
   ForbiddenError,
   ConflictError,
+  NotFoundError,
 } from "../../../shared/errors/app-error";
 import {
   hashAttendancePayload,
@@ -32,8 +33,39 @@ import type {
   AttendanceResult,
   PaginatedResult,
   AttendanceServiceDependencies,
+  AttendanceRecordInput,
+  UpdateAttendanceInput,
 } from "../types/attendance.types";
 import { assertTeacherCenter } from "../../../shared/services/child-access.service";
+
+const manilaDateKey = (date: Date) => {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${value.year}-${value.month}-${value.day}`;
+};
+
+const assertUniqueCompleteRoster = (
+  submittedIds: string[],
+  expectedIds: string[],
+) => {
+  if (new Set(submittedIds).size !== submittedIds.length) {
+    throw new ValidationError("Each child may appear only once in attendance.");
+  }
+  const submitted = new Set(submittedIds);
+  if (
+    submitted.size !== expectedIds.length ||
+    expectedIds.some((childId) => !submitted.has(childId))
+  ) {
+    throw new ValidationError(
+      "Mark every assigned child before finalizing attendance.",
+    );
+  }
+};
 
 const submitAttendanceOperation = async (
   user: AuthUser,
@@ -85,6 +117,13 @@ const submitAttendanceOperation = async (
       "One or more children are not assigned to this teacher. Submission rejected.",
     );
   }
+
+  const allAssignedIds =
+    await dependencies.childRepository.findAllAssignedChildIds(
+      user.id,
+      daycareCenterId,
+    );
+  assertUniqueCompleteRoster(childIds, allAssignedIds);
 
   const dayRange = dependencies.support.parseDayRange(date);
   if (!dayRange) {
@@ -173,7 +212,7 @@ const submitAttendanceOperation = async (
       date: attendanceDate,
       records: normalizedRecords as Array<{
         child: unknown;
-        status: "present" | "absent";
+        status: "present" | "absent" | "excused";
       }>,
     })
     .catch((error) =>
@@ -181,6 +220,151 @@ const submitAttendanceOperation = async (
     );
 
   return { isUpdate: false, replayed: false, attendance };
+};
+
+const updateAttendanceOperation = async (
+  user: AuthUser,
+  attendanceId: string,
+  input: UpdateAttendanceInput,
+  dependencies: AttendanceServiceDependencies,
+): Promise<AttendanceResult> => {
+  const daycareCenterId = assertTeacherCenter(user as any);
+  const normalizedRecords = input.records.map((record) => ({
+    child: dependencies.support.resolveChildId(record.child),
+    status: record.status,
+    ...(record.status === "excused"
+      ? {
+          excuseReason: record.excuseReason,
+          ...(record.notes ? { notes: record.notes.trim() } : {}),
+        }
+      : {}),
+  })) as AttendanceRecordInput[];
+  const payloadHash = hashAttendancePayload({
+    date: attendanceId,
+    records: normalizedRecords,
+  });
+
+  const priorOperation =
+    await dependencies.attendanceRepository.findRevisionByOperationId(
+      user.id,
+      input.clientOperationId,
+    );
+  if (priorOperation) {
+    if (priorOperation.payloadHash !== payloadHash) {
+      throw new ConflictError(
+        "Update operation does not match the original payload.",
+        "OPERATION_PAYLOAD_MISMATCH",
+      );
+    }
+    const replayedAttendance =
+      await dependencies.attendanceRepository.findById(attendanceId);
+    if (!replayedAttendance) throw new NotFoundError("Attendance");
+    return { isUpdate: true, replayed: true, attendance: replayedAttendance };
+  }
+
+  const existing = await dependencies.attendanceRepository.findById(attendanceId);
+  if (!existing) throw new NotFoundError("Attendance");
+  if (
+    String(existing.teacher) !== user.id ||
+    String(existing.daycareCenter) !== daycareCenterId
+  ) {
+    throw new ForbiddenError("You may edit only your own attendance record.");
+  }
+  if (manilaDateKey(new Date(existing.date)) !== manilaDateKey(new Date())) {
+    throw new ForbiddenError(
+      "Finalized attendance may be edited only on the same Manila calendar day.",
+    );
+  }
+
+  const existingRecords = (existing.records ?? []).map((record: any) => ({
+    child: dependencies.support.resolveChildId(record.child),
+    status: String(record.status),
+    excuseReason: record.excuseReason ? String(record.excuseReason) : undefined,
+    notes: record.notes ? String(record.notes) : undefined,
+  }));
+  assertUniqueCompleteRoster(
+    normalizedRecords.map((record) => record.child),
+    existingRecords.map((record: AttendanceRecordInput) => record.child),
+  );
+
+  const previousByChild = new Map<string, AttendanceRecordInput>(
+    existingRecords.map(
+      (record: AttendanceRecordInput) =>
+        [record.child, record] as [string, AttendanceRecordInput],
+    ),
+  );
+  const changes = normalizedRecords.flatMap((record) => {
+    const before = previousByChild.get(record.child)!;
+    if (
+      before.status === record.status &&
+      before.excuseReason === record.excuseReason &&
+      (before.notes ?? "") === (record.notes ?? "")
+    ) return [];
+    return [{
+      child: record.child,
+      beforeStatus: before.status,
+      afterStatus: record.status,
+      beforeExcuseReason: before.excuseReason ?? null,
+      afterExcuseReason: record.excuseReason ?? null,
+      beforeNotes: before.notes ?? null,
+      afterNotes: record.notes ?? null,
+    }];
+  });
+  if (!changes.length) {
+    throw new ValidationError("No attendance changes were provided.");
+  }
+
+  const expectedVersion = Number(existing.version ?? 0);
+  if (expectedVersion !== input.expectedVersion) {
+    throw new ConflictError(
+      "Attendance changed since it was loaded. Refresh and try again.",
+      "ATTENDANCE_VERSION_CONFLICT",
+    );
+  }
+  const updated = await dependencies.attendanceRepository.updateWithRevision({
+    attendanceId,
+    teacherId: user.id,
+    daycareCenterId,
+    expectedVersion: input.expectedVersion,
+    clientOperationId: input.clientOperationId,
+    payloadHash,
+    records: normalizedRecords,
+    changes,
+  });
+  if (!updated) {
+    const concurrentOperation =
+      await dependencies.attendanceRepository.findRevisionByOperationId(
+        user.id,
+        input.clientOperationId,
+      );
+    if (concurrentOperation?.payloadHash === payloadHash) {
+      const replayedAttendance =
+        await dependencies.attendanceRepository.findById(attendanceId);
+      if (replayedAttendance) {
+        return {
+          isUpdate: true,
+          replayed: true,
+          attendance: replayedAttendance,
+        };
+      }
+    }
+    throw new ConflictError(
+      "Attendance changed since it was loaded. Refresh and try again.",
+      "ATTENDANCE_VERSION_CONFLICT",
+    );
+  }
+  void dependencies
+    .notifySubmitted({
+      batchId: `${attendanceId}:v${input.expectedVersion + 1}`,
+      daycareCenterId,
+      date: new Date(existing.date),
+      records: normalizedRecords,
+      event: "updated",
+    })
+    .catch((error) =>
+      console.error("Attendance update notification dispatch failed:", error),
+    );
+  return { isUpdate: true, replayed: false, attendance: updated };
 };
 
 const getAttendanceHistoryOperation = async (
@@ -321,7 +505,9 @@ const getAttendanceHistoryOperation = async (
     : flatRows;
 
   const statusFilteredRows =
-    normalizedStatus === "present" || normalizedStatus === "absent"
+    normalizedStatus === "present" ||
+    normalizedStatus === "absent" ||
+    normalizedStatus === "excused"
       ? filteredRows.filter((row: any) => row.status === normalizedStatus)
       : filteredRows;
 
@@ -364,6 +550,19 @@ export class AttendanceService {
     return submitAttendanceOperation(user, input, this.dependencies);
   }
 
+  update(
+    user: AuthUser,
+    attendanceId: string,
+    input: UpdateAttendanceInput,
+  ): Promise<AttendanceResult> {
+    return updateAttendanceOperation(
+      user,
+      attendanceId,
+      input,
+      this.dependencies,
+    );
+  }
+
   getHistory(
     user: AuthUser | undefined,
     query: Request["query"],
@@ -377,6 +576,8 @@ export const attendanceService = new AttendanceService(
 );
 export const submitAttendance =
   attendanceService.submit.bind(attendanceService);
+export const updateAttendance =
+  attendanceService.update.bind(attendanceService);
 export const getAttendanceHistory =
   attendanceService.getHistory.bind(attendanceService);
 

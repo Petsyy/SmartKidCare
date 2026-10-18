@@ -3,6 +3,7 @@ import { asyncHandler } from "../../../shared/utils/async-handler";
 import { ForbiddenError } from "../../../shared/errors/app-error";
 import {
   submitAttendance as submitAttendanceSvc,
+  updateAttendance as updateAttendanceSvc,
   getAttendanceHistory as getAttendanceHistorySvc,
 } from "../services/attendance.service";
 
@@ -26,4 +27,22 @@ export const submitAttendance = asyncHandler(async (req: Request, res: Response)
 export const getAttendanceHistory = asyncHandler(async (req: Request, res: Response) => {
   const result = await getAttendanceHistorySvc(req.user, req.query);
   res.json(result);
+});
+
+export const updateAttendance = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user?.id || req.user.role !== "teacher") {
+    throw new ForbiddenError("Teachers only");
+  }
+  const result = await updateAttendanceSvc(
+    req.user as { id: string; role: string; daycareCenterId?: string | null },
+    String(req.params.attendanceId),
+    req.body,
+  );
+  res.status(200).json({
+    message: result.replayed
+      ? "Attendance update confirmed"
+      : "Attendance updated successfully",
+    attendance: result.attendance,
+    replayed: result.replayed,
+  });
 });
