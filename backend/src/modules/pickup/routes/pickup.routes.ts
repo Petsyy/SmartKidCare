@@ -6,12 +6,14 @@ import {
   manualRelease,
   getPickupStatus,
   getPickupHistory,
+  sendBulkPickupNotifications,
 } from "../controllers/pickup.controller";
 import {
   validateRequestCode,
   validateVerifyCode,
   validateManualRelease,
   validatePickupHistoryQuery,
+  validateBulkPickupNotifications,
 } from "../validators/pickup.validator";
 import { authenticateToken } from "../../../shared/middleware/auth.middleware";
 import { requireRole } from "../../../shared/middleware/role.middleware";
@@ -23,6 +25,12 @@ router.use(authenticateToken);
 
 // Teacher endpoints
 router.get("/children", requireRole("teacher"), getPickupEligibleChildren);
+router.post(
+  "/notifications",
+  requireRole("teacher"),
+  validate(validateBulkPickupNotifications),
+  sendBulkPickupNotifications,
+);
 router.post(
   "/verify",
   requireRole("teacher"),

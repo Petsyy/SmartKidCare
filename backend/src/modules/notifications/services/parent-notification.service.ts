@@ -3,23 +3,22 @@ import {
   notificationsChildRepository,
   notificationsAttendanceRepository,
   notificationsFeedingRepository,
+  notificationsParentNotificationRepository,
 } from "../repositories/notifications.repository";
 import PickupCode from "../../../models/PickupCode";
 import PickupRecord from "../../../models/PickupRecord";
 import { extractUserPushTokens } from "./push-notification.service";
 import type { ParentNotificationType, ParentFeedItem, ParentFeedResult } from "../types/parent-notification.types";
+import { toLocalDateKey, toLocalDayUtcRange } from "../../../shared/utils/date.utils";
+
+const MANILA_UTC_OFFSET_MINUTES = 8 * 60;
 
 const toDayStart = (value: Date): Date => {
-  const dayStart = new Date(value);
-  dayStart.setHours(0, 0, 0, 0);
-  return dayStart;
+  return toLocalDayUtcRange(value, MANILA_UTC_OFFSET_MINUTES).start;
 };
 
 const toDateKey = (value: Date): string => {
-  const year = value.getFullYear();
-  const month = String(value.getMonth() + 1).padStart(2, "0");
-  const day = String(value.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  return toLocalDateKey(value, MANILA_UTC_OFFSET_MINUTES);
 };
 
 const formatName = (first?: string, middle?: string, last?: string): string =>
@@ -106,7 +105,8 @@ export async function getParentNotificationsFeed(params: {
     "Parent";
   const hasPushToken = extractUserPushTokens(parent).length > 0;
 
-  const children = await notificationsChildRepository.findActiveByParent(parentId);
+  // Historical notifications remain visible if a child is archived later.
+  const children = await notificationsChildRepository.findByParent(parentId);
 
   const childIds = new Set(children.map((child: any) => String(child._id)));
   const childNameById = new Map<string, string>();
@@ -127,11 +127,18 @@ export async function getParentNotificationsFeed(params: {
     };
   }
 
-  const [attendanceEntries, feedingEntries, pickupCodes, pickupRecords] = await Promise.all([
+  const [attendanceEntries, feedingEntries, pickupCodes, pickupRecords, persistedNotifications] = await Promise.all([
     notificationsAttendanceRepository.findByChildIdsAndDate(Array.from(childIds), targetDate),
     notificationsFeedingRepository.findByChildIdsAndDate(Array.from(childIds), targetDate),
-    PickupCode.find({ child: { $in: Array.from(childIds) }, createdAt: { $gte: targetDate } }).lean(),
-    PickupRecord.find({ child: { $in: Array.from(childIds) }, pickedUpAt: { $gte: targetDate } }).lean(),
+    PickupCode.find({
+      child: { $in: Array.from(childIds) },
+      createdAt: { $gte: targetDate, $lte: toLocalDayUtcRange(targetDate, MANILA_UTC_OFFSET_MINUTES).end },
+    }).lean(),
+    PickupRecord.find({
+      child: { $in: Array.from(childIds) },
+      pickedUpAt: { $gte: targetDate, $lte: toLocalDayUtcRange(targetDate, MANILA_UTC_OFFSET_MINUTES).end },
+    }).lean(),
+    notificationsParentNotificationRepository.findByParentAndDate(parentId, targetDate),
   ]);
 
   const attendanceStatuses: Array<"present" | "absent"> = [];
@@ -311,6 +318,27 @@ export async function getParentNotificationsFeed(params: {
       message: `${childName} was released to ${pickerName}.`,
       timeLabel: formatTimeFromDate(record.pickedUpAt),
       actionLabel: "View",
+    });
+  });
+
+  persistedNotifications.forEach((notification: any) => {
+    const childId = String(notification.child);
+    const childName = childNameById.get(childId) || "Child";
+    const isCompetencyPractice = notification.eventType === "competency_practice";
+    notifications.push({
+      id: `${dateKey}-parent-notification-${notification._id}`,
+      type: notification.eventType,
+      title: notification.title,
+      message: notification.message || `Pickup reminder sent for ${childName}.`,
+      timeLabel: formatTimeFromDate(notification.createdAt),
+      actionLabel: isCompetencyPractice ? "View Skills" : "View",
+      childId,
+      ...(notification.evaluation
+        ? { evaluationId: String(notification.evaluation) }
+        : {}),
+      ...(isCompetencyPractice
+        ? { actionPath: `/(parent)/competencies/${childId}?isParentView=true` }
+        : {}),
     });
   });
 

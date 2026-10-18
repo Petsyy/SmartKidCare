@@ -10,7 +10,7 @@ export const listDefinitions = asyncHandler(
 
 export const createEvaluation = asyncHandler(
   async (req: Request, res: Response) => {
-    const evaluation = await competencyService.saveEvaluation(
+    const result = await competencyService.saveEvaluation(
       req.user,
       req.body,
     );
@@ -21,7 +21,8 @@ export const createEvaluation = asyncHandler(
           req.body.status === "draft"
             ? "Draft saved."
             : "Evaluation submitted.",
-        evaluation,
+        evaluation: result.evaluation,
+        ...(result.notification ? { notification: result.notification } : {}),
       });
   },
 );

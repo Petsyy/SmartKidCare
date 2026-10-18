@@ -398,7 +398,9 @@ export function useCompetencyEvaluation(
           : "Evaluation Submitted",
         status === "draft"
           ? "You can return to this draft later on this device."
-          : data.message,
+          : data.notification?.status === "push_failed"
+            ? `${data.message} The in-app parent alert was saved, but push delivery failed.`
+            : data.message,
       );
     },
     onError: (error: unknown) => {

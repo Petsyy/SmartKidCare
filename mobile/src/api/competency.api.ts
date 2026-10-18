@@ -31,7 +31,14 @@ export const submitCompetencyEvaluation = (payload: {
   }>;
   generalNotes?: string;
 }) =>
-  apiClient<{ message: string; evaluation: CompetencyEvaluation }>(
+  apiClient<{
+    message: string;
+    evaluation: CompetencyEvaluation;
+    notification?: {
+      status: "created" | "duplicate" | "skipped" | "push_failed";
+      reason?: string;
+    };
+  }>(
     "/api/competencies/evaluations",
     { method: "POST", body: payload },
   );

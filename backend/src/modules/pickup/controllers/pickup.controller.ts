@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { asyncHandler } from "../../../shared/utils/async-handler";
 import { pickupService } from "../services/pickup.service";
 import { PickupAuthUser } from "../types/pickup.types";
+import { pickupNotificationService } from "../services/pickup-notification.service";
 
 export const getPickupEligibleChildren = asyncHandler(
   async (req: Request, res: Response) => {
@@ -9,6 +10,20 @@ export const getPickupEligibleChildren = asyncHandler(
       req.user as PickupAuthUser,
     );
     res.status(200).json({ success: true, data: children });
+  },
+);
+
+export const sendBulkPickupNotifications = asyncHandler(
+  async (req: Request, res: Response) => {
+    const result = await pickupNotificationService.sendBulk(
+      req.user as PickupAuthUser,
+      req.body,
+    );
+    res.status(200).json({
+      success: true,
+      message: "Pickup reminders processed.",
+      data: result,
+    });
   },
 );
 

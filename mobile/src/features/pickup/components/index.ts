@@ -6,3 +6,4 @@ export { PickupCodeVerifier } from "./pickup-code-verifier";
 export { PickupManualOverridePanel } from "./pickup-manual-override-panel";
 export { PickupReleasedBanner } from "./pickup-released-banner";
 export { PickupActiveCode } from "./pickup-active-code";
+export { PickupSelectionCheckbox } from "./pickup-selection-checkbox";

@@ -75,16 +75,25 @@ export default function TeacherNotificationsScreen() {
       archivedItems={feed.archivedItems}
       visibleActiveItems={feed.visibleActiveItems}
       unreadCount={feed.unreadCount}
+      selectedIds={feed.selectedIds}
+      allVisibleSelected={feed.allVisibleSelected}
       activeFilter={feed.activeFilter}
       setActiveFilter={feed.setActiveFilter}
       showEmptyState={feed.showEmptyState}
       onRefresh={() => void feed.loadNotifications()}
+      canGoToNextDate={feed.canGoToNextDate}
+      goToPreviousDate={feed.goToPreviousDate}
+      goToNextDate={feed.goToNextDate}
       markAsRead={feed.markAsRead}
       markAllAsRead={feed.markAllAsRead}
       archiveNotification={feed.archiveNotification}
       restoreNotification={feed.restoreNotification}
       deleteArchivedNotification={feed.deleteArchivedNotification}
-      deleteAllArchivedNotifications={feed.deleteAllArchivedNotifications}
+      toggleSelected={feed.toggleSelected}
+      toggleSelectAll={feed.toggleSelectAll}
+      archiveSelectedNotifications={feed.archiveSelectedNotifications}
+      restoreSelectedNotifications={feed.restoreSelectedNotifications}
+      deleteSelectedNotifications={feed.deleteSelectedNotifications}
       cardUi={TEACHER_TYPE_UI}
       resolveTitle={(item, fallbackTitle) =>
         item.title === "Reminder" ? fallbackTitle : item.title || fallbackTitle

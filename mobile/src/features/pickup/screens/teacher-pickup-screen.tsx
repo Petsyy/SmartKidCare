@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { View, Text, Alert, Modal, ScrollView, Pressable } from "react-native";
 import { useFocusEffect } from "expo-router";
-import { ShieldCheck, Search } from "lucide-react-native";
+import { ShieldCheck, Search, Send } from "lucide-react-native";
 import {
   ScreenHeader,
   ScreenLoadingState,
@@ -31,6 +31,12 @@ export function TeacherPickupScreen() {
     isVerifying,
     manualRelease,
     isReleasing,
+    selectedChildIds,
+    allEligibleSelected,
+    toggleChildSelection,
+    toggleSelectAll,
+    notifyParents,
+    isNotifying,
     isOffline,
   } = usePickupTeacher();
 
@@ -110,6 +116,36 @@ export function TeacherPickupScreen() {
     setIsVisuallyVerified(false);
   };
 
+  const handleNotifyParents = () => {
+    if (isOffline || selectedChildIds.length === 0 || isNotifying) return;
+    Alert.alert(
+      "Notify Parents",
+      `Send a pickup reminder to the parents of ${selectedChildIds.length} selected child${selectedChildIds.length === 1 ? "" : "ren"}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Send",
+          onPress: () => {
+            void notifyParents(selectedChildIds)
+              .then((result) => {
+                Alert.alert(
+                  "Pickup Reminders Processed",
+                  `${result.sent} in-app alert${result.sent === 1 ? "" : "s"} saved. ${result.pushDelivered} push delivered, ${result.pushFailed} push failed, and ${result.skipped} skipped.`,
+                );
+              })
+              .catch((error: unknown) => {
+                reportHandledError("pickup.bulk-notification", error);
+                Alert.alert(
+                  "Unable to Notify Parents",
+                  getUserFriendlyErrorMessage(error, "Pickup reminders could not be sent. Please try again."),
+                );
+              });
+          },
+        },
+      ],
+    );
+  };
+
   if (isLoading) {
     return (
       <ScreenShell withKeyboardAvoiding={false}>
@@ -149,6 +185,41 @@ export function TeacherPickupScreen() {
         iconSize={24}
         iconColor="#9CA3AF"
       />
+
+      {eligibleChildren.length > 0 ? (
+        <View className="border-b border-gray-200 bg-white px-5 py-3">
+          <View className="flex-row items-center justify-between">
+            <Pressable
+              accessibilityRole="checkbox"
+              accessibilityLabel={allEligibleSelected ? "Clear child selection" : "Select all eligible children"}
+              accessibilityState={{ checked: allEligibleSelected, disabled: isNotifying }}
+              disabled={isNotifying}
+              onPress={toggleSelectAll}
+              className="min-h-11 justify-center rounded-xl px-2"
+            >
+              <Text className="text-sm font-black text-teal-700">
+                {allEligibleSelected ? "Clear Selection" : "Select All"}
+              </Text>
+            </Pressable>
+            <Text className="text-sm font-bold text-gray-500">
+              {selectedChildIds.length} selected
+            </Text>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Notify selected parents"
+            accessibilityState={{ disabled: isOffline || isNotifying || selectedChildIds.length === 0, busy: isNotifying }}
+            disabled={isOffline || isNotifying || selectedChildIds.length === 0}
+            onPress={handleNotifyParents}
+            className={`mt-2 min-h-11 flex-row items-center justify-center gap-2 rounded-xl bg-teal-600 px-4 ${isOffline || isNotifying || selectedChildIds.length === 0 ? "opacity-40" : "opacity-100"}`}
+          >
+            <Send size={16} color="#FFFFFF" />
+            <Text className="text-sm font-black text-white">
+              {isNotifying ? "Sending..." : "Notify Parents"}
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       <RefreshableScrollView
         className="flex-1"
@@ -198,6 +269,9 @@ export function TeacherPickupScreen() {
                 >
                   <PickupEligibleChildCard
                     child={child}
+                    selected={selectedChildIds.includes(child._id)}
+                    selectionDisabled={isOffline || isNotifying}
+                    onToggleSelected={() => toggleChildSelection(child._id)}
                     onPress={() => {
                       if (isOffline) {
                         Alert.alert(

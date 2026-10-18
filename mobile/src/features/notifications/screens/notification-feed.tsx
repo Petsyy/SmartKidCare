@@ -1,6 +1,6 @@
 import type { ComponentType } from "react";
-import type { Href } from "expo-router";
-import { AlertCircle, Archive, Bell, CheckCircle2, RotateCcw, Trash2 } from "lucide-react-native";
+import { useRouter, type Href } from "expo-router";
+import { AlertCircle, Archive, Bell, CheckCircle2, ChevronLeft, ChevronRight, RotateCcw, Trash2 } from "lucide-react-native";
 import {
   Alert,
   Pressable,
@@ -20,6 +20,7 @@ import {
 } from "@/src/components/ui";
 import type { ScreenHeaderBackgroundVariant } from "@/src/components/ui";
 import { useSafeBack } from "@/src/hooks/use-safe-back";
+import { NotificationCheckbox } from "@/src/features/notifications/components/notification-checkbox";
 
 type NotificationItemBase = {
   id: string;
@@ -28,6 +29,7 @@ type NotificationItemBase = {
   message: string;
   timeLabel: string;
   actionLabel: string;
+  actionPath?: string;
 };
 
 type ArchivedItem<T extends NotificationItemBase> = T & {
@@ -56,16 +58,25 @@ type Props<T extends NotificationItemBase> = {
   archivedItems: ArchivedItem<T>[];
   visibleActiveItems: T[];
   unreadCount: number;
+  selectedIds: string[];
+  allVisibleSelected: boolean;
   activeFilter: NotificationFilter;
   setActiveFilter: (value: NotificationFilter) => void;
   showEmptyState: boolean;
   onRefresh: () => void;
+  canGoToNextDate: boolean;
+  goToPreviousDate: () => void;
+  goToNextDate: () => void;
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
   archiveNotification: (item: T) => void;
   restoreNotification: (id: string) => void;
   deleteArchivedNotification: (id: string) => void;
-  deleteAllArchivedNotifications: () => void;
+  toggleSelected: (id: string) => void;
+  toggleSelectAll: () => void;
+  archiveSelectedNotifications: () => void;
+  restoreSelectedNotifications: () => void;
+  deleteSelectedNotifications: () => void;
   cardUi: Record<string, CardUI>;
   resolveTitle?: (item: T, fallbackTitle: string) => string;
 };
@@ -88,20 +99,30 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
   archivedItems,
   visibleActiveItems,
   unreadCount,
+  selectedIds,
+  allVisibleSelected,
   activeFilter,
   setActiveFilter,
   showEmptyState,
   onRefresh,
+  canGoToNextDate,
+  goToPreviousDate,
+  goToNextDate,
   markAsRead,
   markAllAsRead,
   archiveNotification,
   restoreNotification,
   deleteArchivedNotification,
-  deleteAllArchivedNotifications,
+  toggleSelected,
+  toggleSelectAll,
+  archiveSelectedNotifications,
+  restoreSelectedNotifications,
+  deleteSelectedNotifications,
   cardUi,
   resolveTitle = defaultResolveTitle,
 }: Props<T>) {
   const handleBack = useSafeBack(fallbackRoute);
+  const router = useRouter();
   const fallbackUi: CardUI = {
     fallbackTitle: "Notification",
     icon: AlertCircle,
@@ -151,10 +172,29 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
         {/* ── Summary strip ──────────────────────────────────────── */}
         <View className="rounded-2xl bg-teal-50 px-4 py-3">
           <View className="flex-row items-center justify-between">
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Show previous day's notifications"
+              onPress={goToPreviousDate}
+              className="h-10 w-10 items-center justify-center rounded-full bg-white"
+            >
+              <ChevronLeft size={20} color="#0F766E" />
+            </Pressable>
             <Text className="text-base font-bold text-gray-900">
               {date ? formatDateLabel(date) : "Today"}
             </Text>
-            <View className="flex-row items-center gap-2">
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Show next day's notifications"
+              accessibilityState={{ disabled: !canGoToNextDate }}
+              disabled={!canGoToNextDate}
+              onPress={goToNextDate}
+              className={`h-10 w-10 items-center justify-center rounded-full bg-white ${canGoToNextDate ? "opacity-100" : "opacity-40"}`}
+            >
+              <ChevronRight size={20} color="#0F766E" />
+            </Pressable>
+          </View>
+          <View className="mt-2 flex-row items-center justify-center gap-2">
               <View className="rounded-full bg-teal-100 px-3 py-1">
                 <Text className="text-xs font-bold text-teal-800">
                   {activeItems.length} active
@@ -167,7 +207,6 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
                   </Text>
                 </View>
               ) : null}
-            </View>
           </View>
         </View>
 
@@ -257,43 +296,85 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
           </View>
 
           {/* Bulk action row */}
-          <View className="mt-3 flex-row items-center justify-end">
-            {activeFilter === "archived" && archivedItems.length > 0 ? (
-              <Pressable
-                onPress={() => {
-                  Alert.alert(
-                    "Clear All Archived",
-                    "This will permanently delete all archived notifications. This action cannot be undone.",
-                    [
-                      { text: "Cancel", onPress: () => {}, style: "cancel" },
-                      {
-                        text: "Delete",
-                        onPress: () => deleteAllArchivedNotifications(),
-                        style: "destructive",
-                      },
-                    ],
-                  );
-                }}
-                className="flex-row items-center gap-1.5 rounded-full bg-rose-50 px-4 py-2"
-              >
-                <Trash2 size={14} color="#BE123C" strokeWidth={2} />
-                <Text className="text-xs font-bold text-rose-700">
-                  Clear all
+          {(activeFilter === "archived" ? archivedItems.length : visibleActiveItems.length) > 0 ? (
+            <View className="mt-3 rounded-2xl border border-gray-200 bg-white p-3">
+              <View className="flex-row items-center justify-between">
+              <View className="min-h-11 flex-row items-center gap-2 rounded-xl px-2">
+                <NotificationCheckbox
+                  selected={allVisibleSelected}
+                  label={allVisibleSelected ? "Clear notification selection" : "Select all visible notifications"}
+                  onPress={toggleSelectAll}
+                  className="h-8 w-8"
+                />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={allVisibleSelected ? "Clear notification selection" : "Select all visible notifications"}
+                  onPress={toggleSelectAll}
+                  className="min-h-11 justify-center"
+                >
+                <Text className="text-sm font-bold text-gray-700">
+                  {allVisibleSelected ? "Clear selection" : "Select all"}
                 </Text>
-              </Pressable>
-            ) : null}
-            {activeFilter !== "archived" && unreadCount > 0 ? (
+                </Pressable>
+              </View>
+              <Text className="text-xs font-semibold text-gray-500">
+                {selectedIds.length} selected
+              </Text>
+              </View>
+              <View className="mt-2 flex-row justify-end gap-2">
+              {activeFilter === "archived" ? (
+                <>
+                  <Pressable
+                    disabled={selectedIds.length === 0}
+                    accessibilityRole="button"
+                    accessibilityLabel="Restore selected notifications"
+                    accessibilityState={{ disabled: selectedIds.length === 0 }}
+                    onPress={restoreSelectedNotifications}
+                    className={`min-h-11 flex-row items-center gap-1.5 rounded-full bg-teal-50 px-4 ${selectedIds.length === 0 ? "opacity-40" : "opacity-100"}`}
+                  >
+                    <RotateCcw size={14} color="#0F766E" strokeWidth={2} />
+                    <Text className="text-xs font-bold text-teal-700">Restore</Text>
+                  </Pressable>
+                  <Pressable
+                    disabled={selectedIds.length === 0}
+                    accessibilityRole="button"
+                    accessibilityLabel="Delete selected notifications"
+                    accessibilityState={{ disabled: selectedIds.length === 0 }}
+                    onPress={() => Alert.alert(
+                      "Delete Selected Notifications",
+                      `Permanently delete ${selectedIds.length} selected notification${selectedIds.length === 1 ? "" : "s"}? This cannot be undone.`,
+                      [
+                        { text: "Cancel", style: "cancel" },
+                        { text: "Delete", style: "destructive", onPress: deleteSelectedNotifications },
+                      ],
+                    )}
+                    className={`min-h-11 flex-row items-center gap-1.5 rounded-full bg-rose-50 px-4 ${selectedIds.length === 0 ? "opacity-40" : "opacity-100"}`}
+                  >
+                    <Trash2 size={14} color="#BE123C" strokeWidth={2} />
+                    <Text className="text-xs font-bold text-rose-700">Delete</Text>
+                  </Pressable>
+                </>
+              ) : (
               <Pressable
-                onPress={markAllAsRead}
-                className="flex-row items-center gap-1.5 rounded-full bg-teal-50 px-4 py-2"
+                disabled={selectedIds.length === 0}
+                accessibilityRole="button"
+                accessibilityLabel="Archive selected notifications"
+                accessibilityState={{ disabled: selectedIds.length === 0 }}
+                onPress={archiveSelectedNotifications}
+                className={`min-h-11 flex-row items-center gap-1.5 rounded-full bg-teal-50 px-4 ${selectedIds.length === 0 ? "opacity-40" : "opacity-100"}`}
               >
-                <CheckCircle2 size={14} color="#0F766E" strokeWidth={2} />
-                <Text className="text-xs font-bold text-teal-700">
-                  Mark all read
-                </Text>
+                <Archive size={14} color="#0F766E" strokeWidth={2} />
+                <Text className="text-xs font-bold text-teal-700">Archive</Text>
               </Pressable>
-            ) : null}
-          </View>
+              )}
+              {activeFilter !== "archived" && unreadCount > 0 ? (
+                <Pressable onPress={markAllAsRead} className="min-h-11 justify-center rounded-full bg-gray-100 px-4">
+                  <Text className="text-xs font-bold text-gray-700">Mark all read</Text>
+                </Pressable>
+              ) : null}
+              </View>
+            </View>
+          ) : null}
         </View>
 
         {/* ── Error state ────────────────────────────────────────── */}
@@ -353,7 +434,7 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
                 ? "You've read all your notifications. Nice work!"
                 : activeFilter === "archived"
                   ? "Notifications you archive will appear here for reference."
-                  : "No notifications for today. We'll let you know when something needs your attention."}
+                  : "No notifications for this date. We'll let you know when something needs your attention."}
             </Text>
           </View>
         ) : null}
@@ -388,6 +469,12 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
                   }}
                 >
                   <View className="flex-row items-start">
+                    <NotificationCheckbox
+                      selected={selectedIds.includes(item.id)}
+                      label={`Select ${resolveTitle(item, ui.fallbackTitle)}`}
+                      onPress={() => toggleSelected(item.id)}
+                      className="mr-1"
+                    />
                     {/* Icon */}
                     <View
                       className="mr-3 h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl"
@@ -441,20 +528,40 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
                           </Text>
                         </View>
 
-                        <Pressable
-                          onPress={() => archiveNotification(item)}
-                          className="flex-row items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-2"
-                          style={{ minHeight: 36 }}
-                        >
-                          <Archive
-                            size={14}
-                            color="#6B7280"
-                            strokeWidth={2}
-                          />
-                          <Text className="text-xs font-semibold text-gray-600">
-                            Archive
-                          </Text>
-                        </Pressable>
+                        <View className="flex-row items-center gap-2">
+                          {item.actionPath ? (
+                            <Pressable
+                              accessibilityRole="button"
+                              accessibilityLabel={item.actionLabel}
+                              onPress={(event) => {
+                                event.stopPropagation();
+                                markAsRead(item.id);
+                                router.push(item.actionPath as Href);
+                              }}
+                              className="rounded-full border border-amber-200 bg-amber-50 px-3 py-2"
+                              style={{ minHeight: 36 }}
+                            >
+                              <Text className="text-xs font-bold text-amber-700">
+                                {item.actionLabel}
+                              </Text>
+                            </Pressable>
+                          ) : null}
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`Archive ${resolveTitle(item, ui.fallbackTitle)}`}
+                            onPress={(event) => {
+                              event.stopPropagation();
+                              archiveNotification(item);
+                            }}
+                            className="flex-row items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-2"
+                            style={{ minHeight: 36 }}
+                          >
+                            <Archive size={14} color="#6B7280" strokeWidth={2} />
+                            <Text className="text-xs font-semibold text-gray-600">
+                              Archive
+                            </Text>
+                          </Pressable>
+                        </View>
                       </View>
                     </View>
                   </View>
@@ -488,6 +595,12 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
                   }}
                 >
                   <View className="flex-row items-start">
+                    <NotificationCheckbox
+                      selected={selectedIds.includes(item.id)}
+                      label={`Select ${resolveTitle(item, ui.fallbackTitle)}`}
+                      onPress={() => toggleSelected(item.id)}
+                      className="mr-1"
+                    />
                     {/* Icon */}
                     <View
                       className="mr-3 h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl"

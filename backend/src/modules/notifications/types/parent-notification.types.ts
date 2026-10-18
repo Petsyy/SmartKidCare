@@ -4,7 +4,9 @@ export type ParentNotificationType =
   | "feeding_submitted"
   | "missed_meal_alert"
   | "pickup_code_generated"
-  | "child_released";
+  | "child_released"
+  | "pickup_reminder"
+  | "competency_practice";
 
 export interface ParentFeedItem {
   id: string;
@@ -13,6 +15,9 @@ export interface ParentFeedItem {
   message: string;
   timeLabel: string;
   actionLabel: string;
+  childId?: string;
+  evaluationId?: string;
+  actionPath?: string;
 }
 
 export interface ParentFeedResult {

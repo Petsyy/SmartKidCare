@@ -424,11 +424,16 @@ export interface ParentNotificationFeedItem {
     | "feeding_submitted"
     | "missed_meal_alert"
     | "pickup_code_generated"
-    | "child_released";
+    | "child_released"
+    | "pickup_reminder"
+    | "competency_practice";
   title: string;
   message: string;
   timeLabel: string;
   actionLabel: string;
+  childId?: string;
+  evaluationId?: string;
+  actionPath?: string;
 }
 
 export interface PickupEligibleChild {
@@ -445,6 +450,33 @@ export interface PickupEligibleChild {
     hasIdDocument: boolean;
   };
   authorizedPickupPersons?: Guardian[];
+}
+
+export interface BulkPickupNotificationInput {
+  childIds: string[];
+}
+
+export type BulkPickupNotificationStatus =
+  | "sent"
+  | "cooldown"
+  | "already_released"
+  | "not_present"
+  | "missing_parent"
+  | "push_failed";
+
+export interface BulkPickupNotificationDetail {
+  childId: string;
+  childName: string;
+  status: BulkPickupNotificationStatus;
+  reason?: string;
+}
+
+export interface BulkPickupNotificationResult {
+  sent: number;
+  pushDelivered: number;
+  pushFailed: number;
+  skipped: number;
+  details: BulkPickupNotificationDetail[];
 }
 
 export interface DocumentAccessResponse {

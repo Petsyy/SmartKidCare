@@ -39,9 +39,13 @@ const parseDateInput = (value: unknown): Date | null => {
     const year = Number(dateOnlyMatch[1]);
     const month = Number(dateOnlyMatch[2]);
     const day = Number(dateOnlyMatch[3]);
-    const localDate = new Date(year, month - 1, day);
-    if (Number.isNaN(localDate.getTime())) return null;
-    return localDate;
+    const utcDate = new Date(Date.UTC(year, month - 1, day, 4));
+    if (
+      utcDate.getUTCFullYear() !== year ||
+      utcDate.getUTCMonth() !== month - 1 ||
+      utcDate.getUTCDate() !== day
+    ) return null;
+    return utcDate;
   }
 
   const parsed = new Date(raw);

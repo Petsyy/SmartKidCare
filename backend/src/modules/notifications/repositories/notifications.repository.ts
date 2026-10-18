@@ -6,12 +6,19 @@ import Feeding from "../../../models/Feeding";
 import AdminNotification, {
   type IAdminNotification,
 } from "../../../models/AdminNotification";
+import ParentNotification from "../../../models/ParentNotification";
 import { BaseRepository } from "../../../shared/repositories/base.repository";
 import type {
   AdminNotificationRepositoryContract,
   AdminNotificationView,
   CreateAdminNotificationInput,
 } from "../types/admin-notification.types";
+import { toLocalDayUtcRange } from "../../../shared/utils/date.utils";
+
+const MANILA_UTC_OFFSET_MINUTES = 8 * 60;
+
+const getManilaDayRange = (date: Date) =>
+  toLocalDayUtcRange(date, MANILA_UTC_OFFSET_MINUTES);
 
 const isDuplicateKeyError = (error: unknown): boolean =>
   typeof error === "object" &&
@@ -246,6 +253,13 @@ export class NotificationsChildRepository extends BaseRepository<any> {
       .lean();
   }
 
+  async findByParent(parentId: string): Promise<any[]> {
+    return this.model
+      .find({ parent: parentId })
+      .select("_id firstName middleName lastName")
+      .lean();
+  }
+
   async findNamesByIds(ids: string[]): Promise<any[]> {
     const validIds = ids.filter((id) => mongoose.Types.ObjectId.isValid(id));
     if (!validIds.length) return [];
@@ -267,8 +281,9 @@ export class NotificationsAttendanceRepository extends BaseRepository<any> {
     teacherIds: string[],
     date: Date,
   ): Promise<any[]> {
+    const range = getManilaDayRange(date);
     return this.model
-      .find({ teacher: { $in: teacherIds }, date })
+      .find({ teacher: { $in: teacherIds }, date: { $gte: range.start, $lte: range.end } })
       .select("teacher records")
       .lean();
   }
@@ -277,8 +292,9 @@ export class NotificationsAttendanceRepository extends BaseRepository<any> {
     teacherId: string,
     date: Date,
   ): Promise<any | null> {
+    const range = getManilaDayRange(date);
     return this.model
-      .findOne({ teacher: teacherId, date })
+      .findOne({ teacher: teacherId, date: { $gte: range.start, $lte: range.end } })
       .select("records")
       .lean();
   }
@@ -287,9 +303,10 @@ export class NotificationsAttendanceRepository extends BaseRepository<any> {
     childIds: string[],
     date: Date,
   ): Promise<any[]> {
+    const range = getManilaDayRange(date);
     return this.model
       .find({
-        date,
+        date: { $gte: range.start, $lte: range.end },
         "records.child": { $in: childIds },
       })
       .select("records createdAt")
@@ -308,8 +325,9 @@ export class NotificationsFeedingRepository extends BaseRepository<any> {
     teacherIds: string[],
     date: Date,
   ): Promise<any[]> {
+    const range = getManilaDayRange(date);
     return this.model
-      .find({ teacher: { $in: teacherIds }, date })
+      .find({ teacher: { $in: teacherIds }, date: { $gte: range.start, $lte: range.end } })
       .select("teacher records")
       .lean();
   }
@@ -318,8 +336,9 @@ export class NotificationsFeedingRepository extends BaseRepository<any> {
     teacherId: string,
     date: Date,
   ): Promise<any | null> {
+    const range = getManilaDayRange(date);
     return this.model
-      .findOne({ teacher: teacherId, date })
+      .findOne({ teacher: teacherId, date: { $gte: range.start, $lte: range.end } })
       .select("records")
       .lean();
   }
@@ -328,12 +347,34 @@ export class NotificationsFeedingRepository extends BaseRepository<any> {
     childIds: string[],
     date: Date,
   ): Promise<any[]> {
+    const range = getManilaDayRange(date);
     return this.model
       .find({
-        date,
+        date: { $gte: range.start, $lte: range.end },
         "records.child": { $in: childIds },
       })
       .select("records foodServed createdAt")
+      .lean();
+  }
+}
+
+export class NotificationsParentNotificationRepository extends BaseRepository<any> {
+  constructor() {
+    super(ParentNotification);
+  }
+
+  async findByParentAndDate(
+    parentId: string,
+    date: Date,
+  ): Promise<any[]> {
+    const range = getManilaDayRange(date);
+    return this.model
+      .find({
+        recipient: parentId,
+        createdAt: { $gte: range.start, $lte: range.end },
+      })
+      .select("child evaluation eventType title message createdAt")
+      .sort({ createdAt: -1 })
       .lean();
   }
 }
@@ -344,4 +385,5 @@ export const notificationsUserRepository = new NotificationsUserRepository();
 export const notificationsChildRepository = new NotificationsChildRepository();
 export const notificationsAttendanceRepository = new NotificationsAttendanceRepository();
 export const notificationsFeedingRepository = new NotificationsFeedingRepository();
+export const notificationsParentNotificationRepository = new NotificationsParentNotificationRepository();
 export const adminNotificationRepository = new AdminNotificationRepository();

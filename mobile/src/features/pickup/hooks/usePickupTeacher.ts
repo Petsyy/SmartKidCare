@@ -3,17 +3,20 @@ import {
   getPickupEligibleChildren,
   verifyPickupCode,
   manualRelease,
+  sendBulkPickupNotifications,
 } from "@/src/api/pickup.api";
 import { useAuth } from "@/src/hooks/use-auth";
 import { useOffline } from "@/src/offline/offline-context";
 import { readOfflineResource, onlineWithOfflineFallback } from "@/src/offline/offline-read";
 import type { PickupEligibleChild } from "@/src/api/api.types";
+import { useMemo, useState } from "react";
 
 export const usePickupTeacher = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { isConnected, isInternetReachable } = useOffline();
   const isOffline = !isConnected || !isInternetReachable;
+  const [selectedChildIds, setSelectedChildIds] = useState<string[]>([]);
 
   const {
     data: eligibleChildren = [],
@@ -79,6 +82,39 @@ export const usePickupTeacher = () => {
     },
   });
 
+  const notificationMutation = useMutation({
+    mutationFn: async (childIds: string[]) => {
+      if (isOffline) throw new Error("Connect to the internet to notify parents.");
+      return sendBulkPickupNotifications({ childIds });
+    },
+    onSuccess: (result) => {
+      const successfulIds = new Set(
+        result.details
+          .filter((detail) => detail.status === "sent")
+          .map((detail) => detail.childId),
+      );
+      setSelectedChildIds((current) => current.filter((id) => !successfulIds.has(id)));
+      void queryClient.invalidateQueries({ queryKey: ["pickupEligibleChildren"] });
+    },
+  });
+
+  const eligibleIds = useMemo(
+    () => eligibleChildren.map((child) => child._id),
+    [eligibleChildren],
+  );
+  const allEligibleSelected =
+    eligibleIds.length > 0 && eligibleIds.every((id) => selectedChildIds.includes(id));
+  const toggleChildSelection = (childId: string) => {
+    setSelectedChildIds((current) =>
+      current.includes(childId)
+        ? current.filter((id) => id !== childId)
+        : [...current, childId],
+    );
+  };
+  const toggleSelectAll = () => {
+    setSelectedChildIds(allEligibleSelected ? [] : eligibleIds);
+  };
+
   return {
     eligibleChildren,
     isLoading,
@@ -87,6 +123,12 @@ export const usePickupTeacher = () => {
     isVerifying: verifyMutation.isPending,
     manualRelease: manualReleaseMutation.mutateAsync,
     isReleasing: manualReleaseMutation.isPending,
+    selectedChildIds,
+    allEligibleSelected,
+    toggleChildSelection,
+    toggleSelectAll,
+    notifyParents: notificationMutation.mutateAsync,
+    isNotifying: notificationMutation.isPending,
     isOffline,
   };
 };

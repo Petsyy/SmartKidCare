@@ -2,6 +2,8 @@ import {
   AlertCircle,
   ClipboardCheck,
   UtensilsCrossed,
+  CarFront,
+  BookOpenCheck,
 } from "lucide-react-native";
 import { useAuth } from "@/src/hooks/use-auth";
 import {
@@ -40,6 +42,20 @@ const PARENT_TYPE_UI = {
     iconBg: "#FEF3C7",
     accent: "#B45309",
   },
+  pickup_reminder: {
+    fallbackTitle: "Pickup Reminder",
+    icon: CarFront,
+    iconColor: "#1D4ED8",
+    iconBg: "#DBEAFE",
+    accent: "#2563EB",
+  },
+  competency_practice: {
+    fallbackTitle: "Skills to Practice",
+    icon: BookOpenCheck,
+    iconColor: "#B45309",
+    iconBg: "#FEF3C7",
+    accent: "#D97706",
+  },
 } as const;
 
 export default function ParentNotificationsScreen() {
@@ -65,16 +81,25 @@ export default function ParentNotificationsScreen() {
       archivedItems={feed.archivedItems}
       visibleActiveItems={feed.visibleActiveItems}
       unreadCount={feed.unreadCount}
+      selectedIds={feed.selectedIds}
+      allVisibleSelected={feed.allVisibleSelected}
       activeFilter={feed.activeFilter}
       setActiveFilter={feed.setActiveFilter}
       showEmptyState={feed.showEmptyState}
       onRefresh={() => void feed.loadNotifications()}
+      canGoToNextDate={feed.canGoToNextDate}
+      goToPreviousDate={feed.goToPreviousDate}
+      goToNextDate={feed.goToNextDate}
       markAsRead={feed.markAsRead}
       markAllAsRead={feed.markAllAsRead}
       archiveNotification={feed.archiveNotification}
       restoreNotification={feed.restoreNotification}
       deleteArchivedNotification={feed.deleteArchivedNotification}
-      deleteAllArchivedNotifications={feed.deleteAllArchivedNotifications}
+      toggleSelected={feed.toggleSelected}
+      toggleSelectAll={feed.toggleSelectAll}
+      archiveSelectedNotifications={feed.archiveSelectedNotifications}
+      restoreSelectedNotifications={feed.restoreSelectedNotifications}
+      deleteSelectedNotifications={feed.deleteSelectedNotifications}
       cardUi={PARENT_TYPE_UI}
     />
   );

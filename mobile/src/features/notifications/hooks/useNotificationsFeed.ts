@@ -4,7 +4,7 @@ import { loadNotificationArchiveState, saveNotificationArchiveState, type Notifi
   type ArchivedNotificationItem,
   type NotificationAudience,
 } from "@/src/utils/notification-archive-storage";
-import { toLocalDateKey } from "@/src/features/notifications/utils";
+import { addDaysToDateKey, toLocalDateKey } from "@/src/features/notifications/utils";
 import type { NotificationFilter } from "@/src/features/notifications/types";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { useAuth } from "@/src/hooks/use-auth";
@@ -34,23 +34,26 @@ export const useNotificationsFeed = <T extends NotificationArchiveBaseItem>({
   const [archivedItems, setArchivedItems] = useState<ArchivedNotificationItem<T>[]>([]);
   const [deletedIds, setDeletedIds] = useState<string[]>([]);
   const [storageReady, setStorageReady] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<NotificationFilter>("all");
+  const [activeFilter, setActiveFilterState] = useState<NotificationFilter>("all");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const todayDateKey = useMemo(() => toLocalDateKey(), []);
+  const [selectedDateKey, setSelectedDateKey] = useState(todayDateKey);
 
   const { data, isLoading, isRefetching, error: queryError, refetch } = useQuery({
-    queryKey: mobileQueryKeys.notificationsFeed(audience, userId, todayDateKey),
+    queryKey: mobileQueryKeys.notificationsFeed(audience, userId, selectedDateKey),
     enabled: isAuthenticated,
     queryFn: async () => {
       return onlineWithOfflineFallback(
         isOffline,
         async () => {
-          const result = await fetchFeed(todayDateKey);
-          return { items: result.notifications || [], date: result.date || todayDateKey };
+          const result = await fetchFeed(selectedDateKey);
+          return { items: result.notifications || [], date: result.date || selectedDateKey };
         },
         async () => {
-          if (!userId) return { items: [], date: todayDateKey };
+          if (!userId) return { items: [], date: selectedDateKey };
           const items = await readOfflineResource<(T & { feedDate?: string })>(userId, "notifications");
-          return { items, date: items[0]?.feedDate || todayDateKey };
+          const matchingItems = items.filter((item) => !item.feedDate || item.feedDate === selectedDateKey);
+          return { items: matchingItems, date: selectedDateKey };
         },
       );
     },
@@ -65,6 +68,13 @@ export const useNotificationsFeed = <T extends NotificationArchiveBaseItem>({
     : queryError ? "Failed to load notifications." : null;
 
   const loadNotifications = useCallback(async () => { await refetch(); }, [refetch]);
+  const changeDate = (days: number) => {
+    setSelectedIds([]);
+    setSelectedDateKey((current) => {
+      const next = addDaysToDateKey(current, days);
+      return next > todayDateKey ? todayDateKey : next;
+    });
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -113,26 +123,65 @@ export const useNotificationsFeed = <T extends NotificationArchiveBaseItem>({
     setArchivedItems((current) => current.filter((item) => item.id !== id));
     setDeletedIds((current) => current.includes(id) ? current : [...current, id]);
   };
-  const deleteAllArchivedNotifications = () => {
-    const idsToDelete = archivedItems.map((item) => item.id);
-    setArchivedItems([]);
-    setDeletedIds((current) => {
-      const existing = new Set(current);
-      const newIds = idsToDelete.filter((id) => !existing.has(id));
-      return newIds.length > 0 ? [...current, ...newIds] : current;
-    });
-    setReadIds((current) => {
-      const next = { ...current };
-      idsToDelete.forEach((id) => { delete next[id]; });
-      return next;
-    });
-  };
-
   const unreadCount = useMemo(() => activeItems.filter((item) => !readIds[item.id]).length, [activeItems, readIds]);
   const visibleActiveItems = useMemo(() => {
     if (activeFilter === "unread") return activeItems.filter((item) => !readIds[item.id]);
     return activeItems;
   }, [activeFilter, activeItems, readIds]);
+  const selectableItems = activeFilter === "archived" ? archivedItems : visibleActiveItems;
+  const selectableIds = useMemo(
+    () => selectableItems.map((item) => item.id),
+    [selectableItems],
+  );
+  const allVisibleSelected = selectableIds.length > 0 && selectableIds.every((id) => selectedIds.includes(id));
+
+  const toggleSelected = (id: string) => {
+    setSelectedIds((current) =>
+      current.includes(id) ? current.filter((entry) => entry !== id) : [...current, id],
+    );
+  };
+  const toggleSelectAll = () => {
+    setSelectedIds(allVisibleSelected ? [] : selectableIds);
+  };
+  const archiveSelectedNotifications = () => {
+    const selected = new Set(selectedIds);
+    const itemsToArchive = visibleActiveItems.filter((item) => selected.has(item.id));
+    if (!itemsToArchive.length) return;
+    setReadIds((current) => {
+      const next = { ...current };
+      itemsToArchive.forEach((item) => { next[item.id] = true; });
+      return next;
+    });
+    setArchivedItems((current) => {
+      const existing = new Set(current.map((item) => item.id));
+      const archivedAt = new Date().toISOString();
+      const additions = itemsToArchive
+        .filter((item) => !existing.has(item.id))
+        .map((item) => ({ ...item, archivedAt, sourceDate: date || selectedDateKey }));
+      return [...additions, ...current].slice(0, 200);
+    });
+    setSelectedIds([]);
+  };
+  const restoreSelectedNotifications = () => {
+    const selected = new Set(selectedIds);
+    setArchivedItems((current) => current.filter((item) => !selected.has(item.id)));
+    setSelectedIds([]);
+  };
+  const deleteSelectedNotifications = () => {
+    const selected = new Set(selectedIds);
+    setArchivedItems((current) => current.filter((item) => !selected.has(item.id)));
+    setDeletedIds((current) => Array.from(new Set([...current, ...selectedIds])));
+    setReadIds((current) => {
+      const next = { ...current };
+      selectedIds.forEach((id) => { delete next[id]; });
+      return next;
+    });
+    setSelectedIds([]);
+  };
+  const setActiveFilter = (value: NotificationFilter) => {
+    setSelectedIds([]);
+    setActiveFilterState(value);
+  };
 
   const showEmptyState = !isLoading && !error &&
     ((activeFilter === "archived" && archivedItems.length === 0) ||
@@ -140,9 +189,15 @@ export const useNotificationsFeed = <T extends NotificationArchiveBaseItem>({
 
   return {
     date, isLoading, isRefreshing: isRefetching, error, readIds,
+    canGoToNextDate: selectedDateKey < todayDateKey,
+    goToPreviousDate: () => changeDate(-1),
+    goToNextDate: () => changeDate(1),
     activeItems, archivedItems, visibleActiveItems, unreadCount,
+    selectedIds, allVisibleSelected, toggleSelected, toggleSelectAll,
+    archiveSelectedNotifications, restoreSelectedNotifications,
+    deleteSelectedNotifications,
     activeFilter, setActiveFilter, showEmptyState, markAsRead, markAllAsRead,
     archiveNotification, restoreNotification, deleteArchivedNotification,
-    deleteAllArchivedNotifications, loadNotifications,
+    loadNotifications,
   };
 };

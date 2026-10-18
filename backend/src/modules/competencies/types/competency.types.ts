@@ -51,3 +51,66 @@ export interface CompetencyEvaluationRepositoryContract {
   findSubmittedSchoolYears(centerId?: string): Promise<string[]>;
 }
 
+export type CompetencyNotificationStatus =
+  | "created"
+  | "duplicate"
+  | "skipped"
+  | "push_failed";
+
+export interface CompetencyNotificationResult {
+  status: CompetencyNotificationStatus;
+  reason?: string;
+}
+
+export interface CompetencyNotificationInput {
+  evaluationId: string;
+  childId: string;
+  childName: string;
+  parentId?: string | null;
+  teacherId: string;
+  centerId: string;
+  status: "draft" | "submitted";
+  entries: Array<{
+    name: string;
+    level: string;
+    remarks?: string;
+  }>;
+}
+
+export interface CompetencyNotificationParent {
+  _id: unknown;
+  role?: string;
+  isActive?: boolean;
+  pushToken?: string | null;
+  pushTokens?: Array<{ token?: string | null }>;
+}
+
+export interface CompetencyNotificationRepositoryContract {
+  findActiveParent(id: string): Promise<CompetencyNotificationParent | null>;
+  createAlert(input: {
+    recipientId: string;
+    childId: string;
+    evaluationId: string;
+    senderId: string;
+    centerId: string;
+    title: string;
+    message: string;
+    uniqueKey: string;
+  }): Promise<void>;
+}
+
+export interface CompetencyNotificationServiceContract {
+  notify(input: CompetencyNotificationInput): Promise<CompetencyNotificationResult>;
+}
+
+export interface CompetencyNotificationServiceDependencies {
+  repository: CompetencyNotificationRepositoryContract;
+  extractTokens(parent: CompetencyNotificationParent): string[];
+  sendPush(input: {
+    tokens: string[];
+    title: string;
+    body: string;
+    data?: Record<string, unknown>;
+  }): Promise<{ accepted: number; rejected: number }>;
+}
+

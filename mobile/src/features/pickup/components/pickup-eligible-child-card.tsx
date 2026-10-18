@@ -2,13 +2,23 @@ import React from "react";
 import { View, Text, Pressable } from "react-native";
 import { User, ChevronRight, Phone } from "lucide-react-native";
 import type { PickupEligibleChild } from "@/src/api/api.types";
+import { PickupSelectionCheckbox } from "./pickup-selection-checkbox";
 
 interface Props {
   child: PickupEligibleChild;
   onPress: () => void;
+  selected: boolean;
+  selectionDisabled?: boolean;
+  onToggleSelected: () => void;
 }
 
-export function PickupEligibleChildCard({ child, onPress }: Props) {
+export function PickupEligibleChildCard({
+  child,
+  onPress,
+  selected,
+  selectionDisabled = false,
+  onToggleSelected,
+}: Props) {
   const guardianCount =
     child.authorizedPickupPersons?.filter((g) => g.isActive !== false).length ??
     0;
@@ -47,7 +57,15 @@ export function PickupEligibleChildCard({ child, onPress }: Props) {
                 </Text>
               </View>
             </View>
-            <ChevronRight size={24} color="#94A3B8" />
+            <View className="flex-row items-center">
+              <PickupSelectionCheckbox
+                selected={selected}
+                disabled={selectionDisabled}
+                childName={`${child.firstName} ${child.lastName}`}
+                onToggle={onToggleSelected}
+              />
+              <ChevronRight size={24} color="#94A3B8" />
+            </View>
           </View>
 
           {/* Status Chips */}

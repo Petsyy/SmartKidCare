@@ -18,9 +18,13 @@ import type {
   CompetencyChildRepository,
   CompetencyDefinitionRepositoryContract,
   CompetencyEvaluationRepositoryContract,
+  CompetencyNotificationResult,
+  CompetencyNotificationServiceContract,
 } from "../types/competency.types";
 import { canAccessChild } from "../../../shared/services/child-access.service";
 import { getSingleCenterId } from "../../../shared/services/single-center.service";
+import { logger } from "../../../shared/lib/logger";
+import { competencyNotificationService } from "./competency-notification.service";
 
 const COMPETENCY_LEVELS = [
   "not_demonstrated",
@@ -126,6 +130,7 @@ export class CompetencyService {
     private readonly definitionRepository: CompetencyDefinitionRepositoryContract,
     private readonly evaluationRepository: CompetencyEvaluationRepositoryContract,
     private readonly childRepository: CompetencyChildRepository,
+    private readonly notificationService: CompetencyNotificationServiceContract,
   ) {}
 
   async initializeCatalog(): Promise<void> {
@@ -218,12 +223,57 @@ export class CompetencyService {
       generalNotes: input.generalNotes || "",
     };
 
+    let evaluation: any;
     if (existing) {
       existing.set(values);
       await existing.save();
-      return existing;
+      evaluation = existing;
+    } else {
+      evaluation = await this.evaluationRepository.create(values);
     }
-    return this.evaluationRepository.create(values);
+
+    let notification: CompetencyNotificationResult | undefined;
+    if (input.status === "submitted") {
+      const definitionById = new Map(
+        activeDefinitions.map((definition: any) => [
+          String(definition._id),
+          String(definition.name || definition.code || "Skill"),
+        ]),
+      );
+      const parentId = child.parent
+        ? String(child.parent._id || child.parent)
+        : null;
+      try {
+        notification = await this.notificationService.notify({
+          evaluationId: String(evaluation._id),
+          childId: input.childId,
+          childName:
+            `${child.firstName || ""} ${child.lastName || ""}`.trim() ||
+            "Your child",
+          parentId,
+          teacherId: validUser.id,
+          centerId: String(child.daycareCenter?._id || child.daycareCenter),
+          status: input.status,
+          entries: input.entries.map((entry) => ({
+            name: definitionById.get(entry.competencyId) || "Skill",
+            level: entry.level,
+            remarks: entry.remarks,
+          })),
+        });
+      } catch (error) {
+        logger.error("Competency parent notification failed after evaluation save.", {
+          evaluationId: String(evaluation._id),
+          childId: input.childId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        notification = {
+          status: "skipped",
+          reason: "Evaluation saved, but the parent notification could not be created.",
+        };
+      }
+    }
+
+    return { evaluation, notification };
   }
 
   async getEvaluationByPeriod(
@@ -364,6 +414,7 @@ export const competencyService = new CompetencyService(
   competencyDefinitionRepository,
   competencyEvaluationRepository,
   defaultChildRepository,
+  competencyNotificationService,
 );
 
 export type {
@@ -372,4 +423,6 @@ export type {
   CompetencyChildRepository,
   CompetencyDefinitionRepositoryContract,
   CompetencyEvaluationRepositoryContract,
+  CompetencyNotificationResult,
+  CompetencyNotificationServiceContract,
 } from "../types/competency.types";

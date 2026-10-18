@@ -8,6 +8,8 @@ import type {
   RequestPickupCodeResponse,
   PickupRecordResponse,
   PickupStatusResponse,
+  BulkPickupNotificationInput,
+  BulkPickupNotificationResult,
 } from "./api.types";
 
 export const getParentIdDocumentUrl = async (
@@ -116,6 +118,19 @@ export const getPickupEligibleChildren = async (): Promise<
     data: PickupEligibleChild[];
   }>("/api/pickup/children");
   return res.data || [];
+};
+
+export const sendBulkPickupNotifications = async (
+  payload: BulkPickupNotificationInput,
+): Promise<BulkPickupNotificationResult> => {
+  const res = await apiClient<{
+    success: boolean;
+    data: BulkPickupNotificationResult;
+  }>("/api/pickup/notifications", {
+    method: "POST",
+    body: payload,
+  });
+  return res.data;
 };
 
 export const requestPickupCode = async (

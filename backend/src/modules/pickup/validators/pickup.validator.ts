@@ -1,5 +1,17 @@
 import { z } from "zod";
 
+const objectIdSchema = z.string().trim().regex(/^[0-9a-fA-F]{24}$/, "Invalid child ID.");
+
+export const validateBulkPickupNotifications = z.object({
+  childIds: z
+    .array(objectIdSchema)
+    .min(1, "Select at least one child.")
+    .max(100, "A maximum of 100 children can be notified at once.")
+    .refine((ids) => new Set(ids).size === ids.length, {
+      message: "Child IDs must be unique.",
+    }),
+});
+
 export const validateRequestCode = z.object({
   childId: z.string().min(1, "Child ID is required"),
   intendedGuardianIndex: z.number().int().nonnegative().nullable().optional(),
