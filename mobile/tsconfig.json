@@ -19,6 +19,10 @@
     "noEmit": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
+    "types": [
+      "node",
+      "jest"
+    ],
     "paths": {
       "@/*": [
         "./*"

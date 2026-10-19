@@ -10,6 +10,8 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
+    "test": "jest --runInBand",
+    "test:coverage": "jest --runInBand --coverage",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -66,12 +68,30 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@testing-library/react-native": "^14.1.0",
+    "@types/jest": "29.5.14",
     "@types/node": "^24.19.2",
     "@types/react": "~19.2.4",
     "babel-plugin-module-resolver": "^5.0.2",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~57.0.2",
+    "jest-expo": "~57.0.6",
     "typescript": "~6.0.3"
   },
-  "private": true
+  "private": true,
+  "jest": {
+    "preset": "jest-expo",
+    "setupFilesAfterEnv": [
+      "<rootDir>/src/test/setup.ts"
+    ],
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/$1"
+    },
+    "collectCoverageFrom": [
+      "src/**/*.{ts,tsx}",
+      "!src/**/*.d.ts",
+      "!src/**/index.{ts,tsx}",
+      "!src/test/**"
+    ]
+  }
 }
