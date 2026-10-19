@@ -32,7 +32,7 @@ export function NutritionDatePicker({
   const [dateBounds] = useState(() => {
     const maximumDate = new Date();
     return {
-      minimumDate: new Date(maximumDate.getTime() - 30 * DAY_MS),
+      minimumDate: new Date(maximumDate.getTime() - 7 * DAY_MS),
       maximumDate,
     };
   });
@@ -56,7 +56,7 @@ export function NutritionDatePicker({
     ) {
       Alert.alert(
         "Invalid Measurement Date",
-        `Nutrition records can only be backdated up to 30 days (from ${minimumDateKey} to ${todayDateKey}).`,
+        `Measurement date must be today or within the previous 7 days (${minimumDateKey} to ${todayDateKey}).`,
       );
       return false;
     }
@@ -92,7 +92,7 @@ export function NutritionDatePicker({
           onPress={openDatePicker}
           accessibilityRole="button"
           accessibilityLabel={`Measurement date: ${dateLabel}`}
-          accessibilityHint="Opens a date picker. Past dates can be selected."
+          accessibilityHint="Opens a date picker. Today and the previous seven days can be selected."
           className="flex-row items-center justify-between rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3.5 active:opacity-85"
         >
           <View className="flex-row items-center">

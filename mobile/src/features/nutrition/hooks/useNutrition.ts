@@ -15,46 +15,66 @@ import {
   readOfflineResource,
 } from "@/src/offline/offline-read";
 import type { Child } from "@/src/api/api.types";
+import { getManilaDateKey } from "@/src/utils/manila-date";
 
 export const useMyClassNutrition = (
   schoolYear: string,
   period?: NutritionPeriod,
+  measurementDateKey?: string,
 ) => {
   const { user } = useAuth();
   const { isConnected, isInternetReachable } = useOffline();
   const isOffline = !isConnected || !isInternetReachable;
   return useQuery({
-    queryKey: ["my-class-nutrition", schoolYear, period],
+    queryKey: ["my-class-nutrition", schoolYear, period, measurementDateKey],
     networkMode: "always",
     queryFn: () => {
       if (!user?.id) return Promise.resolve([]);
       return onlineWithOfflineFallback(
         isOffline,
-        () => getMyClassNutrition(schoolYear, period),
+        () => getMyClassNutrition(schoolYear, period, measurementDateKey),
         async () => {
           const [children, records] = await Promise.all([
             readOfflineResource<Child>(user.id, "children"),
             readOfflineResource<NutritionRecord>(user.id, "nutrition"),
           ]);
-          return children.map((child) => ({
-            child,
-            record:
-              records.find(
-                (record) =>
-                  String(record.childId) === child._id &&
-                  record.schoolYear === schoolYear &&
-                  (!period || record.period === period),
-              ) ?? null,
-            initialRecord:
-              period === "final"
-                ? (records.find(
-                    (record) =>
-                      String(record.childId) === child._id &&
-                      record.schoolYear === schoolYear &&
-                      record.period === "initial",
-                  ) ?? null)
-                : null,
-          }));
+          const sortedRecords = [...records].sort(
+            (left, right) =>
+              new Date(right.measurementDate).getTime() -
+              new Date(left.measurementDate).getTime(),
+          );
+          return children.map((child) => {
+            const childRecords = sortedRecords.filter(
+              (record) =>
+                String(record.childId) === child._id &&
+                record.schoolYear === schoolYear &&
+                (!period || record.period === period),
+            );
+            return {
+              child,
+              record:
+                childRecords.find((record) => record.status === "submitted") ??
+                childRecords[0] ??
+                null,
+              selectedRecord:
+                childRecords.find(
+                  (record) =>
+                    !measurementDateKey ||
+                    record.measurementDateKey === measurementDateKey ||
+                    getManilaDateKey(new Date(record.measurementDate)) ===
+                      measurementDateKey,
+                ) ?? null,
+              initialRecord:
+                period === "final"
+                  ? (sortedRecords.find(
+                      (record) =>
+                        String(record.childId) === child._id &&
+                        record.schoolYear === schoolYear &&
+                        record.period === "initial",
+                    ) ?? null)
+                  : null,
+            };
+          });
         },
       );
     },
@@ -96,9 +116,13 @@ export const useChildNutritionHistory = (childId: string) => {
             isOffline,
             () => getChildNutritionHistory(childId),
             async () =>
-              (
-                await readOfflineResource<NutritionRecord>(user.id, "nutrition")
-              ).filter((record) => String(record.childId) === childId),
+              (await readOfflineResource<NutritionRecord>(user.id, "nutrition"))
+                .filter((record) => String(record.childId) === childId)
+                .sort(
+                  (left, right) =>
+                    new Date(right.measurementDate).getTime() -
+                    new Date(left.measurementDate).getTime(),
+                ),
           ),
     enabled: !!childId,
   });

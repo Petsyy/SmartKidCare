@@ -32,6 +32,14 @@ export interface StudentNutritionCardProps {
     height: number;
     bmi: number;
     nutritionalStatus: string;
+    measurementDate?: string;
+  };
+  latestRecord?: {
+    status: "draft" | "submitted";
+    weight: number;
+    height: number;
+    nutritionalStatus: string;
+    measurementDate?: string;
   };
   initialRecord?: {
     weight: number;
@@ -55,6 +63,7 @@ export interface StudentNutritionCardProps {
 export const StudentNutritionCard: React.FC<StudentNutritionCardProps> = ({
   child,
   record,
+  latestRecord,
   initialRecord,
   period,
   localInput,
@@ -68,6 +77,14 @@ export const StudentNutritionCard: React.FC<StudentNutritionCardProps> = ({
 }) => {
   const isSubmitted = record?.status === "submitted";
   const isReadOnly = period === "initial" || isSubmitted;
+  const latestQuarterlyDate = latestRecord?.measurementDate
+    ? new Date(latestRecord.measurementDate).toLocaleDateString("en-PH", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        timeZone: "Asia/Manila",
+      })
+    : null;
 
   // Live calculation logic
   const currentWeight =
@@ -112,13 +129,25 @@ export const StudentNutritionCard: React.FC<StudentNutritionCardProps> = ({
         </View>
       )}
 
+      {period === "quarterly" && latestRecord?.status === "submitted" && (
+        <View className="mt-2 rounded-xl border border-blue-100 bg-blue-50 p-3">
+          <Text className="text-sm font-semibold text-blue-800">
+            Latest: {latestRecord.weight}kg | {latestRecord.height}cm
+            {latestQuarterlyDate ? ` on ${latestQuarterlyDate}` : ""}
+          </Text>
+          <Text className="mt-1 text-xs font-semibold text-blue-700">
+            {latestRecord.nutritionalStatus}
+          </Text>
+        </View>
+      )}
+
       {isReadOnly ? (
         <View className="mt-4 rounded-2xl bg-teal-50 border border-teal-100 p-4">
           <View className="flex-row items-center mb-2">
             <CheckCircle2 size={18} color="#0D9488" />
             <Text className="ml-2 font-bold text-teal-800">
               {record
-                ? `${period === "final" ? "Final" : "Initial"} Assessment ${isSubmitted ? "Submitted" : "From Enrollment"}`
+                ? `${period === "final" ? "Final" : period === "quarterly" ? "Quarterly" : "Initial"} Assessment ${isSubmitted ? "Submitted" : "From Enrollment"}`
                 : "Initial Assessment Not Available"}
             </Text>
           </View>

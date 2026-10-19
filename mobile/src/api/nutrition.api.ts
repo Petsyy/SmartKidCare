@@ -16,16 +16,19 @@ export interface NutritionRecord {
   bmi: number;
   nutritionalStatus: string;
   measurementDate: string;
+  measurementDateKey?: string;
   submittedAt?: string;
 }
 
 export const getMyClassNutrition = async (
   schoolYear: string,
   period?: NutritionPeriod,
+  measurementDateKey?: string,
 ) => {
   const query = new URLSearchParams({
     schoolYear,
     ...(period ? { period } : {}),
+    ...(measurementDateKey ? { measurementDateKey } : {}),
   }).toString();
   const data = await apiClient<{ data: any }>(
     `/api/nutrition/my-class?${query}`,

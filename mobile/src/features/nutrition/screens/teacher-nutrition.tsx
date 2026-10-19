@@ -50,6 +50,19 @@ const nutritionDraftScopeKey = (
   childId: string,
   schoolYear: string,
   period: EditableNutritionPeriod,
+  measurementDateKey: string,
+) => `${schoolYear}:${period}:${measurementDateKey}:${childId}`;
+
+const nutritionInputKey = (
+  childId: string,
+  period: EditableNutritionPeriod,
+  measurementDateKey: string,
+) => `${period}:${measurementDateKey}:${childId}`;
+
+const legacyNutritionDraftScopeKey = (
+  childId: string,
+  schoolYear: string,
+  period: EditableNutritionPeriod,
 ) => `${schoolYear}:${period}:${childId}`;
 
 export const TeacherNutritionScreen = () => {
@@ -69,7 +82,7 @@ export const TeacherNutritionScreen = () => {
     isLoading,
     isError,
     error,
-  } = useMyClassNutrition(schoolYear, period);
+  } = useMyClassNutrition(schoolYear, period, measurementDateKey);
   const evaluateNutrition = useEvaluateNutrition();
 
   const [localInputs, setLocalInputs] = useState<
@@ -78,6 +91,9 @@ export const TeacherNutritionScreen = () => {
   const [localDraftKeys, setLocalDraftKeys] = useState<Record<string, boolean>>(
     {},
   );
+  const [legacyDraftKeys, setLegacyDraftKeys] = useState<
+    Record<string, boolean>
+  >({});
   const [fieldErrors, setFieldErrors] = useState<
     Record<string, NutritionAssessmentErrors>
   >({});
@@ -88,16 +104,33 @@ export const TeacherNutritionScreen = () => {
     void (async () => {
       const nextInputs: Record<string, { weight: string; height: string }> = {};
       const nextDraftKeys: Record<string, boolean> = {};
-      let restoredDateKey: string | null = null;
-
+      const nextLegacyDraftKeys: Record<string, boolean> = {};
       for (const item of students) {
         const childId = item.child._id;
-        const inputKey = `${period}:${childId}`;
-        const draft = await getScopedDraft(
+        const inputKey = nutritionInputKey(childId, period, measurementDateKey);
+        let draft = await getScopedDraft(
           user.id,
           "nutrition",
-          nutritionDraftScopeKey(childId, schoolYear, period),
+          nutritionDraftScopeKey(
+            childId,
+            schoolYear,
+            period,
+            measurementDateKey,
+          ),
         );
+        if (!draft) {
+          const legacyDraft = await getScopedDraft(
+            user.id,
+            "nutrition",
+            legacyNutritionDraftScopeKey(childId, schoolYear, period),
+          );
+          const legacyPayload = legacyDraft?.payload as
+            NutritionDraftPayload | undefined;
+          if (legacyPayload?.measurementDateKey === measurementDateKey) {
+            draft = legacyDraft;
+            nextLegacyDraftKeys[inputKey] = true;
+          }
+        }
         if (!draft) continue;
         const payload = draft.payload as NutritionDraftPayload;
         nextInputs[inputKey] = {
@@ -105,28 +138,35 @@ export const TeacherNutritionScreen = () => {
           height: payload.height ?? "",
         };
         nextDraftKeys[inputKey] = true;
-        restoredDateKey ??= payload.measurementDateKey;
       }
 
       if (cancelled) return;
       if (Object.keys(nextInputs).length > 0) {
         setLocalInputs((current) => ({ ...current, ...nextInputs }));
         setLocalDraftKeys((current) => ({ ...current, ...nextDraftKeys }));
+        setLegacyDraftKeys((current) => ({
+          ...current,
+          ...nextLegacyDraftKeys,
+        }));
       }
-      if (restoredDateKey) setMeasurementDateKey(restoredDateKey);
     })();
     return () => {
       cancelled = true;
     };
-  }, [period, schoolYear, students, user?.id]);
+  }, [measurementDateKey, period, schoolYear, students, user?.id]);
 
   useEffect(() => {
     if (!user?.id) return;
     const timeout = setTimeout(() => {
       void Promise.all(
         Object.entries(localInputs).map(([inputKey, inputs]) => {
-          const [inputPeriod, childId] = inputKey.split(":");
-          if (inputPeriod !== period || !childId) return Promise.resolve();
+          const [inputPeriod, inputDateKey, childId] = inputKey.split(":");
+          if (
+            inputPeriod !== period ||
+            inputDateKey !== measurementDateKey ||
+            !childId
+          )
+            return Promise.resolve();
           if (!inputs?.weight && !inputs?.height) return Promise.resolve();
           const payload: NutritionDraftPayload = {
             childId,
@@ -140,7 +180,12 @@ export const TeacherNutritionScreen = () => {
             userId: user.id,
             recordType: "nutrition",
             dateKey: `${schoolYear}-${period}`,
-            draftScopeKey: nutritionDraftScopeKey(childId, schoolYear, period),
+            draftScopeKey: nutritionDraftScopeKey(
+              childId,
+              schoolYear,
+              period,
+              measurementDateKey,
+            ),
             payload,
           });
         }),
@@ -161,7 +206,7 @@ export const TeacherNutritionScreen = () => {
     field: "weight" | "height",
     value: string,
   ) => {
-    const inputKey = `${period}:${childId}`;
+    const inputKey = nutritionInputKey(childId, period, measurementDateKey);
     setLocalInputs((prev) => ({
       ...prev,
       [inputKey]: {
@@ -183,7 +228,7 @@ export const TeacherNutritionScreen = () => {
     inputs: { weight?: string; height?: string } | undefined,
   ) => {
     if (!user?.id) throw new Error("Please sign in again to save drafts.");
-    const inputKey = `${period}:${childId}`;
+    const inputKey = nutritionInputKey(childId, period, measurementDateKey);
     const payload: NutritionDraftPayload = {
       childId,
       schoolYear,
@@ -196,7 +241,12 @@ export const TeacherNutritionScreen = () => {
       userId: user.id,
       recordType: "nutrition",
       dateKey: `${schoolYear}-${period}`,
-      draftScopeKey: nutritionDraftScopeKey(childId, schoolYear, period),
+      draftScopeKey: nutritionDraftScopeKey(
+        childId,
+        schoolYear,
+        period,
+        measurementDateKey,
+      ),
       payload,
     });
     setLocalDraftKeys((prev) => ({ ...prev, [inputKey]: true }));
@@ -204,7 +254,7 @@ export const TeacherNutritionScreen = () => {
   };
 
   const handleSave = async (childId: string, action: "draft" | "submit") => {
-    const inputKey = `${period}:${childId}`;
+    const inputKey = nutritionInputKey(childId, period, measurementDateKey);
     const inputs = localInputs[inputKey];
 
     if (action === "draft") {
@@ -288,9 +338,22 @@ export const TeacherNutritionScreen = () => {
             await deleteScopedDraft(
               user.id,
               "nutrition",
-              nutritionDraftScopeKey(childId, schoolYear, period),
+              nutritionDraftScopeKey(
+                childId,
+                schoolYear,
+                period,
+                measurementDateKey,
+              ),
             );
+            if (legacyDraftKeys[inputKey]) {
+              await deleteScopedDraft(
+                user.id,
+                "nutrition",
+                legacyNutritionDraftScopeKey(childId, schoolYear, period),
+              );
+            }
             setLocalDraftKeys((prev) => ({ ...prev, [inputKey]: false }));
+            setLegacyDraftKeys((prev) => ({ ...prev, [inputKey]: false }));
             await refreshPendingCount();
           }
           Alert.alert(
@@ -428,15 +491,26 @@ export const TeacherNutritionScreen = () => {
           renderItem={({ item }) => (
             <StudentNutritionCard
               child={item.child}
-              record={item.record}
+              record={item.selectedRecord}
+              latestRecord={item.record}
               initialRecord={item.initialRecord}
               period={period}
-              localInput={localInputs[`${period}:${item.child._id}`]}
+              localInput={
+                localInputs[
+                  nutritionInputKey(item.child._id, period, measurementDateKey)
+                ]
+              }
               hasLocalDraft={Boolean(
-                localDraftKeys[`${period}:${item.child._id}`],
+                localDraftKeys[
+                  nutritionInputKey(item.child._id, period, measurementDateKey)
+                ],
               )}
               isOffline={isOffline}
-              errors={fieldErrors[`${period}:${item.child._id}`]}
+              errors={
+                fieldErrors[
+                  nutritionInputKey(item.child._id, period, measurementDateKey)
+                ]
+              }
               isPending={evaluateNutrition.isPending}
               isSubmitting={
                 evaluateNutrition.isPending &&
