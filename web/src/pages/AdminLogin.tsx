@@ -1,7 +1,7 @@
 import { UserIcon, Lock, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { useAdminLogin } from "@/features/auth/hooks/useAdminLogin";
-import { useSystemSettings } from "@/context/SystemSettingsContext";
+import { useSystemSettings } from "@/context/system-settings.context";
 import { PasswordVisibilityButton } from "@/components/ui/PasswordVisibilityButton";
 import {
   AUTH_PASSWORD_MAX_LENGTH,

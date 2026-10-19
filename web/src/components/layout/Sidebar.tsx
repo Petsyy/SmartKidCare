@@ -7,7 +7,7 @@ import {
   UserCog,
   Utensils,
 } from "lucide-react";
-import { useSystemSettings } from "../../context/SystemSettingsContext";
+import { useSystemSettings } from "../../context/system-settings.context";
 
 type NavItem = {
   icon: React.ElementType;

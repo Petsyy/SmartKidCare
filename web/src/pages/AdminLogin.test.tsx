@@ -17,7 +17,7 @@ vi.mock("@/components/auth/useAuthSession", () => ({
   }),
 }));
 
-vi.mock("@/context/SystemSettingsContext", () => ({
+vi.mock("@/context/system-settings.context", () => ({
   useSystemSettings: () => ({
     settings: { schoolName: "Test KidCare" },
     loading: false,

@@ -64,9 +64,9 @@ export function CommandPalette({
         );
         const data = await response.json();
         setResults(data.results || []);
-      } catch (err: any) {
-        if (err.name !== "AbortError") {
-          console.error("Search failed:", err);
+      } catch (error: unknown) {
+        if (!(error instanceof DOMException && error.name === "AbortError")) {
+          console.error("Search failed:", error);
         }
       } finally {
         setIsLoading(false);

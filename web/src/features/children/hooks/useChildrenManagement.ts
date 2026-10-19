@@ -1,6 +1,11 @@
 
 import type { Child } from "@/types/child";
-import { getChildren, deleteChild, updateChild } from "@/api/child.api";
+import {
+  getChildren,
+  deleteChild,
+  updateChild,
+  type UpdateChildInput,
+} from "@/api/child.api";
 import { showErrorModal } from "@/utils/sweet-alert-modal";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { webQueryKeys } from "@/lib/query-keys";
@@ -20,7 +25,13 @@ export function useChildrenManagement() {
   });
 
   const updateChildMutation = useMutation({
-    mutationFn: ({ childId, payload }: { childId: string; payload: any }) =>
+    mutationFn: ({
+      childId,
+      payload,
+    }: {
+      childId: string;
+      payload: UpdateChildInput;
+    }) =>
       updateChild(childId, payload),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: webQueryKeys.children() });
@@ -40,8 +51,10 @@ export function useChildrenManagement() {
         childId: child._id,
         payload: { status: newStatus },
       });
-    } catch (err: any) {
-      showErrorModal(err.message || "Failed to update status");
+    } catch (error: unknown) {
+      showErrorModal(
+        error instanceof Error ? error.message : "Failed to update status",
+      );
     }
   };
 
@@ -55,16 +68,20 @@ export function useChildrenManagement() {
         childId: child._id,
         payload: { unlinkParent: true },
       });
-    } catch (err: any) {
-      showErrorModal(err.message || "Failed to unlink parent");
+    } catch (error: unknown) {
+      showErrorModal(
+        error instanceof Error ? error.message : "Failed to unlink parent",
+      );
     }
   };
 
   const handleDeleteChild = async (child: Child) => {
     try {
       await deleteChildMutation.mutateAsync(child._id);
-    } catch (err: any) {
-      showErrorModal(err.message || "Failed to delete child");
+    } catch (error: unknown) {
+      showErrorModal(
+        error instanceof Error ? error.message : "Failed to delete child",
+      );
     }
   };
 

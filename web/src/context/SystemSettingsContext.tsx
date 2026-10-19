@@ -1,14 +1,7 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { getSystemSettings } from "../api/system-settings.api";
 import type { SystemSettings } from "../api/system-settings.api";
-
-type SystemSettingsContextType = {
-  settings: SystemSettings | null;
-  loading: boolean;
-  refreshSettings: () => Promise<void>;
-};
-
-export const SystemSettingsContext = createContext<SystemSettingsContextType | undefined>(undefined);
+import { SystemSettingsContext } from "./system-settings.context";
 
 export const SystemSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<SystemSettings | null>(null);
@@ -34,12 +27,4 @@ export const SystemSettingsProvider: React.FC<{ children: React.ReactNode }> = (
       {children}
     </SystemSettingsContext.Provider>
   );
-};
-
-export const useSystemSettings = () => {
-  const context = useContext(SystemSettingsContext);
-  if (context === undefined) {
-    throw new Error("useSystemSettings must be used within a SystemSettingsProvider");
-  }
-  return context;
 };

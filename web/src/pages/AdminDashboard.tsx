@@ -6,7 +6,7 @@ import { StatsGrid } from "@/features/dashboard/components/StatsGrid";
 import { AttendanceChart } from "@/features/dashboard/components/AttendanceChart";
 import { EnrollmentBarChart } from "@/features/dashboard/components/EnrollmentBarChart";
 import { useAdminDashboard } from "@/features/dashboard/hooks/useAdminDashboard";
-import { useSystemSettings } from "@/context/SystemSettingsContext";
+import { useSystemSettings } from "@/context/system-settings.context";
 import { StatCardSkeleton } from "@/components/ui/StatCardSkeleton";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Button } from "@/components/ui/Button";

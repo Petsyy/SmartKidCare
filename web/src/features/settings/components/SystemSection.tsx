@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useSystemSettings } from "../../../context/SystemSettingsContext";
+import { useSystemSettings } from "../../../context/system-settings.context";
 import { updateSystemSettings } from "../../../api/system-settings.api";
 
 export const SystemSection: React.FC = () => {

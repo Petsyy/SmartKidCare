@@ -42,9 +42,7 @@ export const getChildBlockchainProof = async (
   );
 };
 
-export const updateChild = async (
-  childId: string,
-  updates: {
+export type UpdateChildInput = {
     firstName?: string;
     middleName?: string;
     lastName?: string;
@@ -62,7 +60,11 @@ export const updateChild = async (
     unlinkParent?: boolean;
     teacherId?: string | null;
     unlinkTeacher?: boolean;
-  },
+};
+
+export const updateChild = async (
+  childId: string,
+  updates: UpdateChildInput,
 ) => {
   return apiRequestOrThrow<unknown>(`/children/${childId}`, "Failed to update child", {
     method: "PATCH",
