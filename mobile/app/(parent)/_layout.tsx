@@ -1,22 +1,27 @@
-import { Tabs, Redirect, useRootNavigationState } from "expo-router";
+import {
+  Tabs,
+  Redirect,
+  usePathname,
+  useRootNavigationState,
+  useRouter,
+  useSegments,
+} from "expo-router";
 import { useAuth } from "@/src/hooks/use-auth";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StyleSheet, View } from "react-native";
-import ParentGate from "@/src/components/ui/parent-gate";
-import { ParentLoadingState } from "@/src/components/ui";
-import {
-  House,
-  UserRound,
-  Users,
-  ShieldCheck,
-} from "lucide-react-native";
+import { FloatingChatBubble, ParentLoadingState } from "@/src/components/ui";
+import { House, UserRound, Users, ShieldCheck } from "lucide-react-native";
 import { getTabBarScreenOptions } from "@/src/config/tab-bar";
 
 export default function ParentLayout() {
   const { user, role, loading } = useAuth();
   const rootNavigationState = useRootNavigationState();
+  const pathname = usePathname();
+  const segments = useSegments();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const bottomInset = Math.max(insets.bottom, 10);
+  const isParentDashboard = segments.length === 1 && segments[0] === "(parent)";
 
   if (!rootNavigationState?.key) {
     return null;
@@ -61,9 +66,9 @@ export default function ParentLayout() {
             title: "Pickup",
             tabBarIcon: ({ color, focused }) => (
               <ShieldCheck
-              color={color}
-              size={focused ? 22 : 20}
-              strokeWidth={focused ? 2.4 : 2}
+                color={color}
+                size={focused ? 22 : 20}
+                strokeWidth={focused ? 2.4 : 2}
               />
             ),
           }}
@@ -102,6 +107,12 @@ export default function ParentLayout() {
           options={{ href: null, tabBarStyle: { display: "none" } }}
         />
       </Tabs>
+      <FloatingChatBubble
+        onPress={() => router.push("/(parent)/chat")}
+        bottomOffset={bottomInset + 80}
+        hidden={loading || !isParentDashboard || pathname.endsWith("/chat")}
+        disabled={!user || role !== "parent"}
+      />
       {loading ? (
         <View
           pointerEvents="auto"

@@ -22,3 +22,4 @@ export * from "./offline-status-banner";
 export * from "./offline-feature-banner";
 export * from "./offline-data-card";
 export * from "./snackbar";
+export * from "./floating-chat-bubble";

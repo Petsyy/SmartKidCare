@@ -12,7 +12,6 @@ import {
   ChevronRight,
   ClipboardCheck,
   Clock3,
-  MessageCircle,
   RefreshCw,
   School,
   Utensils,
@@ -357,7 +356,8 @@ export default function ParentDashboardScreen() {
             <View className="mt-5 flex-row items-start">
               {attendanceStatus === "present" ? (
                 <CheckCircle2 size={20} color="#D1FAE5" />
-              ) : attendanceStatus === "absent" || attendanceStatus === "excused" ? (
+              ) : attendanceStatus === "absent" ||
+                attendanceStatus === "excused" ? (
                 <AlertCircle size={20} color="#FED7AA" />
               ) : (
                 <Clock3 size={20} color="#D1FAE5" />
@@ -403,37 +403,6 @@ export default function ParentDashboardScreen() {
           </LinearGradient>
         </Pressable>
 
-        <View className="mb-6">
-          <Text
-            className="mb-2 text-xl font-black text-gray-900"
-            accessibilityRole="header"
-          >
-            Need help?
-          </Text>
-          <View className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
-            <Pressable
-              onPress={() => router.push("/(parent)/chat")}
-              accessibilityRole="button"
-              accessibilityLabel="Ask KidCare AI"
-              accessibilityHint="Opens AI assistant chat for parents"
-              className="min-h-16 flex-row items-center px-4 py-3.5 active:bg-teal-50"
-            >
-              <View className="h-11 w-11 items-center justify-center rounded-2xl bg-teal-50">
-                <MessageCircle size={22} color="#0F766E" />
-              </View>
-              <View className="ml-3 flex-1">
-                <Text className="text-base font-extrabold text-gray-900">
-                  Ask KidCare
-                </Text>
-                <Text className="mt-0.5 text-sm leading-5 text-gray-600">
-                  Get help with attendance and meal records
-                </Text>
-              </View>
-              <ChevronRight size={20} color="#0F766E" />
-            </Pressable>
-          </View>
-        </View>
-
         {/* Section 1: Records and History */}
         <View className="mb-2.5 flex-row items-end justify-between">
           <View>
@@ -469,7 +438,8 @@ export default function ParentDashboardScreen() {
               <View className="mt-1.5 flex-row items-center">
                 {attendanceStatus === "present" ? (
                   <CheckCircle2 size={17} color="#047857" />
-                ) : attendanceStatus === "absent" || attendanceStatus === "excused" ? (
+                ) : attendanceStatus === "absent" ||
+                  attendanceStatus === "excused" ? (
                   <AlertCircle size={17} color="#BE123C" />
                 ) : (
                   <Clock3 size={17} color="#0F766E" />
