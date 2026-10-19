@@ -2,12 +2,15 @@ import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
 
 import ChildDevelopmentCenter from "../src/models/ChildDevelopmentCenter";
+import Child from "../src/models/Child";
 import User from "../src/models/Users";
 
 const E2E_USERNAME = String(process.env.E2E_CAPTAIN_USERNAME || "").trim();
 const E2E_PASSWORD = String(process.env.E2E_CAPTAIN_PASSWORD || "");
 const E2E_EMAIL = `${E2E_USERNAME}@smartkidcare.test`;
 const E2E_CENTER_CODE = "E2E-CENTER";
+const E2E_CHILD_FIRST_NAME = "E2E";
+const E2E_CHILD_LAST_NAME = "ReadOnly";
 
 const seed = async () => {
   const mongoUri = String(
@@ -30,6 +33,10 @@ const seed = async () => {
 
   await User.deleteMany({
     $or: [{ username: E2E_USERNAME }, { email: E2E_EMAIL }],
+  });
+  await Child.deleteMany({
+    firstName: E2E_CHILD_FIRST_NAME,
+    lastName: E2E_CHILD_LAST_NAME,
   });
   await ChildDevelopmentCenter.deleteMany({ code: E2E_CENTER_CODE });
 
@@ -54,6 +61,21 @@ const seed = async () => {
     mustChangePassword: false,
     needsToConfirmLink: false,
     adminMfaEnabled: false,
+  });
+
+  await Child.create({
+    firstName: E2E_CHILD_FIRST_NAME,
+    lastName: E2E_CHILD_LAST_NAME,
+    dateOfBirth: new Date("2021-06-15T00:00:00.000Z"),
+    age: 5,
+    gender: "female",
+    homeAddress: "Automated test environment",
+    parentRelationship: "Mother",
+    programType: "Regular Enrollee (Non-beneficiary)",
+    enrollmentDate: new Date("2026-06-01T00:00:00.000Z"),
+    schoolYear: "2026-2027",
+    status: "Active",
+    daycareCenter: center._id,
   });
 
   console.log(`Seeded E2E account ${E2E_USERNAME}.`);

@@ -6,15 +6,10 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Pagination } from "@/components/ui/Pagination";
 import { StatCard } from "@/components/ui/StatCard";
 import { StatCardSkeleton } from "@/components/ui/StatCardSkeleton";
-import EditChildModal, {type ChildForEdit} from "@/features/children/components/EditChildModal";
 import ChildDetailsModal from "@/features/children/components/ChildDetailsModal";
 import { useChildrenManagement } from "@/features/children/hooks/useChildrenManagement";
-import { useContextMenu } from "@/features/children/hooks/useContextMenu";
 import { useChildrenFilters } from "@/features/children/hooks/useChildrenFilters";
 import { ChildrenTable } from "@/features/children/components/ChildrenTable";
-import { ChildContextMenu } from "@/features/children/components/ChildContextMenu";
-import { ChangeStatusModal } from "@/features/children/components/ChangeStatusModal";
-import { DeleteChildModal } from "@/features/children/components/DeleteChildModal";
 import { getChildBlockchainProof, getChildDocumentUrl } from "@/api/child.api";
 import type {Child,ChildBlockchainProof,ChildDocumentType} from "@/types/child";
 import { useAuthSession } from "@/components/auth/useAuthSession";
@@ -33,7 +28,6 @@ export default function ChildrenManagement() {
   const navigate = useNavigate();
   const { user } = useAuthSession();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [editingChild, setEditingChild] = useState<Child | null>(null);
   const [viewingChild, setViewingChild] = useState<Child | null>(null);
   const [viewError, setViewError] = useState<string | null>(null);
   const [blockchainProof, setBlockchainProof] =
@@ -44,17 +38,7 @@ export default function ChildrenManagement() {
   >(null);
   const [documentLoading, setDocumentLoading] =
     useState<ChildDocumentType | null>(null);
-  const [statusModalChild, setStatusModalChild] = useState<Child | null>(null);
-  const [statusModalValue, setStatusModalValue] = useState<string>("Active");
-  const [deleteModalChild, setDeleteModalChild] = useState<Child | null>(null);
-
-  const {
-    children,
-    isLoading,
-    handleChangeStatus,
-    handleUnlinkParent,
-    handleDeleteChild,
-  } = useChildrenManagement();
+  const { children, isLoading } = useChildrenManagement();
 
   const prefillSearch = searchParams.get("prefillSearch");
 
@@ -90,14 +74,6 @@ export default function ChildrenManagement() {
       { replace: true },
     );
   }, [prefillSearch, setPage, setSearchTerm, setSearchParams]);
-
-  const {
-    openMenuUserId,
-    menuAnchorRect,
-    menuUser: menuChild,
-    openMenu,
-    closeMenu,
-  } = useContextMenu();
 
   const closeViewModal = () => {
     setViewingChild(null);
@@ -289,9 +265,6 @@ export default function ChildrenManagement() {
             children={children}
             filteredChildren={pagedChildren}
             onViewChild={openViewModal}
-            onEditChild={setEditingChild}
-            onMenuClick={openMenu}
-            readOnly
           />
 
           <Pagination
@@ -310,30 +283,6 @@ export default function ChildrenManagement() {
         </div>
       </div>
 
-      {editingChild && (
-        <EditChildModal
-          child={editingChild as ChildForEdit}
-          onClose={() => setEditingChild(null)}
-          onUpdated={() => {
-            setEditingChild(null);
-          }}
-        />
-      )}
-
-      {openMenuUserId && menuChild && menuAnchorRect && (
-        <ChildContextMenu
-          child={menuChild as Child}
-          anchorRect={menuAnchorRect}
-          onClose={closeMenu}
-          onChangeStatus={(child) => {
-            setStatusModalChild(child);
-            setStatusModalValue(child.status || "Active");
-          }}
-          onUnlinkParent={handleUnlinkParent}
-          onDelete={(child) => setDeleteModalChild(child)}
-        />
-      )}
-
       <ChildDetailsModal
         child={viewingChild}
         viewError={viewError}
@@ -345,27 +294,6 @@ export default function ChildrenManagement() {
         onOpenDocument={handleOpenDocument}
       />
 
-      {statusModalChild && (
-        <ChangeStatusModal
-          child={statusModalChild}
-          value={statusModalValue}
-          onChangeValue={setStatusModalValue}
-          onClose={() => setStatusModalChild(null)}
-          onSubmit={async (child, newStatus) => {
-            await handleChangeStatus(child, newStatus);
-          }}
-        />
-      )}
-
-      {deleteModalChild && (
-        <DeleteChildModal
-          child={deleteModalChild}
-          onClose={() => setDeleteModalChild(null)}
-          onDelete={async (child) => {
-            await handleDeleteChild(child);
-          }}
-        />
-      )}
     </Layout>
   );
 }
