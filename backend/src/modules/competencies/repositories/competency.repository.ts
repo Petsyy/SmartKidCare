@@ -88,7 +88,9 @@ export class CompetencyEvaluationRepository extends BaseRepository<any> {
     if (period) {
       query.period = periodFilter(period);
     }
-    return this.model.findOne(query).populate(EVALUATION_POPULATE).lean();
+    // The save flow updates this result with Mongoose document methods
+    // (`set` and `save`), so this query must not be lean.
+    return this.model.findOne(query).populate(EVALUATION_POPULATE);
   }
 
   async findByChildSchoolYearAndPeriod(
@@ -174,6 +176,37 @@ export class CompetencyEvaluationRepository extends BaseRepository<any> {
       .map((value: unknown) => String(value || "").trim())
       .filter(Boolean)
       .sort((a: string, b: string) => b.localeCompare(a));
+  }
+
+  async findSubmittedByChildrenAndDate(
+    childIds: string[],
+    period: string,
+    startOfDay: Date,
+    endOfDay: Date,
+  ): Promise<any[]> {
+    return this.model
+      .find({
+        child: { $in: childIds },
+        period: periodFilter(period),
+        status: "submitted",
+        evaluationDate: { $gte: startOfDay, $lte: endOfDay },
+      })
+      .select("child evaluationDate")
+      .lean();
+  }
+
+  async findSubmittedByChildrenAndPeriod(
+    childIds: string[],
+    period: string,
+  ): Promise<any[]> {
+    return this.model
+      .find({
+        child: { $in: childIds },
+        period: periodFilter(period),
+        status: "submitted",
+      })
+      .select("child schoolYear")
+      .lean();
   }
 }
 

@@ -24,10 +24,14 @@ import type {
 import { canAccessChild } from "../../../shared/services/child-access.service";
 import { getSingleCenterId } from "../../../shared/services/single-center.service";
 import { logger } from "../../../shared/lib/logger";
-import { toLocalDateKey } from "../../../shared/utils/date.utils";
+import {
+  isDateKeyWithinPastDays,
+  toLocalDateKey,
+} from "../../../shared/utils/date.utils";
 import { competencyNotificationService } from "./competency-notification.service";
 
 const MANILA_OFFSET_MINUTES = 8 * 60;
+const MAX_BACKDATE_DAYS = 7;
 
 const COMPETENCY_LEVELS = [
   "not_demonstrated",
@@ -371,6 +375,71 @@ export class CompetencyService {
     };
   }
 
+  async getMyClassStatus(
+    user: CompetencyAuthUser | undefined,
+    period: "quarterly" | "final",
+    dateKey: string,
+  ) {
+    const validUser = this.assertReader(user);
+    if (validUser.role !== "teacher") throw new ForbiddenError("Teachers only");
+    if (!validUser.daycareCenterId) {
+      throw new ForbiddenError("A daycare center assignment is required.");
+    }
+    const parsedDay = this.parseEvaluationDay(dateKey);
+    const children = await this.childRepository.findByTeacher!(validUser.id, {
+      daycareCenter: validUser.daycareCenterId,
+      status: "Active",
+    });
+    const childIds = children.map((child) => String(child._id));
+    const [submitted, quarterly] = await Promise.all([
+      this.evaluationRepository.findSubmittedByChildrenAndDate!(
+        childIds,
+        period,
+        parsedDay.start,
+        parsedDay.end,
+      ),
+      period === "final"
+        ? this.evaluationRepository.findSubmittedByChildrenAndPeriod!(
+            childIds,
+            "quarterly",
+          )
+        : Promise.resolve([]),
+    ]);
+    const submittedByChild = new Map(
+      submitted.map((entry) => [String(entry.child), entry]),
+    );
+    const schoolYearByChild = new Map(
+      children.map((child) => [String(child._id), String(child.schoolYear)]),
+    );
+    const quarterlyChildren = new Set(
+      quarterly
+        .filter(
+          (entry) =>
+            String(entry.schoolYear) ===
+            schoolYearByChild.get(String(entry.child)),
+        )
+        .map((entry) => String(entry.child)),
+    );
+    return {
+      period,
+      date: dateKey,
+      statuses: childIds.map((childId) => {
+        const evaluation = submittedByChild.get(childId);
+        const locked = period === "final" && !quarterlyChildren.has(childId);
+        return {
+          childId,
+          status: evaluation ? "submitted" : locked ? "locked" : "not_started",
+          ...(evaluation
+            ? {
+                evaluationId: String(evaluation._id),
+                evaluationDate: evaluation.evaluationDate,
+              }
+            : {}),
+        };
+      }),
+    };
+  }
+
   async getAnalytics(
     user: CompetencyAuthUser | undefined,
     filters: { period?: string; schoolYear?: string; centerId?: string },
@@ -484,8 +553,11 @@ export class CompetencyService {
     }
     const dateKey = value;
     const todayKey = toLocalDateKey(this.now(), MANILA_OFFSET_MINUTES);
-    if (dateKey > todayKey)
-      throw new ValidationError("Evaluation date cannot be in the future.");
+    if (!isDateKeyWithinPastDays(dateKey, todayKey, MAX_BACKDATE_DAYS)) {
+      throw new ValidationError(
+        "Evaluation date must be today or within the previous 7 days.",
+      );
+    }
     return {
       date,
       start: date,

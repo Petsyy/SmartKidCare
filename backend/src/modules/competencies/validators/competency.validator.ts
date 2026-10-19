@@ -8,15 +8,14 @@ const entry = z.object({
   remarks: z.string().trim().max(500).optional(),
 });
 
-export const competencyEvaluationSchema = z.object({
-  childId: objectId,
-  evaluationId: objectId.optional(),
-  evaluationDate: z.string().trim().min(1),
-  period: z.enum(["quarterly", "final"]),
-  status: z.enum(["draft", "submitted"]).default("submitted"),
-  entries: z
-    .array(entry)
-    .superRefine((entries, context) => {
+export const competencyEvaluationSchema = z
+  .object({
+    childId: objectId,
+    evaluationId: objectId.optional(),
+    evaluationDate: z.string().trim().min(1),
+    period: z.enum(["quarterly", "final"]),
+    status: z.enum(["draft", "submitted"]).default("submitted"),
+    entries: z.array(entry).superRefine((entries, context) => {
       const ids = entries.map((item) => item.competencyId);
       if (new Set(ids).size !== ids.length) {
         context.addIssue({
@@ -25,28 +24,36 @@ export const competencyEvaluationSchema = z.object({
         });
       }
     }),
-  generalNotes: z.string().trim().max(1000).optional(),
-}).superRefine((data, context) => {
-  if (data.status !== "submitted") return;
+    generalNotes: z.string().trim().max(1000).optional(),
+  })
+  .superRefine((data, context) => {
+    if (data.status !== "submitted") return;
 
-  data.entries.forEach((item, index) => {
-    if (
-      (item.level === "not_demonstrated" || item.level === "emerging") &&
-      !item.remarks?.trim()
-    ) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Remarks are required for Not Yet and Emerging ratings.",
-        path: ["entries", index, "remarks"],
-      });
-    }
+    data.entries.forEach((item, index) => {
+      if (
+        (item.level === "not_demonstrated" || item.level === "emerging") &&
+        !item.remarks?.trim()
+      ) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Remarks are required for Not Yet and Emerging ratings.",
+          path: ["entries", index, "remarks"],
+        });
+      }
+    });
   });
-});
 
 const childParams = z.object({ childId: objectId });
-const childAndPeriodParams = z.object({ childId: objectId, period: z.enum(["quarterly", "final"]) });
+const childAndPeriodParams = z.object({
+  childId: objectId,
+  period: z.enum(["quarterly", "final"]),
+});
 const evaluationQuery = z.object({
   date: z.string().trim().optional(),
+});
+const classStatusQuery = z.object({
+  period: z.enum(["quarterly", "final"]),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must use YYYY-MM-DD."),
 });
 const historyQuery = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -60,7 +67,11 @@ const analyticsQuery = z.object({
 
 export const validateEvaluation = validate(competencyEvaluationSchema);
 export const validateChildParams = validate(childParams, "params");
-export const validateChildAndPeriodParams = validate(childAndPeriodParams, "params");
+export const validateChildAndPeriodParams = validate(
+  childAndPeriodParams,
+  "params",
+);
 export const validateEvaluationQuery = validate(evaluationQuery, "query");
 export const validateHistoryQuery = validate(historyQuery, "query");
 export const validateAnalyticsQuery = validate(analyticsQuery, "query");
+export const validateClassStatusQuery = validate(classStatusQuery, "query");

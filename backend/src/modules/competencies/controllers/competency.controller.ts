@@ -10,20 +10,13 @@ export const listDefinitions = asyncHandler(
 
 export const createEvaluation = asyncHandler(
   async (req: Request, res: Response) => {
-    const result = await competencyService.saveEvaluation(
-      req.user,
-      req.body,
-    );
-    res
-      .status(201)
-      .json({
-        message:
-          req.body.status === "draft"
-            ? "Draft saved."
-            : "Evaluation submitted.",
-        evaluation: result.evaluation,
-        ...(result.notification ? { notification: result.notification } : {}),
-      });
+    const result = await competencyService.saveEvaluation(req.user, req.body);
+    res.status(201).json({
+      message:
+        req.body.status === "draft" ? "Draft saved." : "Evaluation submitted.",
+      evaluation: result.evaluation,
+      ...(result.notification ? { notification: result.notification } : {}),
+    });
   },
 );
 
@@ -63,6 +56,18 @@ export const evaluationHistory = asyncHandler(
         req.params.childId as string,
         Number(req.query.page),
         Number(req.query.limit),
+      ),
+    );
+  },
+);
+
+export const myClassStatus = asyncHandler(
+  async (req: Request, res: Response) => {
+    res.json(
+      await competencyService.getMyClassStatus(
+        req.user,
+        req.query.period as "quarterly" | "final",
+        req.query.date as string,
       ),
     );
   },

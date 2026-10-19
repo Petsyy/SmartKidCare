@@ -16,6 +16,10 @@ export type CompetencyEvaluationInput = {
 
 export interface CompetencyChildRepository {
   findByIdWithDetails(id: string): Promise<any | null>;
+  findByTeacher?(
+    teacherId: string,
+    filter?: Record<string, unknown>,
+  ): Promise<any[]>;
 }
 
 export interface CompetencyDefinitionRepositoryContract {
@@ -57,13 +61,20 @@ export interface CompetencyEvaluationRepositoryContract {
     centerId?: string;
   }): Promise<any[]>;
   findSubmittedSchoolYears(centerId?: string): Promise<string[]>;
+  findSubmittedByChildrenAndDate?(
+    childIds: string[],
+    period: string,
+    startOfDay: Date,
+    endOfDay: Date,
+  ): Promise<any[]>;
+  findSubmittedByChildrenAndPeriod?(
+    childIds: string[],
+    period: string,
+  ): Promise<any[]>;
 }
 
 export type CompetencyNotificationStatus =
-  | "created"
-  | "duplicate"
-  | "skipped"
-  | "push_failed";
+  "created" | "duplicate" | "skipped" | "push_failed";
 
 export interface CompetencyNotificationResult {
   status: CompetencyNotificationStatus;
@@ -108,7 +119,9 @@ export interface CompetencyNotificationRepositoryContract {
 }
 
 export interface CompetencyNotificationServiceContract {
-  notify(input: CompetencyNotificationInput): Promise<CompetencyNotificationResult>;
+  notify(
+    input: CompetencyNotificationInput,
+  ): Promise<CompetencyNotificationResult>;
 }
 
 export interface CompetencyNotificationServiceDependencies {
@@ -121,4 +134,3 @@ export interface CompetencyNotificationServiceDependencies {
     data?: Record<string, unknown>;
   }): Promise<{ accepted: number; rejected: number }>;
 }
-

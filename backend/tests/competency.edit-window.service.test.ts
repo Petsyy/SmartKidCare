@@ -131,4 +131,36 @@ describe("CompetencyService submitted evaluation edit window", () => {
       message: "This evaluation does not belong to the selected child.",
     });
   });
+
+  it("should reject evaluation dates older than seven Manila calendar days", async () => {
+    const service = createService(createEvaluation("2026-10-11"));
+
+    await assert.rejects(
+      () =>
+        service.saveEvaluation(user, {
+          ...input,
+          evaluationDate: "2026-10-11",
+        }),
+      {
+        name: "ValidationError",
+        message: "Evaluation date must be today or within the previous 7 days.",
+      },
+    );
+  });
+
+  it("should reject future evaluation dates", async () => {
+    const service = createService(createEvaluation("2026-10-20"));
+
+    await assert.rejects(
+      () =>
+        service.saveEvaluation(user, {
+          ...input,
+          evaluationDate: "2026-10-20",
+        }),
+      {
+        name: "ValidationError",
+        message: "Evaluation date must be today or within the previous 7 days.",
+      },
+    );
+  });
 });

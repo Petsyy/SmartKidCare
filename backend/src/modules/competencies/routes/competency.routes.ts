@@ -7,6 +7,7 @@ import {
   evaluationByPeriod,
   listDefinitions,
   competencyAnalytics,
+  myClassStatus,
 } from "../controllers/competency.controller";
 import {
   validateChildParams,
@@ -15,6 +16,7 @@ import {
   validateEvaluationQuery,
   validateHistoryQuery,
   validateAnalyticsQuery,
+  validateClassStatusQuery,
 } from "../validators/competency.validator";
 
 const router = express.Router();
@@ -29,6 +31,12 @@ router.get(
   requireRole("barangay_captain"),
   validateAnalyticsQuery,
   competencyAnalytics,
+);
+router.get(
+  "/my-class/status",
+  requireRole("teacher"),
+  validateClassStatusQuery,
+  myClassStatus,
 );
 router.post(
   "/evaluations",

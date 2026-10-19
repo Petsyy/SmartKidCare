@@ -19,13 +19,35 @@ const CompetencyEntrySchema = new mongoose.Schema(
 
 const CompetencyEvaluationSchema = new mongoose.Schema(
   {
-    child: { type: mongoose.Schema.Types.ObjectId, ref: "Child", required: true, index: true },
-    teacher: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
-    daycareCenter: { type: mongoose.Schema.Types.ObjectId, ref: "ChildDevelopmentCenter", default: null },
+    child: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Child",
+      required: true,
+      index: true,
+    },
+    teacher: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
+    daycareCenter: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ChildDevelopmentCenter",
+      default: null,
+    },
     evaluationDate: { type: Date, required: true },
     schoolYear: { type: String, required: true, trim: true },
-    period: { type: String, enum: ["quarterly", "final"], default: "quarterly" },
-    status: { type: String, enum: ["draft", "submitted"], default: "submitted" },
+    period: {
+      type: String,
+      enum: ["quarterly", "final"],
+      default: "quarterly",
+    },
+    status: {
+      type: String,
+      enum: ["draft", "submitted"],
+      default: "submitted",
+    },
     entries: { type: [CompetencyEntrySchema], required: true },
     generalNotes: { type: String, default: "", trim: true, maxlength: 1000 },
   },
@@ -35,9 +57,19 @@ const CompetencyEvaluationSchema = new mongoose.Schema(
 CompetencyEvaluationSchema.index({ child: 1, evaluationDate: -1 });
 CompetencyEvaluationSchema.index({ teacher: 1, evaluationDate: -1 });
 CompetencyEvaluationSchema.index({ daycareCenter: 1, evaluationDate: -1 });
+CompetencyEvaluationSchema.index({
+  teacher: 1,
+  period: 1,
+  evaluationDate: 1,
+  status: 1,
+  child: 1,
+});
 CompetencyEvaluationSchema.index(
   { child: 1, evaluationDate: 1, period: 1 },
   { unique: true, partialFilterExpression: { status: "submitted" } },
 );
 
-export default mongoose.model("CompetencyEvaluation", CompetencyEvaluationSchema);
+export default mongoose.model(
+  "CompetencyEvaluation",
+  CompetencyEvaluationSchema,
+);
