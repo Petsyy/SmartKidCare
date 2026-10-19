@@ -18,6 +18,10 @@ export const getMyClassSchema = z.object({
     )
     .optional()
     .describe("The period of the assessment (e.g., initial, quarterly, final)"),
+  measurementDateKey: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid measurement date.")
+    .optional(),
 });
 
 export const evaluateNutritionSchema = z.object({

@@ -1,11 +1,15 @@
 import mongoose from "mongoose";
 import NutritionRecord from "../../../models/NutritionRecord";
 import Child from "../../../models/Child";
-import { NotFoundError, ValidationError } from "../../../shared/errors/app-error";
+import {
+  NotFoundError,
+  ValidationError,
+} from "../../../shared/errors/app-error";
 import {
   calculateAgeInMonths,
   calculateBmi,
   classifyNutritionalStatus,
+  getManilaMeasurementDateKey,
 } from "../../../shared/utils/nutrition.utils";
 import type { AuthenticatedUser } from "../../../shared/types/auth.types";
 import {
@@ -14,11 +18,16 @@ import {
   assertTeacherCenter,
 } from "../../../shared/services/child-access.service";
 import { getSingleCenterId } from "../../../shared/services/single-center.service";
+import {
+  isDateKeyWithinPastDays,
+  toLocalDateKey,
+} from "../../../shared/utils/date.utils";
 
 type NutritionAnalyticsRecord = {
   childId: unknown;
   schoolYear: string;
   nutritionalStatus: string;
+  measurementDate?: Date;
 };
 
 export type NutritionAnalyticsSummary = {
@@ -44,12 +53,73 @@ export type NutritionPeriodAnalytics = NutritionStatusDistribution & {
 const nutritionPairKey = (record: NutritionAnalyticsRecord) =>
   `${String(record.childId)}|${String(record.schoolYear)}`;
 
+const getManilaDayRange = (dateKey: string) => {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  const start = new Date(Date.UTC(year, month - 1, day) - 8 * 60 * 60 * 1000);
+  return { start, end: new Date(start.getTime() + 24 * 60 * 60 * 1000) };
+};
+
+const MANILA_OFFSET_MINUTES = 8 * 60;
+const MAX_BACKDATE_DAYS = 7;
+
+const isDuplicateKeyError = (error: unknown): boolean =>
+  typeof error === "object" &&
+  error !== null &&
+  "code" in error &&
+  error.code === 11000;
+
+export const selectLatestNutritionRecords = <
+  T extends NutritionAnalyticsRecord,
+>(
+  records: T[],
+): T[] => {
+  const latestByChildAndYear = new Map<string, T>();
+  records.forEach((record) => {
+    const key = nutritionPairKey(record);
+    const current = latestByChildAndYear.get(key);
+    if (
+      !current ||
+      new Date(record.measurementDate || 0).getTime() >
+        new Date(current.measurementDate || 0).getTime()
+    ) {
+      latestByChildAndYear.set(key, record);
+    }
+  });
+  return Array.from(latestByChildAndYear.values());
+};
+
+const selectLatestRecordsBeforeFinal = <T extends NutritionAnalyticsRecord>(
+  records: T[],
+  finalRecords: NutritionAnalyticsRecord[],
+): T[] => {
+  const finalByPair = new Map(
+    selectLatestNutritionRecords(finalRecords).map((record) => [
+      nutritionPairKey(record),
+      record,
+    ]),
+  );
+  return selectLatestNutritionRecords(
+    records.filter((record) => {
+      const final = finalByPair.get(nutritionPairKey(record));
+      if (!final?.measurementDate || !record.measurementDate)
+        return Boolean(final);
+      return (
+        new Date(record.measurementDate).getTime() <=
+        new Date(final.measurementDate).getTime()
+      );
+    }),
+  );
+};
+
 export const summarizeNutritionAnalytics = (
   initialRecords: NutritionAnalyticsRecord[],
   finalRecords: NutritionAnalyticsRecord[],
 ): NutritionAnalyticsSummary => {
   const finalRecordMap = new Map(
-    finalRecords.map((record) => [nutritionPairKey(record), record]),
+    selectLatestNutritionRecords(finalRecords).map((record) => [
+      nutritionPairKey(record),
+      record,
+    ]),
   );
 
   let totalEvaluated = 0;
@@ -60,7 +130,7 @@ export const summarizeNutritionAnalytics = (
   const isMalnourished = (status: string) =>
     ["Underweight", "Severely Underweight"].includes(status);
 
-  for (const initial of initialRecords) {
+  for (const initial of selectLatestNutritionRecords(initialRecords)) {
     const final = finalRecordMap.get(nutritionPairKey(initial));
     if (!final) continue;
 
@@ -89,7 +159,11 @@ export const summarizeNutritionAnalytics = (
 };
 
 export const summarizeLatestNutritionStatuses = (
-  records: Array<{ childId: unknown; nutritionalStatus: string; measurementDate?: Date }>,
+  records: Array<{
+    childId: unknown;
+    nutritionalStatus: string;
+    measurementDate?: Date;
+  }>,
 ) => {
   const latestByChild = new Map<string, (typeof records)[number]>();
   records.forEach((record) => {
@@ -136,7 +210,11 @@ export const summarizeLatestNutritionStatuses = (
 };
 
 const summarizePeriod = (
-  records: Array<{ childId: unknown; nutritionalStatus: string; measurementDate?: Date }>,
+  records: Array<{
+    childId: unknown;
+    nutritionalStatus: string;
+    measurementDate?: Date;
+  }>,
 ): NutritionPeriodAnalytics => ({
   submittedCount: new Set(records.map((record) => String(record.childId))).size,
   ...summarizeLatestNutritionStatuses(records),
@@ -147,6 +225,7 @@ export class NutritionService {
     user: AuthenticatedUser,
     schoolYear: string,
     period?: "initial" | "quarterly" | "final",
+    measurementDateKey?: string,
   ) {
     const daycareCenterId = assertTeacherCenter(user);
     const children = await Child.find({
@@ -180,9 +259,12 @@ export class NutritionService {
     }
 
     return children.map((child) => {
-      const targetRecord = records.find(
-        (r) => String(r.childId) === String(child._id),
+      const childRecords = records.filter(
+        (record) => String(record.childId) === String(child._id),
       );
+      const targetRecord =
+        childRecords.find((record) => record.status === "submitted") ||
+        childRecords[0];
       const initialRecord = initialRecords.find(
         (r) => String(r.childId) === String(child._id),
       );
@@ -190,28 +272,52 @@ export class NutritionService {
       return {
         child,
         record: targetRecord || null,
+        selectedRecord:
+          period === "quarterly" && measurementDateKey
+            ? records.find(
+                (record) =>
+                  String(record.childId) === String(child._id) &&
+                  (record.measurementDateKey === measurementDateKey ||
+                    (!record.measurementDateKey &&
+                      getManilaMeasurementDateKey(record.measurementDate) ===
+                        measurementDateKey)),
+              ) || null
+            : targetRecord || null,
         initialRecord: initialRecord || null,
       };
     });
   }
 
-  public async evaluateNutrition(user: AuthenticatedUser, payload: {
-    childId: string;
-    schoolYear: string;
-    period?: "initial" | "quarterly" | "final";
-    measurementDate?: string;
-    weight: number;
-    height: number;
-    action: "draft" | "submit";
-  }) {
-    const { childId, schoolYear, period, measurementDate, weight, height, action } = payload;
+  public async evaluateNutrition(
+    user: AuthenticatedUser,
+    payload: {
+      childId: string;
+      schoolYear: string;
+      period?: "initial" | "quarterly" | "final";
+      measurementDate?: string;
+      weight: number;
+      height: number;
+      action: "draft" | "submit";
+    },
+  ) {
+    const {
+      childId,
+      schoolYear,
+      period,
+      measurementDate,
+      weight,
+      height,
+      action,
+    } = payload;
     const daycareCenterId = assertTeacherCenter(user);
 
     const child = await Child.findById(childId);
     if (!child) throw new NotFoundError("Child not found");
     assertCanAccessChild(user, child);
     if (child.status !== "Active") {
-      throw new ValidationError("This child is archived and cannot receive new records.");
+      throw new ValidationError(
+        "This child is archived and cannot receive new records.",
+      );
     }
 
     const normalizedMeasurementDate = measurementDate
@@ -220,24 +326,48 @@ export class NutritionService {
     if (Number.isNaN(normalizedMeasurementDate.getTime())) {
       throw new ValidationError("Measurement date is invalid.");
     }
-    const measurementDayStart = new Date(normalizedMeasurementDate);
-    measurementDayStart.setHours(0, 0, 0, 0);
-    const measurementDayEnd = new Date(measurementDayStart);
-    measurementDayEnd.setDate(measurementDayEnd.getDate() + 1);
+    const measurementDateKey = getManilaMeasurementDateKey(
+      normalizedMeasurementDate,
+    );
+    const todayKey = toLocalDateKey(new Date(), MANILA_OFFSET_MINUTES);
+    if (
+      !isDateKeyWithinPastDays(
+        measurementDateKey,
+        todayKey,
+        MAX_BACKDATE_DAYS,
+      )
+    ) {
+      throw new ValidationError(
+        "Measurement date must be today or within the previous 7 days.",
+      );
+    }
+    const measurementDayRange = getManilaDayRange(measurementDateKey);
 
-    const existingRecord = period
-      ? await NutritionRecord.findOne({ childId, schoolYear, period })
-      : await NutritionRecord.findOne({
-          childId,
-          measurementDate: {
-            $gte: measurementDayStart,
-            $lt: measurementDayEnd,
-          },
-        });
+    const existingRecord = await NutritionRecord.findOne(
+      period === "quarterly" || !period
+        ? {
+            childId,
+            schoolYear,
+            ...(period ? { period } : {}),
+            $or: [
+              { measurementDateKey },
+              {
+                measurementDateKey: { $exists: false },
+                measurementDate: {
+                  $gte: measurementDayRange.start,
+                  $lt: measurementDayRange.end,
+                },
+              },
+            ],
+          }
+        : { childId, schoolYear, period },
+    );
 
     if (existingRecord?.status === "submitted") {
       throw new ValidationError(
-        `A submitted ${period} nutrition record already exists for this school year.`,
+        period === "quarterly"
+          ? "A submitted quarterly nutrition record already exists for this measurement date."
+          : `A submitted ${period} nutrition record already exists for this school year.`,
       );
     }
 
@@ -259,13 +389,12 @@ export class NutritionService {
       existingRecord.ageInMonths = ageInMonths;
       existingRecord.sex = child.gender;
       existingRecord.status = status;
-      existingRecord.recordedBy = new mongoose.Types.ObjectId(
-        user.id,
-      ) as never;
+      existingRecord.recordedBy = new mongoose.Types.ObjectId(user.id) as never;
       existingRecord.daycareCenter = new mongoose.Types.ObjectId(
         daycareCenterId,
       ) as never;
       existingRecord.measurementDate = normalizedMeasurementDate;
+      existingRecord.measurementDateKey = measurementDateKey;
       if (submittedAt) existingRecord.submittedAt = submittedAt;
 
       await existingRecord.save();
@@ -279,22 +408,35 @@ export class NutritionService {
       return existingRecord;
     }
 
-    const newRecord = await NutritionRecord.create({
-      childId,
-      schoolYear,
-      period,
-      recordedBy: user.id,
-      daycareCenter: daycareCenterId,
-      status,
-      weight,
-      height,
-      bmi,
-      nutritionalStatus,
-      ageInMonths,
-      sex: child.gender,
-      measurementDate: normalizedMeasurementDate,
-      submittedAt,
-    });
+    let newRecord;
+    try {
+      newRecord = await NutritionRecord.create({
+        childId,
+        schoolYear,
+        period,
+        recordedBy: user.id,
+        daycareCenter: daycareCenterId,
+        status,
+        weight,
+        height,
+        bmi,
+        nutritionalStatus,
+        ageInMonths,
+        sex: child.gender,
+        measurementDate: normalizedMeasurementDate,
+        measurementDateKey,
+        submittedAt,
+      });
+    } catch (error) {
+      if (isDuplicateKeyError(error)) {
+        throw new ValidationError(
+          period === "quarterly"
+            ? "A quarterly nutrition record already exists for this measurement date."
+            : `A ${period} nutrition record already exists for this school year.`,
+        );
+      }
+      throw error;
+    }
 
     if (status === "submitted") {
       child.weight = weight;
@@ -317,6 +459,7 @@ export class NutritionService {
     assertCanAccessChild(user, child);
     return NutritionRecord.find({
       childId,
+      status: "submitted",
       ...(user.role === "teacher"
         ? { recordedBy: user.id, daycareCenter: user.daycareCenterId }
         : {}),
@@ -343,37 +486,43 @@ export class NutritionService {
       .sort((left: string, right: string) => right.localeCompare(left));
     const selectedSchoolYear = schoolYear || schoolYears[0] || "all";
     const schoolYearFilter =
-      selectedSchoolYear === "all"
-        ? {}
-        : { schoolYear: selectedSchoolYear };
+      selectedSchoolYear === "all" ? {} : { schoolYear: selectedSchoolYear };
 
-    const [initialRecords, quarterlyRecords, finalRecords, submittedRecords] = await Promise.all([
-      NutritionRecord.find({
-        ...schoolYearFilter,
-        period: "initial",
-        status: "submitted",
-        ...centerFilter,
-      }).lean(),
-      NutritionRecord.find({
-        ...schoolYearFilter,
-        period: "quarterly",
-        status: "submitted",
-        ...centerFilter,
-      }).lean(),
-      NutritionRecord.find({
-        ...schoolYearFilter,
-        period: "final",
-        status: "submitted",
-        ...centerFilter,
-      }).lean(),
-      NutritionRecord.find({
-        ...schoolYearFilter,
-        status: "submitted",
-        ...centerFilter,
-      })
-        .select("childId nutritionalStatus measurementDate")
-        .lean(),
-    ]);
+    const [initialRecords, quarterlyRecords, finalRecords, submittedRecords] =
+      await Promise.all([
+        NutritionRecord.find({
+          ...schoolYearFilter,
+          period: "initial",
+          status: "submitted",
+          ...centerFilter,
+        }).lean(),
+        NutritionRecord.find({
+          ...schoolYearFilter,
+          period: "quarterly",
+          status: "submitted",
+          ...centerFilter,
+        }).lean(),
+        NutritionRecord.find({
+          ...schoolYearFilter,
+          period: "final",
+          status: "submitted",
+          ...centerFilter,
+        }).lean(),
+        NutritionRecord.find({
+          ...schoolYearFilter,
+          status: "submitted",
+          ...centerFilter,
+        })
+          .select("childId schoolYear period nutritionalStatus measurementDate")
+          .lean(),
+      ]);
+    const latestQuarterlyRecords = selectLatestNutritionRecords(
+      quarterlyRecords as NutritionAnalyticsRecord[],
+    );
+    const quarterlyRecordsBeforeFinal = selectLatestRecordsBeforeFinal(
+      quarterlyRecords as NutritionAnalyticsRecord[],
+      finalRecords as NutritionAnalyticsRecord[],
+    );
     const summary = summarizeNutritionAnalytics(
       initialRecords as NutritionAnalyticsRecord[],
       finalRecords as NutritionAnalyticsRecord[],
@@ -381,10 +530,10 @@ export class NutritionService {
     const comparisons = {
       initialToQuarterly: summarizeNutritionAnalytics(
         initialRecords as NutritionAnalyticsRecord[],
-        quarterlyRecords as NutritionAnalyticsRecord[],
+        latestQuarterlyRecords,
       ),
       quarterlyToFinal: summarizeNutritionAnalytics(
-        quarterlyRecords as NutritionAnalyticsRecord[],
+        quarterlyRecordsBeforeFinal,
         finalRecords as NutritionAnalyticsRecord[],
       ),
       initialToFinal: summary,
@@ -408,7 +557,12 @@ export class NutritionService {
         centerId,
       },
       schoolYears,
-      totalSubmitted: submittedRecords.length,
+      totalSubmitted: new Set(
+        submittedRecords.map(
+          (record) =>
+            `${String(record.childId)}|${String(record.schoolYear)}|${String(record.period)}`,
+        ),
+      ).size,
       assessedStudents: new Set(
         submittedRecords.map((record) => String(record.childId)),
       ).size,

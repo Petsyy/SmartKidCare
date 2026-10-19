@@ -34,6 +34,37 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const WEEK_DAYS = 7;
 const WEEK_MS = WEEK_DAYS * DAY_MS;
 
+export function isDateKeyWithinPastDays(
+  dateKey: string,
+  todayKey: string,
+  maximumPastDays: number,
+): boolean {
+  const parseKey = (key: string) => {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(key);
+    if (!match) return null;
+    const timestamp = Date.UTC(
+      Number(match[1]),
+      Number(match[2]) - 1,
+      Number(match[3]),
+    );
+    const date = new Date(timestamp);
+    if (
+      date.getUTCFullYear() !== Number(match[1]) ||
+      date.getUTCMonth() !== Number(match[2]) - 1 ||
+      date.getUTCDate() !== Number(match[3])
+    ) {
+      return null;
+    }
+    return timestamp;
+  };
+
+  const selected = parseKey(dateKey);
+  const today = parseKey(todayKey);
+  if (selected === null || today === null) return false;
+  const ageInDays = (today - selected) / DAY_MS;
+  return ageInDays >= 0 && ageInDays <= maximumPastDays;
+}
+
 export function toLocalDayUtcRange(date: Date, offsetMinutes: number): DateRange {
   const shiftedMs = date.getTime() + offsetMinutes * MINUTE_MS;
   const shiftedDate = new Date(shiftedMs);

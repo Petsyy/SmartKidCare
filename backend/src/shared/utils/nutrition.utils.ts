@@ -10,11 +10,7 @@ export const calculateBmi = (weightKg: number, heightCm: number): number => {
 };
 
 export type NutritionalStatus =
-  | "Normal"
-  | "Underweight"
-  | "Severely Underweight"
-  | "Overweight"
-  | "Obese";
+  "Normal" | "Underweight" | "Severely Underweight" | "Overweight" | "Obese";
 
 export const calculateAgeInMonths = (
   dateOfBirth: Date,
@@ -26,6 +22,17 @@ export const calculateAgeInMonths = (
 
   if (measurementDate.getDate() < dateOfBirth.getDate()) months -= 1;
   return Math.max(0, months);
+};
+
+const MANILA_OFFSET_MS = 8 * 60 * 60 * 1000;
+
+/** Returns the YYYY-MM-DD calendar date in Asia/Manila for a measurement. */
+export const getManilaMeasurementDateKey = (measurementDate: Date): string => {
+  const shifted = new Date(measurementDate.getTime() + MANILA_OFFSET_MS);
+  const year = shifted.getUTCFullYear();
+  const month = String(shifted.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(shifted.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 };
 
 type BmiReference = {
@@ -64,7 +71,8 @@ const interpolateReference = (
   return {
     min: lower.min + (upper.min - lower.min) * fraction,
     normal: lower.normal + (upper.normal - lower.normal) * fraction,
-    overweight: lower.overweight + (upper.overweight - lower.overweight) * fraction,
+    overweight:
+      lower.overweight + (upper.overweight - lower.overweight) * fraction,
     obese: lower.obese + (upper.obese - lower.obese) * fraction,
   };
 };
@@ -82,5 +90,4 @@ export const classifyNutritionalStatus = (
   if (bmi < reference.overweight) return "Normal";
   if (bmi < reference.obese) return "Overweight";
   return "Obese";
-
 };

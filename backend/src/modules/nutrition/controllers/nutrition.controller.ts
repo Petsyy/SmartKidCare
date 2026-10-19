@@ -7,15 +7,17 @@ export const getMyClassNutrition = asyncHandler(
   async (req: Request, res: Response) => {
     if (!req.user?.id) throw new UnauthorizedError();
 
-    const { schoolYear, period } = req.query as {
+    const { schoolYear, period, measurementDateKey } = req.query as {
       schoolYear: string;
       period: "initial" | "quarterly" | "final";
+      measurementDateKey?: string;
     };
 
     const data = await nutritionService.getMyClassNutrition(
       req.user,
       schoolYear,
       period,
+      measurementDateKey,
     );
     res.json({ success: true, data });
   },
