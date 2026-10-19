@@ -1,11 +1,6 @@
 import { ethers } from "ethers";
-import "dotenv/config";
 
-if (!process.env.SEPOLIA_RPC_URL) throw new Error("Missing SEPOLIA_RPC_URL");
-if (!process.env.METAMASK_PRIVATE_KEY)
-  throw new Error("Missing METAMASK_PRIVATE_KEY");
-
-const getDocumentsRegistryAddress = (): string => {
+export const getDocumentsRegistryAddress = (): string => {
   const resolvedAddress =
     process.env.DOCUMENTS_REGISTRY_ADDRESS || process.env.CONTRACT_ADDRESS;
 
@@ -18,18 +13,7 @@ const getDocumentsRegistryAddress = (): string => {
   return resolvedAddress;
 };
 
-export const documentsRegistryAddress = getDocumentsRegistryAddress();
 export const SEPOLIA_CHAIN_ID = 11155111;
-
-const provider = new ethers.JsonRpcProvider(
-  process.env.SEPOLIA_RPC_URL,
-  undefined,
-  {
-    batchMaxCount: 1,
-  },
-);
-
-const wallet = new ethers.Wallet(process.env.METAMASK_PRIVATE_KEY, provider);
 
 const abi = [
   "error NotAuthorized()",
@@ -41,15 +25,45 @@ const abi = [
   "function getDocumentsHash(bytes32 childIdHash) view returns (bytes32)",
 ];
 
-export const documentsRegistryContract = new ethers.Contract(
-  documentsRegistryAddress,
-  abi,
-  wallet,
-);
+export type BlockchainRuntime = {
+  documentsRegistryAddress: string;
+  documentsRegistryContract: ethers.Contract;
+  provider: ethers.JsonRpcProvider;
+  wallet: ethers.Wallet;
+};
 
-export const attendanceContract = documentsRegistryContract;
+let runtime: BlockchainRuntime | null = null;
 
-export { wallet, provider, ethers };
+export const getBlockchainRuntime = (): BlockchainRuntime => {
+  if (runtime) return runtime;
+
+  const rpcUrl = String(process.env.SEPOLIA_RPC_URL || "").trim();
+  if (!rpcUrl) throw new Error("Missing SEPOLIA_RPC_URL");
+
+  const privateKey = String(process.env.METAMASK_PRIVATE_KEY || "").trim();
+  if (!privateKey) throw new Error("Missing METAMASK_PRIVATE_KEY");
+
+  const documentsRegistryAddress = getDocumentsRegistryAddress();
+  const provider = new ethers.JsonRpcProvider(rpcUrl, undefined, {
+    batchMaxCount: 1,
+  });
+  const wallet = new ethers.Wallet(privateKey, provider);
+  const documentsRegistryContract = new ethers.Contract(
+    documentsRegistryAddress,
+    abi,
+    wallet,
+  );
+
+  runtime = {
+    documentsRegistryAddress,
+    documentsRegistryContract,
+    provider,
+    wallet,
+  };
+  return runtime;
+};
+
+export { ethers };
 
 export const buildChildIdHash = (childId: string) => {
   const normalizedChildId = String(childId || "").trim();

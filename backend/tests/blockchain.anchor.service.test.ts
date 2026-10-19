@@ -9,6 +9,7 @@ const childId = "671a2b3c4d5e6f7890123456";
 const birthHash = ethers.id("birth-document");
 const parentHash = ethers.id("parent-document");
 const documentsHash = buildDocumentsHash(birthHash, parentHash);
+const contractAddress = `0x${"1".repeat(40)}`;
 
 const createHarness = (onChainHash = ethers.ZeroHash) => {
   const events: Array<{ name: string; args: unknown[] }> = [];
@@ -30,6 +31,7 @@ const createHarness = (onChainHash = ethers.ZeroHash) => {
   const service = new BlockchainAnchorService({
     repository,
     client,
+    getContractAddress: () => contractAddress,
     now: () => new Date("2026-10-13T00:00:00.000Z"),
   });
   return { service, events };
@@ -77,7 +79,12 @@ describe("BlockchainAnchorService", () => {
       broadcastDocumentsHash: async () => ({ hash: `0x${"2".repeat(64)}` }),
       waitForTransaction: async () => ({ status: 1, blockNumber: 456 }),
     } as unknown as BlockchainClient;
-    const service = new BlockchainAnchorService({ repository, client, now: () => new Date() });
+    const service = new BlockchainAnchorService({
+      repository,
+      client,
+      getContractAddress: () => contractAddress,
+      now: () => new Date(),
+    });
 
     await service.processClaimedChild(claimedChild);
 
@@ -106,6 +113,7 @@ describe("BlockchainAnchorService", () => {
     const service = new BlockchainAnchorService({
       repository,
       client,
+      getContractAddress: () => contractAddress,
       now: () => new Date("2026-10-13T00:00:00.000Z"),
     });
 
@@ -132,7 +140,12 @@ describe("BlockchainAnchorService", () => {
         return { hash: "unexpected" };
       },
     } as unknown as BlockchainClient;
-    const service = new BlockchainAnchorService({ repository, client, now: () => new Date() });
+    const service = new BlockchainAnchorService({
+      repository,
+      client,
+      getContractAddress: () => contractAddress,
+      now: () => new Date(),
+    });
 
     await service.processClaimedChild({
       ...claimedChild,
@@ -155,6 +168,7 @@ describe("BlockchainAnchorService", () => {
     const service = new BlockchainAnchorService({
       repository,
       client: {} as BlockchainClient,
+      getContractAddress: () => contractAddress,
       now: () => new Date(),
     });
 

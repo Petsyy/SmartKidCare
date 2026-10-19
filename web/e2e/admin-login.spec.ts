@@ -1,12 +1,18 @@
 import { expect, test } from "@playwright/test";
 
 test("captain can sign in, open the dashboard, and sign out", async ({ page }) => {
+  const username = process.env.E2E_CAPTAIN_USERNAME;
+  const password = process.env.E2E_CAPTAIN_PASSWORD;
+  if (!username || !password) {
+    throw new Error("Playwright E2E credentials were not initialized.");
+  }
+
   await page.goto("/login");
 
   await page
     .getByPlaceholder("Enter your username or email")
-    .fill("e2e.captain");
-  await page.getByPlaceholder("Enter your password").fill("E2eCaptain123!");
+    .fill(username);
+  await page.getByPlaceholder("Enter your password").fill(password);
   await page.getByRole("button", { name: "Sign In" }).click();
 
   await expect(page).toHaveURL(/\/monitoring\/dashboard$/);

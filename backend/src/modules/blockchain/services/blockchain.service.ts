@@ -1,10 +1,7 @@
 import type { ContractTransactionResponse, TransactionReceipt } from "ethers";
 import {
-  documentsRegistryAddress,
-  documentsRegistryContract,
   buildDocumentsHash,
-  wallet,
-  provider,
+  getBlockchainRuntime,
   SEPOLIA_CHAIN_ID,
   ethers,
 } from "../utils/ethers";
@@ -73,12 +70,14 @@ export const classifyBlockchainError = (error: unknown): BlockchainErrorCode => 
 
 export class BlockchainClient {
   async getStoredDocumentsHash(childIdHash: string): Promise<string> {
+    const { documentsRegistryContract } = getBlockchainRuntime();
     return String(
       await documentsRegistryContract.getDocumentsHash(childIdHash),
     ).toLowerCase();
   }
 
   async verifyDocuments(childIdHash: string, documentsHash: string): Promise<boolean> {
+    const { documentsRegistryContract } = getBlockchainRuntime();
     return Boolean(
       await documentsRegistryContract.verifyDocuments(childIdHash, documentsHash),
     );
@@ -88,6 +87,7 @@ export class BlockchainClient {
     childIdHash: string,
     documentsHash: string,
   ): Promise<ContractTransactionResponse> {
+    const { documentsRegistryContract } = getBlockchainRuntime();
     return documentsRegistryContract.storeDocumentsHash(
       childIdHash,
       documentsHash,
@@ -95,10 +95,12 @@ export class BlockchainClient {
   }
 
   async getTransactionReceipt(txHash: string): Promise<TransactionReceipt | null> {
+    const { provider } = getBlockchainRuntime();
     return provider.getTransactionReceipt(txHash);
   }
 
   async waitForTransaction(txHash: string): Promise<TransactionReceipt | null> {
+    const { provider } = getBlockchainRuntime();
     const deadline = Date.now() + 60_000;
     let rpcWarningLogged = false;
 
@@ -122,6 +124,12 @@ export class BlockchainClient {
   }
 
   async getHealth() {
+    const {
+      documentsRegistryAddress,
+      documentsRegistryContract,
+      provider,
+      wallet,
+    } = getBlockchainRuntime();
     const [network, blockNumber, code, owner, balance] = await Promise.all([
       provider.getNetwork(),
       provider.getBlockNumber(),
@@ -149,6 +157,7 @@ export class BlockchainClient {
 export const blockchainClient = new BlockchainClient();
 
 export async function getWalletBalance() {
+  const { provider, wallet } = getBlockchainRuntime();
   const balance = await provider.getBalance(wallet.address);
   return {
     address: wallet.address,
@@ -158,6 +167,7 @@ export async function getWalletBalance() {
 }
 
 export async function getGasComparison() {
+  const { provider, wallet } = getBlockchainRuntime();
   const balance = await provider.getBalance(wallet.address);
   return {
     currentBalance: ethers.formatEther(balance),

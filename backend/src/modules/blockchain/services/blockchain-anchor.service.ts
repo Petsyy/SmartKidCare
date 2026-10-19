@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import { logger } from "../../../shared/lib/logger";
 import {
   buildChildIdHash,
-  documentsRegistryAddress,
+  getDocumentsRegistryAddress,
   SEPOLIA_CHAIN_ID,
 } from "../utils/ethers";
 import {
@@ -35,6 +35,7 @@ const WRITER_LEASE_MS = 2 * 60_000;
 type AnchorDependencies = {
   repository: BlockchainRepository;
   client: BlockchainClient;
+  getContractAddress: () => string;
   now: () => Date;
 };
 
@@ -104,7 +105,7 @@ export class BlockchainAnchorService {
       txHash,
       blockNumber,
       chainId: SEPOLIA_CHAIN_ID,
-      contractAddress: documentsRegistryAddress,
+      contractAddress: this.deps.getContractAddress(),
       anchoredAt: this.deps.now(),
     });
     if (txHash) {
@@ -249,5 +250,6 @@ export class BlockchainAnchorService {
 export const blockchainAnchorService = new BlockchainAnchorService({
   repository: blockchainRepository,
   client: blockchainClient,
+  getContractAddress: getDocumentsRegistryAddress,
   now: () => new Date(),
 });

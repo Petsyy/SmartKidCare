@@ -4,9 +4,9 @@ import mongoose from "mongoose";
 import ChildDevelopmentCenter from "../src/models/ChildDevelopmentCenter";
 import User from "../src/models/Users";
 
-const E2E_USERNAME = "e2e.captain";
-const E2E_EMAIL = "e2e.captain@smartkidcare.test";
-const E2E_PASSWORD = "E2eCaptain123!";
+const E2E_USERNAME = String(process.env.E2E_CAPTAIN_USERNAME || "").trim();
+const E2E_PASSWORD = String(process.env.E2E_CAPTAIN_PASSWORD || "");
+const E2E_EMAIL = `${E2E_USERNAME}@smartkidcare.test`;
 const E2E_CENTER_CODE = "E2E-CENTER";
 
 const seed = async () => {
@@ -17,6 +17,12 @@ const seed = async () => {
   if (!/smartkidcare_e2e(?:\?|$)/i.test(mongoUri)) {
     throw new Error(
       "Refusing to seed E2E data outside a database named smartkidcare_e2e.",
+    );
+  }
+
+  if (!E2E_USERNAME || !E2E_PASSWORD) {
+    throw new Error(
+      "E2E_CAPTAIN_USERNAME and E2E_CAPTAIN_PASSWORD must be provided.",
     );
   }
 
