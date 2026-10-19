@@ -1,12 +1,5 @@
 import { useState } from "react";
-import {
-  Alert,
-  Modal,
-  Platform,
-  Pressable,
-  Text,
-  View,
-} from "react-native";
+import { Alert, Modal, Platform, Pressable, Text, View } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Calendar } from "lucide-react-native";
 import {
@@ -20,6 +13,7 @@ type CompetencyDatePickerProps = {
   dateKey: string;
   dateLabel: string;
   disabled?: boolean;
+  compact?: boolean;
   onDateChange: (dateKey: string) => void;
 };
 
@@ -27,6 +21,7 @@ export function CompetencyDatePicker({
   dateKey,
   dateLabel,
   disabled = false,
+  compact = false,
   onDateChange,
 }: CompetencyDatePickerProps) {
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -34,7 +29,7 @@ export function CompetencyDatePicker({
   const [dateBounds] = useState(() => {
     const maximumDate = new Date();
     return {
-      minimumDate: new Date(maximumDate.getTime() - 365 * DAY_MS),
+      minimumDate: new Date(maximumDate.getTime() - 7 * DAY_MS),
       maximumDate,
     };
   });
@@ -59,7 +54,7 @@ export function CompetencyDatePicker({
     ) {
       Alert.alert(
         "Invalid Evaluation Date",
-        `Evaluation date cannot be in the future and must be within the current school year.`,
+        `Evaluation date must be today or within the previous 7 days (${minimumDateKey} to ${todayDateKey}).`,
       );
       return false;
     }
@@ -90,14 +85,14 @@ export function CompetencyDatePicker({
 
   return (
     <>
-      <View className="mb-4">
+      <View className={compact ? "mb-3 mt-3" : "mb-4"}>
         <Pressable
           onPress={openDatePicker}
           disabled={disabled}
           accessibilityRole="button"
           accessibilityLabel={`Evaluation date: ${dateLabel}`}
-          accessibilityHint="Opens a date picker. Past dates can be selected."
-          className={`flex-row items-center justify-between rounded-2xl border px-4 py-3.5 ${
+          accessibilityHint="Opens a date picker. Today and the previous seven days can be selected."
+          className={`flex-row items-center justify-between rounded-2xl border px-4 ${compact ? "min-h-16 py-2.5" : "py-3.5"} ${
             disabled
               ? "border-gray-200 bg-gray-50"
               : "border-teal-200 bg-teal-50 active:opacity-85"

@@ -20,17 +20,34 @@ export const getCompetencyHistory = (childId: string) =>
   apiClient<CompetencyHistory>(
     `/api/competencies/children/${childId}/evaluations?page=1&limit=50`,
   );
+export type CompetencyClassStatus = {
+  childId: string;
+  status: "not_started" | "submitted" | "locked";
+  evaluationId?: string;
+  evaluationDate?: string;
+};
+export const getMyClassCompetencyStatus = (
+  period: "quarterly" | "final",
+  date: string,
+) =>
+  apiClient<{
+    period: "quarterly" | "final";
+    date: string;
+    statuses: CompetencyClassStatus[];
+  }>(
+    `/api/competencies/my-class/status?period=${period}&date=${encodeURIComponent(date)}`,
+  );
 export const submitCompetencyEvaluation = (payload: {
   childId: string;
   evaluationId?: string;
   evaluationDate: string;
   period: "quarterly" | "final";
   status: "draft" | "submitted";
-  entries: Array<{
+  entries: {
     competencyId: string;
     level: CompetencyLevel;
     remarks?: string;
-  }>;
+  }[];
   generalNotes?: string;
 }) =>
   apiClient<{
@@ -40,7 +57,4 @@ export const submitCompetencyEvaluation = (payload: {
       status: "created" | "duplicate" | "skipped" | "push_failed";
       reason?: string;
     };
-  }>(
-    "/api/competencies/evaluations",
-    { method: "POST", body: payload },
-  );
+  }>("/api/competencies/evaluations", { method: "POST", body: payload });

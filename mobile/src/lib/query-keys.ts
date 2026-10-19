@@ -1,12 +1,9 @@
 export const attendanceQueryKeys = {
   teacherAttendanceSetup: (selectedDateKey: string) =>
     ["teacherAttendanceSetup", selectedDateKey] as const,
-  parentAttendanceChildren: () =>
-    ["parentAttendanceChildren"] as const,
-  parentAttendanceHistory: (
-    selectedChildId: string | null,
-    monthKey: string,
-  ) => ["parentAttendanceHistory", selectedChildId, monthKey] as const,
+  parentAttendanceChildren: () => ["parentAttendanceChildren"] as const,
+  parentAttendanceHistory: (selectedChildId: string | null, monthKey: string) =>
+    ["parentAttendanceHistory", selectedChildId, monthKey] as const,
 };
 
 export const feedingQueryKeys = {
@@ -26,28 +23,20 @@ export const feedingQueryKeys = {
       presentChildrenIdsKey,
       dataSource,
     ] as const,
-  parentFeedingChildren: () =>
-    ["parentFeedingChildren"] as const,
-  parentFeedingHistory: (
-    selectedChildId: string | null,
-    monthKey: string,
-  ) => ["parentFeedingHistory", selectedChildId, monthKey] as const,
+  parentFeedingChildren: () => ["parentFeedingChildren"] as const,
+  parentFeedingHistory: (selectedChildId: string | null, monthKey: string) =>
+    ["parentFeedingHistory", selectedChildId, monthKey] as const,
 };
 
 export const profileQueryKeys = {
-  profile: (role: "parent" | "teacher") =>
-    ["profile", role] as const,
+  profile: (role: "parent" | "teacher") => ["profile", role] as const,
 };
 
 export const dashboardQueryKeys = {
-  parentChildrenList: () =>
-    ["parentChildrenList"] as const,
-  parentChildrenStatusOverview: () =>
-    ["parentChildrenStatusOverview"] as const,
-  parentChildrenDashboard: () =>
-    ["parentChildrenDashboard"] as const,
-  parentDashboard: () =>
-    ["parentDashboard"] as const,
+  parentChildrenList: () => ["parentChildrenList"] as const,
+  parentChildrenStatusOverview: () => ["parentChildrenStatusOverview"] as const,
+  parentChildrenDashboard: () => ["parentChildrenDashboard"] as const,
+  parentDashboard: () => ["parentDashboard"] as const,
   teacherDashboard: (todayDateKey: string) =>
     ["teacherDashboard", todayDateKey] as const,
 };
@@ -61,10 +50,8 @@ export const notificationsQueryKeys = {
 };
 
 export const childrenQueryKeys = {
-  teacherChildrenOverview: () =>
-    ["teacherChildrenOverview"] as const,
-  teacherArchivedChildren: () =>
-    ["teacherArchivedChildren"] as const,
+  teacherChildrenOverview: () => ["teacherChildrenOverview"] as const,
+  teacherArchivedChildren: () => ["teacherArchivedChildren"] as const,
   teacherChildDetails: (childId: string | null) =>
     ["teacherChildDetails", childId] as const,
   teacherChildEdit: (childId: string | null) =>
@@ -81,8 +68,12 @@ export const requestsQueryKeys = {
 
 export const competencyQueryKeys = {
   competencyDefinitions: () => ["competencyDefinitions"] as const,
-  competencyLatest: (childId: string | null) => ["competencyLatest", childId] as const,
-  competencyHistory: (childId: string | null) => ["competencyHistory", childId] as const,
+  competencyLatest: (childId: string | null) =>
+    ["competencyLatest", childId] as const,
+  competencyHistory: (childId: string | null) =>
+    ["competencyHistory", childId] as const,
+  competencyClassStatus: (period: string, date: string) =>
+    ["competencyClassStatus", period, date] as const,
 };
 
 export const mobileQueryKeys = {

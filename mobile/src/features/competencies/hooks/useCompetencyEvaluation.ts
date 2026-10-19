@@ -47,12 +47,19 @@ type OfflineCompetencyEvaluation = Omit<CompetencyEvaluation, "entries"> & {
 
 export type EvaluationPeriod = "quarterly" | "final";
 
-const competencyDraftScopeKey = (childId: string, period: EvaluationPeriod) =>
-  `${childId}:${period}`;
+const competencyDraftScopeKey = (
+  childId: string,
+  period: EvaluationPeriod,
+  date: string,
+) => `${childId}:${period}:${date}`;
 
 export function useCompetencyEvaluation(
   childId: string | null,
-  options: { isParentView?: boolean } = {},
+  options: {
+    isParentView?: boolean;
+    initialPeriod?: EvaluationPeriod;
+    initialDate?: string;
+  } = {},
 ) {
   const { user } = useAuth();
   const { isConnected, isInternetReachable, refreshPendingCount } =
@@ -67,13 +74,14 @@ export function useCompetencyEvaluation(
   >(null);
   const [isDateLookupPending, setIsDateLookupPending] = useState(false);
   const dateLookupSequence = useRef(0);
-  const [selectedPeriod, setSelectedPeriod] =
-    useState<EvaluationPeriod>("quarterly");
+  const [selectedPeriod, setSelectedPeriod] = useState<EvaluationPeriod>(
+    options.initialPeriod || "quarterly",
+  );
   const [levels, setLevels] = useState<Record<string, CompetencyLevel>>({});
   const [remarks, setRemarks] = useState<Record<string, string>>({});
   const [generalNotes, setGeneralNotes] = useState("");
-  const [evaluationDate, setEvaluationDate] = useState(() =>
-    getManilaDateKey(),
+  const [evaluationDate, setEvaluationDate] = useState(
+    () => options.initialDate || getManilaDateKey(),
   );
   const [savedSnapshot, setSavedSnapshot] = useState("");
   const [hasLocalDraft, setHasLocalDraft] = useState(false);
@@ -149,8 +157,20 @@ export function useCompetencyEvaluation(
           const [child, definitions, quarterly, final] = await Promise.all([
             getChildById(childId),
             getCompetencyDefinitions(),
-            getCompetencyEvaluationByPeriod(childId, "quarterly"),
-            getCompetencyEvaluationByPeriod(childId, "final"),
+            getCompetencyEvaluationByPeriod(
+              childId,
+              "quarterly",
+              options.initialPeriod === "quarterly"
+                ? options.initialDate
+                : undefined,
+            ),
+            getCompetencyEvaluationByPeriod(
+              childId,
+              "final",
+              options.initialPeriod === "final"
+                ? options.initialDate
+                : undefined,
+            ),
           ]);
           return { child, definitions, evaluations: { quarterly, final } };
         },
@@ -171,13 +191,29 @@ export function useCompetencyEvaluation(
       // If user is actively creating a new evaluation, don't overwrite with existing record
       if (isCreatingNew) return;
 
-      const localDraft = user?.id
+      let localDraft = user?.id
         ? await getScopedDraft(
             user.id,
             "competency",
-            competencyDraftScopeKey(childId, selectedPeriod),
+            competencyDraftScopeKey(childId, selectedPeriod, evaluationDate),
           )
         : null;
+      if (!localDraft && user?.id) {
+        const legacyDraft = await getScopedDraft(
+          user.id,
+          "competency",
+          `${childId}:${selectedPeriod}`,
+        );
+        const legacyPayload = legacyDraft?.payload as
+          CompetencyDraftPayload | undefined;
+        if (
+          legacyPayload &&
+          (!options.initialDate ||
+            legacyPayload.evaluationDate === options.initialDate)
+        ) {
+          localDraft = legacyDraft;
+        }
+      }
       if (cancelled) return;
 
       const draftPayload = localDraft
@@ -235,7 +271,7 @@ export function useCompetencyEvaluation(
       } else if (query.data) {
         setLoadedEvaluationId(null);
         setLoadedEvaluationStatus(null);
-        const today = getManilaDateKey();
+        const today = options.initialDate || getManilaDateKey();
         setLevels({});
         setRemarks({});
         setGeneralNotes("");
@@ -248,11 +284,13 @@ export function useCompetencyEvaluation(
     };
   }, [
     childId,
+    evaluationDate,
     query.data,
     selectedEvaluation,
     selectedPeriod,
     user?.id,
     isCreatingNew,
+    options.initialDate,
   ]);
 
   const groupedDefinitions = useMemo(() => {
@@ -360,7 +398,11 @@ export function useCompetencyEvaluation(
         userId: user.id,
         recordType: "competency",
         dateKey: selectedPeriod,
-        draftScopeKey: competencyDraftScopeKey(childId, selectedPeriod),
+        draftScopeKey: competencyDraftScopeKey(
+          childId,
+          selectedPeriod,
+          evaluationDate,
+        ),
         payload,
       }).then(async () => {
         setHasLocalDraft(true);
@@ -432,7 +474,12 @@ export function useCompetencyEvaluation(
         await deleteScopedDraft(
           user.id,
           "competency",
-          competencyDraftScopeKey(childId, selectedPeriod),
+          competencyDraftScopeKey(childId, selectedPeriod, evaluationDate),
+        );
+        await deleteScopedDraft(
+          user.id,
+          "competency",
+          `${childId}:${selectedPeriod}`,
         );
         setHasLocalDraft(false);
         await refreshPendingCount();
@@ -443,6 +490,12 @@ export function useCompetencyEvaluation(
         }),
         queryClient.invalidateQueries({
           queryKey: mobileQueryKeys.competencyHistory(childId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: mobileQueryKeys.competencyClassStatus(
+            selectedPeriod,
+            evaluationDate,
+          ),
         }),
       ]);
       setLoadedEvaluationId(data.evaluation._id);
@@ -488,7 +541,11 @@ export function useCompetencyEvaluation(
       userId: user.id,
       recordType: "competency",
       dateKey: selectedPeriod,
-      draftScopeKey: competencyDraftScopeKey(childId, selectedPeriod),
+      draftScopeKey: competencyDraftScopeKey(
+        childId,
+        selectedPeriod,
+        evaluationDate,
+      ),
       payload,
     });
     setHasLocalDraft(true);
@@ -701,11 +758,12 @@ export function useCompetencyEvaluation(
           "Internet Required",
           "Connect to the internet to submit this evaluation.",
         );
-        return;
+        return false;
       }
       try {
         await saveLocalDraft();
-        await mutation.mutateAsync("submitted").catch(() => undefined);
+        await mutation.mutateAsync("submitted");
+        return true;
       } catch (error) {
         reportHandledError("competency.evaluation.submit", error);
         Alert.alert(
@@ -715,6 +773,7 @@ export function useCompetencyEvaluation(
             "The evaluation could not be submitted. Please try again.",
           ),
         );
+        return false;
       }
     },
     isSubmitting: mutation.isPending || isDateLookupPending,

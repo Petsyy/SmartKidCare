@@ -7,7 +7,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { useLocalSearchParams, type Href } from "expo-router";
+import { useLocalSearchParams, useRouter, type Href } from "expo-router";
 import {
   ClipboardCheck,
   CheckCircle2,
@@ -35,9 +35,18 @@ export default function CompetencyEvaluationScreen() {
   const params = useLocalSearchParams<{
     childId?: string;
     isParentView?: string;
+    queueMode?: string;
+    period?: EvaluationPeriod;
+    date?: string;
+    queueIds?: string;
   }>();
+  const router = useRouter();
   const childId = typeof params.childId === "string" ? params.childId : null;
   const isParentView = params.isParentView === "true";
+  const isQueueMode = params.queueMode === "true" && !isParentView;
+  const queueIds = (params.queueIds || "").split(",").filter(Boolean);
+  const queueIndex = childId ? queueIds.indexOf(childId) : -1;
+  const nextChildId = queueIndex >= 0 ? queueIds[queueIndex + 1] : undefined;
   const [isHistoryVisible, setIsHistoryVisible] = useState(false);
   const fallbackRoute: Href = isParentView
     ? "/(parent)/children"
@@ -49,7 +58,11 @@ export default function CompetencyEvaluationScreen() {
       : "/(teacher)/children";
   const handleBack = useSafeBack(fallbackRoute);
   useAndroidBackRoute("/(parent)/children", isParentView);
-  const evaluation = useCompetencyEvaluation(childId, { isParentView });
+  const evaluation = useCompetencyEvaluation(childId, {
+    isParentView,
+    initialPeriod: params.period,
+    initialDate: params.date,
+  });
   const child = evaluation.data?.child;
 
   useUnsavedChangesGuard({
@@ -140,6 +153,7 @@ export default function CompetencyEvaluationScreen() {
                         : `Open the ${period.label} evaluation`
                     }
                     onPress={() => evaluation.handlePeriodChange(period.value)}
+                    disabled={isQueueMode}
                     className={`min-h-20 flex-1 items-center justify-center rounded-2xl border px-1 py-3 ${
                       selected
                         ? "border-teal-500 bg-teal-50"
@@ -205,10 +219,22 @@ export default function CompetencyEvaluationScreen() {
             disabled={
               evaluation.isSubmitting ||
               evaluation.isReadOnly ||
-              evaluation.isFinalized
+              evaluation.isFinalized ||
+              isQueueMode
             }
             onDateChange={evaluation.setEvaluationDate}
           />
+
+          {isQueueMode && queueIndex >= 0 ? (
+            <View className="mb-4 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3">
+              <Text className="font-bold text-blue-800">
+                Child {queueIndex + 1} of {queueIds.length}
+              </Text>
+              <Text className="mt-1 text-sm text-blue-700">
+                Submit this evaluation to continue to the next child.
+              </Text>
+            </View>
+          ) : null}
 
           {evaluation.selectedPeriodState.isLocked && (
             <View className="mb-4 flex-row rounded-2xl border border-amber-200 bg-amber-50 p-4">
@@ -398,7 +424,29 @@ export default function CompetencyEvaluationScreen() {
                   !evaluation.progress.isComplete ||
                   evaluation.isOffline
                 }
-                onPress={() => void evaluation.submitEvaluation()}
+                onPress={() => {
+                  void (async () => {
+                    const submitted = await evaluation.submitEvaluation();
+                    if (!submitted || !isQueueMode) return;
+                    if (nextChildId) {
+                      router.replace({
+                        pathname:
+                          "/(teacher)/child-details/competencies/[childId]",
+                        params: {
+                          childId: nextChildId,
+                          queueMode: "true",
+                          period: evaluation.selectedPeriod,
+                          date: evaluation.evaluationDate,
+                          queueIds: queueIds.join(","),
+                        },
+                      });
+                    } else {
+                      router.replace(
+                        "/(teacher)/teacher-record-data/competencies",
+                      );
+                    }
+                  })();
+                }}
                 className={`min-h-14 items-center justify-center rounded-2xl ${evaluation.isSubmitting || !evaluation.progress.isComplete || evaluation.isOffline ? "bg-gray-300" : "bg-teal-600"}`}
               >
                 {evaluation.isSubmitting ? (
@@ -407,7 +455,11 @@ export default function CompetencyEvaluationScreen() {
                   <Text className="text-lg font-bold text-white">
                     {evaluation.isOffline
                       ? "Connect to Submit"
-                      : "Submit Evaluation"}
+                      : isQueueMode
+                        ? nextChildId
+                          ? "Submit & Next Child"
+                          : "Submit & Finish"
+                        : "Submit Evaluation"}
                   </Text>
                 )}
               </Pressable>

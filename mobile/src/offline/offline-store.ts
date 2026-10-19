@@ -158,6 +158,28 @@ export const finalizeDraft = async (input: {
   return operation;
 };
 
+export const listDraftsByType = async (
+  userId: string,
+  recordType: OfflineRecordType,
+): Promise<OfflineDraft[]> => {
+  const database = await getOfflineDatabase();
+  const rows = await database.getAllAsync<any>(
+    "SELECT * FROM offline_drafts WHERE user_id = ? AND record_type = ? ORDER BY updated_at DESC",
+    userId,
+    recordType,
+  );
+  return rows.map((row) => ({
+    draftId: row.draft_id,
+    userId: row.user_id,
+    recordType: row.record_type,
+    dateKey: row.date_key,
+    draftScopeKey: row.draft_scope_key,
+    payload: JSON.parse(row.payload_json),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }));
+};
+
 const toOutboxOperation = (row: any): OutboxOperation => ({
   clientOperationId: row.operation_id,
   sourceDraftId: row.source_draft_id,

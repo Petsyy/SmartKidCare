@@ -644,6 +644,35 @@ export default function TeacherDashboardScreen() {
               </View>
             ) : null}
           </Pressable>
+          <Pressable
+            onPress={() =>
+              router.push("/(teacher)/teacher-record-data/competencies")
+            }
+            disabled={!hasChildren}
+            accessibilityRole="button"
+            accessibilityLabel="Open class competency evaluation queue"
+            accessibilityState={{ disabled: !hasChildren }}
+            className={`mt-3 min-h-28 flex-row items-center rounded-3xl border p-4 shadow-sm active:opacity-85 ${hasChildren ? "border-blue-200 bg-blue-50" : "border-gray-200 bg-gray-100 opacity-70"}`}
+          >
+            <View
+              className={`h-14 w-14 items-center justify-center rounded-2xl ${hasChildren ? "bg-blue-600" : "bg-gray-400"}`}
+            >
+              <ClipboardCheck size={27} color="#FFFFFF" />
+            </View>
+            <View className="ml-4 flex-1">
+              <Text className="text-xl font-extrabold text-gray-900">
+                Competency Evaluation
+              </Text>
+              <Text className="mt-1.5 text-sm leading-5 text-gray-600">
+                Evaluate each child using the class queue.
+              </Text>
+            </View>
+            {hasChildren ? (
+              <View className="ml-3 h-11 w-11 items-center justify-center rounded-full bg-blue-600">
+                <ArrowUpRight size={21} color="#FFFFFF" />
+              </View>
+            ) : null}
+          </Pressable>
         </View>
 
         <View className="mb-3 flex-row items-center justify-between">
