@@ -63,8 +63,11 @@ export function ScreenHeader({
           colors={BRAND_HEADER_GRADIENT}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={{ paddingTop: insets.top + 12 }}
-          className="px-5 pb-5"
+          style={{
+            paddingTop: insets.top + 12,
+            paddingHorizontal: 20,
+            paddingBottom: 20,
+          }}
         >
           {content}
         </LinearGradient>

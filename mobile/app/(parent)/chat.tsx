@@ -13,6 +13,8 @@ import {
   Pressable,
   FlatList,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   StatusBar,
   ScrollView,
 } from "react-native";
@@ -838,7 +840,10 @@ export default function ParentChatScreen() {
       edges={["left", "right", "bottom"]}
     >
       <StatusBar barStyle="light-content" backgroundColor="#0D9488" />
-      <View className="flex-1">
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        className="flex-1"
+      >
         <ScreenHeader
           backgroundVariant="brandGradient"
           title="AI Assistant"
@@ -918,6 +923,8 @@ export default function ParentChatScreen() {
           renderItem={renderItem}
           ListEmptyComponent={listEmpty}
           contentContainerStyle={messageListContentStyle}
+          keyboardDismissMode="interactive"
+          keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         />
 
@@ -991,7 +998,7 @@ export default function ParentChatScreen() {
             </LinearGradient>
           </Pressable>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

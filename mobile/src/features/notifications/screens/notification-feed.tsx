@@ -564,12 +564,12 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
                       toggleSelected(item.id);
                     }
                   }}
-                  className={`mb-3 overflow-hidden rounded-2xl border p-4 active:scale-[0.99] ${
+                  className={`mb-3 overflow-hidden rounded-2xl p-4 active:scale-[0.99] ${
                     selectedIds.includes(item.id)
-                      ? "border-teal-500 bg-teal-50/70"
+                      ? "border border-teal-500 bg-teal-50/70"
                       : isRead
-                        ? "border-gray-200 bg-white"
-                        : "border-teal-200 bg-white"
+                        ? "border border-transparent bg-white"
+                        : "border border-teal-200 bg-white"
                   }`}
                   style={{
                     shadowColor: "#0F172A",
@@ -711,10 +711,10 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
                       toggleSelected(item.id);
                     }
                   }}
-                  className={`mb-3 overflow-hidden rounded-2xl border p-4 active:scale-[0.99] ${
+                  className={`mb-3 overflow-hidden rounded-2xl p-4 active:scale-[0.99] ${
                     selectedIds.includes(item.id)
-                      ? "border-teal-500 bg-teal-50/70"
-                      : "border-gray-200 bg-white"
+                      ? "border border-teal-500 bg-teal-50/70"
+                      : "border border-transparent bg-white"
                   }`}
                   style={{
                     shadowColor: "#0F172A",
@@ -780,7 +780,7 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
                     </View>
 
                     {/* Footer: archived timestamp + actions */}
-                    <View className="mt-3 flex-row items-center justify-between border-t border-gray-100 pt-3">
+                    <View className="mt-3 flex-row items-center justify-between pt-1">
                       <Text className="text-xs text-gray-400">
                         {formatArchivedAt(item.archivedAt)}
                       </Text>

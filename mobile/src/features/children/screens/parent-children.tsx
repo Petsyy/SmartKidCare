@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import {
   Pressable,
   ScrollView,
@@ -10,14 +9,12 @@ import {
   AlertCircle,
   CheckCircle2,
   CircleCheck,
-  ClipboardCheck,
   Clock3,
   HeartPulse,
   School,
   User,
   Users,
   Award,
-  ArrowUpRight,
   TrendingUp,
   ShieldCheck,
 } from "lucide-react-native";
@@ -34,6 +31,7 @@ import { useParentChildrenData } from "@/src/features/children/hooks";
 import { useChildNutritionHistory } from "@/src/features/nutrition/hooks/useNutrition";
 import { GrowthHistoryBottomSheet } from "@/src/features/nutrition/components/growth-history-bottom-sheet";
 import { ViewGuardiansBottomSheet } from "@/src/features/children/components/view-guardians-bottom-sheet";
+import { CompetencyHistoryBottomSheet } from "@/src/features/competencies";
 import { useState } from "react";
 
 const NOT_PROVIDED = "Not provided";
@@ -310,12 +308,11 @@ function ParentNutritionSection({
 
 
 // MAIN SCREEN
-import { useRouter } from "expo-router";
 
 export default function ParentChildrenScreen() {
-  const router = useRouter();
   const [showGuardians, setShowGuardians] = useState(false);
   const [showGrowthHistory, setShowGrowthHistory] = useState(false);
+  const [showCompetencyHistory, setShowCompetencyHistory] = useState(false);
   const {
     children,
     selectedChild,
@@ -556,17 +553,15 @@ export default function ParentChildrenScreen() {
             {/* ── Quick Actions ── */}
             <View className="mb-6 flex-row gap-3">
               <Pressable
-                onPress={() =>
-                  router.push(
-                    `/(parent)/competencies/${selectedChild._id}?isParentView=true`,
-                  )
-                }
+                onPress={() => setShowCompetencyHistory(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Open ECCD evaluation history"
                 className="flex-1 items-center justify-center rounded-2xl border border-teal-100 bg-white p-4 shadow-sm active:bg-gray-50"
               >
                 <View className="mb-2 h-12 w-12 items-center justify-center rounded-full bg-teal-50">
                   <Award size={24} color="#0D9488" />
                 </View>
-                <Text className="text-center text-xs font-bold text-gray-700">ECCD Eval</Text>
+                <Text className="text-center text-xs font-bold text-gray-700">ECCD History</Text>
               </Pressable>
 
               <Pressable
@@ -674,6 +669,13 @@ export default function ParentChildrenScreen() {
               childName={getFullName(selectedChild)}
               visible={showGrowthHistory}
               onClose={() => setShowGrowthHistory(false)}
+            />
+
+            <CompetencyHistoryBottomSheet
+              childId={selectedChild._id}
+              childName={getFullName(selectedChild)}
+              visible={showCompetencyHistory}
+              onClose={() => setShowCompetencyHistory(false)}
             />
 
             <ViewGuardiansBottomSheet

@@ -95,10 +95,6 @@ export default function ParentLayout() {
           options={{ href: null, tabBarStyle: { display: "none" } }}
         />
         <Tabs.Screen
-          name="competencies/[childId]"
-          options={{ href: null, tabBarStyle: { display: "none" } }}
-        />
-        <Tabs.Screen
           name="parent-view-record"
           options={{ href: null, tabBarStyle: { display: "none" } }}
         />
