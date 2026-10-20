@@ -27,6 +27,7 @@ import {
   SuccessFeedbackModal,
 } from "@/src/components/ui";
 import { useAndroidBackRoute } from "@/src/hooks/use-android-back-route";
+import { formatChildRosterName } from "@/src/utils/child-name";
 
 const STATUS_STYLE = {
   present: {
@@ -87,7 +88,7 @@ const AttendanceChildRow = memo(function AttendanceChildRow({
         </View>
         <View className="ml-3 min-w-0 flex-1 pr-2">
           <Text className="text-base font-bold text-gray-900" numberOfLines={2}>
-            {child.lastName}, {child.firstName}
+            {formatChildRosterName(child)}
           </Text>
         </View>
         <View className="flex-row gap-1">
@@ -100,7 +101,7 @@ const AttendanceChildRow = memo(function AttendanceChildRow({
                 onPress={() => onSetStatus(child._id, status)}
                 disabled={!editable}
                 accessibilityRole="button"
-                accessibilityLabel={`Mark ${child.firstName} ${style.label.toLowerCase()}`}
+                accessibilityLabel={`Mark ${formatChildRosterName(child)} ${style.label.toLowerCase()}`}
                 accessibilityState={{ selected, disabled: !editable }}
                 className={`h-11 w-11 items-center justify-center rounded-xl border ${selected ? style.selected : "border-gray-300 bg-white"} ${!editable ? "opacity-60" : ""}`}
               >
