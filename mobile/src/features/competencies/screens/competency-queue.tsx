@@ -15,6 +15,7 @@ import {
   ScreenLoadingState,
   ScreenShell,
 } from "@/src/components/ui";
+import { formatChildRosterName } from "@/src/utils/child-name";
 import { formatManilaDateLabel } from "@/src/utils/manila-date";
 import { CompetencyDatePicker } from "../components/competency-date-picker";
 import {
@@ -176,7 +177,7 @@ export function CompetencyQueueScreen() {
                 </View>
 
                 <View className="mb-3 h-14 flex-row items-center rounded-2xl border border-gray-200 bg-white px-4 shadow-sm">
-                  <Search size={25} color="#64748B" strokeWidth={2.25} />
+                  <Search size={20} color="#64748B" strokeWidth={2.25} />
                   <TextInput
                     value={queue.search}
                     onChangeText={queue.setSearch}
@@ -226,12 +227,13 @@ export function CompetencyQueueScreen() {
             renderItem={({ item }) => {
               const completed = item.status === "submitted";
               const locked = item.status === "locked";
+              const childName = formatChildRosterName(item.child);
               return (
                 <Pressable
                   onPress={() => openChild(item.child._id, locked)}
                   disabled={locked}
                   accessibilityRole="button"
-                  accessibilityLabel={`${item.child.firstName} ${item.child.lastName}, ${item.status}`}
+                  accessibilityLabel={`${childName}, ${item.status}`}
                   accessibilityState={{ disabled: locked }}
                   className={`min-h-20 flex-row items-center rounded-2xl border bg-white px-4 py-3 ${locked ? "border-gray-200 opacity-70" : completed ? "border-emerald-200" : "border-gray-200"}`}
                 >
@@ -248,7 +250,7 @@ export function CompetencyQueueScreen() {
                   </View>
                   <View className="ml-3 flex-1">
                     <Text className="text-base font-extrabold text-gray-900">
-                      {item.child.firstName} {item.child.lastName}
+                      {childName}
                     </Text>
                     <Text className="mt-1 text-sm font-semibold text-gray-500">
                       {completed
