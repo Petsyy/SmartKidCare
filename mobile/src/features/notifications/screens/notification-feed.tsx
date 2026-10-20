@@ -632,17 +632,21 @@ export function NotificationFeedScreen<T extends NotificationItemBase>({
 
                     {/* Footer: time + actions */}
                     <View className="mt-3 flex-row items-center justify-between">
-                      <View
-                        className="rounded-full px-3 py-1"
-                        style={{ backgroundColor: ui.iconBg }}
-                      >
-                        <Text
-                          className="text-xs font-semibold"
-                          style={{ color: ui.iconColor }}
+                      {item.timeLabel ? (
+                        <View
+                          className="rounded-full px-3 py-1"
+                          style={{ backgroundColor: ui.iconBg }}
                         >
-                          {item.timeLabel}
-                        </Text>
-                      </View>
+                          <Text
+                            className="text-xs font-semibold"
+                            style={{ color: ui.iconColor }}
+                          >
+                            {item.timeLabel}
+                          </Text>
+                        </View>
+                      ) : (
+                        <View />
+                      )}
 
                       <View className="flex-row items-center gap-2">
                         {item.actionPath ? (

@@ -21,6 +21,16 @@ const toDateKey = (value: Date): string => {
   return toLocalDateKey(value, MANILA_UTC_OFFSET_MINUTES);
 };
 
+const formatDateLabel = (dateKey: string): string => {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString("en-PH", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "Asia/Manila",
+  });
+};
+
 const formatName = (first?: string, middle?: string, last?: string): string =>
   [first, middle, last].filter(Boolean).join(" ").trim();
 
@@ -86,6 +96,8 @@ export async function getParentNotificationsFeed(params: {
 }): Promise<ParentFeedResult> {
   const targetDate = toDayStart(params.date || new Date());
   const dateKey = toDateKey(targetDate);
+  const dateLabel = formatDateLabel(dateKey);
+  const isToday = dateKey === toDateKey(new Date());
 
   const parent = await notificationsUserRepository.findParentById(params.parentId);
 
@@ -224,7 +236,7 @@ export async function getParentNotificationsFeed(params: {
       message:
         absentCount > 0
           ? `${presentNames.length ? summarizeNames(presentNames) + " present; " : ""}${absentCount} absent.`
-          : `${presentNames.length ? summarizeNames(presentNames) : presentCount} present today.`,
+          : `${presentNames.length ? summarizeNames(presentNames) : presentCount} present${isToday ? " today" : ` on ${dateLabel}`}.`,
       timeLabel: attendanceSubmittedAt
         ? formatTimeFromDate(attendanceSubmittedAt)
         : ATTENDANCE_TIME_LABEL,
@@ -267,10 +279,12 @@ export async function getParentNotificationsFeed(params: {
       title: "Feeding Submitted",
       message:
         completedNames.length > 0
-          ? `${summarizeNames(completedNames)} completed today's lunch.`
+          ? `${summarizeNames(completedNames)} completed ${isToday ? "today's lunch" : `lunch on ${dateLabel}`}.`
           : missedCount > 0
             ? "Lunch record submitted."
-            : "Lunch completed today.",
+            : isToday
+              ? "Lunch completed today."
+              : `Lunch was completed on ${dateLabel}.`,
       timeLabel: feedingSubmittedAt
         ? formatTimeFromDate(feedingSubmittedAt)
         : FEEDING_TIME_LABEL,

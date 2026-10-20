@@ -9,19 +9,15 @@ import {
   sendExpoPushNotifications,
 } from "./push-notification.service";
 import type { TeacherNotificationType, TeacherDispatchDetail, TeacherDispatchResult, TeacherFeedItem, TeacherFeedResult, DispatchTeacherParams, TeacherNotificationDraft } from "../types/teacher-notification.types";
+import { toLocalDateKey, toLocalDayUtcRange } from "../../../shared/utils/date.utils";
 
-const toDayStart = (value: Date): Date => {
-  const dayStart = new Date(value);
-  dayStart.setHours(0, 0, 0, 0);
-  return dayStart;
-};
+const MANILA_UTC_OFFSET_MINUTES = 8 * 60;
 
-const toDateKey = (value: Date): string => {
-  const year = value.getFullYear();
-  const month = String(value.getMonth() + 1).padStart(2, "0");
-  const day = String(value.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
+const toDayStart = (value: Date): Date =>
+  toLocalDayUtcRange(value, MANILA_UTC_OFFSET_MINUTES).start;
+
+const toDateKey = (value: Date): string =>
+  toLocalDateKey(value, MANILA_UTC_OFFSET_MINUTES);
 
 const formatDateLabel = (value: Date): string => {
   const [year, month, day] = toDateKey(value).split("-").map(Number);
@@ -37,24 +33,24 @@ const formatDateLabel = (value: Date): string => {
 const formatName = (first?: string, middle?: string, last?: string): string =>
   [first, middle, last].filter(Boolean).join(" ").trim();
 
-const formatTimeLabel = (timeValue: string): string => {
-  const trimmed = String(timeValue || "").trim();
-  const match = /^([01]?\d|2[0-3]):([0-5]\d)$/.exec(trimmed);
-  if (!match) return trimmed || "--:--";
+const formatRecordTimeLabel = (
+  record: { createdAt?: Date | string; updatedAt?: Date | string } | null,
+  prefix: "Submitted" | "Updated",
+): string => {
+  const value = record?.updatedAt || record?.createdAt;
+  if (!value) return "";
 
-  const hour24 = Number(match[1]);
-  const minute = match[2];
-  const meridiem = hour24 >= 12 ? "PM" : "AM";
-  const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
-  return `${hour12}:${minute} ${meridiem}`;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const time = date.toLocaleTimeString("en-PH", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: "Asia/Manila",
+  });
+  return `${prefix} at ${time}`;
 };
-
-const ATTENDANCE_TIME_LABEL = formatTimeLabel(
-  process.env.TEACHER_ATTENDANCE_NOTIFY_TIME || "08:00",
-);
-const FEEDING_TIME_LABEL = formatTimeLabel(
-  process.env.TEACHER_FEEDING_NOTIFY_TIME || "11:30",
-);
 
 const asIdString = (value: unknown): string => {
   if (value && typeof value === "object") {
@@ -89,6 +85,7 @@ const buildTeacherNotificationDrafts = (params: {
   expectedChildCount: number;
   activeChildIds: Set<string>;
   includeTypeSet: Set<TeacherNotificationType>;
+  isToday: boolean;
 }): TeacherNotificationDraft[] => {
   const {
     attendance,
@@ -98,6 +95,7 @@ const buildTeacherNotificationDrafts = (params: {
     expectedChildCount,
     activeChildIds,
     includeTypeSet,
+    isToday,
   } = params;
 
   const drafts: TeacherNotificationDraft[] = [];
@@ -106,8 +104,10 @@ const buildTeacherNotificationDrafts = (params: {
     drafts.push({
       type: "attendance_reminder",
       title: "Reminder",
-      body: "Submit today's attendance record.",
-      timeLabel: ATTENDANCE_TIME_LABEL,
+      body: isToday
+        ? "Submit today's attendance record."
+        : `No attendance record was submitted for ${dateLabel}.`,
+      timeLabel: "",
       actionLabel: "View",
       data: {
         type: "teacher_attendance_reminder",
@@ -122,8 +122,8 @@ const buildTeacherNotificationDrafts = (params: {
       drafts.push({
         type: "attendance_incomplete",
         title: "Reminder",
-        body: `Attendance record is incomplete (${coverage.markedCount}/${expectedChildCount} marked).`,
-        timeLabel: ATTENDANCE_TIME_LABEL,
+        body: `Attendance record${isToday ? "" : ` for ${dateLabel}`} is incomplete (${coverage.markedCount}/${expectedChildCount} marked).`,
+        timeLabel: formatRecordTimeLabel(attendance, "Updated"),
         actionLabel: "View",
         data: {
           type: "teacher_attendance_incomplete",
@@ -139,8 +139,10 @@ const buildTeacherNotificationDrafts = (params: {
       drafts.push({
         type: "attendance_submitted",
         title: "Morning Attendance",
-        body: "Attendance record has been submitted for today.",
-        timeLabel: ATTENDANCE_TIME_LABEL,
+        body: isToday
+          ? "Attendance record has been submitted for today."
+          : `Attendance record was submitted for ${dateLabel}.`,
+        timeLabel: formatRecordTimeLabel(attendance, "Submitted"),
         actionLabel: "Completed",
         data: {
           type: "teacher_attendance_submitted",
@@ -156,8 +158,10 @@ const buildTeacherNotificationDrafts = (params: {
     drafts.push({
       type: "feeding_reminder",
       title: "Reminder",
-      body: "Feeding record not submitted yet.",
-      timeLabel: FEEDING_TIME_LABEL,
+      body: isToday
+        ? "Feeding record not submitted yet."
+        : `No feeding record was submitted for ${dateLabel}.`,
+      timeLabel: "",
       actionLabel: "View",
       data: {
         type: "teacher_feeding_reminder",
@@ -172,8 +176,8 @@ const buildTeacherNotificationDrafts = (params: {
       drafts.push({
         type: "feeding_incomplete",
         title: "Reminder",
-        body: `Feeding record is incomplete (${coverage.markedCount}/${expectedChildCount} marked).`,
-        timeLabel: FEEDING_TIME_LABEL,
+        body: `Feeding record${isToday ? "" : ` for ${dateLabel}`} is incomplete (${coverage.markedCount}/${expectedChildCount} marked).`,
+        timeLabel: formatRecordTimeLabel(feeding, "Updated"),
         actionLabel: "View",
         data: {
           type: "teacher_feeding_incomplete",
@@ -189,8 +193,10 @@ const buildTeacherNotificationDrafts = (params: {
       drafts.push({
         type: "feeding_submitted",
         title: "Lunch Feeding",
-        body: "Feeding record has been submitted for today.",
-        timeLabel: FEEDING_TIME_LABEL,
+        body: isToday
+          ? "Feeding record has been submitted for today."
+          : `Feeding record was submitted for ${dateLabel}.`,
+        timeLabel: formatRecordTimeLabel(feeding, "Submitted"),
         actionLabel: "Completed",
         data: {
           type: "teacher_feeding_submitted",
@@ -211,6 +217,7 @@ export async function dispatchTeacherNotificationsV1(
   const targetDate = toDayStart(params.date || new Date());
   const dateKey = toDateKey(targetDate);
   const dateLabel = formatDateLabel(targetDate);
+  const isToday = dateKey === toDateKey(new Date());
 
   const includeTypes = Array.isArray(params.includeTypes)
     ? params.includeTypes
@@ -321,6 +328,7 @@ export async function dispatchTeacherNotificationsV1(
       expectedChildCount,
       activeChildIds,
       includeTypeSet,
+      isToday,
     });
 
     for (const draft of drafts) {
@@ -372,6 +380,7 @@ export async function getTeacherNotificationsFeed(params: {
   const targetDate = toDayStart(params.date || new Date());
   const dateKey = toDateKey(targetDate);
   const dateLabel = formatDateLabel(targetDate);
+  const isToday = dateKey === toDateKey(new Date());
 
   const includeTypes = Array.isArray(params.includeTypes)
     ? params.includeTypes
@@ -435,6 +444,7 @@ export async function getTeacherNotificationsFeed(params: {
     expectedChildCount,
     activeChildIds,
     includeTypeSet,
+    isToday,
   });
 
   const notifications: TeacherFeedItem[] = drafts.map((draft, index) => ({

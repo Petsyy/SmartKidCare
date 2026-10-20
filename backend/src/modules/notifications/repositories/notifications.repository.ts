@@ -284,7 +284,7 @@ export class NotificationsAttendanceRepository extends BaseRepository<any> {
     const range = getManilaDayRange(date);
     return this.model
       .find({ teacher: { $in: teacherIds }, date: { $gte: range.start, $lte: range.end } })
-      .select("teacher records")
+      .select("teacher records createdAt updatedAt")
       .lean();
   }
 
@@ -295,7 +295,7 @@ export class NotificationsAttendanceRepository extends BaseRepository<any> {
     const range = getManilaDayRange(date);
     return this.model
       .findOne({ teacher: teacherId, date: { $gte: range.start, $lte: range.end } })
-      .select("records")
+      .select("records createdAt updatedAt")
       .lean();
   }
 
@@ -328,7 +328,7 @@ export class NotificationsFeedingRepository extends BaseRepository<any> {
     const range = getManilaDayRange(date);
     return this.model
       .find({ teacher: { $in: teacherIds }, date: { $gte: range.start, $lte: range.end } })
-      .select("teacher records")
+      .select("teacher records createdAt updatedAt")
       .lean();
   }
 
@@ -339,7 +339,7 @@ export class NotificationsFeedingRepository extends BaseRepository<any> {
     const range = getManilaDayRange(date);
     return this.model
       .findOne({ teacher: teacherId, date: { $gte: range.start, $lte: range.end } })
-      .select("records")
+      .select("records createdAt updatedAt")
       .lean();
   }
 

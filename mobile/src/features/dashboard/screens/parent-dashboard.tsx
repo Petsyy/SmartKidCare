@@ -15,6 +15,7 @@ import {
   RefreshCw,
   School,
   Utensils,
+  Sparkles,
 } from "lucide-react-native";
 import { useAuth } from "@/src/hooks/use-auth";
 import { useParentDashboard } from "../hooks/useParentDashboard";
@@ -330,77 +331,189 @@ export default function ParentDashboardScreen() {
         onRefresh={onRefresh}
         refreshColor="#0F766E"
       >
+        {/* ── Compact Child Information & Today's Updates Card ── */}
         <Pressable
           onPress={() => router.push("/(parent)/children")}
           accessibilityRole="button"
-          accessibilityLabel={`${childFullName}. ${childDetails}. ${attendanceSummary}. ${mealSummary}. ${dailySummary}. View full profile.`}
-          accessibilityHint="Opens your child's full profile"
-          className="mb-5 overflow-hidden rounded-3xl shadow-sm active:opacity-90"
+          accessibilityLabel={`${childFullName}. ${childDetails}. Attendance: ${attendanceStatus === "present" ? "Present" : attendanceStatus === "absent" ? "Absent" : "Not recorded"}. Feeding: ${mealStatus === "completed" ? "Finished" : mealStatus === "missed" ? "Not finished" : "Not recorded"}. View child's profile and records.`}
+          accessibilityHint="Opens your child's full profile and records"
+          className="mb-5 overflow-hidden rounded-3xl bg-white border border-gray-100 p-5 shadow-sm active:bg-gray-50/80"
         >
-          <LinearGradient
-            colors={BRAND_HEADER_GRADIENT}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={{ padding: 20 }}
-          >
-            <Text
-              className="text-2xl font-extrabold leading-8 text-white"
-              numberOfLines={2}
-            >
-              {childFullName}
-            </Text>
-            <Text className="mt-1 text-base font-medium text-emerald-50">
+          {/* 1. Compact Child Profile Header */}
+          <View className="flex-row items-center justify-between">
+            <View className="flex-row items-center flex-1 pr-2 gap-2.5">
+              <Text
+                className="text-2xl font-black text-gray-900 leading-8"
+                numberOfLines={1}
+              >
+                {childFullName}
+              </Text>
+              <View className="flex-row items-center rounded-full bg-emerald-50 px-2.5 py-1 border border-emerald-200">
+                <View className="mr-1.5 h-2 w-2 rounded-full bg-emerald-500" />
+                <Text className="text-xs font-bold text-emerald-800">
+                  Enrolled
+                </Text>
+              </View>
+            </View>
+
+            <Text className="text-sm font-bold text-gray-500">
               {childDetails}
             </Text>
+          </View>
 
-            <View className="mt-5 flex-row items-start">
-              {attendanceStatus === "present" ? (
-                <CheckCircle2 size={20} color="#D1FAE5" />
-              ) : attendanceStatus === "absent" ||
-                attendanceStatus === "excused" ? (
-                <AlertCircle size={20} color="#FED7AA" />
-              ) : (
-                <Clock3 size={20} color="#D1FAE5" />
-              )}
-              <Text className="ml-2.5 flex-1 text-base font-semibold leading-6 text-white">
-                {attendanceSummary}
-              </Text>
+          {/* 2 & 3. Today's Updates (Softly Tinted Container with 2 Compact Rows) */}
+          <View className="mt-4 rounded-2xl bg-teal-50/50 p-4 border border-teal-100/60">
+            {/* Row 1: Attendance */}
+            <View className="flex-row items-center justify-between py-0.5">
+              <View className="flex-row items-center flex-1 pr-3 gap-3">
+                <View
+                  className={`h-11 w-11 items-center justify-center rounded-xl ${
+                    attendanceStatus === "present"
+                      ? "bg-emerald-100"
+                      : attendanceStatus === "absent"
+                        ? "bg-rose-100"
+                        : "bg-gray-100"
+                  }`}
+                >
+                  <ClipboardCheck
+                    size={24}
+                    color={
+                      attendanceStatus === "present"
+                        ? "#047857"
+                        : attendanceStatus === "absent"
+                          ? "#DC2626"
+                          : "#6B7280"
+                    }
+                  />
+                </View>
+
+                <View className="flex-1">
+                  <Text className="text-base font-bold text-gray-900">
+                    Attendance
+                  </Text>
+                  <Text
+                    numberOfLines={1}
+                    className="text-xs font-medium text-gray-500 mt-0.5"
+                  >
+                    {attendanceStatus === "present"
+                      ? attendanceTime
+                        ? `Checked in at ${attendanceTime}`
+                        : "Checked in for class"
+                      : attendanceStatus === "absent"
+                        ? "Reported absent today"
+                        : "Awaiting teacher update"}
+                  </Text>
+                </View>
+              </View>
+
+              <View
+                className={`rounded-full px-3.5 py-1 border ${
+                  attendanceStatus === "present"
+                    ? "bg-emerald-50 border-emerald-200"
+                    : attendanceStatus === "absent"
+                      ? "bg-rose-50 border-rose-200"
+                      : "bg-gray-100 border-gray-200"
+                }`}
+              >
+                <Text
+                  className={`text-xs font-extrabold ${
+                    attendanceStatus === "present"
+                      ? "text-emerald-700"
+                      : attendanceStatus === "absent"
+                        ? "text-rose-700"
+                        : "text-gray-600"
+                  }`}
+                >
+                  {attendanceStatus === "present"
+                    ? "Present"
+                    : attendanceStatus === "absent"
+                      ? "Absent"
+                      : "Not Recorded"}
+                </Text>
+              </View>
             </View>
 
-            <View className="mt-3 flex-row items-start">
-              {mealStatus === "completed" ? (
-                <CheckCircle2 size={20} color="#D1FAE5" />
-              ) : mealStatus === "missed" ? (
-                <AlertCircle size={20} color="#FED7AA" />
-              ) : (
-                <Clock3 size={20} color="#D1FAE5" />
-              )}
-              <Text className="ml-2.5 flex-1 text-base font-semibold leading-6 text-white">
-                {mealSummary}
-              </Text>
-            </View>
+            {/* Subtle Divider */}
+            <View className="my-3 h-px bg-teal-100/70" />
 
-            <Text
-              className={`mt-4 text-base leading-6 ${
-                attendanceStatus === "absent" || mealStatus === "missed"
-                  ? "font-semibold text-orange-100"
-                  : "text-emerald-50"
-              }`}
-            >
-              {dailySummary}
+            {/* Row 2: Feeding */}
+            <View className="flex-row items-center justify-between py-0.5">
+              <View className="flex-row items-center flex-1 pr-3 gap-3">
+                <View
+                  className={`h-11 w-11 items-center justify-center rounded-xl ${
+                    mealStatus === "completed"
+                      ? "bg-emerald-100"
+                      : mealStatus === "missed"
+                        ? "bg-amber-100"
+                        : "bg-gray-100"
+                  }`}
+                >
+                  <Utensils
+                    size={24}
+                    color={
+                      mealStatus === "completed"
+                        ? "#047857"
+                        : mealStatus === "missed"
+                          ? "#D97706"
+                          : "#6B7280"
+                    }
+                  />
+                </View>
+
+                <View className="flex-1">
+                  <Text className="text-base font-bold text-gray-900">
+                    Feeding
+                  </Text>
+                  <Text
+                    numberOfLines={1}
+                    className="text-xs font-medium text-gray-500 mt-0.5"
+                  >
+                    {mealStatus === "completed"
+                      ? mealTime
+                        ? `Served at ${mealTime}`
+                        : "Completed meal session"
+                      : mealStatus === "missed"
+                        ? "Missed scheduled meal"
+                        : "Awaiting teacher update"}
+                  </Text>
+                </View>
+              </View>
+
+              <View
+                className={`rounded-full px-3.5 py-1 border ${
+                  mealStatus === "completed"
+                    ? "bg-emerald-50 border-emerald-200"
+                    : mealStatus === "missed"
+                      ? "bg-amber-50 border-amber-200"
+                      : "bg-gray-100 border-gray-200"
+                }`}
+              >
+                <Text
+                  className={`text-xs font-extrabold ${
+                    mealStatus === "completed"
+                      ? "text-emerald-700"
+                      : mealStatus === "missed"
+                        ? "text-amber-700"
+                        : "text-gray-600"
+                  }`}
+                >
+                  {mealStatus === "completed"
+                    ? "Finished"
+                    : mealStatus === "missed"
+                      ? "Not Finished"
+                      : "Not Recorded"}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* 4. Bottom Navigation */}
+          <View className="mt-3.5 flex-row items-center justify-between border-t border-gray-100 pt-3">
+            <Text className="text-sm font-extrabold text-teal-700">
+              View child&apos;s profile & records
             </Text>
-
-            <View className="mt-4 flex-row items-center border-t border-white/20 pt-3">
-              <Text className="flex-1 text-base font-extrabold text-white">
-                {!attendanceStatus || !mealStatus
-                  ? "Check today's updates"
-                  : attendanceStatus === "absent" || mealStatus === "missed"
-                    ? "Review today's summary"
-                    : "View full profile"}
-              </Text>
-              <ChevronRight size={20} color="#FFFFFF" />
-            </View>
-          </LinearGradient>
+            <ChevronRight size={19} color="#0D9488" />
+          </View>
         </Pressable>
 
         {/* Section 1: Records and History */}

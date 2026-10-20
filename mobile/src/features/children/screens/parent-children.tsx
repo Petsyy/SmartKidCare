@@ -4,6 +4,7 @@ import {
   Text,
   View,
   ActivityIndicator,
+  Linking,
 } from "react-native";
 import {
   AlertCircle,
@@ -17,6 +18,14 @@ import {
   Award,
   TrendingUp,
   ShieldCheck,
+  MapPin,
+  Scale,
+  Ruler,
+  Calendar,
+  BookOpen,
+  Phone,
+  Mail,
+  Sparkles,
 } from "lucide-react-native";
 import type { Child } from "@/src/api/parent.api";
 import {
@@ -147,16 +156,16 @@ function StatusPill({
     normalizedStatus === "absent" || normalizedStatus === "missed";
 
   const iconBackgroundClass = isPositive
-    ? "bg-emerald-50"
+    ? "bg-emerald-100"
     : isNegative
-      ? "bg-red-50"
-      : "bg-gray-100";
+      ? "bg-red-100"
+      : "bg-gray-200";
 
   const textClass = isPositive
     ? "text-emerald-700"
     : isNegative
       ? "text-red-700"
-      : "text-gray-600";
+      : "text-gray-700";
 
   const displayValue = isPositive
     ? normalizedStatus === "present"
@@ -166,7 +175,7 @@ function StatusPill({
       ? normalizedStatus === "absent"
         ? "Absent"
         : "Missed"
-      : "No update";
+      : "No record";
 
   const StatusIcon = isPositive
     ? CheckCircle2
@@ -174,22 +183,25 @@ function StatusPill({
       ? AlertCircle
       : Clock3;
 
-  const iconColor = isPositive ? "#047857" : isNegative ? "#DC2626" : "#6B7280";
+  const iconColor = isPositive ? "#047857" : isNegative ? "#DC2626" : "#4B5563";
 
   return (
     <View
-      className="flex-1 flex-row items-center py-1"
+      className="flex-row items-center"
       accessible
       accessibilityLabel={`${label}: ${displayValue}`}
     >
       <View
-        className={`h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${iconBackgroundClass}`}
+        className={`h-9 w-9 shrink-0 items-center justify-center rounded-xl ${iconBackgroundClass}`}
       >
         <StatusIcon size={18} color={iconColor} />
       </View>
-      <View className="ml-2 flex-1">
-        <Text className="text-sm font-bold text-gray-500">{label}</Text>
-        <Text className={`mt-0.5 text-base font-extrabold ${textClass}`}>
+      <View className="ml-2.5 flex-1 justify-center">
+        <Text className="text-xs font-semibold text-gray-500">{label}</Text>
+        <Text
+          numberOfLines={1}
+          className={`text-sm font-extrabold ${textClass} mt-0.5`}
+        >
           {displayValue}
         </Text>
       </View>
@@ -201,40 +213,87 @@ function NutritionRecordCard({ title, record }: { title: string; record: any }) 
   const isNormal = record.nutritionalStatus === "Normal";
   const isOverweight = record.nutritionalStatus === "Overweight";
 
+  const recordedDate = record.recordedAt || record.createdAt;
+  const formattedDate = recordedDate
+    ? new Date(recordedDate).toLocaleDateString("en-PH", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        timeZone: "Asia/Manila",
+      })
+    : null;
+
   return (
-    <View className="mb-4 rounded-2xl border border-gray-100 bg-gray-50 p-4">
-      <Text className="mb-3 text-base font-bold text-gray-900">{title}</Text>
-      <View className="mb-2 flex-row">
-        <Text className="flex-1 text-sm font-semibold text-gray-500">Weight</Text>
-        <Text className="flex-1 text-right text-sm font-bold text-gray-900">
-          {record.weight} kg
-        </Text>
-      </View>
-      <View className="mb-2 flex-row">
-        <Text className="flex-1 text-sm font-semibold text-gray-500">Height</Text>
-        <Text className="flex-1 text-right text-sm font-bold text-gray-900">
-          {record.height} cm
-        </Text>
-      </View>
-      <View className="mb-2 flex-row">
-        <Text className="flex-1 text-sm font-semibold text-gray-500">BMI</Text>
-        <Text className="flex-1 text-right text-sm font-bold text-gray-900">
-          {Number(record.bmi).toFixed(2)}
-        </Text>
-      </View>
-      <View className="mt-1 flex-row items-center">
-        <Text className="flex-1 text-sm font-semibold text-gray-500">Status</Text>
+    <View className="mb-3.5 rounded-2xl border border-gray-100 bg-gray-50/90 p-4">
+      {/* Header with Title and Nutritional Status Badge */}
+      <View className="mb-3 flex-row items-center justify-between">
+        <View>
+          <Text className="text-base font-bold text-gray-900">{title}</Text>
+          {formattedDate ? (
+            <Text className="text-[11px] font-medium text-gray-400 mt-0.5">
+              Assessed on {formattedDate}
+            </Text>
+          ) : null}
+        </View>
+
         <View
-          className={`rounded-full px-3 py-1 ${
-            isNormal ? "bg-emerald-100" : isOverweight ? "bg-orange-100" : "bg-red-100"
+          className={`rounded-full px-2.5 py-1 ${
+            isNormal
+              ? "bg-emerald-100 border border-emerald-200"
+              : isOverweight
+                ? "bg-amber-100 border border-amber-200"
+                : "bg-red-100 border border-red-200"
           }`}
         >
           <Text
-            className={`text-sm font-extrabold ${
-              isNormal ? "text-emerald-700" : isOverweight ? "text-orange-700" : "text-red-700"
+            className={`text-xs font-bold ${
+              isNormal
+                ? "text-emerald-800"
+                : isOverweight
+                  ? "text-amber-800"
+                  : "text-red-800"
             }`}
           >
             {record.nutritionalStatus}
+          </Text>
+        </View>
+      </View>
+
+      {/* 3 Glanceable Metric Tiles: Weight, Height, BMI */}
+      <View className="flex-row gap-2">
+        <View className="flex-1 rounded-xl bg-white p-2.5 items-center border border-gray-100 shadow-2xs">
+          <View className="flex-row items-center gap-1 mb-1">
+            <Scale size={12} color="#0284C7" />
+            <Text className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+              Weight
+            </Text>
+          </View>
+          <Text className="text-sm font-extrabold text-gray-900">
+            {record.weight} kg
+          </Text>
+        </View>
+
+        <View className="flex-1 rounded-xl bg-white p-2.5 items-center border border-gray-100 shadow-2xs">
+          <View className="flex-row items-center gap-1 mb-1">
+            <Ruler size={12} color="#4F46E5" />
+            <Text className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+              Height
+            </Text>
+          </View>
+          <Text className="text-sm font-extrabold text-gray-900">
+            {record.height} cm
+          </Text>
+        </View>
+
+        <View className="flex-1 rounded-xl bg-white p-2.5 items-center border border-gray-100 shadow-2xs">
+          <View className="flex-row items-center gap-1 mb-1">
+            <Sparkles size={12} color="#0D9488" />
+            <Text className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+              BMI
+            </Text>
+          </View>
+          <Text className="text-sm font-extrabold text-gray-900">
+            {Number(record.bmi).toFixed(1)}
           </Text>
         </View>
       </View>
@@ -245,9 +304,11 @@ function NutritionRecordCard({ title, record }: { title: string; record: any }) 
 function ParentNutritionSection({
   childId,
   schoolYear,
+  onOpenGrowthHistory,
 }: {
   childId: string;
   schoolYear?: string;
+  onOpenGrowthHistory: () => void;
 }) {
   const { data: history, isLoading } = useChildNutritionHistory(childId);
 
@@ -255,7 +316,7 @@ function ParentNutritionSection({
     return (
       <ProfileSection
         icon={<HeartPulse size={22} color="#047857" />}
-        title="Health Information"
+        title="Health & Nutrition"
         tone="emerald"
       >
         <View className="items-center py-6">
@@ -278,7 +339,7 @@ function ParentNutritionSection({
   return (
     <ProfileSection
       icon={<HeartPulse size={22} color="#047857" />}
-      title="Health Information"
+      title="Health & Nutrition"
       tone="emerald"
     >
       <View className="px-1 pt-2 pb-1">
@@ -298,6 +359,19 @@ function ParentNutritionSection({
             {finalRecord && (
               <NutritionRecordCard title="Final Assessment" record={finalRecord} />
             )}
+
+            {/* Quick Link to Growth Charts */}
+            <Pressable
+              onPress={onOpenGrowthHistory}
+              accessibilityRole="button"
+              accessibilityLabel="View full growth history"
+              className="mt-1 flex-row items-center justify-center rounded-xl bg-emerald-50/70 py-2.5 border border-emerald-100 active:bg-emerald-100"
+            >
+              <TrendingUp size={15} color="#047857" />
+              <Text className="ml-1.5 text-xs font-bold text-emerald-800">
+                View Full Growth Chart & History →
+              </Text>
+            </Pressable>
           </>
         )}
       </View>
@@ -497,55 +571,72 @@ export default function ParentChildrenScreen() {
               </View>
             ) : null}
             <View className="mb-4 overflow-hidden rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
-              <View className="flex-row items-start justify-between">
-                <View
-                  accessible
-                  accessibilityLabel={`${getFullName(selectedChild)}. ${getChildDetails(selectedChild)}. ${enrollmentStatus?.label}`}
-                  className="flex-1 pr-3"
-                >
-                  <Text
-                    className="text-2xl font-black leading-8 text-gray-900"
-                    numberOfLines={2}
-                    accessibilityRole="header"
-                  >
-                    {getFullName(selectedChild)}
-                  </Text>
-                  <View className="mt-2 flex-row flex-wrap items-center gap-2">
-                    <Text className="text-base font-semibold text-gray-500">
-                      {getChildDetails(selectedChild)}
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center flex-1 pr-2 gap-3">
+                  {/* Child Avatar Initials */}
+                  <View className="h-12 w-12 items-center justify-center rounded-2xl bg-teal-100 border border-teal-200">
+                    <Text className="text-lg font-black text-teal-800">
+                      {selectedChild.firstName?.[0] || ""}{selectedChild.lastName?.[0] || ""}
                     </Text>
-                    <View
-                      className={`flex-row items-center rounded-full px-3 py-1 ${
-                        enrollmentStatus?.isActive
-                          ? "bg-emerald-50"
-                          : "bg-gray-100"
-                      }`}
+                  </View>
+
+                  <View
+                    accessible
+                    accessibilityLabel={`${getFullName(selectedChild)}. ${getChildDetails(selectedChild)}. ${enrollmentStatus?.label}`}
+                    className="flex-1"
+                  >
+                    <Text
+                      className="text-xl font-black leading-7 text-gray-900"
+                      numberOfLines={1}
+                      accessibilityRole="header"
                     >
-                      {enrollmentStatus?.isActive ? (
-                        <CircleCheck size={16} color="#047857" />
-                      ) : null}
-                      <Text
-                        className={`text-base font-extrabold ${
-                          enrollmentStatus?.isActive
-                            ? "ml-1 text-emerald-700"
-                            : "text-gray-600"
-                        }`}
-                      >
-                        {enrollmentStatus?.label}
+                      {getFullName(selectedChild)}
+                    </Text>
+                    <View className="mt-0.5 flex-row items-center">
+                      <Text className="text-xs font-semibold text-gray-500">
+                        {getChildDetails(selectedChild)}
                       </Text>
                     </View>
                   </View>
                 </View>
+
+                {/* Enrollment status badge */}
+                <View
+                  className={`flex-row items-center rounded-full px-3 py-1 ${
+                    enrollmentStatus?.isActive
+                      ? "bg-emerald-50 border border-emerald-200"
+                      : "bg-gray-100 border border-gray-200"
+                  }`}
+                >
+                  <View
+                    className={`mr-1.5 h-2 w-2 rounded-full ${
+                      enrollmentStatus?.isActive ? "bg-emerald-500" : "bg-gray-400"
+                    }`}
+                  />
+                  <Text
+                    className={`text-xs font-bold ${
+                      enrollmentStatus?.isActive
+                        ? "text-emerald-700"
+                        : "text-gray-600"
+                    }`}
+                  >
+                    {enrollmentStatus?.label}
+                  </Text>
+                </View>
               </View>
 
-              <View className="mt-4 border-t border-gray-100 pt-4">
-                <Text className="text-base font-extrabold text-gray-900">
+              {/* Today's Care Highlights */}
+              <View className="mt-4 rounded-2xl bg-gray-50/90 p-3.5 border border-gray-100">
+                <Text className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-2.5">
                   Today’s Care
                 </Text>
-                <View className="mt-3 flex-row items-stretch">
-                  <StatusPill label="Attendance" status={attendanceStatus} />
-                  <View className="mx-3 w-px self-stretch bg-gray-100" />
-                  <StatusPill label="Feeding" status={feedingStatus} />
+                <View className="flex-row items-stretch gap-2.5">
+                  <View className="flex-1 rounded-xl bg-white px-3 py-2.5 border border-gray-100 shadow-2xs">
+                    <StatusPill label="Attendance" status={attendanceStatus} />
+                  </View>
+                  <View className="flex-1 rounded-xl bg-white px-3 py-2.5 border border-gray-100 shadow-2xs">
+                    <StatusPill label="Feeding" status={feedingStatus} />
+                  </View>
                 </View>
               </View>
             </View>
@@ -565,16 +656,6 @@ export default function ParentChildrenScreen() {
               </Pressable>
 
               <Pressable
-                onPress={() => setShowGrowthHistory(true)}
-                className="flex-1 items-center justify-center rounded-2xl border border-emerald-100 bg-white p-4 shadow-sm active:bg-gray-50"
-              >
-                <View className="mb-2 h-12 w-12 items-center justify-center rounded-full bg-emerald-50">
-                  <TrendingUp size={24} color="#047857" />
-                </View>
-                <Text className="text-center text-xs font-bold text-gray-700">Growth</Text>
-              </Pressable>
-
-              <Pressable
                 onPress={() => setShowGuardians(true)}
                 className="flex-1 items-center justify-center rounded-2xl border border-sky-100 bg-white p-4 shadow-sm active:bg-gray-50"
               >
@@ -591,25 +672,48 @@ export default function ParentChildrenScreen() {
               title="School Information"
               tone="teal"
             >
-              <ProfileInfoRow
-                label="Program"
-                value={selectedChild.programType || NOT_PROVIDED}
-              />
-              <ProfileInfoRow
-                label="School Year"
-                value={selectedChild.schoolYear || NOT_PROVIDED}
-              />
-              <ProfileInfoRow
-                label="Teacher"
-                value={getTeacherFullName(selectedChild)}
-                showDivider={false}
-              />
+              <View className="pt-2">
+                {/* Program & School Year Badge Tile */}
+                <View className="mb-3 rounded-2xl bg-teal-50/50 p-4 border border-teal-100/70">
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-1 pr-2">
+                      <Text className="text-[11px] font-bold uppercase tracking-wider text-teal-800">
+                        Enrolled Program
+                      </Text>
+                      <Text className="text-base font-extrabold text-teal-950 mt-1">
+                        {selectedChild.programType || NOT_PROVIDED}
+                      </Text>
+                    </View>
+                    <View className="rounded-full bg-white px-3 py-1 border border-teal-100 shadow-2xs">
+                      <Text className="text-xs font-bold text-teal-800">
+                        SY {selectedChild.schoolYear || "—"}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Assigned Teacher Mini Row */}
+                <View className="rounded-2xl bg-gray-50/80 p-3.5 border border-gray-100 flex-row items-center justify-between">
+                  <View className="flex-row items-center gap-2.5">
+                    <View className="h-8 w-8 items-center justify-center rounded-xl bg-teal-100/60">
+                      <User size={16} color="#0D9488" />
+                    </View>
+                    <View>
+                      <Text className="text-[11px] font-medium text-gray-400">Class Teacher</Text>
+                      <Text className="text-sm font-semibold text-gray-800 mt-0.5">
+                        {getTeacherFullName(selectedChild)}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
             </ProfileSection>
 
             {/* ── Section 2: Health Information ── */}
             <ParentNutritionSection
               childId={selectedChild._id}
               schoolYear={selectedChild.schoolYear}
+              onOpenGrowthHistory={() => setShowGrowthHistory(true)}
             />
 
             {/* ── Section 3: Child Information ── */}
@@ -618,14 +722,97 @@ export default function ParentChildrenScreen() {
               title="Child Information"
               tone="teal"
             >
-              {childInformationRows.map((row, index) => (
-                <ProfileInfoRow
-                  key={row.label}
-                  label={row.label}
-                  value={row.value}
-                  showDivider={index < childInformationRows.length - 1}
-                />
-              ))}
+              <View className="pt-2">
+                {/* Metric Highlights */}
+                <View className="mb-3 flex-row gap-2">
+                  <View className="flex-1 rounded-2xl bg-teal-50/60 p-3 items-center border border-teal-100/60">
+                    <View className="flex-row items-center gap-1 mb-1">
+                      <BookOpen size={13} color="#0D9488" />
+                      <Text className="text-[11px] font-bold uppercase tracking-wider text-teal-700">
+                        Age
+                      </Text>
+                    </View>
+                    <Text className="text-base font-extrabold text-teal-950">
+                      {selectedChild.age ? `${selectedChild.age} yrs` : "—"}
+                    </Text>
+                  </View>
+
+                  <View className="flex-1 rounded-2xl bg-sky-50/60 p-3 items-center border border-sky-100/60">
+                    <View className="flex-row items-center gap-1 mb-1">
+                      <Scale size={13} color="#0284C7" />
+                      <Text className="text-[11px] font-bold uppercase tracking-wider text-sky-700">
+                        Weight
+                      </Text>
+                    </View>
+                    <Text className="text-base font-extrabold text-sky-950">
+                      {selectedChild.weight ? `${selectedChild.weight} kg` : "—"}
+                    </Text>
+                  </View>
+
+                  <View className="flex-1 rounded-2xl bg-indigo-50/60 p-3 items-center border border-indigo-100/60">
+                    <View className="flex-row items-center gap-1 mb-1">
+                      <Ruler size={13} color="#4F46E5" />
+                      <Text className="text-[11px] font-bold uppercase tracking-wider text-indigo-700">
+                        Height
+                      </Text>
+                    </View>
+                    <Text className="text-base font-extrabold text-indigo-950">
+                      {selectedChild.height ? `${selectedChild.height} cm` : "—"}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Vitals & Dates Micro-Card */}
+                <View className="mb-3 rounded-2xl bg-gray-50/80 p-3.5 border border-gray-100">
+                  <View className="mb-2 flex-row items-center justify-between">
+                    <View className="flex-row items-center gap-1.5">
+                      <Sparkles size={14} color="#0D9488" />
+                      <Text className="text-xs font-bold uppercase tracking-wider text-gray-500">
+                        Personal Details
+                      </Text>
+                    </View>
+                    {selectedChild.gender ? (
+                      <View className="rounded-full bg-teal-50 px-2.5 py-0.5 border border-teal-100">
+                        <Text className="text-[11px] font-bold text-teal-800">
+                          {toTitleCase(selectedChild.gender)}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
+
+                  <View className="flex-row justify-between pt-1">
+                    <View className="flex-1 pr-2">
+                      <Text className="text-[11px] font-medium text-gray-400">Date of Birth</Text>
+                      <Text className="text-sm font-semibold text-gray-800 mt-0.5">
+                        {selectedChild.dateOfBirth ? formatDate(selectedChild.dateOfBirth) : "Not provided"}
+                      </Text>
+                    </View>
+                    <View className="flex-1 pl-2">
+                      <Text className="text-[11px] font-medium text-gray-400">Enrolled On</Text>
+                      <Text className="text-sm font-semibold text-gray-800 mt-0.5">
+                        {formatDate(selectedChild.enrollmentDate)}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Home Address Card */}
+                <View className="rounded-2xl bg-gray-50/80 p-3.5 border border-gray-100">
+                  <View className="flex-row items-start gap-2.5">
+                    <View className="mt-0.5 h-6 w-6 items-center justify-center rounded-lg bg-teal-100/60">
+                      <MapPin size={14} color="#0D9488" />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-[11px] font-medium text-gray-400">
+                        Home Address
+                      </Text>
+                      <Text className="text-sm font-medium text-gray-800 mt-0.5 leading-5">
+                        {selectedChild.homeAddress?.trim() ? selectedChild.homeAddress : "No address provided"}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
             </ProfileSection>
 
             {/* ── Section 5: Teacher Contact ── */}
@@ -635,19 +822,46 @@ export default function ParentChildrenScreen() {
                 title="Teacher Contact"
                 tone="emerald"
               >
-                <ProfileInfoRow
-                  label="Email"
-                  value={selectedChild.teacher.email || "Not available"}
-                />
-                <ProfileInfoRow
-                  label="Contact Number"
-                  value={
-                    selectedChild.teacher.phone?.trim()
-                      ? selectedChild.teacher.phone
-                      : "Not available"
-                  }
-                  showDivider={false}
-                />
+                <View className="pt-2">
+                  <View className="rounded-2xl bg-emerald-50/40 p-4 border border-emerald-100/80 mb-3">
+                    <Text className="text-xs font-bold uppercase tracking-wider text-emerald-800">
+                      Assigned Teacher
+                    </Text>
+                    <Text className="text-base font-extrabold text-gray-900 mt-1">
+                      {getTeacherFullName(selectedChild)}
+                    </Text>
+                    <Text className="text-xs text-gray-500 mt-0.5">
+                      {selectedChild.teacher.email || "No email available"}
+                    </Text>
+                  </View>
+
+                  {/* Quick Contact Buttons */}
+                  <View className="flex-row gap-2.5">
+                    {selectedChild.teacher.phone?.trim() ? (
+                      <Pressable
+                        onPress={() => Linking.openURL(`tel:${selectedChild.teacher?.phone}`)}
+                        accessibilityRole="button"
+                        accessibilityLabel="Call Teacher"
+                        className="flex-1 flex-row items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 px-4 active:opacity-85"
+                      >
+                        <Phone size={16} color="white" />
+                        <Text className="text-sm font-bold text-white">Call Teacher</Text>
+                      </Pressable>
+                    ) : null}
+
+                    {selectedChild.teacher.email?.trim() ? (
+                      <Pressable
+                        onPress={() => Linking.openURL(`mailto:${selectedChild.teacher?.email}`)}
+                        accessibilityRole="button"
+                        accessibilityLabel="Email Teacher"
+                        className="flex-1 flex-row items-center justify-center gap-2 rounded-xl bg-white border border-gray-200 py-3 px-4 active:bg-gray-50"
+                      >
+                        <Mail size={16} color="#374151" />
+                        <Text className="text-sm font-bold text-gray-700">Email</Text>
+                      </Pressable>
+                    ) : null}
+                  </View>
+                </View>
               </ProfileSection>
             ) : (
               <ProfileSection
