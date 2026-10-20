@@ -23,7 +23,10 @@ import {
   readOfflineResource,
 } from "@/src/offline/offline-read";
 import { getManilaDateKey } from "@/src/utils/manila-date";
-import { sortChildrenByName } from "@/src/utils/child-name";
+import {
+  formatChildRosterName,
+  sortChildrenByName,
+} from "@/src/utils/child-name";
 import type { Child } from "@/src/api/api.types";
 
 interface ChildStatus {
@@ -261,7 +264,7 @@ export default function ChildScreen() {
                   const activeGuardians = (
                     child.authorizedPickupPersons || []
                   ).filter((g) => g.isActive !== false).length;
-                  const childName = `${child.firstName} ${child.middleName ? child.middleName + " " : ""}${child.lastName}`;
+                  const childName = formatChildRosterName(child);
 
                   return (
                     <SwipeableChildCard

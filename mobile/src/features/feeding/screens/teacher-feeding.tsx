@@ -21,6 +21,7 @@ import {
   SuccessFeedbackModal,
 } from "@/src/components/ui";
 import { useAndroidBackRoute } from "@/src/hooks/use-android-back-route";
+import { formatChildRosterName } from "@/src/utils/child-name";
 
 const FeedingChildRow = memo(function FeedingChildRow({
   child,
@@ -31,7 +32,7 @@ const FeedingChildRow = memo(function FeedingChildRow({
     <View
       className="mx-6 mb-3 flex-row items-center rounded-2xl border border-emerald-200 bg-white p-3 shadow-sm"
       accessible
-      accessibilityLabel={`${child.lastName}, ${child.firstName}, included as completed`}
+      accessibilityLabel={`${formatChildRosterName(child)}, included as completed`}
     >
       <View className="h-10 w-10 items-center justify-center rounded-full bg-slate-100">
         <Text className="font-bold text-slate-700">
@@ -43,8 +44,7 @@ const FeedingChildRow = memo(function FeedingChildRow({
         className="ml-3 min-w-0 flex-1 text-base font-bold text-gray-900"
         numberOfLines={2}
       >
-        {child.lastName}, {child.firstName}
-        {child.middleName ? ` ${child.middleName}` : ""}
+        {formatChildRosterName(child)}
       </Text>
       <View className="h-11 w-11 items-center justify-center rounded-xl bg-emerald-50">
         <CheckCircle2 size={24} color="#059669" />
