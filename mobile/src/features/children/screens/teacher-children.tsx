@@ -23,6 +23,7 @@ import {
   readOfflineResource,
 } from "@/src/offline/offline-read";
 import { getManilaDateKey } from "@/src/utils/manila-date";
+import { sortChildrenByName } from "@/src/utils/child-name";
 import type { Child } from "@/src/api/api.types";
 
 interface ChildStatus {
@@ -78,7 +79,10 @@ export default function ChildScreen() {
     },
   });
 
-  const children = useMemo(() => data?.children ?? [], [data?.children]);
+  const children = useMemo(
+    () => sortChildrenByName(data?.children ?? []),
+    [data?.children],
+  );
   const attendanceRecord = data?.attendanceRecord ?? null;
   const feedingRecord = data?.feedingRecord ?? null;
 

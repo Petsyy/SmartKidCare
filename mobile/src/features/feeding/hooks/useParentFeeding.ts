@@ -12,6 +12,7 @@ import {
   readOfflineMonth,
   readOfflineResource,
 } from "@/src/offline/offline-read";
+import { sortChildrenByName } from "@/src/utils/child-name";
 
 export type FeedingStatus = "Completed" | "Missed" | null;
 
@@ -53,7 +54,10 @@ export const useParentFeeding = () => {
             ),
     });
 
-  const children = childrenData;
+  const children = useMemo(
+    () => sortChildrenByName(childrenData),
+    [childrenData],
+  );
   const selectedChild = useMemo(
     () =>
       children.find((child) => child._id === selectedChildId) ??

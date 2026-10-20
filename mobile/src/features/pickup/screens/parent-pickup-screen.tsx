@@ -41,13 +41,14 @@ import {
   getActivePickupCode,
   savePickupCode,
 } from "../utils/pickup-code-storage";
+import { sortChildrenByName } from "@/src/utils/child-name";
 
 export function ParentPickupScreen() {
   const { user } = useAuth();
   const { isConnected, isInternetReachable, lastCompleteRecordSyncAt } =
     useOffline();
   const isOffline = !isConnected || !isInternetReachable;
-  const { data: children = [], isLoading: loadingChildren } = useQuery<Child[]>(
+  const { data: childrenData = [], isLoading: loadingChildren } = useQuery<Child[]>(
     {
       queryKey: ["parent", "my-children"],
       queryFn: () =>
@@ -58,6 +59,10 @@ export function ParentPickupScreen() {
         ),
       networkMode: "always",
     },
+  );
+  const children = React.useMemo(
+    () => sortChildrenByName(childrenData),
+    [childrenData],
   );
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
   const activeChildId = children.some((child) => child._id === selectedChildId)

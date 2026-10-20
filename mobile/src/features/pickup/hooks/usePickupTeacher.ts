@@ -10,6 +10,7 @@ import { useOffline } from "@/src/offline/offline-context";
 import { readOfflineResource, onlineWithOfflineFallback } from "@/src/offline/offline-read";
 import type { PickupEligibleChild } from "@/src/api/api.types";
 import { useMemo, useState } from "react";
+import { sortChildrenByName } from "@/src/utils/child-name";
 
 export const usePickupTeacher = () => {
   const queryClient = useQueryClient();
@@ -19,7 +20,7 @@ export const usePickupTeacher = () => {
   const [selectedChildIds, setSelectedChildIds] = useState<string[]>([]);
 
   const {
-    data: eligibleChildren = [],
+    data: eligibleChildrenData = [],
     isLoading,
     refetch,
   } = useQuery({
@@ -35,6 +36,11 @@ export const usePickupTeacher = () => {
     }),
     networkMode: "always",
   });
+
+  const eligibleChildren = useMemo(
+    () => sortChildrenByName(eligibleChildrenData),
+    [eligibleChildrenData],
+  );
 
   const verifyMutation = useMutation({
     mutationFn: ({

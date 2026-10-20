@@ -39,6 +39,7 @@ import {
   getUserFriendlyErrorMessage,
   reportHandledError,
 } from "@/src/lib/error-reporting";
+import { sortChildrenByName } from "@/src/utils/child-name";
 
 const foodMenuOptions = [
   "Sinigang, Adobo",
@@ -469,7 +470,10 @@ export const useTeacherFeeding = () => {
   }, [attendanceDateKey, data, user?.id]);
 
   const availableChildren = useMemo(
-    () => (attendancePrerequisiteMet || isReadOnly ? children : []),
+    () =>
+      attendancePrerequisiteMet || isReadOnly
+        ? sortChildrenByName(children)
+        : [],
     [attendancePrerequisiteMet, children, isReadOnly],
   );
 

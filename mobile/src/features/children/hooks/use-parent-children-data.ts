@@ -13,6 +13,7 @@ import {
   readOfflineResource,
 } from "@/src/offline/offline-read";
 import { getManilaDateKey } from "@/src/utils/manila-date";
+import { sortChildrenByName } from "@/src/utils/child-name";
 
 function getChildRecordStatus(
   record: any,
@@ -63,7 +64,7 @@ export const useParentChildrenData = () => {
   });
 
   const children: Child[] = useMemo(
-    () => data?.children ?? [],
+    () => sortChildrenByName(data?.children ?? []),
     [data?.children],
   );
   const todayAttendanceRecord = data?.todayAttendance ?? null;

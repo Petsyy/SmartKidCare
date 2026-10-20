@@ -31,6 +31,7 @@ import {
   formatManilaDateLabel,
   getManilaDateKey,
 } from "@/src/utils/manila-date";
+import { sortChildrenByName } from "@/src/utils/child-name";
 
 export type AttendanceStatus = AttendanceRecord["status"];
 export type ExcuseReason = NonNullable<AttendanceRecord["excuseReason"]>;
@@ -145,7 +146,7 @@ export const useTeacherAttendance = () => {
     },
   });
   const children = useMemo<Child[]>(
-    () => data?.childrenData ?? [],
+    () => sortChildrenByName(data?.childrenData ?? []),
     [data?.childrenData],
   );
 

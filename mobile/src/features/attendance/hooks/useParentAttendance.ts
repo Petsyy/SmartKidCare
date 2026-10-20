@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { useOffline } from "@/src/offline/offline-context";
 import { onlineWithOfflineFallback, readOfflineMonth, readOfflineResource } from "@/src/offline/offline-read";
+import { sortChildrenByName } from "@/src/utils/child-name";
 
 export type AttendanceStatus = "Present" | "Absent" | "Excused" | null;
 
@@ -52,7 +53,10 @@ export const useParentAttendance = () => {
     },
   });
 
-  const children = childrenData;
+  const children = useMemo(
+    () => sortChildrenByName(childrenData),
+    [childrenData],
+  );
   const selectedChild = useMemo(
     () =>
       children.find((child) => child._id === selectedChildId) ??

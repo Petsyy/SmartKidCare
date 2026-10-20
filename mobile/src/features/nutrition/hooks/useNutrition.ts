@@ -16,6 +16,7 @@ import {
 } from "@/src/offline/offline-read";
 import type { Child } from "@/src/api/api.types";
 import { getManilaDateKey } from "@/src/utils/manila-date";
+import { compareChildrenByName } from "@/src/utils/child-name";
 
 export const useMyClassNutrition = (
   schoolYear: string,
@@ -78,6 +79,10 @@ export const useMyClassNutrition = (
         },
       );
     },
+    select: (students) =>
+      [...students].sort((left, right) =>
+        compareChildrenByName(left.child, right.child),
+      ),
   });
 };
 
