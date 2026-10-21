@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import * as Crypto from "expo-crypto";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/src/hooks/use-auth";
 import { getChildren } from "@/src/api/teacher.api";
 import {
@@ -9,6 +10,7 @@ import {
   getAttendanceHistory,
   getFeedingForDate,
   getFeedingHistory,
+  submitFeeding,
   type FeedingRecord,
 } from "@/src/api/records.api";
 import type { Child, SubmitAttendanceData } from "@/src/api/api.types";
@@ -24,8 +26,8 @@ import { useTeacherUi } from "@/src/context/teacher-ui-context";
 import { useOffline } from "@/src/offline/offline-context";
 import {
   finalizeDraft,
+  deleteScopedDraft,
   getDraft,
-  getOutboxOperation,
   saveDraft,
   getOutboxByDate,
 } from "@/src/offline/offline-store";
@@ -81,10 +83,9 @@ const buildSnapshot = (
 
 export const useTeacherFeeding = () => {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const params = useLocalSearchParams();
   const { authState, isAuthenticated, user } = useAuth();
-  const { isConnected, isInternetReachable, synchronize, refreshPendingCount } =
+  const { isConnected, isInternetReachable, refreshPendingCount } =
     useOffline();
   const canReadFeeding =
     isAuthenticated || authState === "offlineAuthenticated";
@@ -597,58 +598,51 @@ export const useTeacherFeeding = () => {
         }),
       );
 
-      const draftPayload: FeedingDraftPayload = {
-        dateKey: attendanceDateKey,
-        foodServed: foodServed.trim(),
-        records: Object.fromEntries(
-          records.map((record) => [
-            record.child,
-            { status: record.status, notes: record.notes },
-          ]),
-        ),
-      };
-      const draft = await saveDraft({
-        userId: user.id,
-        recordType: "feeding",
-        dateKey: attendanceDateKey,
-        payload: draftPayload,
-      });
-      const operation = await finalizeDraft({
-        draft,
-        operationType: "feeding.create",
-        completePayload: {
+      if (!mustUseOfflineData && isAuthenticated) {
+        await submitFeeding({
+          clientOperationId: Crypto.randomUUID(),
           date: attendanceDateKey,
           foodServed: foodServed.trim(),
           records,
-        },
-      });
-      await refreshPendingCount();
-      await queryClient.invalidateQueries({
-        queryKey: mobileQueryKeys.teacherFeedingSetup(
-          attendanceDateKey,
-          presentChildrenIdsKey,
-          feedingDataSource,
-        ),
-      });
-      await queryClient.invalidateQueries({
-        queryKey: mobileQueryKeys.teacherFeedingDateStatuses(
-          todayDateKey,
-          feedingDataSource,
-        ),
-      });
-      setSavedSnapshot(snapshot);
-      setIsReadOnly(true);
-      Alert.alert(
-        "Queued for synchronization",
-        "Feeding is securely queued and will synchronize when SmartKidCare is open and connected.",
-      );
-      if (isConnected && isInternetReachable && isAuthenticated) {
-        await synchronize();
-        if (
-          (await getOutboxOperation(operation.clientOperationId)) === "synced"
-        ) {
-          setShowSuccessFeedback(true);
-        }
+        });
+        await deleteScopedDraft(user.id, "feeding", attendanceDateKey);
+        await refreshPendingCount();
+        setSavedSnapshot(snapshot);
+        setIsReadOnly(true);
+        setShowSuccessFeedback(true);
+      } else {
+        const draftPayload: FeedingDraftPayload = {
+          dateKey: attendanceDateKey,
+          foodServed: foodServed.trim(),
+          records: Object.fromEntries(
+            records.map((record) => [
+              record.child,
+              { status: record.status, notes: record.notes },
+            ]),
+          ),
+        };
+        const draft = await saveDraft({
+          userId: user.id,
+          recordType: "feeding",
+          dateKey: attendanceDateKey,
+          payload: draftPayload,
+        });
+        await finalizeDraft({
+          draft,
+          operationType: "feeding.create",
+          completePayload: {
+            date: attendanceDateKey,
+            foodServed: foodServed.trim(),
+            records,
+          },
+        });
+        await refreshPendingCount();
+        setSavedSnapshot(snapshot);
+        setIsReadOnly(true);
+        Alert.alert(
+          "Saved for synchronization",
+          "You are offline. Feeding is saved securely and will submit automatically when your connection returns.",
+        );
       }
     } finally {
       setIsSubmitting(false);
@@ -660,18 +654,12 @@ export const useTeacherFeeding = () => {
     feedingNotes,
     feedingStatus,
     foodServed,
-    feedingDataSource,
     isAuthenticated,
     isReadOnly,
     isSubmitting,
     user?.id,
     refreshPendingCount,
-    isConnected,
-    isInternetReachable,
-    presentChildrenIdsKey,
-    queryClient,
-    synchronize,
-    todayDateKey,
+    mustUseOfflineData,
   ]);
 
   const openAttendanceForSelectedDate = useCallback(() => {

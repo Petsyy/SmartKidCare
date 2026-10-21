@@ -4,7 +4,11 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Crypto from "expo-crypto";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getChildren } from "@/src/api/teacher.api";
-import { getAttendanceForDate, updateAttendance } from "@/src/api/records.api";
+import {
+  getAttendanceForDate,
+  submitAttendance,
+  updateAttendance,
+} from "@/src/api/records.api";
 import type { AttendanceRecord, Child } from "@/src/api/api.types";
 import { useAuth } from "@/src/hooks/use-auth";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
@@ -12,9 +16,9 @@ import { useTeacherUi } from "@/src/context/teacher-ui-context";
 import { useOffline } from "@/src/offline/offline-context";
 import {
   finalizeDraft,
+  deleteScopedDraft,
   getDraft,
   getOutboxByDate,
-  getOutboxOperation,
   saveDraft,
 } from "@/src/offline/offline-store";
 import type { AttendanceDraftPayload } from "@/src/offline/offline.types";
@@ -32,11 +36,45 @@ import {
   getManilaDateKey,
 } from "@/src/utils/manila-date";
 import { sortChildrenByName } from "@/src/utils/child-name";
+import { useSnackbar } from "@/src/components/ui/snackbar";
 
 export type AttendanceStatus = AttendanceRecord["status"];
 export type ExcuseReason = NonNullable<AttendanceRecord["excuseReason"]>;
 export type AttendanceFilter = "all" | "unmarked" | AttendanceStatus;
 export type AttendanceSelection = Omit<AttendanceRecord, "child">;
+
+export const applyAttendanceSelection = (
+  current: Record<string, AttendanceSelection | undefined>,
+  childId: string,
+  selection: AttendanceSelection,
+) => ({ ...current, [childId]: selection });
+
+export const applyMarkAllUnmarkedPresent = (
+  current: Record<string, AttendanceSelection | undefined>,
+  childIds: string[],
+) => {
+  const changedChildIds = childIds.filter(
+    (childId) => !current[childId]?.status,
+  );
+  const attendance = { ...current };
+  changedChildIds.forEach((childId) => {
+    attendance[childId] = { status: "present" };
+  });
+  return { attendance, changedChildIds };
+};
+
+export const undoMarkAllUnmarkedPresent = (
+  current: Record<string, AttendanceSelection | undefined>,
+  changedChildIds: string[],
+) => {
+  const attendance = { ...current };
+  changedChildIds.forEach((childId) => {
+    if (attendance[childId]?.status === "present") {
+      attendance[childId] = undefined;
+    }
+  });
+  return attendance;
+};
 
 const toDraftRecords = (
   attendance: Record<string, AttendanceSelection | undefined>,
@@ -53,7 +91,8 @@ export const useTeacherAttendance = () => {
   const params = useLocalSearchParams();
   const queryClient = useQueryClient();
   const { authState, isAuthenticated, user } = useAuth();
-  const { isConnected, isInternetReachable, synchronize, refreshPendingCount } =
+  const { showSnackbar } = useSnackbar();
+  const { isConnected, isInternetReachable, refreshPendingCount } =
     useOffline();
   const isOffline =
     authState === "offlineAuthenticated" ||
@@ -166,6 +205,7 @@ export const useTeacherAttendance = () => {
         });
         await Promise.resolve();
         if (cancelled) return;
+        attendanceRef.current = hydrated;
         setAttendance(hydrated);
         setOriginalAttendance(hydrated);
         setIsReadOnly(true);
@@ -188,6 +228,7 @@ export const useTeacherAttendance = () => {
         });
       }
       if (cancelled) return;
+      attendanceRef.current = neutral;
       setAttendance(neutral);
       setOriginalAttendance(neutral);
       setIsReadOnly(false);
@@ -288,26 +329,63 @@ export const useTeacherAttendance = () => {
         });
         return;
       }
-      setAttendance((current) => ({ ...current, [childId]: { status } }));
+      const nextAttendance = applyAttendanceSelection(
+        attendanceRef.current,
+        childId,
+        { status },
+      );
+      attendanceRef.current = nextAttendance;
+      setAttendance(nextAttendance);
     },
     [editable],
   );
+
+  const markAllUnmarkedPresent = useCallback(() => {
+    if (!editable) return;
+
+    const { attendance: nextAttendance, changedChildIds } =
+      applyMarkAllUnmarkedPresent(
+        attendanceRef.current,
+        children.map((child) => child._id),
+      );
+    if (changedChildIds.length === 0) return;
+
+    attendanceRef.current = nextAttendance;
+    setAttendance(nextAttendance);
+
+    showSnackbar({
+      message: `${changedChildIds.length} ${changedChildIds.length === 1 ? "child" : "children"} marked Present`,
+      actionLabel: "Undo",
+      variant: "brand",
+      onAction: () => {
+        const restoredAttendance = undoMarkAllUnmarkedPresent(
+          attendanceRef.current,
+          changedChildIds,
+        );
+        attendanceRef.current = restoredAttendance;
+        setAttendance(restoredAttendance);
+      },
+    });
+  }, [children, editable, showSnackbar]);
 
   const confirmExcused = () => {
     if (!excuseEditor?.reason) return false;
     if (excuseEditor.reason === "other" && !excuseEditor.notes.trim()) {
       return false;
     }
-    setAttendance((current) => ({
-      ...current,
-      [excuseEditor.childId]: {
+    const nextAttendance = applyAttendanceSelection(
+      attendanceRef.current,
+      excuseEditor.childId,
+      {
         status: "excused",
         excuseReason: excuseEditor.reason!,
         ...(excuseEditor.notes.trim()
           ? { notes: excuseEditor.notes.trim() }
           : {}),
       },
-    }));
+    );
+    attendanceRef.current = nextAttendance;
+    setAttendance(nextAttendance);
     setExcuseEditor(null);
     return true;
   };
@@ -354,35 +432,39 @@ export const useTeacherAttendance = () => {
         setShowSuccessFeedback(true);
         return;
       }
-      const draft = await saveDraft({
-        userId: user.id,
-        recordType: "attendance",
-        dateKey: selectedDateKey,
-        payload: {
+      if (!isOffline && isAuthenticated) {
+        await submitAttendance({
+          clientOperationId: Crypto.randomUUID(),
+          date: selectedDateKey,
+          records,
+        });
+        await deleteScopedDraft(user.id, "attendance", selectedDateKey);
+        await refreshPendingCount();
+        setIsReadOnly(true);
+        setOriginalAttendance(attendance);
+        setSuccessWasEdit(false);
+        setShowSuccessFeedback(true);
+      } else {
+        const draft = await saveDraft({
+          userId: user.id,
+          recordType: "attendance",
           dateKey: selectedDateKey,
-          records: toDraftRecords(attendance),
-        },
-      });
-      const operation = await finalizeDraft({
-        draft,
-        operationType: "attendance.create",
-        completePayload: { date: selectedDateKey, records },
-      });
-      await refreshPendingCount();
-      setIsReadOnly(true);
-      Alert.alert(
-        "Queued for synchronization",
-        "Attendance is securely queued and will synchronize when SmartKidCare is open and connected.",
-      );
-      if (isConnected && isInternetReachable && isAuthenticated) {
-        await synchronize();
-        if (
-          (await getOutboxOperation(operation.clientOperationId)) === "synced"
-        ) {
-          await invalidateAttendanceQueries();
-          setSuccessWasEdit(false);
-          setShowSuccessFeedback(true);
-        }
+          payload: {
+            dateKey: selectedDateKey,
+            records: toDraftRecords(attendance),
+          },
+        });
+        await finalizeDraft({
+          draft,
+          operationType: "attendance.create",
+          completePayload: { date: selectedDateKey, records },
+        });
+        await refreshPendingCount();
+        setIsReadOnly(true);
+        Alert.alert(
+          "Saved for synchronization",
+          "You are offline. Attendance is saved securely and will submit automatically when your connection returns.",
+        );
       }
       if (returnToFeeding) {
         router.replace({
@@ -450,6 +532,7 @@ export const useTeacherAttendance = () => {
     filter,
     setFilter,
     setStatus,
+    markAllUnmarkedPresent,
     excuseEditor,
     setExcuseEditor,
     confirmExcused,
@@ -465,6 +548,7 @@ export const useTeacherAttendance = () => {
       setIsEditing(true);
     },
     cancelEditing: () => {
+      attendanceRef.current = originalAttendance;
       setAttendance(originalAttendance);
       setIsEditing(false);
     },
