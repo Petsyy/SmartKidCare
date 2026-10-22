@@ -6,6 +6,7 @@ interface SnackbarOptions {
   actionLabel?: string;
   onAction?: () => void | Promise<void>;
   duration?: number;
+  variant?: "default" | "brand";
 }
 
 interface SnackbarContextValue {
@@ -42,7 +43,9 @@ export function SnackbarProvider({ children }: { children: React.ReactNode }) {
     <SnackbarContext.Provider value={{ showSnackbar, dismissSnackbar }}>
       {children}
       {snackbar ? (
-        <View className="absolute bottom-24 left-4 right-4 z-50 flex-row items-center rounded-2xl bg-gray-900 px-4 py-3 shadow-lg">
+        <View
+          className={`absolute bottom-24 left-4 right-4 z-50 flex-row items-center rounded-2xl px-4 py-3 shadow-lg ${snackbar.variant === "brand" ? "bg-teal-700" : "bg-gray-900"}`}
+        >
           <Text className="flex-1 text-base font-medium text-white">{snackbar.message}</Text>
           {snackbar.actionLabel ? (
             <Pressable
@@ -50,12 +53,17 @@ export function SnackbarProvider({ children }: { children: React.ReactNode }) {
               accessibilityLabel={snackbar.actionLabel}
               onPress={async () => {
                 const action = snackbar.onAction;
+                const actionResult = action?.();
                 dismissSnackbar();
-                await action?.();
+                await actionResult;
               }}
               className="min-h-11 justify-center px-3"
             >
-              <Text className="font-bold text-teal-300">{snackbar.actionLabel}</Text>
+              <Text
+                className={`font-bold ${snackbar.variant === "brand" ? "text-white" : "text-teal-300"}`}
+              >
+                {snackbar.actionLabel}
+              </Text>
             </Pressable>
           ) : null}
         </View>

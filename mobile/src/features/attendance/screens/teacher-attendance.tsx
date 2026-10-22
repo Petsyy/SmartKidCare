@@ -4,13 +4,15 @@ import {
   FlatList,
   Modal,
   Pressable,
+  ScrollView,
   Text,
   TextInput,
   View,
 } from "react-native";
 import { memo, useCallback } from "react";
-import { Users } from "lucide-react-native";
+import { Check, CheckCircle2, Users } from "lucide-react-native";
 import type { Child } from "@/src/api/api.types";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AttendanceDatePicker } from "@/src/features/attendance/components/attendance-date-picker";
 import {
   type AttendanceFilter,
@@ -106,7 +108,7 @@ const AttendanceChildRow = memo(function AttendanceChildRow({
                 className={`h-11 w-11 items-center justify-center rounded-xl border ${selected ? style.selected : "border-gray-300 bg-white"} ${!editable ? "opacity-60" : ""}`}
               >
                 <Text
-                  className={`text-lg font-extrabold ${selected ? "text-white" : "text-gray-700"}`}
+                  className={`text-base font-extrabold ${selected ? "text-white" : "text-gray-700"}`}
                 >
                   {style.letter}
                 </Text>
@@ -121,49 +123,30 @@ const AttendanceChildRow = memo(function AttendanceChildRow({
 
 export default function RecordAttendance() {
   const state = useTeacherAttendance();
+  const insets = useSafeAreaInsets();
   useAndroidBackRoute(state.backRoute);
-  const attendanceRate =
-    state.stats.present + state.stats.absent > 0
-      ? Math.round(
-          (state.stats.present / (state.stats.present + state.stats.absent)) *
-            100,
-        )
-      : null;
+  const markedCount =
+    state.stats.present + state.stats.absent + state.stats.excused;
+  const markedPercentage =
+    state.stats.total > 0
+      ? Math.round((markedCount / state.stats.total) * 100)
+      : 0;
   const filters: { value: AttendanceFilter; label: string }[] = [
     { value: "all", label: "All" },
-    { value: "unmarked", label: "Unmarked" },
-    { value: "present", label: "P" },
-    { value: "absent", label: "A" },
-    { value: "excused", label: "E" },
+    { value: "unmarked", label: `Unmarked ${state.stats.unmarked}` },
+    { value: "present", label: "Present" },
+    { value: "absent", label: "Absent" },
+    { value: "excused", label: "Excused" },
   ];
-  const handlePrimaryAction = () => {
-    if (state.stats.unmarked > 0) {
-      Alert.alert(
-        "Attendance Incomplete",
-        `${state.stats.unmarked} ${state.stats.unmarked === 1 ? "child still needs" : "children still need"} an attendance status.`,
-        [
-          { text: "Not Now", style: "cancel" },
-          {
-            text: "Review Unmarked",
-            onPress: () => state.setFilter("unmarked"),
-          },
-        ],
-      );
-      return;
-    }
-
+  const confirmQuickAttendance = () => {
     Alert.alert(
-      state.isEditing ? "Save Attendance Changes" : "Finalize Attendance",
-      state.isEditing
-        ? state.changeSummary.length
-          ? `Confirm these changes:\n\n${state.changeSummary.slice(0, 6).join("\n")}${state.changeSummary.length > 6 ? `\n…and ${state.changeSummary.length - 6} more` : ""}`
-          : "No attendance status changes were made."
-        : `Finalize attendance with ${state.stats.present} present, ${state.stats.absent} absent, and ${state.stats.excused} excused?`,
+      "Mark unmarked children Present?",
+      `This will mark all ${state.stats.unmarked} unmarked ${state.stats.unmarked === 1 ? "child" : "children"} in the class as Present. Existing statuses will not change.`,
       [
         { text: "Cancel", style: "cancel" },
         {
-          text: state.isEditing ? "Save Changes" : "Finalize",
-          onPress: () => void state.handleSubmit(),
+          text: "Mark Present",
+          onPress: state.markAllUnmarkedPresent,
         },
       ],
     );
@@ -177,9 +160,9 @@ export default function RecordAttendance() {
         disabled={state.isEditing}
       />
 
-      <View className="px-6 pb-4 pt-2">
+      <View className="pb-4 pt-2">
         {state.isReadOnly ? (
-          <View className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+          <View className="mx-6 mb-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
             <Text className="text-base font-bold text-emerald-900">
               {state.isEditing
                 ? "Editing finalized attendance"
@@ -205,119 +188,150 @@ export default function RecordAttendance() {
           </View>
         ) : null}
 
-        <View className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
-          <View className="flex-row items-start justify-between">
-            <View className="flex-1 pr-4">
+        <View className="mx-6 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+          <View className="flex-row items-center justify-between">
+            <View className="flex-1 pr-3">
               <Text
-                className="text-xl font-extrabold text-gray-900"
+                className="text-lg font-extrabold text-gray-900"
                 accessibilityRole="header"
               >
                 Attendance overview
               </Text>
-              <Text className="mt-1 text-base text-gray-600">
-                {attendanceRate === null
-                  ? "Start marking the class below"
-                  : `${attendanceRate}% present among P and A records`}
+              <Text className="mt-0.5 text-sm text-gray-600">
+                {markedCount} of {state.stats.total} children marked
               </Text>
             </View>
-            <View className="h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
-              <Text className="text-2xl font-extrabold text-slate-800">
-                {state.stats.total}
+            <View className="items-end">
+              <Text className="text-2xl font-extrabold text-teal-700">
+                {markedPercentage}%
               </Text>
-              <Text className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Total
+              <Text className="text-xs font-semibold text-gray-500">
+                complete
               </Text>
             </View>
           </View>
-          <View className="mt-5 h-3 overflow-hidden rounded-full bg-gray-200">
+          <View className="mt-3 h-2 overflow-hidden rounded-full bg-gray-200">
             <View
               className="h-full rounded-full bg-emerald-600"
-              style={{ width: `${attendanceRate ?? 0}%` as `${number}%` }}
+              style={{ width: `${markedPercentage}%` as `${number}%` }}
             />
           </View>
-          <View className="mt-4 flex-row gap-2">
+          <View className="mt-3 flex-row gap-2">
             {[
-              [
-                "P",
-                "Present",
-                state.stats.present,
-                "bg-emerald-50",
-                "text-emerald-800",
-              ],
-              ["A", "Absent", state.stats.absent, "bg-red-50", "text-red-800"],
-              [
-                "E",
-                "Excused",
-                state.stats.excused,
-                "bg-amber-50",
-                "text-amber-800",
-              ],
-            ].map(([letter, label, value, background, color]) => (
+              ["Present", state.stats.present, "bg-emerald-50", "text-emerald-800"],
+              ["Absent", state.stats.absent, "bg-red-50", "text-red-800"],
+              ["Excused", state.stats.excused, "bg-amber-50", "text-amber-800"],
+            ].map(([label, value, background, color]) => (
               <View
                 key={String(label)}
-                className={`flex-1 rounded-2xl px-3 py-3 ${background}`}
+                className={`flex-1 rounded-xl px-3 py-2.5 ${background}`}
               >
-                <Text className={`text-xl font-extrabold ${color}`}>
+                <Text className={`text-lg font-extrabold ${color}`}>
                   {value}
                 </Text>
-                <Text className={`text-xs font-semibold ${color}`}>
-                  {letter} · {label}
+                <Text className={`text-xs font-semibold ${color}`} numberOfLines={1}>
+                  {label}
                 </Text>
               </View>
             ))}
           </View>
-          <Text
-            className={`mt-3 text-sm font-semibold ${state.stats.unmarked > 0 ? "text-amber-700" : "text-emerald-700"}`}
+          <Pressable
+            onPress={() => state.setFilter("unmarked")}
+            disabled={state.stats.unmarked === 0}
+            accessibilityRole="button"
+            accessibilityLabel={`${state.stats.unmarked} unmarked children. Show unmarked children.`}
+            accessibilityState={{ disabled: state.stats.unmarked === 0 }}
+            className={`mt-3 min-h-11 flex-row items-center justify-between rounded-xl px-3 ${state.stats.unmarked > 0 ? "bg-amber-50" : "bg-emerald-50"}`}
             accessibilityLiveRegion="polite"
           >
-            {state.stats.unmarked > 0
-              ? `${state.stats.unmarked} still unmarked`
-              : "All children have an attendance status"}
-          </Text>
+            <Text className={`text-sm font-bold ${state.stats.unmarked > 0 ? "text-amber-800" : "text-emerald-800"}`}>
+              {state.stats.unmarked > 0
+                ? `${state.stats.unmarked} still need a status`
+                : "All children are marked"}
+            </Text>
+            {state.stats.unmarked > 0 ? (
+              <Text className="text-sm font-bold text-amber-800">Review</Text>
+            ) : (
+              <CheckCircle2 size={18} color="#047857" />
+            )}
+          </Pressable>
         </View>
 
-        <View className="mt-4 flex-row flex-wrap gap-2">
-          {filters.map((item) => (
-            <Pressable
-              key={item.value}
-              onPress={() => state.setFilter(item.value)}
-              accessibilityRole="button"
-              accessibilityLabel={
-                item.value === "unmarked"
-                  ? `Show unmarked children, ${state.stats.unmarked} remaining`
-                  : `Filter attendance by ${item.label}`
-              }
-              accessibilityState={{ selected: state.filter === item.value }}
-              className={`min-h-11 justify-center rounded-full border px-4 ${
-                state.filter === item.value
-                  ? "border-teal-700 bg-teal-700"
-                  : item.value === "unmarked" && state.stats.unmarked > 0
-                    ? "border-amber-400 bg-amber-50"
-                    : "border-gray-300 bg-white"
-              }`}
-            >
-              <Text
-                className={`font-semibold ${state.filter === item.value ? "text-white" : "text-gray-700"}`}
-              >
-                {item.label}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-        <View className="mt-5">
-          <Text
-            className="text-xl font-extrabold text-gray-900"
-            accessibilityRole="header"
-          >
-            Class list
-          </Text>
-        </View>
         <SearchBar
           value={state.searchQuery}
           onChangeText={state.setSearchQuery}
           placeholder="Search by child name"
-          containerClassName="mb-1 mt-4"
+          containerClassName="mx-6 mb-2 mt-4"
         />
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerClassName="gap-2 px-6"
+          accessibilityRole="tablist"
+        >
+          {filters.map((item) => {
+            const selected = state.filter === item.value;
+            return (
+              <Pressable
+                key={item.value}
+                onPress={() => state.setFilter(item.value)}
+                accessibilityRole="tab"
+                accessibilityLabel={`Filter attendance by ${item.label}`}
+                accessibilityState={{ selected }}
+                className={`min-h-11 justify-center rounded-full border px-4 ${
+                  selected
+                    ? "border-teal-700 bg-teal-700"
+                    : item.value === "unmarked" && state.stats.unmarked > 0
+                      ? "border-amber-400 bg-amber-50"
+                      : "border-gray-300 bg-white"
+                }`}
+              >
+                <Text className={`font-semibold ${selected ? "text-white" : "text-gray-700"}`}>
+                  {item.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+
+        {state.editable && state.stats.unmarked > 0 ? (
+          <View className="mx-6 mt-4 rounded-2xl border border-teal-200 bg-teal-50 p-4">
+            <View className="flex-row items-center">
+              <View className="flex-1">
+                <Text className="text-base font-extrabold text-teal-950">Quick attendance</Text>
+                <Text className="mt-0.5 text-sm text-teal-800">
+                  Existing statuses will not be changed.
+                </Text>
+              </View>
+            </View>
+            <Pressable
+              onPress={confirmQuickAttendance}
+              accessibilityRole="button"
+              accessibilityLabel={`Mark ${state.stats.unmarked} unmarked children as Present`}
+              className="mt-3 min-h-12 flex-row items-center justify-center rounded-xl bg-teal-700 px-4 active:opacity-90"
+            >
+              <Check size={18} color="#FFFFFF" />
+              <Text className="ml-2 text-center font-bold text-white">
+                Mark {state.stats.unmarked} Unmarked as Present
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        <View className="mx-6 mt-5 flex-row items-end justify-between">
+          <View>
+            <Text className="text-xl font-extrabold text-gray-900" accessibilityRole="header">
+              {state.filter === "unmarked"
+                ? `Needs attention (${state.stats.unmarked})`
+                : "Class list"}
+            </Text>
+            <Text className="mt-0.5 text-sm text-gray-500">
+              Showing {state.filteredChildren.length} of {state.stats.total} children
+            </Text>
+          </View>
+          <Text className="text-sm font-semibold text-gray-500">A–Z</Text>
+        </View>
       </View>
     </View>
   );
@@ -372,7 +386,9 @@ export default function RecordAttendance() {
             </Text>
           </View>
         }
-        contentContainerStyle={{ paddingBottom: state.editable ? 112 : 24 }}
+        contentContainerStyle={{
+          paddingBottom: state.editable ? 104 + insets.bottom : 24,
+        }}
         keyboardDismissMode="on-drag"
         removeClippedSubviews
         initialNumToRender={12}
@@ -382,7 +398,10 @@ export default function RecordAttendance() {
       />
 
       {state.editable ? (
-        <View className="absolute bottom-0 left-0 right-0 flex-row gap-3 border-t border-gray-200 bg-white/95 px-6 py-4">
+        <View
+          className="absolute bottom-0 left-0 right-0 flex-row gap-3 border-t border-gray-200 bg-white/95 px-6 pt-4 shadow-lg"
+          style={{ paddingBottom: Math.max(insets.bottom, 16) }}
+        >
           {state.isEditing ? (
             <Pressable
               onPress={state.cancelEditing}
@@ -410,7 +429,7 @@ export default function RecordAttendance() {
           <Pressable
             onPress={() => {
               if (state.stats.unmarked > 0) {
-                handlePrimaryAction();
+                state.setFilter("unmarked");
                 return;
               }
               Alert.alert(
@@ -433,7 +452,9 @@ export default function RecordAttendance() {
             }}
             disabled={
               state.isSubmitting ||
-              (state.isEditing && state.changeSummary.length === 0)
+              (state.stats.unmarked === 0 &&
+                state.isEditing &&
+                state.changeSummary.length === 0)
             }
             accessibilityRole="button"
             accessibilityLabel={
@@ -451,21 +472,23 @@ export default function RecordAttendance() {
             accessibilityState={{
               disabled:
                 state.isSubmitting ||
-                (state.isEditing && state.changeSummary.length === 0),
+                (state.stats.unmarked === 0 &&
+                  state.isEditing &&
+                  state.changeSummary.length === 0),
               busy: state.isSubmitting,
             }}
-            className={`min-h-14 flex-[1.65] items-center justify-center rounded-2xl px-3 ${state.isEditing && state.changeSummary.length === 0 ? "bg-gray-300" : state.stats.unmarked > 0 ? "bg-amber-500" : "bg-emerald-600"}`}
+            className={`min-h-14 flex-[1.65] items-center justify-center rounded-2xl px-3 ${state.stats.unmarked > 0 ? "bg-amber-500" : state.isEditing && state.changeSummary.length === 0 ? "bg-gray-300" : "bg-emerald-600"}`}
           >
             {state.isSubmitting ? (
               <ActivityIndicator color="white" />
             ) : (
               <Text className="text-center text-base font-bold text-white">
-                {state.isEditing
-                  ? state.changeSummary.length
-                    ? "Save Changes"
-                    : "No Changes"
-                  : state.stats.unmarked > 0
-                    ? `Review ${state.stats.unmarked} Unmarked`
+                {state.stats.unmarked > 0
+                  ? `Review ${state.stats.unmarked} Unmarked`
+                  : state.isEditing
+                    ? state.changeSummary.length
+                      ? "Save Changes"
+                      : "No Changes"
                     : "Finalize Attendance"}
               </Text>
             )}
@@ -544,7 +567,7 @@ export default function RecordAttendance() {
                 className="min-h-12 flex-1 items-center justify-center rounded-xl bg-amber-500"
                 accessibilityRole="button"
               >
-                <Text className="font-bold text-white">Apply E</Text>
+                <Text className="font-bold text-white">Apply</Text>
               </Pressable>
             </View>
           </View>
