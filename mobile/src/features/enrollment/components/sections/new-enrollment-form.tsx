@@ -1,14 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
-import {
-  Alert,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { ScrollView, View } from "react-native";
 import { ChildInfoStepSection } from "./child-info-step-section";
 import { ChildHealthEnrollmentStepSection } from "./child-health-enrollment-step-section";
 import { DocumentsStepSection } from "./documents-step-section";
@@ -16,27 +6,22 @@ import { EnrollmentStartState } from "./enrollment-start-state";
 import { ParentInfoStepSection } from "./parent-info-step-section";
 import { ReviewSubmitStepSection } from "./review-submit-step-section";
 import {
+  EnrollmentDatePickerModal,
+  EnrollmentStepFooter,
   ParentCredentialsModal,
   StepProgress,
 } from "@/src/features/enrollment/components/ui";
-import {
-  displayDate,
-  formatYmd,
-} from "@/src/features/enrollment/utils/enrollment-utils";
-import { enrollFieldStyles } from "@/src/features/enrollment/styles";
-import {
-  useEnrollmentForm,
-  useEnrollmentCenters,
-  useDatePicker,
-  useDocumentPicker,
-  useEnrollmentSubmit,
-} from "@/src/features/enrollment/hooks";
-import {
-  getVerificationDisplay,
-  useDocumentVerification,
-} from "@/src/features/documents/hooks";
-import type { Step } from "@/src/features/enrollment/types";
-import { getDaycareCenterDisplay } from "@/src/utils/daycare-center-format";
+import { useNewEnrollmentWorkflow } from "@/src/features/enrollment/hooks";
+import { getVerificationDisplay } from "@/src/features/documents/hooks";
+
+interface NewEnrollmentFormProps {
+  hasStarted: boolean;
+  setHasStarted: (val: boolean) => void;
+  onSubmissionSuccess: () => void;
+  contentPadding?: number;
+  contentMaxWidth?: number;
+  isWide?: boolean;
+}
 
 export function NewEnrollmentForm({
   hasStarted,
@@ -45,175 +30,29 @@ export function NewEnrollmentForm({
   contentPadding,
   contentMaxWidth,
   isWide,
-}: {
-  hasStarted: boolean;
-  setHasStarted: (val: boolean) => void;
-  onSubmissionSuccess: () => void;
-  contentPadding?: number;
-  contentMaxWidth?: number;
-  isWide?: boolean;
-}) {
-  const form = useEnrollmentForm();
-  const centers = useEnrollmentCenters();
-  const currentCenterId = form.daycareCenterId;
-  const setAssignedCenterId = form.setDaycareCenterId;
-  const datePicker = useDatePicker(
-    form.dateOfBirth,
-    form.enrollmentDate,
-    form.minDateOfBirth,
-    form.maxDateOfBirth,
-    (field, date) => {
-      if (field === "dateOfBirth") {
-        form.setDateOfBirth(date);
-      } else {
-        form.setEnrollmentDate(date);
-      }
-    },
-  );
-  const { pickDocument } = useDocumentPicker();
-  const documentVerification = useDocumentVerification();
-  const clearDocumentVerification = documentVerification.clear;
-  const [step, setStep] = useState<Step>(1);
-  const [credentialsModal, setCredentialsModal] = useState<{
-    visible: boolean;
-    email: string;
-    tempPassword?: string | null;
-  } | null>(null);
-
-  const resetForm = () => {
-    form.resetForm();
-    clearDocumentVerification("birthCertificate");
-    clearDocumentVerification("parentId");
-    setHasStarted(false);
-    setStep(1);
-  };
-
-  const { isSubmitting, submitEnrollment } = useEnrollmentSubmit(
-    (credentials) => {
-      setCredentialsModal({
-        visible: true,
-        email: credentials.email,
-        tempPassword: credentials.tempPassword,
-      });
-    },
-  );
-
-  const handleModalClose = () => {
-    setCredentialsModal(null);
-    resetForm();
-    onSubmissionSuccess();
-  };
-
-  // Enrollment is always scoped to the teacher's single assigned center.
-  useEffect(() => {
-    if (
-      centers.assignedCenterId &&
-      currentCenterId !== centers.assignedCenterId
-    ) {
-      setAssignedCenterId(centers.assignedCenterId);
-    }
-  }, [centers.assignedCenterId, currentCenterId, setAssignedCenterId]);
-
-  useEffect(() => {
-    clearDocumentVerification("birthCertificate");
-  }, [form.childFullName, form.dateOfBirth, clearDocumentVerification]);
-
-  useEffect(() => {
-    clearDocumentVerification("parentId");
-  }, [form.parentFullName, clearDocumentVerification]);
-
-  const nextStep = async () => {
-    if (step === 1 && !(await form.validateStepOne())) return;
-    if (step === 2 && !(await form.validateStepTwo())) return;
-    if (step === 3 && !(await form.validateStepThree())) return;
-    if (
-      step === 4 &&
-      (!form.validateStepFour() ||
-        !documentVerification.isEligible(
-          documentVerification.birthCertificate,
-        ) ||
-        !documentVerification.isEligible(documentVerification.parentId))
-    ) {
-      Alert.alert(
-        "Document Verification",
-        "Verify both document images or inspect and confirm uncertain results before continuing.",
-      );
-      return;
-    }
-    setStep((prev) => (prev < 5 ? ((prev + 1) as Step) : prev));
-  };
-
-  const previousStep = () => {
-    setStep((prev) => (prev > 1 ? ((prev - 1) as Step) : prev));
-  };
-
-  const handlePickBirthCertificate = async () => {
-    const file = await pickDocument("birthCertificate", "gallery");
-    if (file) {
-      form.setBirthCertificateFile(file);
-      documentVerification.clear("birthCertificate");
-      await documentVerification.verify("birthCertificate", file, {
-        childFullName: form.childFullName,
-        dateOfBirth: form.dateOfBirth,
-      });
-    }
-  };
-
-  const handlePickParentId = async () => {
-    const file = await pickDocument("parentId", "gallery");
-    if (file) {
-      form.setParentIdFile(file);
-      documentVerification.clear("parentId");
-      await documentVerification.verify("parentId", file, {
-        parentFirstName: form.parentFirstName,
-        ...(form.parentMiddleName
-          ? { parentMiddleName: form.parentMiddleName }
-          : {}),
-        parentLastName: form.parentLastName,
-      });
-    }
-  };
-
-  const handleSubmitEnrollment = async () => {
-    if (
-      !(await form.validateStepOne()) ||
-      !(await form.validateStepTwo()) ||
-      !(await form.validateStepThree()) ||
-      !form.validateStepFour() ||
-      !documentVerification.isEligible(documentVerification.birthCertificate) ||
-      !documentVerification.isEligible(documentVerification.parentId)
-    )
-      return;
-
-    const submissionData = form.getSubmissionData() as any;
-    submissionData.documentData.birthCertificateVerificationId =
-      documentVerification.birthCertificate.result!.verificationId;
-    submissionData.documentData.parentIdVerificationId =
-      documentVerification.parentId.result!.verificationId;
-    await submitEnrollment(submissionData);
-  };
-
-  const assignedCenterDisplayInfo = useMemo(
-    () => getDaycareCenterDisplay(centers.assignedCenter),
-    [centers.assignedCenter],
-  );
-
-  const assignedCenterReviewValue = useMemo(() => {
-    const { primary, secondary } = assignedCenterDisplayInfo;
-    return secondary ? `${primary} (${secondary})` : primary;
-  }, [assignedCenterDisplayInfo]);
-
-  const assignedCenterPrimary = centers.loadingCenters
-    ? "Loading assigned center..."
-    : centers.centerError
-      ? "Unable to load assigned center"
-      : assignedCenterDisplayInfo.primary;
-  const assignedCenterSecondary = centers.loadingCenters
-    ? ""
-    : assignedCenterDisplayInfo.secondary;
-
-  const primaryLabel =
-    step < 5 ? "Next" : isSubmitting ? "Enrolling..." : "Enroll Child";
+}: NewEnrollmentFormProps) {
+  const {
+    form,
+    datePicker,
+    documentVerification,
+    step,
+    setStep,
+    isSubmitting,
+    credentialsModal,
+    assignedCenterPrimary,
+    assignedCenterSecondary,
+    assignedCenterReviewValue,
+    resetForm,
+    nextStep,
+    previousStep,
+    handlePickBirthCertificate,
+    handlePickParentId,
+    handleSubmitEnrollment,
+    handleModalClose,
+  } = useNewEnrollmentWorkflow({
+    setHasStarted,
+    onSubmissionSuccess,
+  });
 
   return (
     <>
@@ -252,7 +91,7 @@ export function NewEnrollmentForm({
                 <StepProgress step={step} />
               </View>
 
-              {step === 1 && (
+              {step === 1 ? (
                 <ChildInfoStepSection
                   control={form.control as any}
                   onPickDateOfBirth={() =>
@@ -260,9 +99,9 @@ export function NewEnrollmentForm({
                   }
                   computedChildAge={form.computedChildAge}
                 />
-              )}
+              ) : null}
 
-              {step === 2 && (
+              {step === 2 ? (
                 <ChildHealthEnrollmentStepSection
                   control={form.control as any}
                   onPickEnrollmentDate={() =>
@@ -274,13 +113,13 @@ export function NewEnrollmentForm({
                   computedNutritionalStatus={form.computedNutritionalStatus}
                   schoolYear={form.schoolYear}
                 />
-              )}
+              ) : null}
 
-              {step === 3 && (
+              {step === 3 ? (
                 <ParentInfoStepSection control={form.control as any} />
-              )}
+              ) : null}
 
-              {step === 4 && (
+              {step === 4 ? (
                 <DocumentsStepSection
                   isWide={Boolean(isWide)}
                   parentFirstName={form.parentFirstName}
@@ -327,9 +166,9 @@ export function NewEnrollmentForm({
                     })
                   }
                 />
-              )}
+              ) : null}
 
-              {step === 5 && (
+              {step === 5 ? (
                 <ReviewSubmitStepSection
                   childFullName={form.childFullName}
                   dateOfBirth={form.dateOfBirth}
@@ -359,139 +198,29 @@ export function NewEnrollmentForm({
                     ).label
                   }
                 />
-              )}
+              ) : null}
 
-              <View className="mt-5 flex-row gap-3">
-                <Pressable
-                  onPress={step === 1 ? resetForm : previousStep}
-                  className="active:scale-95"
-                  style={[
-                    enrollFieldStyles.footerBtn,
-                    enrollFieldStyles.footerBtnSecondary,
-                  ]}
-                >
-                  <Text className="text-center text-lg font-semibold text-gray-900">
-                    {step === 1 ? "Cancel" : "Back"}
-                  </Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={step < 5 ? nextStep : handleSubmitEnrollment}
-                  disabled={isSubmitting}
-                  className="active:scale-95"
-                  style={[
-                    enrollFieldStyles.footerBtn,
-                    isSubmitting
-                      ? enrollFieldStyles.footerBtnPrimaryDisabled
-                      : enrollFieldStyles.footerBtnPrimaryIdle,
-                    !isSubmitting && {
-                      shadowColor: "#0D9488",
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.3,
-                      shadowRadius: 8,
-                      elevation: 4,
-                    },
-                  ]}
-                >
-                  <Text className="text-center text-lg font-bold text-white">
-                    {primaryLabel}
-                  </Text>
-                </Pressable>
-              </View>
+              <EnrollmentStepFooter
+                step={step}
+                isSubmitting={isSubmitting}
+                onCancelOrBack={step === 1 ? resetForm : previousStep}
+                onNextOrSubmit={step < 5 ? nextStep : handleSubmitEnrollment}
+              />
             </>
           )}
         </View>
       </ScrollView>
 
-      {datePicker.pickerVisible && datePicker.pickerField ? (
-        <Modal
-          transparent
-          animationType="slide"
-          visible={datePicker.pickerVisible}
-        >
-          <View className="flex-1 justify-end bg-black/30">
-            <View className="rounded-t-3xl bg-white px-4 pb-6 pt-4">
-              <View className="mb-3 flex-row items-center justify-between">
-                <Pressable onPress={datePicker.closePicker}>
-                  <Text className="text-lg font-semibold text-gray-600">
-                    Cancel
-                  </Text>
-                </Pressable>
-                <Text className="text-base font-semibold text-gray-700">
-                  {datePicker.pickerField === "dateOfBirth"
-                    ? "Select Date of Birth"
-                    : "Select Enrollment Date"}
-                </Text>
-                <Pressable onPress={datePicker.confirmPicker}>
-                  <Text className="text-lg font-bold text-teal-600">Done</Text>
-                </Pressable>
-              </View>
+      <EnrollmentDatePickerModal datePicker={datePicker} />
 
-              {datePicker.pickerMode === "native" &&
-              Platform.OS === "ios" &&
-              datePicker.NativeDateTimePicker ? (
-                <datePicker.NativeDateTimePicker
-                  value={datePicker.pickerDate}
-                  mode="date"
-                  display="spinner"
-                  minimumDate={
-                    datePicker.pickerField === "dateOfBirth"
-                      ? datePicker.minDateOfBirth
-                      : undefined
-                  }
-                  maximumDate={
-                    datePicker.pickerField === "dateOfBirth"
-                      ? datePicker.maxDateOfBirth
-                      : undefined
-                  }
-                  onValueChange={(_, selectedDate) => {
-                    datePicker.setPickerDate(selectedDate);
-                  }}
-                />
-              ) : (
-                <View>
-                  <Text className="mb-2 text-sm font-semibold text-gray-500">
-                    Enter date as YYYY-MM-DD
-                  </Text>
-                  <TextInput
-                    value={datePicker.pickerInput}
-                    onChangeText={(value) => {
-                      datePicker.setPickerInput(
-                        value.replace(/[^0-9-]/g, "").slice(0, 10),
-                      );
-                    }}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor="#9CA3AF"
-                    className="border border-gray-300 rounded-xl px-4 py-3 text-base text-gray-900"
-                  />
-                  {datePicker.pickerField === "dateOfBirth" ? (
-                    <Text className="mt-2 text-xs text-gray-500">
-                      Allowed range:{" "}
-                      {displayDate(formatYmd(datePicker.minDateOfBirth))} to{" "}
-                      {displayDate(formatYmd(datePicker.maxDateOfBirth))}
-                    </Text>
-                  ) : (
-                    <Text className="mt-2 text-xs text-gray-500">
-                      Example: {formatYmd(new Date())}
-                    </Text>
-                  )}
-                </View>
-              )}
-            </View>
-          </View>
-        </Modal>
-      ) : null}
-
-      {credentialsModal && (
+      {credentialsModal ? (
         <ParentCredentialsModal
           visible={credentialsModal.visible}
           email={credentialsModal.email}
           tempPassword={credentialsModal.tempPassword}
           onClose={handleModalClose}
         />
-      )}
+      ) : null}
     </>
   );
 }

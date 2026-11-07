@@ -1,35 +1,26 @@
 import { useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { useLocalSearchParams, useRouter, type Href } from "expo-router";
-import {
-  ClipboardCheck,
-  CheckCircle2,
-  Lock,
-  History,
-} from "lucide-react-native";
+import { ClipboardCheck, CheckCircle2, Lock, History } from "lucide-react-native";
 import {
   ScreenHeader,
   ScreenLoadingState,
   ScreenShell,
 } from "../../../components/ui";
-import { CompetencyItem } from "../components/competency-item";
-import { COMPETENCY_LEVELS } from "../constants";
-import {
-  useCompetencyEvaluation,
-  type EvaluationPeriod,
-} from "../hooks/useCompetencyEvaluation";
+import { useCompetencyEvaluation } from "../hooks/useCompetencyEvaluation";
+import type { EvaluationPeriod } from "../types";
 import { useUnsavedChangesGuard } from "../../../hooks/use-unsaved-changes-guard";
-import { CompetencyDatePicker } from "../components/competency-date-picker";
-import { CompetencyHistoryBottomSheet } from "../components/competency-history-bottom-sheet";
 import { useAndroidBackRoute } from "../../../hooks/use-android-back-route";
 import { useSafeBack } from "../../../hooks/use-safe-back";
+import {
+  CompetencyDatePicker,
+  CompetencyHistoryBottomSheet,
+  CompetencyPeriodTabs,
+  CompetencyFinalizedBanner,
+  CompetencyCategorySection,
+  CompetencySummaryCard,
+  CompetencyActionButtons,
+} from "../components";
 
 export default function CompetencyEvaluationScreen() {
   const params = useLocalSearchParams<{
@@ -58,6 +49,7 @@ export default function CompetencyEvaluationScreen() {
       : "/(teacher)/children";
   const handleBack = useSafeBack(fallbackRoute);
   useAndroidBackRoute("/(parent)/children", isParentView);
+
   const evaluation = useCompetencyEvaluation(childId, {
     isParentView,
     initialPeriod: params.period,
@@ -72,10 +64,26 @@ export default function CompetencyEvaluationScreen() {
     fallbackRoute,
   });
 
-  const periods: { value: EvaluationPeriod; label: string }[] = [
-    { value: "quarterly", label: "Quarterly" },
-    { value: "final", label: "Final" },
-  ];
+  const handleSubmitEvaluation = () => {
+    void (async () => {
+      const submitted = await evaluation.submitEvaluation();
+      if (!submitted || !isQueueMode) return;
+      if (nextChildId) {
+        router.replace({
+          pathname: "/(teacher)/child-details/competencies/[childId]",
+          params: {
+            childId: nextChildId,
+            queueMode: "true",
+            period: evaluation.selectedPeriod,
+            date: evaluation.evaluationDate,
+            queueIds: queueIds.join(","),
+          },
+        });
+      } else {
+        router.replace("/(teacher)/teacher-record-data/competencies");
+      }
+    })();
+  };
 
   return (
     <ScreenShell>
@@ -99,6 +107,7 @@ export default function CompetencyEvaluationScreen() {
           </Pressable>
         }
       />
+
       {evaluation.isLoading ? (
         <ScreenLoadingState
           variant="form"
@@ -115,7 +124,7 @@ export default function CompetencyEvaluationScreen() {
           {!evaluation.isOffline && (
             <Pressable
               onPress={() => evaluation.refetch()}
-              className="mt-4 rounded-xl bg-teal-600 px-5 py-3"
+              className="mt-4 rounded-xl bg-teal-600 px-5 py-3 active:bg-teal-700"
             >
               <Text className="font-bold text-white">Try Again</Text>
             </Pressable>
@@ -133,86 +142,15 @@ export default function CompetencyEvaluationScreen() {
           contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
           keyboardShouldPersistTaps="handled"
         >
-          <View className="mb-4">
-            <Text className="mb-2 text-sm font-semibold text-gray-600">
-              Evaluation Progress
-            </Text>
-            <View className="flex-row gap-2">
-              {periods.map((period, index) => {
-                const selected = evaluation.selectedPeriod === period.value;
-                const state = evaluation.periodStates[period.value];
-                return (
-                  <Pressable
-                    key={period.value}
-                    accessibilityRole="tab"
-                    accessibilityState={{ selected, disabled: state.isLocked }}
-                    accessibilityLabel={`${period.label} evaluation${state.isLocked ? ", locked" : state.isSubmitted ? ", submitted" : ", available"}`}
-                    accessibilityHint={
-                      state.isLocked
-                        ? `Submit the ${state.prerequisiteLabel} evaluation first`
-                        : `Open the ${period.label} evaluation`
-                    }
-                    onPress={() => evaluation.handlePeriodChange(period.value)}
-                    disabled={isQueueMode}
-                    className={`min-h-20 flex-1 items-center justify-center rounded-2xl border px-1 py-3 ${
-                      selected
-                        ? "border-teal-500 bg-teal-50"
-                        : state.isLocked
-                          ? "border-gray-200 bg-gray-50"
-                          : state.isSubmitted
-                            ? "border-emerald-200 bg-emerald-50"
-                            : "border-gray-200 bg-white"
-                    }`}
-                    style={selected ? periodTabSelectedStyle : undefined}
-                  >
-                    <View
-                      className={`mb-1 h-7 w-7 items-center justify-center rounded-full ${
-                        state.isLocked
-                          ? "bg-gray-200"
-                          : state.isSubmitted
-                            ? "bg-emerald-100"
-                            : "bg-teal-100"
-                      }`}
-                    >
-                      {state.isLocked ? (
-                        <Lock size={14} color="#6B7280" />
-                      ) : state.isSubmitted ? (
-                        <CheckCircle2 size={16} color="#059669" />
-                      ) : (
-                        <Text className="text-xs font-extrabold text-teal-700">
-                          {index + 1}
-                        </Text>
-                      )}
-                    </View>
-                    <Text
-                      numberOfLines={1}
-                      className={`text-xs font-bold ${
-                        selected
-                          ? "text-teal-800"
-                          : state.isLocked
-                            ? "text-gray-400"
-                            : state.isSubmitted
-                              ? "text-emerald-700"
-                              : "text-gray-700"
-                      }`}
-                    >
-                      {period.label}
-                    </Text>
-                    <Text
-                      className={`mt-0.5 text-[10px] font-medium ${state.isLocked ? "text-gray-400" : "text-gray-500"}`}
-                    >
-                      {state.isLocked
-                        ? "Locked"
-                        : state.isSubmitted
-                          ? "Submitted"
-                          : "Available"}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
+          {/* Progress / Period Tabs */}
+          <CompetencyPeriodTabs
+            selectedPeriod={evaluation.selectedPeriod}
+            periodStates={evaluation.periodStates}
+            onPeriodChange={evaluation.handlePeriodChange}
+            disabled={isQueueMode}
+          />
 
+          {/* Date Picker */}
           <CompetencyDatePicker
             dateKey={evaluation.evaluationDate}
             dateLabel={evaluation.evaluationDateLabel}
@@ -225,6 +163,7 @@ export default function CompetencyEvaluationScreen() {
             onDateChange={evaluation.setEvaluationDate}
           />
 
+          {/* Queue mode indicator */}
           {isQueueMode && queueIndex >= 0 ? (
             <View className="mb-4 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3">
               <Text className="font-bold text-blue-800">
@@ -236,6 +175,7 @@ export default function CompetencyEvaluationScreen() {
             </View>
           ) : null}
 
+          {/* Period Locked Advisory */}
           {evaluation.selectedPeriodState.isLocked && (
             <View className="mb-4 flex-row rounded-2xl border border-amber-200 bg-amber-50 p-4">
               <View className="mr-3 h-9 w-9 items-center justify-center rounded-full bg-amber-100">
@@ -253,7 +193,8 @@ export default function CompetencyEvaluationScreen() {
             </View>
           )}
 
-          <View className="mb-4 flex-row items-center justify-between rounded-2xl bg-teal-50 px-4 py-3 border border-teal-100">
+          {/* Checklist Counter Strip */}
+          <View className="mb-4 flex-row items-center justify-between rounded-2xl border border-teal-100 bg-teal-50 px-4 py-3">
             <Text className="font-semibold text-teal-800">
               Checklist Progress
             </Text>
@@ -267,68 +208,19 @@ export default function CompetencyEvaluationScreen() {
             </View>
           </View>
 
-          {evaluation.isFinalized ? (
-            <View className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-              <View className="flex-row items-center justify-between">
-                <Text className="text-base font-bold text-emerald-900">
-                  {evaluation.isEditing
-                    ? "Editing Submitted Evaluation"
-                    : "Submitted Evaluation"}
-                </Text>
-                <View className="rounded-full bg-emerald-100 px-2.5 py-0.5">
-                  <Text className="text-xs font-semibold text-emerald-800">
-                    {evaluation.evaluationDateLabel}
-                  </Text>
-                </View>
-              </View>
-              <Text className="mt-1 text-sm text-emerald-800">
-                {evaluation.isEditing
-                  ? "Updating record for this evaluation date. Changes will replace this submission."
-                  : isParentView
-                    ? "This is a read-only view of your child's competency evaluation."
-                    : evaluation.canEditFinalized
-                      ? "Viewing completed record. You can edit this record or record a new evaluation for another date."
-                      : "Past evaluations are read-only. You can record a new evaluation for another date."}
-              </Text>
-              {!isParentView && !evaluation.isEditing ? (
-                <View className="mt-3 flex-row gap-2">
-                  {evaluation.canEditFinalized ? (
-                    <Pressable
-                      onPress={evaluation.startEditing}
-                      accessibilityRole="button"
-                      accessibilityLabel="Edit submitted evaluation"
-                      className="min-h-11 flex-1 items-center justify-center rounded-xl bg-emerald-700 px-4 active:bg-emerald-800"
-                    >
-                      <Text className="font-bold text-white">Edit Record</Text>
-                    </Pressable>
-                  ) : null}
-                  <Pressable
-                    onPress={evaluation.startNewEvaluation}
-                    accessibilityRole="button"
-                    accessibilityLabel="Record new evaluation"
-                    className="min-h-11 flex-1 items-center justify-center rounded-xl bg-teal-600 px-4 active:bg-teal-700"
-                  >
-                    <Text className="font-bold text-white">
-                      + New Evaluation
-                    </Text>
-                  </Pressable>
-                </View>
-              ) : null}
-              {evaluation.isEditing ? (
-                <Pressable
-                  onPress={evaluation.cancelEditing}
-                  accessibilityRole="button"
-                  accessibilityLabel="Cancel editing evaluation"
-                  className="mt-3 min-h-10 items-center justify-center rounded-xl bg-emerald-100 px-4 active:bg-emerald-200"
-                >
-                  <Text className="text-xs font-bold text-emerald-800">
-                    Cancel Editing
-                  </Text>
-                </Pressable>
-              ) : null}
-            </View>
-          ) : null}
+          {/* Finalized Banner */}
+          <CompetencyFinalizedBanner
+            isFinalized={evaluation.isFinalized}
+            isEditing={evaluation.isEditing}
+            isParentView={isParentView}
+            canEditFinalized={evaluation.canEditFinalized}
+            evaluationDateLabel={evaluation.evaluationDateLabel}
+            onStartEditing={evaluation.startEditing}
+            onStartNewEvaluation={evaluation.startNewEvaluation}
+            onCancelEditing={evaluation.cancelEditing}
+          />
 
+          {/* Offline Draft Badge */}
           {evaluation.hasLocalDraft && !evaluation.isReadOnly && (
             <View className="mb-4 rounded-xl border border-teal-100 bg-teal-50 p-3">
               <Text className="text-center text-sm font-semibold text-teal-800">
@@ -337,32 +229,21 @@ export default function CompetencyEvaluationScreen() {
             </View>
           )}
 
+          {/* Category Sections */}
           {evaluation.groupedDefinitions.map(([category, definitions]) => (
-            <View
+            <CompetencyCategorySection
               key={category}
-              className="mb-4 rounded-3xl border border-gray-200 bg-white p-4"
-            >
-              <Text className="text-xl font-extrabold text-gray-900">
-                {category}
-              </Text>
-              {definitions.map((definition) => (
-                <CompetencyItem
-                  key={definition._id}
-                  definition={definition}
-                  level={evaluation.levels[definition._id]}
-                  remarks={evaluation.remarks[definition._id] || ""}
-                  disabled={evaluation.isSubmitting || evaluation.isReadOnly}
-                  onLevelChange={(level) =>
-                    evaluation.setLevel(definition._id, level)
-                  }
-                  onRemarksChange={(value) =>
-                    evaluation.setRemark(definition._id, value)
-                  }
-                />
-              ))}
-            </View>
+              category={category}
+              definitions={definitions}
+              levels={evaluation.levels}
+              remarks={evaluation.remarks}
+              disabled={evaluation.isSubmitting || evaluation.isReadOnly}
+              onLevelChange={evaluation.setLevel}
+              onRemarksChange={evaluation.setRemark}
+            />
           ))}
 
+          {/* General Notes */}
           <View className="mb-4 rounded-3xl border border-gray-200 bg-white p-4">
             <Text className="text-base font-bold text-gray-900">
               General Notes
@@ -379,95 +260,24 @@ export default function CompetencyEvaluationScreen() {
             />
           </View>
 
-          <View className="mb-6 rounded-3xl border border-gray-200 bg-white p-4">
-            <Text className="mb-3 text-base font-bold text-gray-900">
-              Automatic Summary
-            </Text>
-            <View className="flex-row flex-wrap justify-between gap-y-2">
-              {COMPETENCY_LEVELS.map((level) => (
-                <View
-                  key={level.value}
-                  className="w-[48%] flex-row justify-between rounded-xl bg-gray-50 p-3 border border-gray-100"
-                >
-                  <Text className="text-sm font-medium text-gray-600">
-                    {level.label}
-                  </Text>
-                  <Text className="text-sm font-bold text-gray-900">
-                    {evaluation.summary[
-                      level.value as keyof typeof evaluation.summary
-                    ] || 0}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </View>
+          {/* Automatic Summary */}
+          <CompetencySummaryCard summary={evaluation.summary} />
 
-          {!evaluation.isReadOnly && (
-            <View className="gap-3">
-              <Pressable
-                accessibilityRole="button"
-                disabled={evaluation.isSubmitting}
-                onPress={() => void evaluation.saveDraft()}
-                className={`min-h-14 items-center justify-center rounded-2xl border-2 ${evaluation.isSubmitting ? "border-gray-300 bg-gray-100" : "border-teal-600 bg-white"}`}
-              >
-                <Text
-                  className={`text-lg font-bold ${evaluation.isSubmitting ? "text-gray-400" : "text-teal-700"}`}
-                >
-                  Save Draft
-                </Text>
-              </Pressable>
-
-              <Pressable
-                accessibilityRole="button"
-                disabled={
-                  evaluation.isSubmitting ||
-                  !evaluation.progress.isComplete ||
-                  evaluation.isOffline
-                }
-                onPress={() => {
-                  void (async () => {
-                    const submitted = await evaluation.submitEvaluation();
-                    if (!submitted || !isQueueMode) return;
-                    if (nextChildId) {
-                      router.replace({
-                        pathname:
-                          "/(teacher)/child-details/competencies/[childId]",
-                        params: {
-                          childId: nextChildId,
-                          queueMode: "true",
-                          period: evaluation.selectedPeriod,
-                          date: evaluation.evaluationDate,
-                          queueIds: queueIds.join(","),
-                        },
-                      });
-                    } else {
-                      router.replace(
-                        "/(teacher)/teacher-record-data/competencies",
-                      );
-                    }
-                  })();
-                }}
-                className={`min-h-14 items-center justify-center rounded-2xl ${evaluation.isSubmitting || !evaluation.progress.isComplete || evaluation.isOffline ? "bg-gray-300" : "bg-teal-600"}`}
-              >
-                {evaluation.isSubmitting ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <Text className="text-lg font-bold text-white">
-                    {evaluation.isOffline
-                      ? "Connect to Submit"
-                      : isQueueMode
-                        ? nextChildId
-                          ? "Submit & Next Child"
-                          : "Submit & Finish"
-                        : "Submit Evaluation"}
-                  </Text>
-                )}
-              </Pressable>
-            </View>
-          )}
+          {/* Action Buttons */}
+          <CompetencyActionButtons
+            isReadOnly={evaluation.isReadOnly}
+            isSubmitting={evaluation.isSubmitting}
+            isComplete={evaluation.progress.isComplete}
+            isOffline={evaluation.isOffline}
+            isQueueMode={isQueueMode}
+            hasNextChild={Boolean(nextChildId)}
+            onSaveDraft={() => void evaluation.saveDraft()}
+            onSubmit={handleSubmitEvaluation}
+          />
         </ScrollView>
       )}
 
+      {/* History Bottom Sheet */}
       <CompetencyHistoryBottomSheet
         childId={childId}
         childName={child ? `${child.firstName} ${child.lastName}` : "Child"}
@@ -478,12 +288,3 @@ export default function CompetencyEvaluationScreen() {
     </ScreenShell>
   );
 }
-
-const periodTabSelectedStyle = {
-  backgroundColor: "#FFFFFF",
-  elevation: 2,
-  shadowColor: "#000000",
-  shadowOffset: { width: 0, height: 1 },
-  shadowOpacity: 0.08,
-  shadowRadius: 2,
-} as const;

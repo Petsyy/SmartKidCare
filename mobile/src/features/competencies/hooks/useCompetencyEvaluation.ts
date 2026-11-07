@@ -25,6 +25,7 @@ import type {
   CompetencyDefinition,
   CompetencyEvaluation,
   CompetencyLevel,
+  EvaluationPeriod,
 } from "../types";
 import {
   onlineWithOfflineFallback,
@@ -44,8 +45,6 @@ type OfflineCompetencyEvaluation = Omit<CompetencyEvaluation, "entries"> & {
     remarks?: string;
   }[];
 };
-
-export type EvaluationPeriod = "quarterly" | "final";
 
 const competencyDraftScopeKey = (
   childId: string,

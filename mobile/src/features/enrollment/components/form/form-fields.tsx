@@ -1,32 +1,24 @@
 import { useState } from "react";
 import {
-  ActivityIndicator,
   Pressable,
-  StyleProp,
   Text,
   TextInput,
-  TextStyle,
   View,
-  ViewStyle,
-  Image,
-  Modal,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import {
   CalendarDays,
-  Camera,
-  ChevronDown,
-  Upload,
-  Trash2,
-  CheckCircle2,
-  Eye,
-  X,
 } from "lucide-react-native";
 import {
   displayDate,
   parseYmd,
 } from "@/src/features/enrollment/utils/enrollment-utils";
 import { type InputProps, INPUT_PLACEHOLDER } from "../types/enrollment-types";
+
+export { SelectField, type SelectOption } from "./select-field";
+export {
+  DocumentUploadField,
+  type DocumentUploadFieldProps,
+} from "./document-upload-field";
 
 export function Input({
   label,
@@ -58,12 +50,12 @@ export function Input({
 
   return (
     <View className="mb-4" style={containerStyle}>
-      <View className="flex-row flex-wrap items-start justify-between gap-1.5 mb-2">
+      <View className="mb-2 flex-row flex-wrap items-start justify-between gap-1.5">
         <View className="flex-1">
-          <Text className="text-[13px] font-bold tracking-[0.6px] uppercase text-[#374151]">
+          <Text className="text-[13px] font-bold uppercase tracking-[0.6px] text-[#374151]">
             {bareLabel}
             {isRequired ? (
-              <Text className="text-[#EF4444] font-bold"> *</Text>
+              <Text className="font-bold text-[#EF4444]"> *</Text>
             ) : null}
           </Text>
           {labelHint ? (
@@ -73,7 +65,7 @@ export function Input({
           ) : null}
         </View>
         {computed ? (
-          <View className="rounded-full bg-[#CCFBF1] px-2 py-0.5 border border-[#99F6E4]">
+          <View className="rounded-full border border-[#99F6E4] bg-[#CCFBF1] px-2 py-0.5">
             <Text className="text-[9px] font-extrabold tracking-[0.8px] text-[#0F766E]">
               AUTO
             </Text>
@@ -117,14 +109,16 @@ export function DateField({
 
   return (
     <View className="mb-[18px]">
-      <Text className="text-[13px] font-bold tracking-[0.6px] uppercase text-[#374151] mb-2">
+      <Text className="mb-2 text-[13px] font-bold uppercase tracking-[0.6px] text-[#374151]">
         {bareLabel}
         {isRequired ? (
-          <Text className="text-[#EF4444] font-bold"> *</Text>
+          <Text className="font-bold text-[#EF4444]"> *</Text>
         ) : null}
       </Text>
       <Pressable
         onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={`${bareLabel}: ${hasValue ? displayDate(value) : "select date"}`}
         className={`min-h-[50px] rounded-xl border-[1.5px] px-[14px] py-[13px] ${
           error
             ? "border-red-500 bg-red-50"
@@ -136,13 +130,13 @@ export function DateField({
             numberOfLines={1}
             className={`flex-1 text-[15px] ${
               hasValue
-                ? "text-[#111827] font-medium"
-                : "text-[#9CA3AF] font-normal"
+                ? "font-medium text-[#111827]"
+                : "font-normal text-[#9CA3AF]"
             }`}
           >
             {hasValue ? displayDate(value) : "dd/mm/yyyy"}
           </Text>
-          <View className="ml-2.5 justify-center items-center">
+          <View className="ml-2.5 items-center justify-center">
             <CalendarDays size={20} color={hasValue ? "#0F766E" : "#9CA3AF"} />
           </View>
         </View>
@@ -151,294 +145,5 @@ export function DateField({
         <Text className="mt-1.5 text-xs text-red-500">{error}</Text>
       ) : null}
     </View>
-  );
-}
-
-export type SelectOption = {
-  label: string;
-  value: string;
-};
-
-export function SelectField({
-  label,
-  value,
-  options,
-  placeholder = "Select an option",
-  onValueChange,
-  disabled = false,
-  loading = false,
-}: {
-  label: string;
-  value: string;
-  options: SelectOption[];
-  placeholder?: string;
-  onValueChange: (value: string) => void;
-  disabled?: boolean;
-  loading?: boolean;
-}) {
-  const [expanded, setExpanded] = useState(false);
-  const selectedOption = options.find((option) => option.value === value);
-  const labelToShow = loading
-    ? "Loading options..."
-    : selectedOption?.label || placeholder;
-
-  const toggleExpanded = () => {
-    if (disabled || loading) return;
-    setExpanded((prev) => !prev);
-  };
-
-  return (
-    <View className="mb-[18px]">
-      <Text className="text-[13px] font-bold tracking-[0.6px] uppercase text-[#374151] mb-2">
-        {label}
-      </Text>
-      <Pressable
-        onPress={toggleExpanded}
-        className={`min-h-[50px] rounded-xl border-[1.5px] px-[14px] py-[13px] ${
-          disabled
-            ? "border-[#D1D5DB] bg-[#F9FAFB]"
-            : "border-[#E5E7EB] bg-[#FFFFFF] active:border-[#0D9488] active:bg-[#F0FDFA]"
-        }`}
-      >
-        <View className="flex-row items-center">
-          <Text
-            numberOfLines={1}
-            className={`flex-1 text-[15px] ${
-              selectedOption
-                ? "text-[#111827] font-medium"
-                : "text-[#9CA3AF] font-normal"
-            }`}
-          >
-            {labelToShow}
-          </Text>
-          <View className="ml-2.5 justify-center items-center">
-            <ChevronDown
-              size={20}
-              color={disabled ? "#9CA3AF" : "#0F766E"}
-              style={
-                expanded ? { transform: [{ rotate: "180deg" }] } : undefined
-              }
-            />
-          </View>
-        </View>
-      </Pressable>
-
-      {expanded && !disabled ? (
-        <View className="-mt-0.5 border-[1.5px] border-[#0D9488] border-t-0 rounded-b-xl overflow-hidden bg-[#FFFFFF]">
-          {options.map((option) => {
-            const isSelected = option.value === value;
-            return (
-              <Pressable
-                key={option.value}
-                onPress={() => {
-                  onValueChange(option.value);
-                  setExpanded(false);
-                }}
-                className={`px-[14px] py-3 border-t border-[#F3F4F6] active:bg-[#F0FDFA] ${
-                  isSelected ? "bg-[#ECFEFF]" : "bg-[#FFFFFF]"
-                }`}
-              >
-                <Text
-                  numberOfLines={1}
-                  className={`text-[15px] ${
-                    isSelected
-                      ? "text-[#0F766E] font-bold"
-                      : "text-[#111827] font-medium"
-                  }`}
-                >
-                  {option.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      ) : null}
-    </View>
-  );
-}
-
-export function DocumentUploadField({
-  label,
-  file,
-  onUploadFile,
-  onClear,
-  containerStyle,
-  labelStyle,
-  showPhotoOption = true,
-  onUploadImage,
-  verificationBadge,
-  allowImagePreview = false,
-}: {
-  label: string;
-  file: { uri: string; name: string; mimeType?: string } | null;
-  onUploadFile: () => void;
-  onClear: () => void;
-  containerStyle?: StyleProp<ViewStyle>;
-  labelStyle?: StyleProp<TextStyle>;
-  showPhotoOption?: boolean;
-  onUploadImage?: () => void;
-  verificationBadge?: {
-    label: string;
-    tone: "success" | "pending" | "warning" | "error" | "neutral";
-    loading?: boolean;
-  };
-  allowImagePreview?: boolean;
-}) {
-  const [previewVisible, setPreviewVisible] = useState(false);
-  const hasPhotoOption = showPhotoOption && typeof onUploadImage === "function";
-
-  const isRequired = label.endsWith(" *");
-  const bareLabel = isRequired ? label.slice(0, -2) : label;
-
-  return (
-    <>
-    <View className="mb-[18px]" style={containerStyle}>
-      <Text
-        className="text-[13px] font-bold tracking-[0.6px] uppercase text-[#374151] mb-2"
-        style={labelStyle}
-      >
-        {bareLabel}
-        {isRequired ? (
-          <Text className="text-[#EF4444] font-bold"> *</Text>
-        ) : null}
-      </Text>
-
-      <View
-        className={`w-full ${hasPhotoOption && !file ? "flex-row gap-3" : "flex-col"}`}
-      >
-        {!file && hasPhotoOption ? (
-          <Pressable
-            onPress={onUploadImage}
-            className="flex-1 items-center rounded-[14px] border-[1.5px] border-dashed border-[#10B981] bg-[#ECFDF5] px-[14px] py-[18px] min-h-[100px] justify-center"
-          >
-            <Camera size={26} color="#047857" />
-            <Text
-              numberOfLines={1}
-              className="mt-2 text-[14px] font-bold text-[#047857]"
-            >
-              Take Photo
-            </Text>
-          </Pressable>
-        ) : null}
-
-        {file ? (
-          file.mimeType?.startsWith("image/") ||
-          file.name.match(/\.(jpg|jpeg|png)$/i) ? (
-            <View className="relative border border-gray-200 rounded-2xl overflow-hidden bg-gray-50 items-center justify-center">
-              <Pressable
-                onPress={() => allowImagePreview && setPreviewVisible(true)}
-                disabled={!allowImagePreview}
-                accessibilityRole={allowImagePreview ? "button" : undefined}
-                accessibilityLabel={allowImagePreview ? `View full ${bareLabel} image` : undefined}
-                className="w-full"
-              >
-                <Image source={{ uri: file.uri }} style={{ width: "100%", height: 160 }} resizeMode="cover" accessibilityLabel={`${bareLabel} preview`} />
-              </Pressable>
-              <View pointerEvents="none" className="absolute inset-0 bg-black/20" />
-              {allowImagePreview ? (
-                <View pointerEvents="none" className="absolute left-3 top-3 flex-row items-center rounded-lg bg-black/60 px-2.5 py-2">
-                  <Eye size={15} color="white" />
-                  <Text className="ml-1.5 text-xs font-bold text-white">View Full Image</Text>
-                </View>
-              ) : null}
-              <Pressable
-                onPress={onClear}
-                accessibilityRole="button"
-                accessibilityLabel={`Remove ${bareLabel} image`}
-                className="absolute top-2 right-2 h-11 w-11 rounded-full bg-black/60 items-center justify-center active:bg-black/70"
-              >
-                <Trash2 size={16} color="white" />
-              </Pressable>
-              <View pointerEvents="none"
-                className={`absolute bottom-3 left-3 max-w-[80%] px-3 py-2 rounded-lg flex-row items-center ${verificationBadge?.tone === "success" ? "bg-emerald-100" : verificationBadge?.tone === "error" ? "bg-red-100" : verificationBadge?.tone === "warning" ? "bg-amber-100" : verificationBadge?.tone === "pending" ? "bg-teal-100" : "bg-white/90"}`}
-              >
-                {verificationBadge?.loading ? (
-                  <ActivityIndicator size="small" color="#0F766E" />
-                ) : verificationBadge?.tone === "success" ? (
-                  <CheckCircle2 size={14} color="#047857" />
-                ) : null}
-                <Text
-                  numberOfLines={2}
-                  className={`text-xs font-bold ${verificationBadge?.loading || verificationBadge?.tone === "success" ? "ml-1.5" : ""} ${verificationBadge?.tone === "success" ? "text-emerald-800" : verificationBadge?.tone === "error" ? "text-red-800" : verificationBadge?.tone === "warning" ? "text-amber-800" : verificationBadge?.tone === "pending" ? "text-teal-800" : "text-gray-800"}`}
-                >
-                  {verificationBadge?.label ||
-                    "Image Uploaded - Not Yet Verified"}
-                </Text>
-              </View>
-            </View>
-          ) : (
-            <View
-              className={`items-center rounded-[14px] border-[1.5px] border-dashed border-[#10B981] bg-[#ECFDF5] px-[14px] py-[18px] min-h-[100px] justify-between w-full`}
-            >
-              <Pressable
-                onPress={onUploadFile}
-                className="items-center justify-center w-full"
-              >
-                <Upload size={26} color="#047857" />
-                <Text
-                  numberOfLines={1}
-                  className="mt-2 text-[14px] font-bold text-[#047857]"
-                >
-                  Choose from Gallery
-                </Text>
-                <Text
-                  numberOfLines={1}
-                  className="mt-0.5 text-[11px] font-medium text-[#059669]"
-                >
-                  Tap to replace file
-                </Text>
-              </Pressable>
-
-              <View className="w-full mt-2.5 pt-2.5 border-t border-[#A7F3D0] flex-row items-center">
-                <Text
-                  numberOfLines={1}
-                  className="flex-1 mr-2 text-[12px] font-semibold text-[#065F46]"
-                >
-                  {file.name}
-                </Text>
-                <Pressable
-                  onPress={onClear}
-                  className="rounded-lg bg-[#FFFFFF] px-2.5 py-1.5"
-                >
-                  <Text className="text-[11px] font-bold text-[#DC2626]">
-                    Remove
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
-          )
-        ) : (
-          <Pressable
-            onPress={onUploadFile}
-            className={`items-center rounded-[14px] border-[1.5px] border-dashed border-[#10B981] bg-[#ECFDF5] px-[14px] py-[18px] min-h-[100px] justify-center ${
-              hasPhotoOption ? "flex-1" : "w-full"
-            }`}
-          >
-            <Upload size={26} color="#047857" />
-            <Text
-              numberOfLines={1}
-              className="mt-2 text-[14px] font-bold text-[#047857]"
-            >
-              Choose from Gallery
-            </Text>
-          </Pressable>
-        )}
-      </View>
-    </View>
-    <Modal visible={previewVisible} animationType="fade" presentationStyle="fullScreen" onRequestClose={() => setPreviewVisible(false)}>
-      <SafeAreaView className="flex-1 bg-black">
-        <View className="min-h-[60px] flex-row items-center justify-between border-b border-white/20 px-4">
-          <Text className="flex-1 text-lg font-bold text-white" numberOfLines={1}>{bareLabel}</Text>
-          <Pressable onPress={() => setPreviewVisible(false)} accessibilityRole="button" accessibilityLabel="Close full image preview" className="h-11 w-11 items-center justify-center rounded-full bg-white/15">
-            <X size={26} color="white" />
-          </Pressable>
-        </View>
-        <View className="flex-1 items-center justify-center p-3">
-          {file ? <Image source={{ uri: file.uri }} className="h-full w-full" resizeMode="contain" accessibilityLabel={`Full ${bareLabel} image`} /> : null}
-        </View>
-        <Text className="px-4 pb-4 text-center text-sm text-white/70">Review the complete image, then close this preview to continue.</Text>
-      </SafeAreaView>
-    </Modal>
-    </>
   );
 }

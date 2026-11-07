@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from "react";
-import { View, Text, Alert, Modal, ScrollView, Pressable, ActivityIndicator } from "react-native";
+import { View, Alert } from "react-native";
 import { useFocusEffect } from "expo-router";
-import { ShieldCheck, Search, Send, Check } from "lucide-react-native";
 import {
   ScreenHeader,
   ScreenLoadingState,
@@ -14,14 +13,15 @@ import { usePickupTeacher } from "../hooks/usePickupTeacher";
 import type { PickupEligibleChild } from "@/src/api/api.types";
 import {
   PickupEligibleChildCard,
-  PickupChildInfoCard,
-  PickupCodeVerifier,
-  PickupManualOverridePanel,
+  PickupEmptyState,
+  PickupReleaseModal,
+  PickupReminderBulkBar,
 } from "../components";
 import {
   getUserFriendlyErrorMessage,
   reportHandledError,
 } from "@/src/lib/error-reporting";
+
 export function TeacherPickupScreen() {
   const {
     eligibleChildren,
@@ -32,11 +32,10 @@ export function TeacherPickupScreen() {
     manualRelease,
     isReleasing,
     selectedChildIds,
-    allEligibleSelected,
     toggleChildSelection,
-    toggleSelectAll,
     selectAll,
     clearSelection,
+    toggleSelectAll,
     notifyParents,
     isNotifying,
     isOffline,
@@ -150,7 +149,10 @@ export function TeacherPickupScreen() {
                 reportHandledError("pickup.bulk-notification", error);
                 Alert.alert(
                   "Unable to Notify Parents",
-                  getUserFriendlyErrorMessage(error, "Pickup reminders could not be sent. Please try again."),
+                  getUserFriendlyErrorMessage(
+                    error,
+                    "Pickup reminders could not be sent. Please try again.",
+                  ),
                 );
               });
           },
@@ -199,133 +201,18 @@ export function TeacherPickupScreen() {
         iconColor="#9CA3AF"
       />
 
-      {eligibleChildren.length > 0 ? (
-        <View className="bg-gray-50 px-5 pb-3 pt-2">
-          <View
-            className="rounded-2xl border border-gray-200 bg-white p-4"
-            style={{
-              shadowColor: "#0D9488",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.04,
-              shadowRadius: 6,
-              elevation: 2,
-            }}
-          >
-            <View className="flex-row items-center justify-between">
-              <View className="flex-1 pr-3">
-                <Text className="text-lg font-black text-gray-900">
-                  Pickup reminders
-                </Text>
-                <Text className="mt-1 text-sm font-semibold leading-5 text-gray-500">
-                  {isInSelectionMode
-                    ? `${selectedChildIds.length} of ${eligibleChildren.length} children selected`
-                    : "Send pickup reminders to parents at once."}
-                </Text>
-              </View>
-
-              {!isInSelectionMode ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Enable selection mode for bulk pickup reminders"
-                  onPress={() => setIsSelectMode(true)}
-                  className="min-h-10 items-center justify-center rounded-xl bg-teal-50 border border-teal-600 px-4 active:bg-teal-100"
-                >
-                  <Text className="text-sm font-bold text-teal-700">Select</Text>
-                </Pressable>
-              ) : (
-                <View className="flex-row items-center gap-2">
-                  <View className="rounded-full bg-teal-600 px-3 py-1">
-                    <Text className="text-xs font-bold text-white">
-                      {selectedChildIds.length} selected
-                    </Text>
-                  </View>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Exit selection mode"
-                    onPress={handleExitSelectMode}
-                    className="min-h-9 items-center justify-center rounded-xl bg-gray-100 px-3 active:bg-gray-200"
-                  >
-                    <Text className="text-xs font-bold text-gray-700">Cancel</Text>
-                  </Pressable>
-                </View>
-              )}
-            </View>
-
-            {isInSelectionMode ? (
-              <View className="mt-3 flex-row items-center gap-2.5">
-                {selectedChildIds.length > 0 ? (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Clear selection"
-                    accessibilityState={{ disabled: isNotifying }}
-                    disabled={isNotifying}
-                    onPress={clearSelection}
-                    className="min-h-11 items-center justify-center rounded-xl border border-gray-300 bg-white px-4 active:bg-gray-100"
-                  >
-                    <Text className="text-sm font-bold text-gray-700">Clear</Text>
-                  </Pressable>
-                ) : (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Select all eligible children"
-                    accessibilityState={{ disabled: isNotifying }}
-                    disabled={isNotifying}
-                    onPress={selectAll}
-                    className="min-h-11 items-center justify-center rounded-xl border border-teal-600 bg-teal-50 px-4 active:bg-teal-100"
-                  >
-                    <Text className="text-sm font-bold text-teal-700">Select All</Text>
-                  </Pressable>
-                )}
-
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Notify selected parents"
-                  accessibilityState={{
-                    disabled:
-                      isOffline || isNotifying || selectedChildIds.length === 0,
-                    busy: isNotifying,
-                  }}
-                  disabled={
-                    isOffline || isNotifying || selectedChildIds.length === 0
-                  }
-                  onPress={handleNotifyParents}
-                  className={`min-h-11 flex-1 flex-row items-center justify-center gap-2 rounded-xl px-4 ${
-                    isOffline || isNotifying || selectedChildIds.length === 0
-                      ? "bg-gray-200"
-                      : "bg-teal-600 active:bg-teal-700"
-                  }`}
-                >
-                  {isNotifying ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  ) : (
-                    <Send
-                      size={16}
-                      color={
-                        selectedChildIds.length === 0 || isOffline
-                          ? "#9CA3AF"
-                          : "#FFFFFF"
-                      }
-                    />
-                  )}
-                  <Text
-                    className={`text-sm font-bold ${
-                      selectedChildIds.length === 0 || isOffline
-                        ? "text-gray-400"
-                        : "text-white"
-                    }`}
-                  >
-                    {isNotifying
-                      ? "Sending..."
-                      : selectedChildIds.length > 0
-                        ? `Notify ${selectedChildIds.length} Parent${selectedChildIds.length > 1 ? "s" : ""}`
-                        : "Notify Parents"}
-                  </Text>
-                </Pressable>
-              </View>
-            ) : null}
-          </View>
-        </View>
-      ) : null}
+      <PickupReminderBulkBar
+        eligibleCount={eligibleChildren.length}
+        selectedCount={selectedChildIds.length}
+        isInSelectionMode={isInSelectionMode}
+        isNotifying={isNotifying}
+        isOffline={isOffline}
+        onEnterSelectMode={() => setIsSelectMode(true)}
+        onExitSelectMode={handleExitSelectMode}
+        onSelectAll={selectAll}
+        onClearSelection={clearSelection}
+        onNotifyParents={handleNotifyParents}
+      />
 
       <RefreshableScrollView
         className="flex-1"
@@ -337,35 +224,7 @@ export function TeacherPickupScreen() {
       >
         <View className="px-5 pt-2">
           {filteredChildren.length === 0 ? (
-            <View className="items-center justify-center py-16 px-6">
-              {searchQuery ? (
-                <>
-                  <View className="h-16 w-16 items-center justify-center rounded-2xl bg-gray-100 mb-4">
-                    <Search size={40} color="#9CA3AF" />
-                  </View>
-                  <Text className="text-2xl font-black text-gray-800 mb-2 text-center">
-                    No Children Found
-                  </Text>
-                  <Text className="text-lg font-bold text-gray-500 text-center leading-7">
-                    No children match your search.{"\n"}
-                    Try a different search term.
-                  </Text>
-                </>
-              ) : (
-                <>
-                  <View className="h-20 w-20 items-center justify-center rounded-3xl bg-teal-50 mb-4">
-                    <ShieldCheck size={56} color="#14B8A6" />
-                  </View>
-                  <Text className="text-2xl font-black text-gray-800 mb-2 text-center">
-                    All Clear
-                  </Text>
-                  <Text className="text-lg font-bold text-gray-500 text-center leading-7">
-                    All present children have been picked up{"\n"}
-                    or none are currently signed in.
-                  </Text>
-                </>
-              )}
-            </View>
+            <PickupEmptyState searchQuery={searchQuery} />
           ) : (
             <View className="flex flex-col">
               {filteredChildren.map((child, index) => (
@@ -402,82 +261,30 @@ export function TeacherPickupScreen() {
         </View>
       </RefreshableScrollView>
 
-      {/* Verification Modal */}
-      <Modal
+      <PickupReleaseModal
         visible={!!selectedChild}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={handleClose}
-      >
-        <View className="flex-1 justify-end bg-black/40">
-          <Pressable className="absolute inset-0" onPress={handleClose} />
-          <View className="bg-gray-50 rounded-t-3xl overflow-hidden flex-1 mt-20">
-            {/* Modal Header */}
-            <View
-              className="bg-white px-5 pt-6 pb-4 border-b border-gray-100 flex-row justify-between items-center"
-              style={{
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.04,
-                shadowRadius: 6,
-                elevation: 2,
-              }}
-            >
-              <Text className="text-2xl font-black text-gray-900">
-                Release Authorization
-              </Text>
-              <Pressable
-                onPress={handleClose}
-                className="px-4 py-2 rounded-full bg-gray-100 active:bg-gray-200"
-                accessibilityRole="button"
-                accessibilityLabel="Cancel and close"
-              >
-                <Text className="text-gray-600 font-black text-sm">Cancel</Text>
-              </Pressable>
-            </View>
-
-            {selectedChild && (
-              <ScrollView
-                className="flex-1"
-                contentContainerClassName="p-5 pb-8"
-                showsVerticalScrollIndicator={false}
-              >
-                <PickupChildInfoCard child={selectedChild} />
-
-                {!isManualRelease ? (
-                  <PickupCodeVerifier
-                    code={code}
-                    onChangeCode={setCode}
-                    onVerify={handleVerify}
-                    isVerifying={isVerifying}
-                    onSwitchToManual={() => setIsManualRelease(true)}
-                  />
-                ) : (
-                  <PickupManualOverridePanel
-                    key={`${selectedChild._id}:${selectedGuardianIndex ?? "parent"}`}
-                    childId={selectedChild._id}
-                    parent={selectedChild.parent}
-                    guardians={selectedChild.authorizedPickupPersons || []}
-                    selectedGuardianIndex={selectedGuardianIndex}
-                    onSelectGuardian={(index) => {
-                      setSelectedGuardianIndex(index);
-                      setIsVisuallyVerified(false);
-                    }}
-                    onConfirm={handleManualRelease}
-                    isReleasing={isReleasing}
-                    onBack={() => {
-                      setIsManualRelease(false);
-                      setIsVisuallyVerified(false);
-                    }}
-                    isVisuallyVerified={isVisuallyVerified}
-                    onToggleVisualVerification={setIsVisuallyVerified}
-                  />
-                )}
-              </ScrollView>
-            )}
-          </View>
-        </View>
-      </Modal>
+        child={selectedChild}
+        code={code}
+        isManualRelease={isManualRelease}
+        isVerifying={isVerifying}
+        isReleasing={isReleasing}
+        selectedGuardianIndex={selectedGuardianIndex}
+        isVisuallyVerified={isVisuallyVerified}
+        onChangeCode={setCode}
+        onVerify={handleVerify}
+        onSwitchToManual={() => setIsManualRelease(true)}
+        onSelectGuardian={(index) => {
+          setSelectedGuardianIndex(index);
+          setIsVisuallyVerified(false);
+        }}
+        onConfirmManualRelease={handleManualRelease}
+        onBackToCode={() => {
+          setIsManualRelease(false);
+          setIsVisuallyVerified(false);
+        }}
+        onToggleVisualVerification={setIsVisuallyVerified}
+        onClose={handleClose}
+      />
     </ScreenShell>
   );
 }

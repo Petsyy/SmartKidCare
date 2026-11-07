@@ -4,6 +4,14 @@ export type CompetencyLevel =
   | "developing"
   | "achieved";
 
+export type EvaluationPeriod = "quarterly" | "final";
+
+export type PeriodState = {
+  isLocked: boolean;
+  isSubmitted: boolean;
+  prerequisiteLabel: string | null;
+};
+
 export type CompetencyDefinition = {
   _id: string;
   code: string;
