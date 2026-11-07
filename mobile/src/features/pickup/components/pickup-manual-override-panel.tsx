@@ -1,22 +1,19 @@
 import React, { useMemo, useState } from "react";
 import {
-  View,
-  Text,
-  Pressable,
   ActivityIndicator,
-  Image,
   Alert,
+  Pressable,
+  Text,
+  View,
 } from "react-native";
 import {
-  ShieldCheck,
-  QrCode,
   AlertCircle,
-  CheckCircle2,
-  XCircle,
-  IdCard,
-  RefreshCw,
+  QrCode,
+  ShieldCheck,
 } from "lucide-react-native";
 import { PickupPersonSelector } from "./pickup-person-selector";
+import { PickupParentIdCard, type ParentInfo } from "./pickup-parent-id-card";
+import { PickupGuardianIdCard } from "./pickup-guardian-id-card";
 import type { Guardian } from "@/src/api/api.types";
 import { ImageViewerModal } from "@/src/components/ui";
 import { getParentIdDocumentUrl } from "@/src/api/pickup.api";
@@ -25,11 +22,7 @@ import {
   reportHandledError,
 } from "@/src/lib/error-reporting";
 
-interface ParentInfo {
-  firstName: string;
-  lastName: string;
-  hasIdDocument: boolean;
-}
+export type { ParentInfo };
 
 interface Props {
   childId: string;
@@ -175,7 +168,7 @@ export function PickupManualOverridePanel({
 
   return (
     <View
-      className="bg-white p-6 rounded-3xl overflow-hidden"
+      className="overflow-hidden rounded-3xl bg-white p-6"
       style={{
         shadowColor: "#0F172A",
         shadowOffset: { width: 0, height: 3 },
@@ -185,25 +178,25 @@ export function PickupManualOverridePanel({
       }}
     >
       {/* Section Header */}
-      <View className="flex-row items-center mb-2">
-        <View className="h-10 w-10 rounded-xl bg-amber-50 items-center justify-center mr-3 border border-amber-200">
+      <View className="mb-2 flex-row items-center">
+        <View className="mr-3 h-10 w-10 items-center justify-center rounded-xl border border-amber-200 bg-amber-50">
           <ShieldCheck size={22} color="#D97706" />
         </View>
         <View className="flex-1">
           <Text className="text-xl font-black text-gray-900">
             Manual Override
           </Text>
-          <Text className="text-sm font-semibold text-gray-500 mt-0.5">
+          <Text className="mt-0.5 text-sm font-semibold text-gray-500">
             Verify using physical photo ID
           </Text>
         </View>
       </View>
 
       {/* Warning Banner */}
-      <View className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 mt-4">
+      <View className="mb-6 mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
         <View className="flex-row items-start">
           <AlertCircle size={18} color="#D97706" />
-          <Text className="text-amber-800 text-sm font-semibold ml-2 flex-1 leading-5">
+          <Text className="ml-2 flex-1 text-sm font-semibold leading-5 text-amber-800">
             Check the person’s government-issued photo ID and confirm it matches
             one of the authorized persons below before releasing the child.
           </Text>
@@ -218,169 +211,31 @@ export function PickupManualOverridePanel({
         onSelect={onSelectGuardian}
       />
 
-      {isParentSelected && parent && (
-        <View className="mt-5 border border-gray-200 rounded-2xl p-4 bg-gray-50">
-          <Text className="text-sm font-black text-gray-800 mb-2">
-            Parent Verification Document
-          </Text>
-          {!parent.hasIdDocument ? (
-            <View className="bg-red-50 border border-red-200 rounded-2xl p-4">
-              <View className="flex-row items-start">
-                <AlertCircle size={18} color="#DC2626" />
-                <Text className="text-red-700 text-sm font-semibold ml-2 flex-1 leading-5">
-                  No parent government-issued photo ID is stored. Manual release
-                  is blocked; use the pickup code or update the enrollment
-                  record.
-                </Text>
-              </View>
-            </View>
-          ) : (
-            <Pressable
-              onPress={handleViewParentId}
-              disabled={isLoadingParentId}
-              className={`flex-row items-center justify-center rounded-2xl border px-4 py-4 ${
-                parentIdLoadFailed
-                  ? "bg-amber-50 border-amber-200"
-                  : "bg-white border-teal-200"
-              }`}
-              accessibilityRole="button"
-              accessibilityLabel={
-                parentIdLoadFailed
-                  ? "Retry loading parent government-issued photo ID"
-                  : "View parent government-issued photo ID"
-              }
-              accessibilityState={{ disabled: isLoadingParentId }}
-            >
-              {isLoadingParentId ? (
-                <ActivityIndicator color="#0D9488" />
-              ) : parentIdLoadFailed ? (
-                <RefreshCw size={20} color="#D97706" />
-              ) : (
-                <IdCard size={20} color="#0D9488" />
-              )}
-              <Text
-                className={`ml-2 font-black text-sm ${parentIdLoadFailed ? "text-amber-700" : "text-teal-700"}`}
-              >
-                {isLoadingParentId
-                  ? "Loading Parent Government ID..."
-                  : parentIdLoadFailed
-                    ? "Retry Parent Government ID"
-                    : "View Parent Government ID"}
-              </Text>
-            </Pressable>
-          )}
+      {isParentSelected && parent ? (
+        <PickupParentIdCard
+          parent={parent}
+          isLoadingParentId={isLoadingParentId}
+          parentIdLoadFailed={parentIdLoadFailed}
+          hasViewedParentId={hasViewedParentId}
+          isVisuallyVerified={isVisuallyVerified}
+          onViewParentId={handleViewParentId}
+          onToggleVisualVerification={onToggleVisualVerification}
+        />
+      ) : null}
 
-          {parent.hasIdDocument && !parentIdLoadFailed && (
-            <Text className="text-xs font-semibold text-gray-500 mt-3 leading-5">
-              Open the stored government-issued photo ID and compare it with the
-              physical government ID presented by the parent.
-            </Text>
-          )}
-
-          <Pressable
-            onPress={() => onToggleVisualVerification(!isVisuallyVerified)}
-            disabled={
-              !parent.hasIdDocument ||
-              parentIdLoadFailed ||
-              isLoadingParentId ||
-              !hasViewedParentId
-            }
-            className={`mt-4 flex-row items-center justify-center rounded-2xl border px-4 py-3 ${
-              isVisuallyVerified
-                ? "bg-emerald-50 border-emerald-200"
-                : "bg-white border-gray-200"
-            }`}
-            accessibilityRole="checkbox"
-            accessibilityLabel="Confirm the parent and presented physical ID match the stored parent government-issued photo ID"
-            accessibilityState={{
-              checked: isVisuallyVerified,
-              disabled:
-                !parent.hasIdDocument ||
-                parentIdLoadFailed ||
-                isLoadingParentId ||
-                !hasViewedParentId,
-            }}
-          >
-            {isVisuallyVerified ? (
-              <CheckCircle2 size={18} color="#059669" />
-            ) : (
-              <XCircle size={18} color="#6B7280" />
-            )}
-            <Text
-              className={`ml-2 font-black text-sm ${isVisuallyVerified ? "text-emerald-700" : "text-gray-700"}`}
-            >
-              {isVisuallyVerified
-                ? "Parent Government ID Match Confirmed"
-                : hasViewedParentId
-                  ? "Confirm Parent Government ID Match"
-                  : "View Parent Government ID First"}
-            </Text>
-          </Pressable>
-        </View>
-      )}
-
-      {selectedGuardian && (
-        <View className="mt-5 border border-gray-200 rounded-2xl p-4 bg-gray-50">
-          <Text className="text-sm font-black text-gray-800 mb-3">
-            Guardian Verification Documents
-          </Text>
-          <View>
-            {selectedGuardian.idUrl ? (
-              <View>
-                <Text className="text-xs font-bold text-gray-500 mb-2">
-                  Guardian Government-Issued Photo ID
-                </Text>
-                <Pressable
-                  onPress={() =>
-                    setSelectedImage({
-                      url: selectedGuardian.idUrl!,
-                      title: "Guardian ID",
-                      kind: "guardian",
-                    })
-                  }
-                >
-                  <Image
-                    source={{ uri: selectedGuardian.idUrl }}
-                    className="h-28 w-full rounded-2xl"
-                    resizeMode="cover"
-                  />
-                </Pressable>
-              </View>
-            ) : null}
-          </View>
-
-          <Pressable
-            onPress={() => onToggleVisualVerification(!isVisuallyVerified)}
-            className={`mt-4 flex-row items-center justify-center rounded-2xl border px-4 py-3 ${
-              isVisuallyVerified
-                ? "bg-emerald-50 border-emerald-200"
-                : "bg-white border-gray-200"
-            }`}
-            accessibilityRole="button"
-            accessibilityLabel="Confirm visual verification against the stored guardian ID"
-          >
-            {isVisuallyVerified ? (
-              <CheckCircle2 size={18} color="#059669" />
-            ) : (
-              <XCircle size={18} color="#6B7280" />
-            )}
-            <Text
-              className={`ml-2 font-black text-sm ${
-                isVisuallyVerified ? "text-emerald-700" : "text-gray-700"
-              }`}
-            >
-              {isVisuallyVerified
-                ? "Visual Match Confirmed"
-                : "Confirm Visual Match"}
-            </Text>
-          </Pressable>
-        </View>
-      )}
+      {selectedGuardian ? (
+        <PickupGuardianIdCard
+          guardian={selectedGuardian}
+          isVisuallyVerified={isVisuallyVerified}
+          onViewImage={setSelectedImage}
+          onToggleVisualVerification={onToggleVisualVerification}
+        />
+      ) : null}
 
       <Pressable
         onPress={handleConfirmPress}
         disabled={confirmDisabled}
-        className={`mt-4 py-5 rounded-2xl items-center active:opacity-90 ${isReleasing ? "bg-teal-400" : "bg-teal-600"}`}
+        className={`mt-4 items-center rounded-2xl py-5 active:opacity-90 ${isReleasing ? "bg-teal-400" : "bg-teal-600"}`}
         style={{
           shadowColor: "#14B8A6",
           shadowOffset: { width: 0, height: 4 },
@@ -394,7 +249,7 @@ export function PickupManualOverridePanel({
         {isReleasing ? (
           <ActivityIndicator color="white" />
         ) : (
-          <Text className="text-white font-black text-xl tracking-wide">
+          <Text className="text-xl font-black tracking-wide text-white">
             Confirm Manual Release
           </Text>
         )}
@@ -403,12 +258,12 @@ export function PickupManualOverridePanel({
       {/* Back Link */}
       <Pressable
         onPress={onBack}
-        className="py-4 items-center mt-2 flex-row justify-center"
+        className="mt-2 flex-row items-center justify-center py-4"
         accessibilityRole="button"
         accessibilityLabel="Back to code verification"
       >
         <QrCode size={16} color="#6B7280" />
-        <Text className="text-gray-600 font-black text-base ml-2">
+        <Text className="ml-2 text-base font-black text-gray-600">
           Back to Code Verification
         </Text>
       </Pressable>

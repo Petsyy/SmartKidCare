@@ -42,6 +42,7 @@ export type AttendanceStatus = AttendanceRecord["status"];
 export type ExcuseReason = NonNullable<AttendanceRecord["excuseReason"]>;
 export type AttendanceFilter = "all" | "unmarked" | AttendanceStatus;
 export type AttendanceSelection = Omit<AttendanceRecord, "child">;
+export type { TeacherAttendanceStats, ExcuseEditorState } from "../types";
 
 export const applyAttendanceSelection = (
   current: Record<string, AttendanceSelection | undefined>,
