@@ -7,10 +7,8 @@ import {
   ScreenLoadingState,
   ScreenShell,
 } from "../../../components/ui";
-import {
-  useCompetencyEvaluation,
-  type EvaluationPeriod,
-} from "../hooks/useCompetencyEvaluation";
+import { useCompetencyEvaluation } from "../hooks/useCompetencyEvaluation";
+import type { EvaluationPeriod } from "../types";
 import { useUnsavedChangesGuard } from "../../../hooks/use-unsaved-changes-guard";
 import { useAndroidBackRoute } from "../../../hooks/use-android-back-route";
 import { useSafeBack } from "../../../hooks/use-safe-back";

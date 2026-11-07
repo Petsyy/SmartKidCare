@@ -46,8 +46,6 @@ type OfflineCompetencyEvaluation = Omit<CompetencyEvaluation, "entries"> & {
   }[];
 };
 
-export type { EvaluationPeriod };
-
 const competencyDraftScopeKey = (
   childId: string,
   period: EvaluationPeriod,

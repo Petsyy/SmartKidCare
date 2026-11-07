@@ -10,4 +10,3 @@ export type {
   CompetencyEvaluation,
   CompetencyHistory,
 } from "./types";
-export { default as CompetencyEvaluationScreen } from "./screens/competency-evaluation";
