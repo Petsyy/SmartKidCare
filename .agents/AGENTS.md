@@ -234,6 +234,83 @@ Avoid inline styles except for trivial values.
 
 Never duplicate components.
 
+## NativeWind Interactive-State Safety
+
+NativeWind utilities can require internal component upgrades. In Expo Go,
+conditionally introducing those utilities after the first render can produce a
+misleading navigation-context error when a button, chip, tab, toggle, or
+selectable card is pressed.
+
+When editing interactive React Native components:
+
+- Do not conditionally introduce `shadow-*`, `transition-*`, `animate-*`,
+  `translate-*`, `scale-*`, or `rotate-*` utilities after the component mounts.
+- Conditional colors, borders, opacity, typography, and spacing utilities are
+  allowed.
+- If a shadow, animation, or transform is required, make its capability part of
+  the base class from the initial render, or use a consistently mounted React
+  Native/Reanimated implementation.
+- Prefer selection feedback through background, border, text, icon, and opacity
+  changes. Do not add a conditional shadow merely for selection emphasis.
+- Static interaction variants such as `active:opacity-*` or `active:scale-*` are
+  acceptable when they are present in the initial class string.
+- Keep list keys stable and unique so interactive elements are not unexpectedly
+  remounted.
+- Do not work around these failures by adding another `NavigationContainer`,
+  suppressing `LogBox`, hiding Metro errors, or modifying `node_modules`.
+
+Avoid:
+
+```tsx
+className={selected ? "bg-teal-600 shadow-md" : "bg-white"}
+```
+
+Prefer:
+
+```tsx
+className={
+  selected
+    ? "bg-teal-600 border-teal-600"
+    : "bg-white border-slate-200"
+}
+```
+
+If every state should have a shadow, keep it static:
+
+```tsx
+className={`shadow-sm ${selected ? "bg-teal-600" : "bg-white"}`}
+```
+
+Before completing any mobile UI change:
+
+1. Inspect modified interactive components for conditional upgrade-sensitive
+   utilities.
+2. Run TypeScript and lint checks.
+3. Test every modified button, chip, tab, and toggle in Expo Go, including all
+   state transitions.
+4. Confirm there are no Metro errors, ErrorBoundary screens, or NativeWind
+   upgrade warnings.
+
+## TanStack Query State Hydration Safety
+
+When consuming `useQuery` data that needs local state hydration or draft management:
+
+- **Prefer deriving state directly via `useMemo`** from query `data` whenever mutations/drafts are not needed. Derived state updates synchronously within the same render pass when `isLoading` turns `false`.
+- **Never return raw `loading: isLoading` when hydrating `useState` via `useEffect`.** `useEffect` runs asynchronously *after* the render phase where `isLoading` turns `false`. During that intermediate render frame, `loading` is `false` but local state is still at its empty initial value (`[]` or `null`), triggering false empty states ("No data", "No children") or flashes.
+- **Always provide a hydration guard** if local state must be hydrated in `useEffect` (e.g. for offline draft merging or editable forms):
+
+```tsx
+// Example hydration guard
+const isHydrating =
+  !!data && localItems.length === 0 && data.items.length > 0;
+
+return {
+  items: localItems,
+  loading: isLoading || isHydrating,
+};
+```
+
+
 ---
 
 # Backend Standards

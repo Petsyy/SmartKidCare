@@ -25,6 +25,21 @@ npm run ios
 npm run web
 ```
 
+## EAS Preview Workflow
+
+The first EAS workflow creates an internally distributable Android preview build.
+It runs manually, so pushes and pull requests do not consume EAS build resources.
+
+From `mobile/`, validate and run it with:
+
+```bash
+eas workflow:validate .eas/workflows/preview.yml
+eas workflow:run .eas/workflows/preview.yml
+```
+
+The workflow uses the `preview` build profile in `eas.json`. It does not submit
+the build to Google Play.
+
 ## API Configuration
 
 Set backend and explorer URLs in:
