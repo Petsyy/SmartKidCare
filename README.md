@@ -129,10 +129,10 @@ Open another terminal from the repository root:
 ```bash
 cd mobile
 npm install
-npm start
+npx expo start --go
 ```
 
-Follow the Expo CLI instructions to open the app on a supported device, emulator, or development environment. Configure the mobile app to use the reachable backend API address for your environment; a device cannot usually reach a computer's `localhost` by using `localhost` itself.
+Scan the QR code with Expo Go on your mobile device or open it in an emulator. Configure the mobile app to use the reachable backend API address for your environment; a device cannot usually reach a computer's `localhost` by using `localhost` itself.
 
 ## Development Commands
 
@@ -160,6 +160,7 @@ Run commands from the relevant project directory.
 
 | Command | Description |
 | --- | --- |
+| `npx expo start --go` | Start Expo for Expo Go |
 | `npm start` | Start Expo |
 | `npm run android` | Run the Android native development build |
 | `npm run ios` | Run the iOS native development build |
