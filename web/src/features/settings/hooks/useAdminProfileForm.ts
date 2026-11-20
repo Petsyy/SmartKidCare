@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import type { AdminProfileForm, UseAdminProfileFormProps } from "../types";
-import { showAdminProfileSavedModal } from "@/utils/sweet-alert-modal";
+import { adminProfileSchema } from "../validations";
+import { showAdminProfileSavedModal } from "@/utils/alerts";
 
 export function useAdminProfileForm({
   profile,
@@ -32,29 +33,10 @@ export function useAdminProfileForm({
     key: keyof AdminProfileForm,
     value: string,
   ): string | undefined => {
-    const trimmedValue = String(value || "").trim();
-    const requiredMessages: Partial<Record<keyof AdminProfileForm, string>> = {
-      username: "Username is required.",
-      firstName: "First name is required.",
-      middleName: "Middle name is required.",
-      lastName: "Last name is required.",
-      email: "Email is required.",
-      phone: "Phone number is required.",
-    };
-
-    const requiredMessage = requiredMessages[key];
-    if (requiredMessage && trimmedValue.length === 0) {
-      return requiredMessage;
-    }
-
-    if (key === "email" && trimmedValue.length > 0) {
-      const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedValue);
-      if (!isValidEmail) {
-        return "Email is invalid.";
-      }
-    }
-
-    return undefined;
+    const fieldSchema = adminProfileSchema.shape[key];
+    if (!fieldSchema) return undefined;
+    const result = fieldSchema.safeParse(value);
+    return result.success ? undefined : result.error.issues[0]?.message;
   };
 
   useEffect(() => {

@@ -3,7 +3,7 @@ import { PasswordVisibilityButton } from "@/components/ui/PasswordVisibilityButt
 import {
   AUTH_PASSWORD_MAX_LENGTH,
   type AdminLoginFormValues,
-} from "../validations/auth.validation";
+} from "../validations";
 import { AUTH_INPUT_CLASS } from "../constants";
 
 export interface PasswordSetupFieldsProps {

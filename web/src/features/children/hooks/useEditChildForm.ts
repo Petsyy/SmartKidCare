@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateChild } from "../services/children.service";
 import { getUsers, type User } from "@/features/users";
-import { showErrorModal } from "@/utils/sweet-alert-modal";
+import { showErrorModal } from "@/utils/alerts";
 import { editChildSchema, type EditChildFormValues } from "../validations/edit-child.validation";
 import type { ChildForEdit, UseEditChildFormProps } from "../types";
 

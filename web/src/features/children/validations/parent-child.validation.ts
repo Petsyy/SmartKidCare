@@ -11,7 +11,7 @@ export const sanitizePhoneInput = (value: string): string => {
   return digitsOnly.slice(0, 11);
 };
 
-const nameSchema = (label: string, minLength = 2, maxLength = 50) =>
+export const nameSchema = (label: string, minLength = 2, maxLength = 50) =>
   z
     .string()
     .trim()
@@ -22,7 +22,7 @@ const nameSchema = (label: string, minLength = 2, maxLength = 50) =>
       message: `${label} contains invalid characters.`,
     });
 
-const dateOfBirthSchema = z
+export const dateOfBirthSchema = z
   .string()
   .refine((val) => val.length > 0, "Date of birth is required.")
   .refine((val) => !isNaN(new Date(val).getTime()), "Invalid date.")
@@ -44,85 +44,80 @@ const dateOfBirthSchema = z
     return age >= 3 && age <= 5;
   }, "Age must be between 3 and 5 years old.");
 
-const enrollmentDateSchema = z
+export const enrollmentDateSchema = z
   .string()
   .refine((val) => val.length > 0, "Enrollment date is required.")
   .refine((val) => !isNaN(new Date(val).getTime()), "Invalid date.");
 
-const schoolYearSchema = z
+export const schoolYearSchema = z
   .string()
   .refine(
     (val) => val.length > 0 && SCHOOL_YEAR_REGEX.test(val),
     "School year is required.",
   );
 
-const genderSchema = z.enum(["male", "female"], {
+export const genderSchema = z.enum(["male", "female"], {
   message: "Please select a gender.",
 });
 
-// AddChildForParent Schema and Types (for parent-only forms)
-const createAddChildForParentSchema = () =>
-  z
-    .object({
-      firstName: nameSchema("First name", 2, 50),
-      middleName: nameSchema("Middle name", 2, 50),
-      lastName: nameSchema("Last name", 2, 50),
-      dateOfBirth: dateOfBirthSchema,
-      age: z.string(),
-      gender: genderSchema,
-      enrollmentDate: enrollmentDateSchema,
-      schoolYear: schoolYearSchema,
-    })
-    .superRefine((data, ctx) => {
-      const enrollmentDate = new Date(data.enrollmentDate);
-      if (!isNaN(enrollmentDate.getTime())) {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        enrollmentDate.setHours(0, 0, 0, 0);
+export const addChildForParentSchema = z
+  .object({
+    firstName: nameSchema("First name", 2, 50),
+    middleName: nameSchema("Middle name", 2, 50),
+    lastName: nameSchema("Last name", 2, 50),
+    dateOfBirth: dateOfBirthSchema,
+    age: z.string(),
+    gender: genderSchema,
+    enrollmentDate: enrollmentDateSchema,
+    schoolYear: schoolYearSchema,
+  })
+  .superRefine((data, ctx) => {
+    const enrollmentDate = new Date(data.enrollmentDate);
+    if (!isNaN(enrollmentDate.getTime())) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      enrollmentDate.setHours(0, 0, 0, 0);
 
-        if (enrollmentDate > today) {
+      if (enrollmentDate > today) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Cannot be in the future.",
+          path: ["enrollmentDate"],
+        });
+      }
+
+      const birthDate = new Date(data.dateOfBirth);
+      birthDate.setHours(0, 0, 0, 0);
+      if (enrollmentDate < birthDate) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Cannot be before birth date.",
+          path: ["enrollmentDate"],
+        });
+      }
+
+      const matches = SCHOOL_YEAR_REGEX.exec(data.schoolYear.trim());
+      if (matches) {
+        const startYear = Number(matches[1]);
+        const endYear = Number(matches[2]);
+        if (endYear !== startYear + 1) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: "Cannot be in the future.",
-            path: ["enrollmentDate"],
+            message: "Invalid year range.",
+            path: ["schoolYear"],
           });
-        }
-
-        const birthDate = new Date(data.dateOfBirth);
-        birthDate.setHours(0, 0, 0, 0);
-        if (enrollmentDate < birthDate) {
+        } else if (startYear !== enrollmentDate.getFullYear()) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: "Cannot be before birth date.",
-            path: ["enrollmentDate"],
+            message: "Must match enrollment year.",
+            path: ["schoolYear"],
           });
-        }
-
-        // Validate school year
-        const matches = SCHOOL_YEAR_REGEX.exec(data.schoolYear.trim());
-        if (matches) {
-          const startYear = Number(matches[1]);
-          const endYear = Number(matches[2]);
-          if (endYear !== startYear + 1) {
-            ctx.addIssue({
-              code: z.ZodIssueCode.custom,
-              message: "Invalid year range.",
-              path: ["schoolYear"],
-            });
-          } else if (startYear !== enrollmentDate.getFullYear()) {
-            ctx.addIssue({
-              code: z.ZodIssueCode.custom,
-              message: "Must match enrollment year.",
-              path: ["schoolYear"],
-            });
-          }
         }
       }
-    });
+    }
+  });
 
-export type AddChildForParentFormValues = z.infer<
-  ReturnType<typeof createAddChildForParentSchema>
->;
+export type AddChildForParentFormValues = z.infer<typeof addChildForParentSchema>;
 export type AddChildForParentField = keyof AddChildForParentFormValues;
 export type AddChildForParentFormErrors = Partial<
   Record<AddChildForParentField, string>
@@ -132,17 +127,13 @@ export const validateAddChildForParentField = (
   field: AddChildForParentField,
   values: AddChildForParentFormValues,
 ): string | undefined => {
-  const schema = createAddChildForParentSchema();
-
   try {
-    // For fields that depend on other fields, validate the whole object
     if (field === "enrollmentDate" || field === "schoolYear") {
-      schema.parse(values);
+      addChildForParentSchema.parse(values);
       return undefined;
     }
 
-    // For independent fields, validate just that field
-    const fieldSchema = schema.shape[field];
+    const fieldSchema = addChildForParentSchema.shape[field];
     if (fieldSchema) {
       fieldSchema.parse(values[field]);
     }
@@ -161,11 +152,9 @@ export const validateAddChildForParentField = (
 export const validateAddChildForParentForm = (
   form: AddChildForParentFormValues,
 ) => {
-  const schema = createAddChildForParentSchema();
   const errors: AddChildForParentFormErrors = {};
-
   try {
-    schema.parse(form);
+    addChildForParentSchema.parse(form);
   } catch (error) {
     if (error instanceof z.ZodError) {
       error.issues.forEach((err: z.ZodIssue) => {
@@ -174,7 +163,5 @@ export const validateAddChildForParentForm = (
       });
     }
   }
-
   return errors;
 };
-

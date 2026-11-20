@@ -11,7 +11,7 @@ import {
   HealthSection,
   GrowthHistorySection,
   ProfileSection,
-} from "./child-details-modal/sections";
+} from "./child-details-modal/panels";
 import {
   type ChildDetailsModalProps,
   type ChildDetailsTab,

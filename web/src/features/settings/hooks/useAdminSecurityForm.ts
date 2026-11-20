@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { passwordChangeFormSchema } from "@/features/auth";
-import { showAdminPasswordChangedModal } from "@/utils/sweet-alert-modal";
+import { passwordChangeFormSchema } from "../validations";
+import { showAdminPasswordChangedModal } from "@/utils/alerts";
 import { DEFAULT_PASSWORD_FORM } from "../constants/sections";
 import { useAdminPassword2FA } from "./useAdminPassword2FA";
 import type { PasswordForm, UseAdminSecurityFormProps } from "../types";
