@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { getUsers, type User } from "@/api/authentication.api";
+import { getUsers, type User } from "@/features/users";
 import { useQuery } from "@tanstack/react-query";
 import { webQueryKeys } from "@/lib/query-keys";
 

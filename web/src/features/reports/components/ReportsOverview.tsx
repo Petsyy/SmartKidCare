@@ -13,7 +13,7 @@ import type {
   ReportGenderBreakdown,
   ReportStudentListItem,
   ReportStudentListPagination,
-} from "@/features/reports/hooks/useReportAnalytics";
+} from "../types";
 
 const NUMBER_FORMATTER = new Intl.NumberFormat("en-PH");
 const STUDENT_PAGE_SIZE_OPTIONS = [10, 20, 50];

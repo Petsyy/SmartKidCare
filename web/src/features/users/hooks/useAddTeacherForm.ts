@@ -1,14 +1,10 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createTeacher } from "@/api/teacher.api";
+import { createTeacher } from "../services/users.service";
+import type { UseAddTeacherFormProps } from "../types";
 import { showTeacherCredentialsModal, showErrorModal } from "@/utils/sweet-alert-modal";
-import { addTeacherSchema, type AddTeacherFormValues } from "@/features/users/validations/create-teacher.validation";
-
-type UseAddTeacherFormProps = {
-  onClose: () => void;
-  onCreated: () => void;
-};
+import { addTeacherSchema, type AddTeacherFormValues } from "../validations/create-teacher.validation";
 
 const EMPTY_FORM: AddTeacherFormValues = {
   firstName: "",

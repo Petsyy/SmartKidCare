@@ -5,7 +5,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/Dialog";
-import type { FeedingRow } from "@/features/feeding/hooks/useFeedingProgram";
+import type { FeedingRow } from "../types";
 
 const labelClass =
   "mb-1.5 text-sm font-semibold uppercase tracking-[0.04em] text-slate-700 dark:text-slate-400";

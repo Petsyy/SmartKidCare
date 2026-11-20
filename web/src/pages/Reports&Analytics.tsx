@@ -3,21 +3,27 @@ import { useLocation, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
-import { useReportAnalytics } from "@/features/reports/hooks/useReportAnalytics";
-import { ReportsFilters } from "@/features/reports/components/ReportsFilters";
-import { ReportsOverview } from "@/features/reports/components/ReportsOverview";
-import { CompetencyAnalytics } from "@/features/reports/components/CompetencyAnalytics";
-import { NutritionAnalytics } from "@/features/reports/components/NutritionAnalytics";
-import { ReportExportMenu } from "@/features/reports/components/ReportExportMenu";
-import { PrintableReportSection } from "@/features/reports/components/PrintableReportSection";
-import { Skeleton } from "@/components/ui/Skeleton";
-import { useNutritionAnalytics } from "@/features/reports/hooks/useNutritionAnalytics";
-import { useCompetencyAnalytics } from "@/features/reports/hooks/useCompetencyAnalytics";
 import {
+  CompetencyAnalytics,
+  NutritionAnalytics,
+  PrintableReportSection,
+  ReportExportMenu,
+  ReportsFilters,
+  ReportsOverview,
+  useCompetencyAnalytics,
+  useNutritionAnalytics,
+  useReportAnalytics,
   buildCompetencyCsvRows,
   buildNutritionCsvRows,
   formatReportSchoolYear,
-} from "@/features/reports/utils/report-csv-builders";
+} from "@/features/reports";
+
+
+
+
+
+
+import { Skeleton } from "@/components/ui/Skeleton";
 
 const REPORT_SECTION_IDS = ["overview", "nutrition", "academics"] as const;
 

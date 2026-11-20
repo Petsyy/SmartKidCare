@@ -1,5 +1,5 @@
 import { Archive, BellOff, CheckCheck } from "lucide-react";
-import type { AdminNotificationView } from "@/features/notifications/types/notification.types";
+import type { AdminNotificationView } from "../types";
 
 const CONTENT = {
   inbox: {

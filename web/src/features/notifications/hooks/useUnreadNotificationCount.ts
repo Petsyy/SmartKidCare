@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { getAdminUnreadNotificationCount } from "@/features/notifications/api/notificationApi";
-import { notificationQueryKeys } from "@/features/notifications/queryKeys";
+import { getAdminUnreadNotificationCount } from "../services";
+import { notificationQueryKeys } from "../queryKeys";
 
 export const useUnreadNotificationCount = (userId: string) =>
   useQuery({

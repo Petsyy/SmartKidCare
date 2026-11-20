@@ -9,7 +9,7 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
 } from "@/components/ui/AlertDialog";
-import type { User } from "@/api/authentication.api";
+import type { User } from "../types";
 import { useState } from "react";
 
 type DeleteUserModalProps = {

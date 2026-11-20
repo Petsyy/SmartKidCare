@@ -2,10 +2,15 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { StatsGrid } from "@/features/dashboard/components/StatsGrid";
-import { AttendanceChart } from "@/features/dashboard/components/AttendanceChart";
-import { EnrollmentBarChart } from "@/features/dashboard/components/EnrollmentBarChart";
-import { useAdminDashboard } from "@/features/dashboard/hooks/useAdminDashboard";
+import {
+  StatsGrid,
+  AttendanceChart,
+  EnrollmentBarChart,
+  useAdminDashboard,
+} from "@/features/dashboard";
+
+
+
 import { useSystemSettings } from "@/context/system-settings.context";
 import { StatCardSkeleton } from "@/components/ui/StatCardSkeleton";
 import { Skeleton } from "@/components/ui/Skeleton";

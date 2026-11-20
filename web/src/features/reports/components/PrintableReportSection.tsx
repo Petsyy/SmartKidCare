@@ -18,10 +18,8 @@ import type {
   ReportStudentListItem,
   ReportStudentListPagination,
   ReportSummary,
-} from "@/features/reports/hooks/useReportAnalytics";
-import {
-  formatDateTime,
-} from "@/features/reports/hooks/useReportAnalytics";
+} from "../types";
+import { formatDateTime } from "../utils/report-formatters";
 
 const NUMBER_FORMATTER = new Intl.NumberFormat("en-PH");
 const formatNumber = (value: number) => NUMBER_FORMATTER.format(value);

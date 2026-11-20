@@ -1,4 +1,4 @@
-import { apiRequestOrThrow } from "./api-client";
+import { apiRequestOrThrow } from "@/api/api-client";
 
 export interface NutritionRecord {
   _id: string;
@@ -41,7 +41,10 @@ export type NutritionAnalyticsData = NutritionProgressSummary & {
   schoolYears: string[];
   totalSubmitted: number;
   assessedStudents: number;
-  periods: Record<"initial" | "quarterly" | "final", NutritionStatusDistribution>;
+  periods: Record<
+    "initial" | "quarterly" | "final",
+    NutritionStatusDistribution
+  >;
   comparisons: Record<
     "initialToQuarterly" | "quarterlyToFinal" | "initialToFinal",
     NutritionProgressSummary
@@ -52,6 +55,7 @@ export type NutritionAnalyticsData = NutritionProgressSummary & {
   overweightCount: number;
   obeseCount: number;
 };
+
 export type NutritionAnalyticsFilters = {
   schoolYear?: string;
 };

@@ -6,7 +6,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/Dialog";
-import type { FeedingStatusFilter } from "@/features/feeding/hooks/useFeedingProgram";
+import type { FeedingStatusFilter } from "../types";
 
 type EditModalProps = {
   editingId: string;

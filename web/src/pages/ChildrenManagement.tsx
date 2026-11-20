@@ -3,13 +3,16 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Pagination } from "@/components/ui/Pagination";
-import ChildDetailsModal from "@/features/children/components/ChildDetailsModal";
-import { useChildrenManagement } from "@/features/children/hooks/useChildrenManagement";
-import { useChildrenFilters } from "@/features/children/hooks/useChildrenFilters";
-import { ChildrenTable } from "@/features/children/components/ChildrenTable";
-import { ChildrenStatsGrid } from "@/features/children/components/ChildrenStatsGrid";
-import { ChildrenFilterBar } from "@/features/children/components/ChildrenFilterBar";
-import { getChildBlockchainProof, getChildDocumentUrl } from "@/api/child.api";
+import {
+  ChildDetailsModal,
+  ChildrenFilterBar,
+  ChildrenStatsGrid,
+  ChildrenTable,
+  getChildBlockchainProof,
+  getChildDocumentUrl,
+  useChildrenFilters,
+  useChildrenManagement,
+} from "@/features/children";
 import type { Child, ChildBlockchainProof, ChildDocumentType } from "@/types/child";
 import { useAuthSession } from "@/components/auth/useAuthSession";
 

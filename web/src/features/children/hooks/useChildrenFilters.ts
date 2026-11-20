@@ -1,9 +1,5 @@
 import { useState, useMemo } from "react";
-import type { Child } from "@/types/child";
-
-type UseChildrenFiltersProps = {
-  childrenList: Child[];
-};
+import type { UseChildrenFiltersProps } from "../types";
 
 export function useChildrenFilters({ childrenList }: UseChildrenFiltersProps) {
   const [searchTerm, setSearchTerm] = useState("");

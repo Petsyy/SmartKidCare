@@ -1,9 +1,5 @@
 import { useState } from "react";
 import { Search, Plus, Building2, CheckCircle, XCircle } from "lucide-react";
-import { CentersTable } from "@/features/centers/components/CentersTable";
-import { AddCenterModal } from "@/features/centers/components/AddCenterModal";
-import { EditCenterModal } from "@/features/centers/components/EditCenterModal";
-import { ViewCenterModal } from "@/features/centers/components/ViewCenterModal";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -11,8 +7,14 @@ import { Pagination } from "@/components/ui/Pagination";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { StatCard } from "@/components/ui/StatCard";
 import { StatCardSkeleton } from "@/components/ui/StatCardSkeleton";
-import { type DaycareCenter } from "@/api/daycare-center.api";
-import { useDaycareCenters } from "@/features/centers/hooks/useDaycareCenters";
+import {
+  CentersTable,
+  AddCenterModal,
+  EditCenterModal,
+  ViewCenterModal,
+  useDaycareCenters,
+  type DaycareCenter,
+} from "@/features/centers";
 
 export default function DaycareCenters() {
   const navigate = useNavigate();
@@ -38,7 +40,7 @@ export default function DaycareCenters() {
     activeCount,
     inactiveCount,
     handleAddCenter,
-    handleUpdateCenter
+    handleUpdateCenter,
   } = useDaycareCenters();
 
   return (
@@ -113,7 +115,11 @@ export default function DaycareCenters() {
                 </label>
                 <select
                   value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as "all" | "active" | "inactive")}
+                  onChange={(e) =>
+                    setStatusFilter(
+                      e.target.value as "all" | "active" | "inactive",
+                    )
+                  }
                   className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/30 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 >
                   <option value="all">All Status</option>
@@ -122,7 +128,7 @@ export default function DaycareCenters() {
                 </select>
                 <button
                   onClick={() => setIsAddModalOpen(true)}
-                  className="ml-2 inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-teal-700"
+                  className="cursor-pointer ml-2 inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-teal-700"
                 >
                   <Plus size={16} />
                   <span>New Center</span>
@@ -172,4 +178,3 @@ export default function DaycareCenters() {
     </Layout>
   );
 }
-

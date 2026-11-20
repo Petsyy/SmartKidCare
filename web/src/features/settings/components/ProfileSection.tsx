@@ -1,6 +1,6 @@
 import { PencilLine, X } from "lucide-react";
 import type { UseFormReturn } from "react-hook-form";
-import type { AdminProfileForm } from "@/features/settings/hooks/useAdminSettings";
+import type { AdminProfileForm } from "../types";
 
 const LABEL_CLASS_NAME =
   "mb-2 block text-sm font-semibold tracking-wide text-slate-800 dark:text-slate-200 ml-1";

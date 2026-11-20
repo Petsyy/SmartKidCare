@@ -1,34 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
-import { API_BASE } from "@/api/config";
 import { webQueryKeys } from "@/lib/query-keys";
-
-type AuthSessionState = {
-  isAuthenticated: boolean;
-  user: {
-    _id?: string;
-    email?: string;
-    role?: string;
-    firstName?: string;
-    lastName?: string;
-    mustChangePassword?: boolean;
-  } | null;
-};
+import { getAuthSession, type AuthSessionState, type AuthUser } from "@/features/auth";
 
 type AuthSessionResult = {
   isChecking: boolean;
   isAuthenticated: boolean;
-  user: AuthSessionState["user"];
+  user: AuthUser | null;
   authCheckError: string | null;
   retryAuthCheck: () => Promise<unknown>;
-};
-
-const parseSessionError = async (response: Response) => {
-  const data = await response.json().catch(() => ({}));
-  return (
-    data?.message ||
-    data?.error ||
-    `Unable to verify session (HTTP ${response.status})`
-  );
 };
 
 export function useAuthSession(): AuthSessionResult {
@@ -39,27 +18,7 @@ export function useAuthSession(): AuthSessionResult {
     refetch,
   } = useQuery<AuthSessionState>({
     queryKey: webQueryKeys.authSession(),
-    queryFn: async () => {
-      const response = await fetch(`${API_BASE}/auth/me`, {
-        credentials: "include",
-      });
-
-      if (response.ok) {
-        const payload = (await response.json().catch(() => ({}))) as {
-          user?: AuthSessionState["user"];
-        };
-        return {
-          isAuthenticated: true,
-          user: payload.user ?? null,
-        };
-      }
-
-      if (response.status === 401) {
-        return { isAuthenticated: false, user: null };
-      }
-
-      throw new Error(await parseSessionError(response));
-    },
+    queryFn: getAuthSession,
     retry: false,
     staleTime: Infinity,
   });

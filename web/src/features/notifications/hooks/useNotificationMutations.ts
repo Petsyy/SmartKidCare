@@ -1,5 +1,4 @@
 import {
-  type InfiniteData,
   type QueryKey,
   useMutation,
   useQueryClient,
@@ -8,16 +7,14 @@ import {
   markAllAdminNotificationsRead,
   setAdminNotificationArchived,
   setAdminNotificationRead,
-} from "@/features/notifications/api/notificationApi";
-import { notificationQueryKeys } from "@/features/notifications/queryKeys";
+} from "../services";
+import { notificationQueryKeys } from "../queryKeys";
 import type {
   AdminNotification,
-  AdminNotificationFeedResponse,
   AdminNotificationView,
-} from "@/features/notifications/types/notification.types";
-
-type FeedData = InfiniteData<AdminNotificationFeedResponse, string>;
-type FeedSnapshot = Array<[QueryKey, FeedData | undefined]>;
+  FeedData,
+  FeedSnapshot,
+} from "../types";
 
 const getViewFromKey = (key: QueryKey): AdminNotificationView | null => {
   const value = key[3];

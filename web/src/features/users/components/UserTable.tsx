@@ -1,6 +1,6 @@
 import { Eye, Pencil, MoreVertical } from "lucide-react";
 import { useState } from "react";
-import type { User } from "@/api/authentication.api";
+import type { User } from "../types";
 import { TableSkeleton } from "@/components/ui/TableSkeleton";
 
 type UserTableProps = {

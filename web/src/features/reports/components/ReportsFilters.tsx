@@ -1,5 +1,5 @@
 import { Clock } from "lucide-react";
-import type { ReportDatePreset } from "@/features/reports/hooks/useReportAnalytics";
+import type { ReportDatePreset } from "../types";
 
 
 const PRESET_OPTIONS: Array<{ value: ReportDatePreset; label: string }> = [

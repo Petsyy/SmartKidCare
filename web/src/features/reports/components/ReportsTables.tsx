@@ -1,4 +1,4 @@
-import type { TrendPoint } from "@/features/reports/hooks/useReportAnalytics";
+import type { TrendPoint } from "../types";
 
 const NUMBER_FORMATTER = new Intl.NumberFormat("en-PH");
 const formatNumber = (value: number) => NUMBER_FORMATTER.format(value);

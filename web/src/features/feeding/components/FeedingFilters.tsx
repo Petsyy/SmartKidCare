@@ -1,5 +1,5 @@
 import { Search } from "lucide-react";
-import type { DatePreset } from "@/features/feeding/hooks/useFeedingProgram";
+import type { DatePreset } from "../types";
 
 type FeedingFiltersProps = {
   search: string;

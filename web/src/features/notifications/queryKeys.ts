@@ -1,5 +1,5 @@
 import { webQueryKeys } from "@/lib/query-keys";
-import type { AdminNotificationView } from "@/features/notifications/types/notification.types";
+import type { AdminNotificationView } from "./types";
 
 export const notificationQueryKeys = {
   root: webQueryKeys.adminNotificationsRoot,

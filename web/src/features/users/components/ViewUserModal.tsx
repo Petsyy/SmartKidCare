@@ -5,7 +5,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/Dialog";
-import type { User } from "@/api/authentication.api";
+import type { User } from "../types";
 
 type ViewUserModalProps = { user: User | null; onClose: () => void };
 

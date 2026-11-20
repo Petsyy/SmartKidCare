@@ -1,74 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
-import { API_BASE } from "@/api/config";
 import { webQueryKeys } from "@/lib/query-keys";
+import { getCompetencyAnalytics } from "../services/reports.service";
 
-export type CompetencyPeriod = "all" | "quarterly" | "final";
-
-export type CompetencyAnalyticsItem = {
-  competencyId: string;
-  code: string;
-  name: string;
-  category: string;
-  distribution: {
-    not_demonstrated: number;
-    emerging: number;
-    developing: number;
-    achieved: number;
-  };
-  totalEvaluated: number;
-  achievedRate: number;
-};
-
-export type CompetencyAnalyticsPayload = {
-  filters: {
-    period: CompetencyPeriod;
-    schoolYear: string;
-  };
-  totalStudents: number;
-  schoolYears: string[];
-  competencies: CompetencyAnalyticsItem[];
-  periods: Record<
-    "quarterly" | "final",
-    { totalStudents: number; competencies: CompetencyAnalyticsItem[] }
-  >;
-  comparison: {
-    matchedStudents: number;
-    totalComparedRatings: number;
-    improvedRatings: number;
-    unchangedRatings: number;
-    declinedRatings: number;
-    improvementRate: number;
-  };
-};
+export type {
+  CompetencyPeriod,
+  CompetencyAnalyticsItem,
+  CompetencyAnalyticsPayload,
+} from "../types";
 
 export function useCompetencyAnalytics() {
   const schoolYear = "all";
 
   const query = useQuery({
-    queryKey: webQueryKeys.competencyAnalytics(
-      "all",
-      schoolYear,
-    ),
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      if (schoolYear !== "all") params.set("schoolYear", schoolYear);
-      const suffix = params.size ? `?${params.toString()}` : "";
-      const response = await fetch(
-        `${API_BASE}/competencies/analytics${suffix}`,
-        {
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-        },
-      );
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(
-          (payload as { message?: string }).message ||
-            `Unable to load competency analytics (${response.status})`,
-        );
-      }
-      return payload as CompetencyAnalyticsPayload;
-    },
+    queryKey: webQueryKeys.competencyAnalytics("all", schoolYear),
+    queryFn: () => getCompetencyAnalytics(schoolYear),
   });
 
   return {

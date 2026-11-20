@@ -2,17 +2,11 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { updateChild } from "@/api/child.api";
-import { getUsers, type User } from "@/api/authentication.api";
+import { updateChild } from "../services/children.service";
+import { getUsers, type User } from "@/features/users";
 import { showErrorModal } from "@/utils/sweet-alert-modal";
-import { editChildSchema, type EditChildFormValues } from "@/features/children/validations/edit-child.validation";
-import type { ChildForEdit } from "../components/EditChildModal";
-
-type UseEditChildFormProps = {
-  child: ChildForEdit;
-  onClose: () => void;
-  onUpdated: (updated: ChildForEdit) => void;
-};
+import { editChildSchema, type EditChildFormValues } from "../validations/edit-child.validation";
+import type { ChildForEdit, UseEditChildFormProps } from "../types";
 
 const formatDateForInput = (d: string | Date | undefined) => {
   if (!d) return "";

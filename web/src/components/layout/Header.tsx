@@ -2,11 +2,11 @@ import { Search, ChevronRight, LogOut, Menu } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { API_BASE } from "@/api/config";
+import { logoutAdmin } from "@/features/auth";
 import { useAuthSession } from "../auth/useAuthSession";
 import { webQueryKeys } from "@/lib/query-keys";
 import { CommandPalette } from "../ui/CommandPalette";
-import { NotificationPopover } from "@/features/notifications/components/NotificationPopover";
+import { NotificationPopover } from "@/features/notifications";
 
 type HeaderProps = {
   breadcrumbs?: string[];
@@ -52,10 +52,7 @@ export default function Header({
 
   const handleLogout = async () => {
     try {
-      await fetch(`${API_BASE}/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
+      await logoutAdmin();
     } catch {
       // Ignore logout network errors and still clear local UI state.
     }

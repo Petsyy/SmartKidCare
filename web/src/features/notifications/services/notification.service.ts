@@ -3,7 +3,7 @@ import type {
   AdminNotification,
   AdminNotificationFeedResponse,
   AdminNotificationView,
-} from "@/features/notifications/types/notification.types";
+} from "../types";
 
 export const getAdminNotificationFeed = async (input: {
   view: AdminNotificationView;

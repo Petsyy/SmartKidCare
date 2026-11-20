@@ -8,7 +8,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { EnrollmentDataPoint } from "../hooks/useAdminDashboard";
+import type { EnrollmentDataPoint } from "../types";
 
 type EnrollmentBarChartProps = {
   data: EnrollmentDataPoint[];

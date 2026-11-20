@@ -1,29 +1,12 @@
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
 import { X, Building2 } from "lucide-react";
-import type { DaycareCenter } from "@/api/daycare-center.api";
+import { useAddCenterForm } from "../hooks/useAddCenterForm";
+import type { AddCenterModalProps } from "../types";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/Dialog";
-
-const addCenterSchema = z.object({
-  name: z.string().min(1, "Center name is required"),
-  barangay: z.string().min(1, "Barangay is required"),
-  address: z.string().optional(),
-});
-
-type AddCenterFormData = z.infer<typeof addCenterSchema>;
-
-type AddCenterModalProps = {
-  isOpen: boolean;
-  onClose: () => void;
-  onAdd: (data: Partial<DaycareCenter>) => Promise<void>;
-};
 
 export function AddCenterModal({
   isOpen,
@@ -32,46 +15,19 @@ export function AddCenterModal({
 }: AddCenterModalProps) {
   const {
     register,
-    handleSubmit,
-    reset,
     formState: { errors },
-  } = useForm<AddCenterFormData>({
-    resolver: zodResolver(addCenterSchema),
-    defaultValues: {
-      name: "",
-      barangay: "",
-      address: "",
-    },
-  });
-
-  const mutation = useMutation({
-    mutationFn: async (data: AddCenterFormData) => {
-      await onAdd(data);
-    },
-    onSuccess: () => {
-      reset();
-      onClose();
-    },
-  });
+    onSubmit,
+    isSubmitting,
+  } = useAddCenterForm({ onAdd, onClose });
 
   if (!isOpen) return null;
 
-  const onSubmit = (data: AddCenterFormData) => {
-    mutation.mutate(data);
-  };
-
-  const handleClose = () => {
-    reset();
-    mutation.reset();
-    onClose();
-  };
-
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
         overlayClassName="bg-transparent"
         className="fixed inset-0 z-60 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm outline-none transition-all"
-        onClick={handleClose}
+        onClick={onClose}
       >
         <DialogTitle className="sr-only">Add New Center</DialogTitle>
         <DialogDescription className="sr-only">
@@ -91,7 +47,7 @@ export function AddCenterModal({
               </h3>
             </div>
             <button
-              onClick={handleClose}
+              onClick={onClose}
               className="cursor-pointer rounded-xl bg-white/50 p-2 text-gray-500 shadow-sm backdrop-blur-sm transition-all duration-200 hover:bg-white hover:text-gray-700 dark:bg-slate-800/50 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
               aria-label="Close modal"
             >
@@ -99,15 +55,7 @@ export function AddCenterModal({
             </button>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="p-6">
-            {mutation.error && (
-              <div className="mb-6 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-600 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-400">
-                {mutation.error instanceof Error
-                  ? mutation.error.message
-                  : "Failed to add center"}
-              </div>
-            )}
-
+          <form onSubmit={onSubmit} className="p-6">
             <div className="space-y-4">
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">
@@ -154,25 +102,23 @@ export function AddCenterModal({
                   className="w-full resize-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none transition-colors focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-500/10 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-100 dark:focus:border-teal-500"
                 />
               </div>
-
-
             </div>
 
             <div className="mt-8 flex items-center justify-end gap-3">
               <button
                 type="button"
-                onClick={handleClose}
-                disabled={mutation.isPending}
+                onClick={onClose}
+                disabled={isSubmitting}
                 className="rounded-xl border border-gray-200 px-5 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                disabled={mutation.isPending}
+                disabled={isSubmitting}
                 className="inline-flex items-center justify-center rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500/30 disabled:cursor-not-allowed disabled:bg-teal-400"
               >
-                {mutation.isPending ? "Adding..." : "Add Center"}
+                {isSubmitting ? "Adding..." : "Add Center"}
               </button>
             </div>
           </form>

@@ -1,5 +1,5 @@
 import { X, Building2, MapPin, Hash, User, Users } from "lucide-react";
-import type { DaycareCenter } from "@/api/daycare-center.api";
+import type { DaycareCenter } from "../types";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/Dialog";
 
 type ViewCenterModalProps = {

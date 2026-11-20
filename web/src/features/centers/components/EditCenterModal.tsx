@@ -1,30 +1,12 @@
-import { useEffect } from "react";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
 import { X, Building2 } from "lucide-react";
-import type { DaycareCenter } from "@/api/daycare-center.api";
+import { useEditCenterForm } from "../hooks/useEditCenterForm";
+import type { EditCenterModalProps } from "../types";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/Dialog";
-
-const editCenterSchema = z.object({
-  name: z.string().min(1, "Center name is required"),
-  barangay: z.string().min(1, "Barangay is required"),
-  address: z.string().optional(),
-});
-
-type EditCenterFormData = z.infer<typeof editCenterSchema>;
-
-type EditCenterModalProps = {
-  center: DaycareCenter | null;
-  onClose: () => void;
-  onUpdate: (id: string, data: Partial<DaycareCenter>) => Promise<void>;
-};
 
 export function EditCenterModal({
   center,
@@ -33,43 +15,12 @@ export function EditCenterModal({
 }: EditCenterModalProps) {
   const {
     register,
-    handleSubmit,
-    reset,
     formState: { errors },
-  } = useForm<EditCenterFormData>({
-    resolver: zodResolver(editCenterSchema),
-    defaultValues: {
-      name: "",
-      barangay: "",
-      address: "",
-    },
-  });
-
-  useEffect(() => {
-    if (center) {
-      reset({
-        name: center.name || "",
-        barangay: center.barangay || "",
-        address: center.address || "",
-      });
-    }
-  }, [center, reset]);
-
-  const mutation = useMutation({
-    mutationFn: async (data: EditCenterFormData) => {
-      if (!center) throw new Error("No center selected");
-      await onUpdate(center._id, data);
-    },
-    onSuccess: () => {
-      onClose();
-    },
-  });
+    onSubmit,
+    isSubmitting,
+  } = useEditCenterForm({ center, onUpdate, onClose });
 
   if (!center) return null;
-
-  const onSubmit = (data: EditCenterFormData) => {
-    mutation.mutate(data);
-  };
 
   return (
     <Dialog open={Boolean(center)} onOpenChange={(open) => !open && onClose()}>
@@ -104,15 +55,7 @@ export function EditCenterModal({
             </button>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="p-6">
-            {mutation.error && (
-              <div className="mb-6 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-600 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-400">
-                {mutation.error instanceof Error
-                  ? mutation.error.message
-                  : "Failed to update center"}
-              </div>
-            )}
-
+          <form onSubmit={onSubmit} className="p-6">
             <div className="space-y-4">
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">
@@ -156,25 +99,23 @@ export function EditCenterModal({
                   className="w-full resize-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none transition-colors focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-500/10 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-100 dark:focus:border-teal-500"
                 />
               </div>
-
-
             </div>
 
             <div className="mt-8 flex items-center justify-end gap-3">
               <button
                 type="button"
                 onClick={onClose}
-                disabled={mutation.isPending}
+                disabled={isSubmitting}
                 className="rounded-xl border border-gray-200 px-5 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                disabled={mutation.isPending}
+                disabled={isSubmitting}
                 className="inline-flex items-center justify-center rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500/30 disabled:cursor-not-allowed disabled:bg-teal-400"
               >
-                {mutation.isPending ? "Saving..." : "Save Changes"}
+                {isSubmitting ? "Saving..." : "Save Changes"}
               </button>
             </div>
           </form>

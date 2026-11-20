@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getChildNutritionHistory } from "../../../api/nutrition.api";
+import { getChildNutritionHistory } from "../services/nutrition.service";
 
 export function useChildNutrition(childId: string) {
   return useQuery({

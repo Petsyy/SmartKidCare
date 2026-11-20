@@ -1,5 +1,5 @@
-import { API_BASE } from "./config";
-import { apiRequestOrThrow } from "./api-client";
+import { API_BASE } from "@/api/config";
+import { apiRequestOrThrow } from "@/api/api-client";
 import type { ChildBlockchainProof } from "@/types/child";
 
 export const getChildren = async () => {
@@ -43,37 +43,45 @@ export const getChildBlockchainProof = async (
 };
 
 export type UpdateChildInput = {
-    firstName?: string;
-    middleName?: string;
-    lastName?: string;
-    dateOfBirth?: string;
-    age?: number;
-    gender?: string;
-    homeAddress?: string;
-    parentRelationship?: string;
-    weight?: number;
-    height?: number;
-    enrollmentDate?: string;
-    schoolYear?: string;
-    status?: string;
-    regenerateLinkCode?: boolean;
-    unlinkParent?: boolean;
-    teacherId?: string | null;
-    unlinkTeacher?: boolean;
+  firstName?: string;
+  middleName?: string;
+  lastName?: string;
+  dateOfBirth?: string;
+  age?: number;
+  gender?: string;
+  homeAddress?: string;
+  parentRelationship?: string;
+  weight?: number;
+  height?: number;
+  enrollmentDate?: string;
+  schoolYear?: string;
+  status?: string;
+  regenerateLinkCode?: boolean;
+  unlinkParent?: boolean;
+  teacherId?: string | null;
+  unlinkTeacher?: boolean;
 };
 
 export const updateChild = async (
   childId: string,
   updates: UpdateChildInput,
 ) => {
-  return apiRequestOrThrow<unknown>(`/children/${childId}`, "Failed to update child", {
-    method: "PATCH",
-    body: updates,
-  });
+  return apiRequestOrThrow<unknown>(
+    `/children/${childId}`,
+    "Failed to update child",
+    {
+      method: "PATCH",
+      body: updates,
+    },
+  );
 };
 
 export const deleteChild = async (childId: string) => {
-  return apiRequestOrThrow<unknown>(`/children/${childId}`, "Failed to delete child", {
-    method: "DELETE",
-  });
+  return apiRequestOrThrow<unknown>(
+    `/children/${childId}`,
+    "Failed to delete child",
+    {
+      method: "DELETE",
+    },
+  );
 };

@@ -1,4 +1,4 @@
-import { apiRequestOrThrow } from "./api-client";
+import { apiRequestOrThrow } from "@/api/api-client";
 
 export type AdminSettingsUser = {
   _id: string;
@@ -102,7 +102,34 @@ export const requestChangePasswordOtp = async (
   );
 
   return {
-    message: data.message || "OTP sent to your email.",
-    requiresTwoFactor: data.requiresTwoFactor === true,
+    message: data.message || "OTP sent successfully",
+    requiresTwoFactor: Boolean(data.requiresTwoFactor),
   };
+};
+
+export type SystemSettings = {
+  schoolName: string;
+  address: string;
+};
+
+export const getSystemSettings = async (): Promise<SystemSettings> => {
+  const data = await apiRequestOrThrow<{ data: SystemSettings }>(
+    "/settings",
+    "Failed to fetch system settings",
+  );
+  return data.data;
+};
+
+export const updateSystemSettings = async (
+  payload: Partial<SystemSettings>,
+): Promise<SystemSettings> => {
+  const data = await apiRequestOrThrow<{ data: SystemSettings }>(
+    "/settings",
+    "Failed to update system settings",
+    {
+      method: "PUT",
+      body: payload,
+    },
+  );
+  return data.data;
 };

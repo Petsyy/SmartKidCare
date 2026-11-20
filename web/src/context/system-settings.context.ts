@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import type { SystemSettings } from "../api/system-settings.api";
+import type { SystemSettings } from "@/features/settings";
 
 export type SystemSettingsContextType = {
   settings: SystemSettings | null;

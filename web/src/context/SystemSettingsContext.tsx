@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
-import { getSystemSettings } from "../api/system-settings.api";
-import type { SystemSettings } from "../api/system-settings.api";
+import {
+  getSystemSettings,
+  type SystemSettings,
+} from "@/features/settings";
 import { SystemSettingsContext } from "./system-settings.context";
 
 export const SystemSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

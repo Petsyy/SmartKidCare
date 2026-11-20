@@ -1,6 +1,6 @@
 import { X, UserRound } from "lucide-react";
 import { useEditChildForm } from "../hooks/useEditChildForm";
-import type { User } from "@/api/authentication.api";
+import type { User } from "@/features/users";
 import { InputField, SelectField } from "@/components/ui/FormFields";
 import {
   Dialog,
@@ -8,30 +8,9 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/Dialog";
+import type { ChildForEdit } from "../types";
 
-export type ChildForEdit = {
-  _id: string;
-  firstName: string;
-  middleName?: string;
-  lastName: string;
-  dateOfBirth: string | Date;
-  age: string | number;
-  gender: string;
-  homeAddress?: string;
-  parentRelationship?: string;
-  weight?: number | null;
-  height?: number | null;
-  enrollmentDate: string | Date;
-  schoolYear: string;
-  studentId?: string;
-  teacher?: {
-    _id: string;
-    firstName: string;
-    middleName?: string;
-    lastName: string;
-    email?: string;
-  } | null;
-};
+export type { ChildForEdit } from "../types";
 
 type Props = {
   child: ChildForEdit;
