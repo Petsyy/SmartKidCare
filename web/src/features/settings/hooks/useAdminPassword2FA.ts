@@ -9,7 +9,7 @@ import {
 import {
   passwordChangeFormSchema,
   passwordChangeRequestSchema,
-} from "@/features/auth";
+} from "../validations";
 import type {
   PasswordForm,
   PasswordFieldErrors,

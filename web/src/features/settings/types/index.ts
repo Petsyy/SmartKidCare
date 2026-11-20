@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import type { PasswordChangeFormValues } from "@/features/auth";
+import type { PasswordChangeFormValues } from "../validations";
 
 export type SettingsSectionId =
   | "profile"

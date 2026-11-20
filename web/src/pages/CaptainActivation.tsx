@@ -4,6 +4,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import {
   activateCaptainInvitation,
   validateCaptainInvitation,
+  captainActivationSchema,
 } from "@/features/users";
 
 export default function CaptainActivation() {
@@ -40,10 +41,17 @@ export default function CaptainActivation() {
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError("");
-    if (newPassword !== confirmPassword) {
-      setError("Passwords do not match.");
+
+    const validationResult = captainActivationSchema.safeParse({
+      token,
+      newPassword,
+      confirmPassword,
+    });
+    if (!validationResult.success) {
+      setError(validationResult.error.issues[0]?.message || "Validation failed.");
       return;
     }
+
     setSaving(true);
     try {
       await activateCaptainInvitation({ token, newPassword, confirmPassword });

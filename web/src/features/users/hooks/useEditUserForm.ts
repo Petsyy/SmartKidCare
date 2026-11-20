@@ -5,7 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Swal from "sweetalert2";
 import { updateUser } from "../services/users.service";
 import type { UseEditUserFormProps, User } from "../types";
-import { showErrorModal } from "@/utils/sweet-alert-modal";
+import { showErrorModal } from "@/utils/alerts";
 import { editUserSchema, type EditUserFormValues } from "../validations/edit-user.validation";
 
 const getFormFromUser = (user: User): EditUserFormValues => ({

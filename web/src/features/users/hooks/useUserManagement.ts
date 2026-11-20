@@ -8,7 +8,7 @@ import {
 import type { AccountStatusFilter, User } from "../types";
 import { webQueryKeys } from "@/lib/query-keys";
 import { useUserManagementStore } from "@/stores/user-management.store";
-import { showErrorModal, showResetPasswordModal, showToggleUserStatusModal, showToggleUserStatusSuccessModal } from "@/utils/sweet-alert-modal";
+import { showErrorModal, showResetPasswordModal, showToggleUserStatusModal, showToggleUserStatusSuccessModal } from "@/utils/alerts";
 
 export type { AccountStatusFilter } from "../types";
 export const PAGE_SIZE_OPTIONS = [10, 20, 50];
