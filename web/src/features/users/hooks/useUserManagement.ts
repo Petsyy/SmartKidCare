@@ -1,12 +1,16 @@
 import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getUsers, type User } from "@/api/authentication.api";
-import { toggleUserStatus, resetUserPassword } from "@/api/admin.api";
+import {
+  getUsers,
+  toggleUserStatus,
+  resetUserPassword,
+} from "../services/users.service";
+import type { AccountStatusFilter, User } from "../types";
 import { webQueryKeys } from "@/lib/query-keys";
 import { useUserManagementStore } from "@/stores/user-management.store";
 import { showErrorModal, showResetPasswordModal, showToggleUserStatusModal, showToggleUserStatusSuccessModal } from "@/utils/sweet-alert-modal";
 
-export type AccountStatusFilter = "all" | "active" | "inactive";
+export type { AccountStatusFilter } from "../types";
 export const PAGE_SIZE_OPTIONS = [10, 20, 50];
 
 const getUserFullName = (user: User) =>

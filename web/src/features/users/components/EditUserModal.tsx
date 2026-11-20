@@ -1,5 +1,5 @@
 import { X, UserCog } from "lucide-react";
-import { type User } from "@/api/authentication.api";
+import type { User } from "../types";
 import { useEditUserForm } from "../hooks/useEditUserForm";
 import { InputField } from "@/components/ui/FormFields";
 import {

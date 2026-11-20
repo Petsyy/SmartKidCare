@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo } from "react";
-import { getDaycareCenters, type DaycareCenter } from "@/api/daycare-center.api";
+import { getDaycareCenters } from "../services/centers.service";
+import type { CenterStatusFilter, DaycareCenter } from "../types";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export function useDaycareCenters() {
   const queryClient = useQueryClient();
 
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const [statusFilter, setStatusFilter] = useState<CenterStatusFilter>("all");
   
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);

@@ -1,5 +1,5 @@
 import { Eye, Pencil, Trash2 } from "lucide-react";
-import type { FeedingRow } from "@/features/feeding/hooks/useFeedingProgram";
+import type { FeedingRow } from "../types";
 import { FeedingStatusBadge } from "./FeedingStatusBadge";
 import { TableSkeleton } from "@/components/ui/TableSkeleton";
 

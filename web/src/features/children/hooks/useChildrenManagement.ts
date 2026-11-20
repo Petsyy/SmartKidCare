@@ -1,5 +1,5 @@
 
-import { getChildren } from "@/api/child.api";
+import { getChildren } from "../services/children.service";
 import { useQuery } from "@tanstack/react-query";
 import { webQueryKeys } from "@/lib/query-keys";
 

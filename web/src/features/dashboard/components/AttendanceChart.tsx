@@ -1,5 +1,5 @@
 import {LineChart,Line,XAxis,YAxis,CartesianGrid,Tooltip,ResponsiveContainer} from "recharts";
-import type { ChartDataPoint } from "../hooks/useAdminDashboard";
+import type { ChartDataPoint } from "../types";
 
 type AttendanceChartProps = {
   data: ChartDataPoint[];

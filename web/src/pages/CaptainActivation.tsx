@@ -4,7 +4,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import {
   activateCaptainInvitation,
   validateCaptainInvitation,
-} from "@/api/admin.api";
+} from "@/features/users";
 
 export default function CaptainActivation() {
   const [searchParams] = useSearchParams();

@@ -1,14 +1,16 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
-import { FeedingTable } from "@/features/feeding/components/FeedingTable";
-import { FeedingFilters } from "@/features/feeding/components/FeedingFilters";
-import { FeedingViewModal } from "@/features/feeding/components/FeedingViewModal";
+import {
+  FeedingTable,
+  FeedingFilters,
+  FeedingViewModal,
+  useFeedingProgram,
+  type DatePreset,
+} from "@/features/feeding";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Pagination } from "@/components/ui/Pagination";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
-import { useFeedingProgram } from "@/features/feeding/hooks/useFeedingProgram";
-import type { DatePreset } from "@/features/feeding/hooks/useFeedingProgram";
 
 const parseDatePreset = (value: string | null): DatePreset =>
   value === "today" || value === "thisWeek" || value === "thisMonth"

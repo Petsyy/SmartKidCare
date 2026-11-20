@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Download, RefreshCw } from "lucide-react";
 import {
   Bar,
@@ -12,6 +13,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
 import { useCompetencyAnalytics } from "../hooks/useCompetencyAnalytics";
+import { computeCompetencyAnalyticsData } from "../utils/competency.utils";
 import { downloadCsvFile, todayFileKey } from "../utils/csv-export";
 import { buildCompetencyCsvRows } from "../utils/report-csv-builders";
 
@@ -26,58 +28,8 @@ export function CompetencyAnalytics({ showActions = true }: { showActions?: bool
 
   } = useCompetencyAnalytics();
 
-  const quarterlyCount = data?.periods.quarterly.totalStudents ?? 0;
-  const finalCount = data?.periods.final.totalStudents ?? 0;
-  const hasData = quarterlyCount + finalCount > 0;
-  const quarterlyCompetencies = data?.periods.quarterly.competencies ?? [];
-  const finalCompetencies = data?.periods.final.competencies ?? [];
-  const finalByCompetency = new Map(
-    finalCompetencies.map((item) => [item.competencyId, item]),
-  );
-  const competencyIds = new Set([
-    ...quarterlyCompetencies.map((item) => item.competencyId),
-    ...finalCompetencies.map((item) => item.competencyId),
-  ]);
-  const competencies = Array.from(competencyIds).map((competencyId) => {
-    const quarterly = quarterlyCompetencies.find(
-      (item) => item.competencyId === competencyId,
-    );
-    const final = finalByCompetency.get(competencyId);
-    const identity = quarterly || final!;
-    return {
-      competencyId,
-      name: identity.name,
-      category: identity.category,
-      quarterly,
-      final,
-    };
-  });
-  const totalForLevel = (
-    period: typeof quarterlyCompetencies,
-    level: "achieved" | "developing" | "emerging" | "not_demonstrated",
-  ) => period.reduce((total, item) => total + item.distribution[level], 0);
-  const ratingData = [
-    {
-      name: "Achieved",
-      quarterly: totalForLevel(quarterlyCompetencies, "achieved"),
-      final: totalForLevel(finalCompetencies, "achieved"),
-    },
-    {
-      name: "Developing",
-      quarterly: totalForLevel(quarterlyCompetencies, "developing"),
-      final: totalForLevel(finalCompetencies, "developing"),
-    },
-    {
-      name: "Emerging",
-      quarterly: totalForLevel(quarterlyCompetencies, "emerging"),
-      final: totalForLevel(finalCompetencies, "emerging"),
-    },
-    {
-      name: "Not Yet",
-      quarterly: totalForLevel(quarterlyCompetencies, "not_demonstrated"),
-      final: totalForLevel(finalCompetencies, "not_demonstrated"),
-    },
-  ];
+  const { quarterlyCount, finalCount, hasData, competencies, ratingData } =
+    useMemo(() => computeCompetencyAnalyticsData(data), [data]);
 
   const displayYear =
     schoolYear !== "all"

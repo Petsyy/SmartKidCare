@@ -6,7 +6,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import { StatCard } from "@/components/ui/StatCard";
-import type { DashboardStats } from "../hooks/useAdminDashboard";
+import type { DashboardStats } from "../types";
 
 type StatsGridProps = {
   stats: DashboardStats;

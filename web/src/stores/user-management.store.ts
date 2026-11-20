@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { User } from "@/api/authentication.api";
+import type { User } from "@/features/users";
 
 type AccountStatusFilter = "all" | "active" | "inactive";
 

@@ -1,14 +1,14 @@
 import { KeyRound } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import type { UseFormReturn } from "react-hook-form";
-import type { PasswordForm } from "@/features/settings/hooks/useAdminPassword2FA";
+import type { PasswordForm } from "../types";
 import { PasswordVisibilityButton } from "@/components/ui/PasswordVisibilityButton";
 import {
   AUTH_OTP_LENGTH,
   AUTH_PASSWORD_MAX_LENGTH,
   sanitizeNoWhitespace,
   sanitizeOtp,
-} from "@/features/auth/validations/auth.validation";
+} from "@/features/auth";
 
 const LABEL_CLASS_NAME =
   "mb-2 block text-sm font-semibold tracking-wide text-slate-800 dark:text-slate-200 ml-1";

@@ -3,14 +3,23 @@ import { Plus } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ErrorAlert } from "@/components/ui/ErrorAlert";
-import { UserTabs } from "@/features/users/components/UserTabs";
-import { ViewUserModal } from "@/features/users/components/ViewUserModal";
-import { UserActionMenu } from "@/features/users/components/UserActionMenu";
-import AddTeacherModal from "@/features/users/components/AddTeacherModal";
-import EditUserModal from "@/features/users/components/EditUserModal";
-import { UserFilters } from "@/features/users/components/UserFilters";
-import { UserTable } from "@/features/users/components/UserTable";
-import { useUserManagement } from "@/features/users/hooks/useUserManagement";
+import {
+  AddTeacherModal,
+  EditUserModal,
+  UserActionMenu,
+  UserFilters,
+  UserTable,
+  UserTabs,
+  ViewUserModal,
+  useUserManagement,
+} from "@/features/users";
+
+
+
+
+
+
+
 
 export default function UserManagement() {
   const navigate = useNavigate();

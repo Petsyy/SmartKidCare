@@ -1,6 +1,6 @@
 import { createPortal } from "react-dom";
 import { KeyRound, Power } from "lucide-react";
-import type { User } from "@/api/authentication.api";
+import type { User } from "../types";
 
 type UserActionMenuProps = {
   user: User;

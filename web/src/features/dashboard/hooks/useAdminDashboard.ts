@@ -1,59 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
-import { apiRequestOrThrow } from "@/api/api-client";
-import { getNutritionAnalytics } from "@/api/nutrition.api";
+import { getDashboardAnalytics } from "../services";
+import { getNutritionAnalytics } from "@/features/children";
 import { webQueryKeys } from "@/lib/query-keys";
-import { computeEnrollmentData } from "../utils";
-import {
-  DEFAULT_DATE_META,
-  DEFAULT_STATS,
-  type ChartDataPoint,
-  type DashboardDateMeta,
-  type DashboardStats,
-  type EnrollmentDataPoint,
-} from "../utils";
-import { getManilaDateKey, shiftDateKey } from "../utils";
-
-type DashboardReport = {
-  summary: {
-    totalChildDevelopmentCenters: number;
-    childDevelopmentWorkers: number;
-    totalEnrolledChildren: number;
-    fourPsBeneficiaries: number;
-    regularAttendees: number;
-    activeChildren: number;
-    attendanceRate: number;
-  };
-  demographics?: {
-    genderBreakdown: {
-      male: number;
-      female: number;
-    };
-    programBreakdownByGender?: {
-      male: {
-        fourPs: number;
-        regular: number;
-      };
-      female: {
-        fourPs: number;
-        regular: number;
-      };
-    };
-  };
-  recentDailyRows: Array<{
-    dateKey: string;
-    attendanceRate: number;
-    present: number;
-    absent: number;
-  }>;
-  lastUpdatedAt: string;
-};
+import { computeEnrollmentData, DEFAULT_DATE_META, DEFAULT_STATS, getManilaDateKey, shiftDateKey } from "../utils";
+import type {
+  DashboardStats,
+} from "../types";
 
 export type {
   DashboardStats,
   ChartDataPoint,
   EnrollmentDataPoint,
   DashboardDateMeta,
-};
+} from "../types";
 
 const dayLabel = (dateKey: string, preset: "7d" | "30d") =>
   new Intl.DateTimeFormat("en-PH", {
@@ -75,10 +34,7 @@ export function useAdminDashboard(datePreset: "7d" | "30d" = "7d") {
     queryKey: [...webQueryKeys.adminDashboard(), datePreset],
     queryFn: async () => {
       const [report, nutrition] = await Promise.all([
-        apiRequestOrThrow<DashboardReport>(
-          `/reports/admin-analytics?datePreset=${datePreset}&limit=1`,
-          "Failed to load dashboard analytics",
-        ),
+        getDashboardAnalytics(datePreset),
         getNutritionAnalytics({}),
       ]);
 

@@ -3,16 +3,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Swal from "sweetalert2";
-import { type User } from "@/api/authentication.api";
-import { updateUser } from "@/api/admin.api";
+import { updateUser } from "../services/users.service";
+import type { UseEditUserFormProps, User } from "../types";
 import { showErrorModal } from "@/utils/sweet-alert-modal";
-import { editUserSchema, type EditUserFormValues } from "@/features/users/validations/edit-user.validation";
-
-type UseEditUserFormProps = {
-  user: User;
-  onClose: () => void;
-  onUpdated: () => Promise<void> | void;
-};
+import { editUserSchema, type EditUserFormValues } from "../validations/edit-user.validation";
 
 const getFormFromUser = (user: User): EditUserFormValues => ({
   firstName: user.firstName,

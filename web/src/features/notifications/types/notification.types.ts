@@ -1,3 +1,5 @@
+import type { InfiniteData, QueryKey } from "@tanstack/react-query";
+
 export type AdminNotificationView = "inbox" | "unread" | "archived";
 
 export type AdminNotificationCategory = "operational" | "security";
@@ -34,4 +36,7 @@ export type AdminNotificationFeedResponse = {
   unreadCount: number;
   nextCursor: string | null;
 };
+
+export type FeedData = InfiniteData<AdminNotificationFeedResponse, string>;
+export type FeedSnapshot = Array<[QueryKey, FeedData | undefined]>;
 

@@ -9,7 +9,7 @@ import {
   UserX,
   UtensilsCrossed,
 } from "lucide-react";
-import type { AdminNotification } from "@/features/notifications/types/notification.types";
+import type { AdminNotification } from "../types";
 
 const formatRelativeTime = (value: string): string => {
   const timestamp = new Date(value).getTime();

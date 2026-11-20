@@ -1,4 +1,4 @@
-import type { AdminNotificationView } from "@/features/notifications/types/notification.types";
+import type { AdminNotificationView } from "../types";
 
 const VIEWS: Array<{ value: AdminNotificationView; label: string }> = [
   { value: "inbox", label: "Inbox" },

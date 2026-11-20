@@ -1,4 +1,4 @@
-import type { NutritionAnalyticsData } from "@/api/nutrition.api";
+import type { NutritionAnalyticsData } from "@/features/children";
 import type { CompetencyAnalyticsPayload } from "../hooks/useCompetencyAnalytics";
 import type { CsvRow } from "./csv-export";
 

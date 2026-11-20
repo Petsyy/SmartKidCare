@@ -1,85 +1,29 @@
 import { useCallback, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { API_BASE } from "@/api/config";
 import { webQueryKeys } from "@/lib/query-keys";
 import { downloadCsvFile, todayFileKey, type CsvRow } from "../utils/csv-export";
+import { formatDateKey, formatDateTime } from "../utils/report-formatters";
+import { getReportAnalytics } from "../services/reports.service";
+import type {
+  ReportDatePreset,
+  TrendPoint,
+  ReportSummary,
+  ReportGenderBreakdown,
+  ReportAgeBreakdownItem,
+  ReportStudentListItem,
+  ReportStudentListPagination,
+  ActiveRange,
+} from "../types";
 
-export type ReportDatePreset = "7d" | "30d" | "90d" | "all" | "custom";
-
-export type TrendPoint = {
-  dateKey: string;
-  label: string;
-  attendanceRate: number;
-  present: number;
-  absent: number;
-};
-
-export type ReportSummary = {
-  totalChildDevelopmentCenters: number;
-  childDevelopmentWorkers: number;
-  totalEnrolledChildren: number;
-  fourPsBeneficiaries: number;
-  regularAttendees: number;
-  totalChildren: number;
-  activeChildren: number;
-  totalTeachers: number;
-  attendanceRecords: number;
-  attendanceRate: number;
-};
-
-export type ReportGenderBreakdown = {
-  male: number;
-  female: number;
-  total: number;
-  malePercentage: number;
-  femalePercentage: number;
-};
-
-export type ReportAgeBreakdownItem = {
-  age: number;
-  count: number;
-};
-
-export type ReportStudentListItem = {
-  id: string;
-  studentId: string;
-  fullName: string;
-  gender: "male" | "female";
-  age: number;
-  status: string;
-  programType: string;
-  schoolYear: string;
-  teacherName: string;
-  centerName: string;
-  enrollmentDate: string | null;
-};
-
-export type ReportStudentListPagination = {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-};
-
-type AdminReportPayload = {
-  summary: ReportSummary;
-  demographics: {
-    genderBreakdown: ReportGenderBreakdown;
-    ageBreakdown: ReportAgeBreakdownItem[];
-  };
-  studentList: ReportStudentListItem[];
-  studentListPagination: ReportStudentListPagination;
-  recentDailyRows: TrendPoint[];
-  hasData: boolean;
-  lastUpdatedAt: string;
-};
-
-type ActiveRange = {
-  startKey: string | null;
-  endKey: string | null;
-  label: string;
-  isValid: boolean;
-};
+export type {
+  ReportDatePreset,
+  TrendPoint,
+  ReportSummary,
+  ReportGenderBreakdown,
+  ReportAgeBreakdownItem,
+  ReportStudentListItem,
+  ReportStudentListPagination,
+} from "../types";
 
 const EMPTY_DAILY_ROWS: TrendPoint[] = [];
 const EMPTY_AGE_BREAKDOWN: ReportAgeBreakdownItem[] = [];
@@ -119,29 +63,7 @@ const getLocalDateKey = (value: Date) => {
   return `${year}-${month}-${day}`;
 };
 
-export const formatDateKey = (key: string) => {
-  if (!key) return "-";
-  const [year, month, day] = key.split("-").map(Number);
-  if (!year || !month || !day) return key;
-  return new Intl.DateTimeFormat("en-PH", {
-    month: "short",
-    day: "2-digit",
-    year: "numeric",
-    timeZone: "Asia/Manila",
-  }).format(new Date(year, month - 1, day));
-};
 
-export const formatDateTime = (value?: string) =>
-  value
-    ? new Date(value).toLocaleString("en-PH", {
-        month: "short",
-        day: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        timeZone: "Asia/Manila",
-      })
-    : "-";
 
 export function useReportAnalytics() {
   const [datePreset, setDatePresetValue] = useState<ReportDatePreset>("30d");
@@ -234,23 +156,7 @@ export function useReportAnalytics() {
   } = useQuery({
     queryKey: webQueryKeys.reportAnalytics(queryParams),
     enabled: activeRange.isValid,
-    queryFn: async () => {
-      const response = await fetch(
-        `${API_BASE}/reports/admin-analytics?${queryParams}`,
-        {
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-        },
-      );
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(
-          (payload as { message?: string }).message ||
-            `Unable to load report analytics (${response.status})`,
-        );
-      }
-      return payload as AdminReportPayload;
-    },
+    queryFn: () => getReportAnalytics(queryParams),
   });
 
   const summary = data?.summary ?? DEFAULT_SUMMARY;

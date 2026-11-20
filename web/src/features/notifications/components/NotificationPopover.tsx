@@ -2,16 +2,16 @@ import { useEffect, useRef, useState } from "react";
 import { Bell, CheckCheck, LoaderCircle, RefreshCw, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { NotificationEmptyState } from "@/features/notifications/components/NotificationEmptyState";
-import { NotificationItem } from "@/features/notifications/components/NotificationItem";
-import { NotificationTabs } from "@/features/notifications/components/NotificationTabs";
-import { useAdminNotifications } from "@/features/notifications/hooks/useAdminNotifications";
-import { useNotificationMutations } from "@/features/notifications/hooks/useNotificationMutations";
-import { useUnreadNotificationCount } from "@/features/notifications/hooks/useUnreadNotificationCount";
+import { NotificationEmptyState } from "./NotificationEmptyState";
+import { NotificationItem } from "./NotificationItem";
+import { NotificationTabs } from "./NotificationTabs";
+import { useAdminNotifications } from "../hooks/useAdminNotifications";
+import { useNotificationMutations } from "../hooks/useNotificationMutations";
+import { useUnreadNotificationCount } from "../hooks/useUnreadNotificationCount";
 import type {
   AdminNotification,
   AdminNotificationView,
-} from "@/features/notifications/types/notification.types";
+} from "../types";
 
 export function NotificationPopover({ userId }: { userId: string }) {
   const navigate = useNavigate();

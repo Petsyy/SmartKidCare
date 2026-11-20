@@ -1,47 +1,17 @@
-import React, { useState } from "react";
-import { useSystemSettings } from "../../../context/system-settings.context";
-import { updateSystemSettings } from "../../../api/system-settings.api";
+import React from "react";
+import { useSystemSettingsForm } from "../hooks/useSystemSettingsForm";
 
 export const SystemSection: React.FC = () => {
-  const { settings, refreshSettings } = useSystemSettings();
-  const [isEditing, setIsEditing] = useState(false);
-  const [form, setForm] = useState({
-    schoolName: settings?.schoolName || "",
-    address: settings?.address || "",
-  });
-  const [status, setStatus] = useState<{
-    saving: boolean;
-    error: string | null;
-    success: string | null;
-  }>({ saving: false, error: null, success: null });
-
-  const handleSave = async () => {
-    setStatus({ saving: true, error: null, success: null });
-    try {
-      await updateSystemSettings({
-        schoolName: form.schoolName,
-        address: form.address,
-      });
-      await refreshSettings();
-      setStatus({ saving: false, error: null, success: "System settings updated successfully." });
-      setIsEditing(false);
-    } catch (err: any) {
-      setStatus({
-        saving: false,
-        error: err.message || "Failed to update settings.",
-        success: null,
-      });
-    }
-  };
-
-  const handleCancel = () => {
-    setForm({
-      schoolName: settings?.schoolName || "",
-      address: settings?.address || "",
-    });
-    setIsEditing(false);
-    setStatus({ saving: false, error: null, success: null });
-  };
+  const {
+    settings,
+    isEditing,
+    setIsEditing,
+    form,
+    updateField,
+    status,
+    handleSave,
+    handleCancel,
+  } = useSystemSettingsForm();
 
   return (
     <div className="space-y-6">
@@ -84,7 +54,7 @@ export const SystemSection: React.FC = () => {
             <input
               type="text"
               value={form.schoolName}
-              onChange={(e) => setForm({ ...form, schoolName: e.target.value })}
+              onChange={(e) => updateField("schoolName", e.target.value)}
               className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 px-4 py-3 text-sm text-slate-900 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] transition-all duration-300 hover:border-slate-300 focus:border-teal-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-teal-500/15 dark:border-white/10 dark:bg-[#0A101D]/50 dark:text-slate-100 dark:hover:border-slate-600 dark:focus:border-teal-500/50 dark:focus:bg-[#0A101D] dark:focus:ring-teal-500/20"
             />
           ) : (
@@ -102,7 +72,7 @@ export const SystemSection: React.FC = () => {
             <input
               type="text"
               value={form.address}
-              onChange={(e) => setForm({ ...form, address: e.target.value })}
+              onChange={(e) => updateField("address", e.target.value)}
               className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 px-4 py-3 text-sm text-slate-900 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] transition-all duration-300 hover:border-slate-300 focus:border-teal-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-teal-500/15 dark:border-white/10 dark:bg-[#0A101D]/50 dark:text-slate-100 dark:hover:border-slate-600 dark:focus:border-teal-500/50 dark:focus:bg-[#0A101D] dark:focus:ring-teal-500/20"
             />
           ) : (

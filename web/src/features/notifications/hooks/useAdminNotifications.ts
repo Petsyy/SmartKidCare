@@ -1,11 +1,11 @@
 import { useMemo } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { getAdminNotificationFeed } from "@/features/notifications/api/notificationApi";
-import { notificationQueryKeys } from "@/features/notifications/queryKeys";
+import { getAdminNotificationFeed } from "../services";
+import { notificationQueryKeys } from "../queryKeys";
 import type {
   AdminNotification,
   AdminNotificationView,
-} from "@/features/notifications/types/notification.types";
+} from "../types";
 
 export const useAdminNotifications = (input: {
   userId: string;

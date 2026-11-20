@@ -6,25 +6,12 @@ import {
   updateAdminPreferences,
   updateCurrentUser,
   type AdminSettingsUser,
-} from "@/api/settings.api";
+} from "../services/settings.service";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { webQueryKeys } from "@/lib/query-keys";
+import type { AdminProfileForm, AdminPreferencesForm } from "../types";
 
-export type AdminProfileForm = {
-  username: string;
-  firstName: string;
-  middleName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-};
-
-export type AdminPreferencesForm = {
-  adminMfaEnabled: boolean;
-  adminNotifyOperationalEvents: boolean;
-  adminNotifySecurityEvents: boolean;
-  adminNotifySystemUpdates: boolean;
-};
+export type { AdminProfileForm, AdminPreferencesForm } from "../types";
 
 const DEFAULT_PROFILE: AdminProfileForm = {
   username: "",

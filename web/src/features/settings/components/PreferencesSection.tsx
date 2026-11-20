@@ -1,6 +1,6 @@
 import { Save } from "lucide-react";
-import { ToggleRow } from "@/features/settings/components/ToggleArrow";
-import type { AdminPreferencesForm } from "@/features/settings/hooks/useAdminSettings";
+import { ToggleRow } from "./ToggleArrow";
+import type { AdminPreferencesForm } from "../types";
 
 type PreferencesSectionProps = {
   preferences: AdminPreferencesForm;

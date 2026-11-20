@@ -1,5 +1,5 @@
 import { Eye, Edit2 } from "lucide-react";
-import { type DaycareCenter } from "@/api/daycare-center.api";
+import type { DaycareCenter } from "../types";
 import { TableSkeleton } from "@/components/ui/TableSkeleton";
 
 type CentersTableProps = {

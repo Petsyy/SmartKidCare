@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getNutritionAnalytics } from "@/api/nutrition.api";
+import { getNutritionAnalytics } from "@/features/children";
 import { webQueryKeys } from "@/lib/query-keys";
 
 export function useNutritionAnalytics() {

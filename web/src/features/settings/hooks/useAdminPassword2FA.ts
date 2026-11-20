@@ -9,52 +9,23 @@ import {
 import {
   passwordChangeFormSchema,
   passwordChangeRequestSchema,
-  type PasswordChangeFormValues,
-} from "@/features/auth/validations/auth.validation";
+} from "@/features/auth";
+import type {
+  PasswordForm,
+  PasswordFieldErrors,
+  PasswordState,
+  PasswordOtpState,
+  PasswordPolicyChecks,
+  PasswordValidationIssue,
+  UseAdminPassword2FAOptions,
+} from "../types";
 
-type SendPasswordChangeOtp = (
-  currentPassword: string,
-  newPassword: string,
-) => Promise<{ message: string; requiresTwoFactor: boolean }>;
-
-type SavePassword = (
-  currentPassword: string,
-  newPassword: string,
-  otp: string,
-) => Promise<void>;
-
-type UseAdminPassword2FAOptions = {
-  sendPasswordChangeOtp: SendPasswordChangeOtp;
-  savePassword: SavePassword;
-  onPasswordChanged?: () => void | Promise<void>;
-};
-
-export type PasswordForm = PasswordChangeFormValues;
-
-export type PasswordFieldErrors = Partial<Record<keyof PasswordForm, string>>;
-
-export type PasswordState = {
-  saving: boolean;
-  success: string | null;
-  error: string | null;
-};
-
-export type PasswordOtpState = {
-  requesting: boolean;
-  sent: boolean;
-  info: string | null;
-  error: string | null;
-};
-
-type PasswordPolicyChecks = {
-  minimumLength: boolean;
-  startsWithUppercase: boolean;
-  hasLowercase: boolean;
-  hasNumber: boolean;
-  hasSpecialCharacter: boolean;
-  differsFromCurrent: boolean;
-  matchesConfirmation: boolean;
-};
+export type {
+  PasswordForm,
+  PasswordFieldErrors,
+  PasswordState,
+  PasswordOtpState,
+} from "../types";
 
 const INITIAL_PASSWORD_STATE: PasswordState = {
   saving: false,
@@ -67,11 +38,6 @@ const INITIAL_PASSWORD_OTP_STATE: PasswordOtpState = {
   sent: false,
   info: null,
   error: null,
-};
-
-type PasswordValidationIssue = {
-  field: keyof PasswordForm;
-  message: string;
 };
 
 const getPasswordPolicyChecks = (form: PasswordForm): PasswordPolicyChecks => ({

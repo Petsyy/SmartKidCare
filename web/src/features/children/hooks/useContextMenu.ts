@@ -1,10 +1,6 @@
 import { useState, useEffect } from "react";
 
-export interface MenuState {
-  openMenuUserId: string | null;
-  menuAnchorRect: DOMRect | null;
-  menuUser: any | null;
-}
+export type { MenuState } from "../types";
 
 export function useContextMenu() {
   const [openMenuUserId, setOpenMenuUserId] = useState<string | null>(null);
