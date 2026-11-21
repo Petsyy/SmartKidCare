@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSystemSettings } from "@/context/system-settings.context";
-import { updateSystemSettings } from "../services/settings.service";
+import { settingsService } from "../services/settings.service";
 import type { SystemSettingsForm, SystemSettingsStatus } from "../types";
 
 export function useSystemSettingsForm() {
@@ -32,7 +32,7 @@ export function useSystemSettingsForm() {
   const handleSave = async () => {
     setStatus({ saving: true, error: null, success: null });
     try {
-      await updateSystemSettings({
+      await settingsService.updateSystemSettings({
         schoolName: form.schoolName,
         address: form.address,
       });

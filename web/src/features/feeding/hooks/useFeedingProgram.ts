@@ -1,11 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { webQueryKeys } from "@/lib/query-keys";
-import {
-  getFeedingRecords,
-  updateFeedingRecord,
-  deleteFeedingRecord,
-} from "../services/feeding.service";
+import { feedingService } from "../services/feeding.service";
 import type {
   DatePreset,
   UseFeedingProgramOptions,
@@ -40,7 +36,7 @@ export function useFeedingProgram({
 
   const { data, isLoading, isFetching, error: queryError, refetch } = useQuery({
     queryKey: webQueryKeys.feedingTracking(queryString),
-    queryFn: () => getFeedingRecords(queryString),
+    queryFn: () => feedingService.getFeedingRecords(queryString),
     staleTime: 0,
   });
 
@@ -52,14 +48,14 @@ export function useFeedingProgram({
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: "completed" | "missed" }) =>
-      updateFeedingRecord(id, { status }),
+      feedingService.updateFeedingRecord(id, { status }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["feedingTracking"] });
     },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => deleteFeedingRecord(id),
+    mutationFn: (id: string) => feedingService.deleteFeedingRecord(id),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["feedingTracking"] });
     },

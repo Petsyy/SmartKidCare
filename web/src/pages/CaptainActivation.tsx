@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { CheckCircle2, ShieldCheck } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
-  activateCaptainInvitation,
-  validateCaptainInvitation,
+  usersService,
   captainActivationSchema,
 } from "@/features/users";
 
@@ -28,7 +27,7 @@ export default function CaptainActivation() {
       setLoading(false);
       return;
     }
-    void validateCaptainInvitation(token)
+    void usersService.validateCaptainInvitation(token)
       .then(setInvitation)
       .catch((reason) =>
         setError(
@@ -54,7 +53,7 @@ export default function CaptainActivation() {
 
     setSaving(true);
     try {
-      await activateCaptainInvitation({ token, newPassword, confirmPassword });
+      await usersService.activateCaptainInvitation({ token, newPassword, confirmPassword });
       setComplete(true);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Activation failed.");

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { getDaycareCenters } from "../services/centers.service";
+import { centersService } from "../services";
 import type { CenterStatusFilter, DaycareCenter } from "../types";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -14,7 +14,7 @@ export function useDaycareCenters() {
 
   const { data: centers = [], isLoading, error } = useQuery({
     queryKey: ["daycare-centers"],
-    queryFn: getDaycareCenters,
+    queryFn: () => centersService.getDaycareCenters(),
   });
 
   const errorMessage = error instanceof Error ? error.message : null;

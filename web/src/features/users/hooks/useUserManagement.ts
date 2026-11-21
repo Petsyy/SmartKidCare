@@ -1,10 +1,6 @@
 import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  getUsers,
-  toggleUserStatus,
-  resetUserPassword,
-} from "../services/users.service";
+import { usersService } from "../services/users.service";
 import type { AccountStatusFilter, User } from "../types";
 import { webQueryKeys } from "@/lib/query-keys";
 import { useUserManagementStore } from "@/stores/user-management.store";
@@ -82,15 +78,15 @@ export function useUserManagement() {
     refetch: fetchUsers,
   } = useQuery({
     queryKey: webQueryKeys.users(activeTab),
-    queryFn: () => getUsers({ role: activeTab }),
+    queryFn: () => usersService.getUsers({ role: activeTab }),
   });
 
   const resetPasswordMutation = useMutation({
-    mutationFn: (userId: string) => resetUserPassword(userId),
+    mutationFn: (userId: string) => usersService.resetUserPassword(userId),
   });
 
   const toggleStatusMutation = useMutation({
-    mutationFn: (userId: string) => toggleUserStatus(userId),
+    mutationFn: (userId: string) => usersService.toggleUserStatus(userId),
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: webQueryKeys.usersRoot(),
@@ -107,8 +103,9 @@ export function useUserManagement() {
       if (res.credentials) {
         await showResetPasswordModal(res.credentials);
       }
-    } catch (err: any) {
-      showErrorModal(err.message || "Failed to reset password");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to reset password";
+      showErrorModal(message);
     }
   };
 
@@ -123,8 +120,9 @@ export function useUserManagement() {
     try {
       await toggleStatusMutation.mutateAsync(user._id);
       await showToggleUserStatusSuccessModal({ userName, isActivating });
-    } catch (err: any) {
-      showErrorModal(err.message || "Failed to update account status");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to update account status";
+      showErrorModal(message);
     }
   };
 

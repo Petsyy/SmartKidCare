@@ -2,7 +2,7 @@ import { Search, ChevronRight, LogOut, Menu } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { logoutAdmin } from "@/features/auth";
+import { authService } from "@/features/auth";
 import { useAuthSession } from "../auth/useAuthSession";
 import { webQueryKeys } from "@/lib/query-keys";
 import { CommandPalette } from "../ui/CommandPalette";
@@ -52,7 +52,7 @@ export default function Header({
 
   const handleLogout = async () => {
     try {
-      await logoutAdmin();
+      await authService.logoutAdmin();
     } catch {
       // Ignore logout network errors and still clear local UI state.
     }

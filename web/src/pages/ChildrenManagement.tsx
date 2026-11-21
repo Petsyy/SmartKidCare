@@ -8,8 +8,7 @@ import {
   ChildrenFilterBar,
   ChildrenStatsGrid,
   ChildrenTable,
-  getChildBlockchainProof,
-  getChildDocumentUrl,
+  childrenService,
   useChildrenFilters,
   useChildrenManagement,
 } from "@/features/children";
@@ -96,7 +95,8 @@ export default function ChildrenManagement() {
     }
     setBlockchainProofLoading(true);
 
-    getChildBlockchainProof(child._id)
+    childrenService
+      .getChildBlockchainProof(child._id)
       .then((proof) => {
         setBlockchainProof(proof);
       })
@@ -133,7 +133,10 @@ export default function ChildrenManagement() {
     setDocumentLoading(documentType);
 
     try {
-      const { url } = await getChildDocumentUrl(viewingChild._id, documentType);
+      const { url } = await childrenService.getChildDocumentUrl(
+        viewingChild._id,
+        documentType,
+      );
       if (!url) {
         throw new Error("Signed URL was not returned by the server.");
       }

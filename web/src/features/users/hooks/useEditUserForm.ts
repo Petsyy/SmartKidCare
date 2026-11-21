@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Swal from "sweetalert2";
-import { updateUser } from "../services/users.service";
+import { usersService } from "../services/users.service";
 import type { UseEditUserFormProps, User } from "../types";
 import { showErrorModal } from "@/utils/alerts";
 import { editUserSchema, type EditUserFormValues } from "../validations/edit-user.validation";
@@ -33,7 +33,7 @@ export const useEditUserForm = ({ user, onClose, onUpdated }: UseEditUserFormPro
   }, [user, reset]);
 
   const mutation = useMutation({
-    mutationFn: (data: EditUserFormValues) => updateUser(user._id, data),
+    mutationFn: (data: EditUserFormValues) => usersService.updateUser(user._id, data),
     onSuccess: async () => {
       await Swal.fire({
         title: "Success",
