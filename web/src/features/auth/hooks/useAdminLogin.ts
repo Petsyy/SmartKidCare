@@ -11,12 +11,7 @@ import {
   sanitizeOtp,
   type AdminLoginFormValues,
 } from "../validations";
-import {
-  loginAdmin,
-  logoutAdmin,
-  setupCaptainPassword,
-  resendCaptainPasswordSetupOtp,
-} from "../services";
+import { authService } from "../services";
 
 const getErrorMessage = (error: unknown, fallback: string) =>
   error instanceof Error ? error.message : fallback;
@@ -42,7 +37,7 @@ export function useAdminLogin() {
   useEffect(() => {
     if (!isChecking && isAuthenticated && user?.role === "barangay_captain") {
       if (user.mustChangePassword) {
-        void logoutAdmin().finally(() => {
+        void authService.logoutAdmin().finally(() => {
           void queryClient.invalidateQueries({ queryKey: webQueryKeys.authSession() });
           setInfo("Sign in again to create your private password.");
         });
@@ -76,15 +71,19 @@ export function useAdminLogin() {
   const otp = watch("otp");
 
   const loginMutation = useMutation({
-    mutationFn: loginAdmin,
+    mutationFn: (payload: Parameters<typeof authService.loginAdmin>[0]) =>
+      authService.loginAdmin(payload),
   });
 
   const passwordSetupMutation = useMutation({
-    mutationFn: setupCaptainPassword,
+    mutationFn: (payload: Parameters<typeof authService.setupCaptainPassword>[0]) =>
+      authService.setupCaptainPassword(payload),
   });
 
   const passwordSetupResendMutation = useMutation({
-    mutationFn: resendCaptainPasswordSetupOtp,
+    mutationFn: (
+      payload: Parameters<typeof authService.resendCaptainPasswordSetupOtp>[0],
+    ) => authService.resendCaptainPasswordSetupOtp(payload),
   });
 
   const isLoading = loginMutation.isPending || passwordSetupMutation.isPending;

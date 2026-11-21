@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { webQueryKeys } from "@/lib/query-keys";
-import { getAuthSession, type AuthSessionState, type AuthUser } from "@/features/auth";
+import { authService, type AuthSessionState, type AuthUser } from "@/features/auth";
 
 type AuthSessionResult = {
   isChecking: boolean;
@@ -18,7 +18,7 @@ export function useAuthSession(): AuthSessionResult {
     refetch,
   } = useQuery<AuthSessionState>({
     queryKey: webQueryKeys.authSession(),
-    queryFn: getAuthSession,
+    queryFn: () => authService.getAuthSession(),
     retry: false,
     staleTime: Infinity,
   });

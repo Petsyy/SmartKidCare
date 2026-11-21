@@ -3,11 +3,7 @@ import {
   useMutation,
   useQueryClient,
 } from "@tanstack/react-query";
-import {
-  markAllAdminNotificationsRead,
-  setAdminNotificationArchived,
-  setAdminNotificationRead,
-} from "../services";
+import { notificationService } from "../services";
 import { notificationQueryKeys } from "../queryKeys";
 import type {
   AdminNotification,
@@ -98,7 +94,7 @@ export const useNotificationMutations = (userId: string) => {
 
   const readMutation = useMutation({
     mutationFn: ({ id, read }: { id: string; read: boolean }) =>
-      setAdminNotificationRead(id, read),
+      notificationService.setAdminNotificationRead(id, read),
     onMutate: async ({ id, read }) => {
       const context = await snapshot();
       const previous = findNotification(context.feeds, id);
@@ -125,7 +121,7 @@ export const useNotificationMutations = (userId: string) => {
 
   const archiveMutation = useMutation({
     mutationFn: ({ id, archived }: { id: string; archived: boolean }) =>
-      setAdminNotificationArchived(id, archived),
+      notificationService.setAdminNotificationArchived(id, archived),
     onMutate: async ({ id, archived }) => {
       const context = await snapshot();
       const previous = findNotification(context.feeds, id);
@@ -152,7 +148,7 @@ export const useNotificationMutations = (userId: string) => {
   });
 
   const markAllReadMutation = useMutation({
-    mutationFn: markAllAdminNotificationsRead,
+    mutationFn: () => notificationService.markAllAdminNotificationsRead(),
     onMutate: async () => {
       const context = await snapshot();
       const timestamp = new Date().toISOString();

@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { getAdminNotificationFeed } from "../services";
+import { notificationService } from "../services";
 import { notificationQueryKeys } from "../queryKeys";
 import type {
   AdminNotification,
@@ -15,7 +15,7 @@ export const useAdminNotifications = (input: {
   const query = useInfiniteQuery({
     queryKey: notificationQueryKeys.feed(input.userId, input.view),
     queryFn: ({ pageParam }) =>
-      getAdminNotificationFeed({
+      notificationService.getAdminNotificationFeed({
         view: input.view,
         cursor: pageParam || undefined,
         limit: 20,
@@ -42,4 +42,3 @@ export const useAdminNotifications = (input: {
 
   return { ...query, notifications };
 };
-

@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { updateChild } from "../services/children.service";
+import { childrenService } from "../services/children.service";
 import { getUsers, type User } from "@/features/users";
 import { showErrorModal } from "@/utils/alerts";
 import { editChildSchema, type EditChildFormValues } from "../validations/edit-child.validation";
@@ -61,7 +61,7 @@ export const useEditChildForm = ({ child, onClose, onUpdated }: UseEditChildForm
 
   const mutation = useMutation({
     mutationFn: (data: EditChildFormValues) =>
-      updateChild(child._id, {
+      childrenService.updateChild(child._id, {
         firstName: data.firstName,
         middleName: data.middleName || undefined,
         lastName: data.lastName,

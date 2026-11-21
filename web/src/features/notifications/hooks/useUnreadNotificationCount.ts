@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { getAdminUnreadNotificationCount } from "../services";
+import { notificationService } from "../services";
 import { notificationQueryKeys } from "../queryKeys";
 
 export const useUnreadNotificationCount = (userId: string) =>
   useQuery({
     queryKey: notificationQueryKeys.unread(userId),
-    queryFn: getAdminUnreadNotificationCount,
+    queryFn: () => notificationService.getAdminUnreadNotificationCount(),
     enabled: Boolean(userId),
     refetchInterval: 30_000,
     refetchIntervalInBackground: false,
@@ -13,4 +13,3 @@ export const useUnreadNotificationCount = (userId: string) =>
     refetchOnReconnect: true,
     staleTime: 10_000,
   });
-

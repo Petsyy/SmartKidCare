@@ -60,25 +60,35 @@ export type NutritionAnalyticsFilters = {
   schoolYear?: string;
 };
 
-export const getChildNutritionHistory = async (
-  childId: string,
-): Promise<NutritionRecord[]> => {
-  const response = await apiRequestOrThrow<{ data: NutritionRecord[] }>(
-    `/nutrition/child/${childId}`,
-    "Failed to fetch nutrition history",
-  );
-  return response.data;
-};
+export class NutritionService {
+  async getChildNutritionHistory(
+    childId: string,
+  ): Promise<NutritionRecord[]> {
+    const response = await apiRequestOrThrow<{ data: NutritionRecord[] }>(
+      `/nutrition/child/${childId}`,
+      "Failed to fetch nutrition history",
+    );
+    return response.data;
+  }
 
-export const getNutritionAnalytics = async ({
-  schoolYear,
-}: NutritionAnalyticsFilters): Promise<NutritionAnalyticsData> => {
-  const params = new URLSearchParams();
-  if (schoolYear) params.set("schoolYear", schoolYear);
-  const suffix = params.size > 0 ? `?${params.toString()}` : "";
-  const response = await apiRequestOrThrow<{ data: NutritionAnalyticsData }>(
-    `/nutrition/analytics${suffix}`,
-    "Failed to fetch analytics",
-  );
-  return response.data;
-};
+  async getNutritionAnalytics({
+    schoolYear,
+  }: NutritionAnalyticsFilters): Promise<NutritionAnalyticsData> {
+    const params = new URLSearchParams();
+    if (schoolYear) params.set("schoolYear", schoolYear);
+    const suffix = params.size > 0 ? `?${params.toString()}` : "";
+    const response = await apiRequestOrThrow<{ data: NutritionAnalyticsData }>(
+      `/nutrition/analytics${suffix}`,
+      "Failed to fetch analytics",
+    );
+    return response.data;
+  }
+}
+
+export const nutritionService = new NutritionService();
+
+// Bound method aliases for backwards compatibility
+export const getChildNutritionHistory = (childId: string) =>
+  nutritionService.getChildNutritionHistory(childId);
+export const getNutritionAnalytics = (filters: NutritionAnalyticsFilters) =>
+  nutritionService.getNutritionAnalytics(filters);

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { webQueryKeys } from "@/lib/query-keys";
-import { getCompetencyAnalytics } from "../services/reports.service";
+import { reportsService } from "../services/reports.service";
 
 export type {
   CompetencyPeriod,
@@ -13,7 +13,7 @@ export function useCompetencyAnalytics() {
 
   const query = useQuery({
     queryKey: webQueryKeys.competencyAnalytics("all", schoolYear),
-    queryFn: () => getCompetencyAnalytics(schoolYear),
+    queryFn: () => reportsService.getCompetencyAnalytics(schoolYear),
   });
 
   return {

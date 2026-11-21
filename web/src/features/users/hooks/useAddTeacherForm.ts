@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createTeacher } from "../services/users.service";
+import { usersService } from "../services/users.service";
 import type { UseAddTeacherFormProps } from "../types";
 import { showTeacherCredentialsModal, showErrorModal } from "@/utils/alerts";
 import { addTeacherSchema, type AddTeacherFormValues } from "../validations/create-teacher.validation";
@@ -25,7 +25,7 @@ export const useAddTeacherForm = ({ onClose, onCreated }: UseAddTeacherFormProps
   });
 
   const mutation = useMutation({
-    mutationFn: (data: AddTeacherFormValues) => createTeacher(data),
+    mutationFn: (data: AddTeacherFormValues) => usersService.createTeacher(data),
     onSuccess: (res, variables) => {
       onClose();
       // Invalidate queries if needed

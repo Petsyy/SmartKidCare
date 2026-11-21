@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getNutritionAnalytics } from "@/features/children";
+import { nutritionService } from "@/features/children";
 import { webQueryKeys } from "@/lib/query-keys";
 
 export function useNutritionAnalytics() {
@@ -7,7 +7,7 @@ export function useNutritionAnalytics() {
   const query = useQuery({
     queryKey: webQueryKeys.nutritionAnalytics(schoolYear || "latest"),
     queryFn: () =>
-      getNutritionAnalytics({ schoolYear: schoolYear || undefined }),
+      nutritionService.getNutritionAnalytics({ schoolYear: schoolYear || undefined }),
   });
 
   return {

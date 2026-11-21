@@ -1,10 +1,6 @@
 import { useState } from "react";
 import {
-  changeCurrentPassword,
-  getCurrentUser,
-  requestChangePasswordOtp,
-  updateAdminPreferences,
-  updateCurrentUser,
+  settingsService,
   type AdminSettingsUser,
 } from "../services/settings.service";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -54,7 +50,7 @@ export function useAdminSettings() {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: webQueryKeys.adminSettings(),
     queryFn: async () => {
-      const user = await getCurrentUser();
+      const user = await settingsService.getCurrentUser();
       const mappedProfile = mapProfile(user);
       const mappedPreferences = mapPreferences(user);
       setProfile(mappedProfile);
@@ -80,7 +76,7 @@ export function useAdminSettings() {
         email: nextProfile.email.trim(),
         phone: nextProfile.phone.trim(),
       };
-      return updateCurrentUser(payload);
+      return settingsService.updateCurrentUser(payload);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: webQueryKeys.adminSettings() });
@@ -89,7 +85,7 @@ export function useAdminSettings() {
   });
   const preferencesMutation = useMutation({
     mutationFn: (nextPreferences: AdminPreferencesForm) =>
-      updateAdminPreferences(nextPreferences),
+      settingsService.updateAdminPreferences(nextPreferences),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: webQueryKeys.adminSettings() });
     },
@@ -120,7 +116,7 @@ export function useAdminSettings() {
     currentPassword: string,
     newPassword: string,
   ) => {
-    return requestChangePasswordOtp(currentPassword, newPassword);
+    return settingsService.requestChangePasswordOtp(currentPassword, newPassword);
   };
 
   const savePassword = async (
@@ -128,7 +124,7 @@ export function useAdminSettings() {
     newPassword: string,
     otp: string,
   ) => {
-    await changeCurrentPassword(currentPassword, newPassword, otp);
+    await settingsService.changeCurrentPassword(currentPassword, newPassword, otp);
     await queryClient.invalidateQueries({ queryKey: webQueryKeys.authSession() });
     await queryClient.invalidateQueries({ queryKey: webQueryKeys.adminSettings() });
   };

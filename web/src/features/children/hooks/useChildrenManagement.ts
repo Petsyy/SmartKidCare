@@ -1,5 +1,4 @@
-
-import { getChildren } from "../services/children.service";
+import { childrenService } from "../services/children.service";
 import { useQuery } from "@tanstack/react-query";
 import { webQueryKeys } from "@/lib/query-keys";
 
@@ -10,7 +9,7 @@ export function useChildrenManagement() {
   } = useQuery({
     queryKey: webQueryKeys.children(),
     queryFn: async () => {
-      const data = await getChildren();
+      const data = await childrenService.getChildren();
       return Array.isArray(data) ? data : [];
     },
   });

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { getDashboardAnalytics } from "../services";
-import { getNutritionAnalytics } from "@/features/children";
+import { dashboardService } from "../services";
+import { nutritionService } from "@/features/children";
 import { webQueryKeys } from "@/lib/query-keys";
 import { computeEnrollmentData, DEFAULT_DATE_META, DEFAULT_STATS, getManilaDateKey, shiftDateKey } from "../utils";
 import type {
@@ -34,8 +34,8 @@ export function useAdminDashboard(datePreset: "7d" | "30d" = "7d") {
     queryKey: [...webQueryKeys.adminDashboard(), datePreset],
     queryFn: async () => {
       const [report, nutrition] = await Promise.all([
-        getDashboardAnalytics(datePreset),
-        getNutritionAnalytics({}),
+        dashboardService.getDashboardAnalytics(datePreset),
+        nutritionService.getNutritionAnalytics({}),
       ]);
 
       const todayKey = getManilaDateKey(new Date());

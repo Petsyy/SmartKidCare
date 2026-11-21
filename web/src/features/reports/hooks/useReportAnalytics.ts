@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { webQueryKeys } from "@/lib/query-keys";
 import { downloadCsvFile, todayFileKey, type CsvRow } from "../utils/csv-export";
 import { formatDateKey, formatDateTime } from "../utils/report-formatters";
-import { getReportAnalytics } from "../services/reports.service";
+import { reportsService } from "../services/reports.service";
 import type {
   ReportDatePreset,
   TrendPoint,
@@ -156,7 +156,7 @@ export function useReportAnalytics() {
   } = useQuery({
     queryKey: webQueryKeys.reportAnalytics(queryParams),
     enabled: activeRange.isValid,
-    queryFn: () => getReportAnalytics(queryParams),
+    queryFn: () => reportsService.getReportAnalytics(queryParams),
   });
 
   const summary = data?.summary ?? DEFAULT_SUMMARY;
