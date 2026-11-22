@@ -14,9 +14,9 @@ import {
 import { PickupPersonSelector } from "./pickup-person-selector";
 import { PickupParentIdCard, type ParentInfo } from "./pickup-parent-id-card";
 import { PickupGuardianIdCard } from "./pickup-guardian-id-card";
-import type { Guardian } from "@/src/api/api.types";
+import type { Guardian } from "@/src/features/children";
 import { ImageViewerModal } from "@/src/components/ui";
-import { getParentIdDocumentUrl } from "@/src/api/pickup.api";
+import { getParentIdDocumentUrl } from "../services";
 import {
   getUserFriendlyErrorMessage,
   reportHandledError,

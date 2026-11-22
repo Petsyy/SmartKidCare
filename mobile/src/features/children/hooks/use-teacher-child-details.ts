@@ -1,7 +1,9 @@
 import { useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getChildById, type Child } from "@/src/api/parent.api";
-import { getTodayAttendance, getTodayFeeding } from "@/src/api/records.api";
+import { getChildById } from "../services";
+import type { Child } from "../types";
+import { getTodayAttendance } from "@/src/features/attendance";
+import { getTodayFeeding } from "@/src/features/feeding";
 import { useAuth } from "@/src/hooks/use-auth";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { useOffline } from "@/src/offline/offline-context";

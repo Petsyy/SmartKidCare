@@ -7,10 +7,8 @@ import type {
   OutboxOperation,
   OutboxStatus,
 } from "./offline.types";
-import type {
-  SubmitAttendanceData,
-  SubmitFeedingData,
-} from "@/src/api/api.types";
+import type { SubmitAttendanceData } from "@/src/features/attendance";
+import type { SubmitFeedingData } from "@/src/features/feeding";
 
 const nowIso = () => new Date().toISOString();
 

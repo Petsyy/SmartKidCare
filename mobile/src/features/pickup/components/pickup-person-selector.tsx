@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text } from "react-native";
 import { PickupPersonCard } from "./pickup-person-card";
-import type { Guardian } from "@/src/api/api.types";
+import type { Guardian } from "@/src/features/children";
 
 interface ParentInfo {
   firstName: string;

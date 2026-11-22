@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text } from "react-native";
 import { School, User } from "lucide-react-native";
 import { ProfileSection } from "@/src/components/ui";
-import type { Child } from "@/src/api/parent.api";
+import type { Child } from "../../types";
 import {
   NOT_PROVIDED,
   getTeacherFullName,

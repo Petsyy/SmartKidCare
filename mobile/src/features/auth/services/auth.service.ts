@@ -3,15 +3,7 @@ import type {
   LoginCredentials,
   AuthenticatedLoginResponse,
   LoginResponse,
-} from "@/src/api/api.types";
-
-export type {
-  LoginCredentials,
-  LoggedInUser,
-  AuthenticatedLoginResponse,
-  PasswordChangeChallengeResponse,
-  LoginResponse,
-} from "@/src/api/api.types";
+} from "../types";
 
 export class AuthService {
   async login(credentials: LoginCredentials): Promise<LoginResponse> {

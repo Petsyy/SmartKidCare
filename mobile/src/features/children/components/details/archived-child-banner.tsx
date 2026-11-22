@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text } from "react-native";
-import type { Child } from "@/src/api/parent.api";
+import type { Child } from "../../types";
 
 interface ArchivedChildBannerProps {
   child: Child;

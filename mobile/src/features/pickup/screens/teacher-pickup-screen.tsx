@@ -10,7 +10,7 @@ import {
   OfflineFeatureBanner,
 } from "@/src/components/ui";
 import { usePickupTeacher } from "../hooks/usePickupTeacher";
-import type { PickupEligibleChild } from "@/src/api/api.types";
+import type { PickupEligibleChild } from "../types";
 import {
   PickupEligibleChildCard,
   PickupEmptyState,

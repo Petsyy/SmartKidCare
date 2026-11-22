@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { ChevronDown, ChevronLeft, ChevronRight, Calendar as CalendarIcon, User } from "lucide-react-native";
-import type { Child } from "@/src/api/parent.api";
+import type { Child } from "@/src/features/children";
 import { BRAND_HEADER_GRADIENT } from "./screen-header.constants";
 import { ParentLoadingState } from "./parent-loading-state";
 import { ScreenHeader } from "./screen-header";

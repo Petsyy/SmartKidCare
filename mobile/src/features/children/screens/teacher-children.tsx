@@ -1,8 +1,9 @@
 import { useMemo } from "react";
 import { Text, View, ScrollView, Pressable } from "react-native";
 import { useRouter } from "expo-router";
-import { getChildren } from "@/src/api/teacher.api";
-import { getTodayAttendance, getTodayFeeding } from "@/src/api/records.api";
+import { getChildren } from "../services";
+import { getTodayAttendance } from "@/src/features/attendance";
+import { getTodayFeeding } from "@/src/features/feeding";
 import { useAuth } from "@/src/hooks/use-auth";
 import { Search, Users, AlertCircle, Archive } from "lucide-react-native";
 import { useQuery } from "@tanstack/react-query";
@@ -27,7 +28,7 @@ import {
   formatChildRosterName,
   sortChildrenByName,
 } from "@/src/utils/child-name";
-import type { Child } from "@/src/api/api.types";
+import type { Child } from "../types";
 
 interface ChildStatus {
   attendance: "Present" | "Absent" | "Excused" | "Not Recorded";

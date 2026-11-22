@@ -2,14 +2,14 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import type { Child } from "@/src/api/api.types";
+import type { Child } from "../types";
 import {
   editChildSchema,
   type EditChildFormValues,
 } from "../validations/edit-child-validation";
 import { useDatePicker } from "@/src/features/enrollment/hooks/useDatePicker";
 import { useEditChild } from "./use-edit-child";
-import { getChildById } from "@/src/api/parent.api";
+import { getChildById } from "../services";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { useOffline } from "@/src/offline/offline-context";
 

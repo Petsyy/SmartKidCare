@@ -1,4 +1,4 @@
-import type { OfflineResource } from "@/src/api/offline-sync.api";
+import type { OfflineResource } from "./services";
 import { readActiveOfflineRecords } from "./offline-record-store";
 import { toManilaDateKey } from "@/src/utils/manila-date";
 

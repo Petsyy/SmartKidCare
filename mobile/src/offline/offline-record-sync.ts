@@ -5,7 +5,7 @@ import {
   getOfflineSnapshotPage,
   OFFLINE_RESOURCES,
   type OfflineResource,
-} from "@/src/api/offline-sync.api";
+} from "./services";
 import {
   activateRecordSnapshot,
   beginRecordSnapshot,

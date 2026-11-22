@@ -11,17 +11,7 @@ import type {
   AILanguageMode,
   AIDataStatus,
   AIContextStatus,
-} from "@/src/api/api.types";
-
-export type {
-  AIChatPayload,
-  AIChatResponse,
-  AIResponseLanguage,
-  AIRiskLevel,
-  AILanguageMode,
-  AIDataStatus,
-  AIContextStatus,
-} from "@/src/api/api.types";
+} from "../types";
 
 function toShortDate(year: string, month: string, day: string): string {
   const monthNames = [

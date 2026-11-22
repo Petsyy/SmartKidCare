@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Alert } from "react-native";
-import { updateChild } from "@/src/api/teacher.api";
+import { updateChild } from "../services";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
-import type { Child } from "@/src/api/api.types";
+import type { Child } from "../types";
 import type { EditChildFormValues } from "../validations/edit-child-validation";
 import { useOffline } from "@/src/offline/offline-context";
 import {

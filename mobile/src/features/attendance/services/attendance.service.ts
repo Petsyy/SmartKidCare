@@ -8,15 +8,7 @@ import type {
   SubmitResponse,
   SubmitAttendanceData,
   UpdateAttendanceData,
-  AttendanceRecord,
-} from "@/src/api/api.types";
-
-export type {
-  AttendanceRecord,
-  SubmitResponse,
-  SubmitAttendanceData,
-  UpdateAttendanceData,
-};
+} from "../types";
 
 export class AttendanceService {
   async submitAttendance(

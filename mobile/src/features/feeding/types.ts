@@ -14,3 +14,15 @@ export type TeacherFeedingStats = {
   total: number;
 };
 
+export interface FeedingRecord {
+  child: string;
+  status: "completed" | "missed";
+  notes?: string;
+}
+
+export interface SubmitFeedingData {
+  clientOperationId?: string;
+  date: string;
+  foodServed: string;
+  records: FeedingRecord[];
+}

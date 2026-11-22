@@ -17,7 +17,7 @@ import {
   SkeletonGroup,
 } from "@/src/components/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getMyChildren, type Child } from "@/src/api/parent.api";
+import { getMyChildren, type Child } from "@/src/features/children";
 import { usePickupParent } from "../hooks/usePickupParent";
 import { useGuardians } from "@/src/features/children/hooks/useGuardian";
 import { GuardianList } from "@/src/features/children/components/guardian-list";

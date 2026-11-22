@@ -1,9 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getPickupStatus, requestPickupCode } from "@/src/api/pickup.api";
+import { getPickupStatus, requestPickupCode } from "../services";
 import { useAuth } from "@/src/hooks/use-auth";
 import { useOffline } from "@/src/offline/offline-context";
 import { readOfflineResource, onlineWithOfflineFallback } from "@/src/offline/offline-read";
-import type { PickupStatusResponse } from "@/src/api/api.types";
+import type { PickupStatusResponse } from "../types";
 
 export const usePickupParent = (childId: string) => {
   const queryClient = useQueryClient();

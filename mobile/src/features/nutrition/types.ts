@@ -1,4 +1,4 @@
-import type { NutritionPeriod } from "@/src/api/nutrition.api";
+import type { NutritionPeriod } from "./services";
 
 export type EditableNutritionPeriod = Extract<
   NutritionPeriod,

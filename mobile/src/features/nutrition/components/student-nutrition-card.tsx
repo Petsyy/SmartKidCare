@@ -11,7 +11,7 @@ import {
   calculateBmi,
   classifyNutritionalStatus,
 } from "@/src/features/enrollment/utils/enrollment-utils";
-import type { NutritionPeriod } from "@/src/api/nutrition.api";
+import type { NutritionPeriod } from "../services";
 import {
   WEIGHT_MAX_INPUT_LENGTH,
   HEIGHT_MAX_INPUT_LENGTH,

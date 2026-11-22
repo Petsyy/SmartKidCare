@@ -23,7 +23,7 @@ import {
 } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGuardians } from "../hooks/useGuardian";
-import type { Guardian } from "@/src/api/api.types";
+import type { Guardian } from "../types";
 import { ImageViewerModal } from "@/src/components/ui";
 
 interface ViewGuardiansBottomSheetProps {

@@ -3,13 +3,14 @@ import { Alert } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Crypto from "expo-crypto";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getChildren } from "@/src/api/teacher.api";
+import { getChildren } from "@/src/features/children";
 import {
   getAttendanceForDate,
   submitAttendance,
   updateAttendance,
-} from "@/src/api/records.api";
-import type { AttendanceRecord, Child } from "@/src/api/api.types";
+} from "../services";
+import type { AttendanceRecord } from "../types";
+import type { Child } from "@/src/features/children";
 import { useAuth } from "@/src/hooks/use-auth";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { useTeacherUi } from "@/src/context/teacher-ui-context";

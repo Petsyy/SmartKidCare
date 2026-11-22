@@ -1,6 +1,8 @@
 import { createContext, useContext } from "react";
-import { getSystemSettings } from "../api/system-settings.api";
-import type { SystemSettings } from "../api/system-settings.api";
+import {
+  getSystemSettings,
+  type SystemSettings,
+} from "@/src/shared/services";
 import { useQuery } from "@tanstack/react-query";
 
 type SystemSettingsContextType = {

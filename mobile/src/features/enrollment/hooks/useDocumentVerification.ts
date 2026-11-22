@@ -2,8 +2,8 @@ import { useCallback, useRef, useState } from "react";
 import {
   confirmEnrollmentDocument,
   verifyEnrollmentDocument,
-} from "@/src/api/teacher.api";
-import type { DocumentVerificationResponse } from "@/src/api/api.types";
+} from "../services";
+import type { DocumentVerificationResponse } from "../types";
 import { ApiError } from "@/src/api/client";
 import {
   getUserFriendlyErrorMessage,

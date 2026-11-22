@@ -5,19 +5,7 @@ import type {
   TeacherNotificationDispatchResponse,
   TeacherNotificationFeedResponse,
   ParentNotificationFeedResponse,
-} from "@/src/api/api.types";
-
-export type {
-  Platform,
-  RegisterPushTokenPayload,
-  RegisterPushTokenResponse,
-  TeacherNotificationDispatchDetail,
-  TeacherNotificationDispatchResponse,
-  TeacherNotificationFeedItem,
-  TeacherNotificationFeedResponse,
-  ParentNotificationFeedItem,
-  ParentNotificationFeedResponse,
-} from "@/src/api/api.types";
+} from "../types";
 
 export class NotificationService {
   async registerPushToken(

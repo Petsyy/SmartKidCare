@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { getProfile } from "@/src/api/authentication.api";
+import { getProfile } from "@/src/features/auth";
 import { useAuth } from "@/src/hooks/use-auth";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
-import type { EnrollmentCenterOption } from "@/src/api/api.types";
+import type { EnrollmentCenterOption } from "../types";
 
 export const useEnrollmentCenters = () => {
   const { isAuthenticated } = useAuth();

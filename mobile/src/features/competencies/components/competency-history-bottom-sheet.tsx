@@ -14,7 +14,7 @@ import {
 } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
-import { getCompetencyHistory } from "@/src/api/competency.api";
+import { getCompetencyHistory } from "../services";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 import type { CompetencyEvaluation } from "../types";
 import { CompetencyHistoryItem } from "./competency-history-item";

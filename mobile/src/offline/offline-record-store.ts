@@ -1,5 +1,5 @@
 import { getOfflineDatabase } from "./offline-database";
-import type { OfflineResource } from "@/src/api/offline-sync.api";
+import type { OfflineResource } from "./services";
 import { toManilaDateKey } from "@/src/utils/manila-date";
 
 const TABLES: Record<OfflineResource, string> = {

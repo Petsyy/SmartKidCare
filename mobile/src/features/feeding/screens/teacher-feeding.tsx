@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { View, Text, FlatList } from "react-native";
 import { Search, CheckCircle2 } from "lucide-react-native";
 import { useTeacherFeeding } from "@/src/features/feeding/hooks";
-import type { Child } from "@/src/api/parent.api";
+import type { Child } from "@/src/features/children";
 import { useUnsavedChangesGuard } from "@/src/hooks/use-unsaved-changes-guard";
 import {
   ScreenHeader,

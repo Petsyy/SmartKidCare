@@ -4,7 +4,10 @@ import { View, Text, TextInput, Pressable, Alert } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 import { MailCheck } from "lucide-react-native";
-import { resendTeacherPasswordOtp, verifyTeacherPasswordOtp, } from "@/src/api/authentication.api";
+import {
+  resendTeacherPasswordOtp,
+  verifyTeacherPasswordOtp,
+} from "../services";
 import { AuthLayout, GradientButton } from "@/src/components/ui";
 import {
   getUserFriendlyErrorMessage,

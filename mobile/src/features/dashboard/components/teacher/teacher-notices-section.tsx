@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, Pressable } from "react-native";
 import { Bell } from "lucide-react-native";
-import type { TeacherNotificationFeedItem } from "@/src/api/notifications.api";
+import type { TeacherNotificationFeedItem } from "@/src/features/notifications";
 import { NoticeItem } from "../common/notice-item";
 
 const NOTICE_TYPE_UI: Record<

@@ -6,8 +6,8 @@ import {
   addGuardian,
   updateGuardian,
   removeGuardian,
-} from "@/src/api/pickup.api";
-import type { Guardian } from "@/src/api/api.types";
+} from "@/src/features/pickup";
+import type { Guardian } from "../types";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { useAuth } from "@/src/hooks/use-auth";
 import { useOffline } from "@/src/offline/offline-context";

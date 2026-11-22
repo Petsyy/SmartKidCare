@@ -26,13 +26,13 @@ import { useAuth } from "@/src/hooks/use-auth";
 import {
   invalidateAIChatContext,
   sendAIChat,
-} from "@/src/api/ai.api";
+} from "@/src/features/ai";
 import type {
   AILanguageMode,
   AIResponseLanguage,
   AIRiskLevel,
-} from "@/src/api/api.types";
-import { getMyChildren, type Child } from "@/src/api/parent.api";
+} from "@/src/features/ai";
+import { getMyChildren, type Child } from "@/src/features/children";
 import {
   extractAIBulletText,
   extractAIRiskLevel,
