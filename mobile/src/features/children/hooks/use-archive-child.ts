@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Alert } from "react-native";
-import { archiveChild, restoreChild } from "@/src/api/teacher.api";
+import { archiveChild, restoreChild } from "../services";
 import { useRouter } from "expo-router";
 import { useOffline } from "@/src/offline/offline-context";
 import { getUserFriendlyErrorMessage, reportHandledError } from "@/src/lib/error-reporting";

@@ -1,10 +1,6 @@
 import { apiClient } from "@/src/api/client";
-import type {
-  Child,
-  ChildEnrollmentRequestPayload,
-} from "@/src/api/api.types";
-
-export type { Child, ChildDocumentIntegrity } from "@/src/api/api.types";
+import type { Child } from "../types";
+import type { ChildEnrollmentRequestPayload } from "@/src/features/enrollment";
 
 export class ChildrenService {
   async getChildren(

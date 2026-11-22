@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text } from "react-native";
 import { AlertCircle, CheckCircle2, Clock3 } from "lucide-react-native";
-import type { Child } from "@/src/api/parent.api";
+import type { Child } from "../../types";
 import {
   getChildDetails,
   getEnrollmentStatus,

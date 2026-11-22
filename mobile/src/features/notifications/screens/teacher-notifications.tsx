@@ -1,9 +1,7 @@
 import { AlertCircle, Clock3, UtensilsCrossed, CheckCircle2 } from "lucide-react-native";
 import { useAuth } from "@/src/hooks/use-auth";
-import {
-  getTeacherNotificationsFeed,
-  type TeacherNotificationFeedItem,
-} from "@/src/api/notifications.api";
+import { getTeacherNotificationsFeed } from "../services";
+import type { TeacherNotificationFeedItem } from "../types";
 import { useNotificationsFeed } from "@/src/features/notifications/hooks";
 import { NotificationFeedScreen } from "@/src/features/notifications/screens/notification-feed";
 

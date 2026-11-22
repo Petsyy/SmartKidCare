@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text } from "react-native";
 import { User, Phone } from "lucide-react-native";
-import type { PickupEligibleChild } from "@/src/api/api.types";
+import type { PickupEligibleChild } from "../types";
 
 interface Props {
   child: PickupEligibleChild;

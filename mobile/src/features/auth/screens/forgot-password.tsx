@@ -3,7 +3,7 @@ import { Alert, View, Text, TextInput } from "react-native";
 import { useRouter } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 import { Mail } from "lucide-react-native";
-import { requestForgotPasswordOtp } from "@/src/api/authentication.api";
+import { requestForgotPasswordOtp } from "../services";
 import { AuthLayout, GradientButton } from "@/src/components/ui";
 import {
   getUserFriendlyErrorMessage,

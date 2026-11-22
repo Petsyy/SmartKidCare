@@ -1,4 +1,4 @@
-import type { Child } from "@/src/api/parent.api";
+import type { Child } from "../types";
 
 export const NOT_PROVIDED = "Not provided";
 

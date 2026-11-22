@@ -1,5 +1,5 @@
 import { getOfflineDatabase } from "./offline-database";
-import type { AILanguageMode, AIResponseLanguage } from "../api/api.types";
+import type { AILanguageMode, AIResponseLanguage } from "@/src/features/ai";
 
 export type OfflineChatSession = {
   contextId: string;

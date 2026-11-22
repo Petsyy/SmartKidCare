@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, Pressable } from "react-native";
 import { User, ChevronRight, Phone } from "lucide-react-native";
-import type { PickupEligibleChild } from "@/src/api/api.types";
+import type { PickupEligibleChild } from "../types";
 import { PickupSelectionCheckbox } from "./pickup-selection-checkbox";
 
 interface Props {

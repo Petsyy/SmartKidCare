@@ -1,4 +1,4 @@
-import { ChildDocumentIntegrity } from "../api/parent.api";
+import type { ChildDocumentIntegrity } from "@/src/features/children";
 import { BLOCK_EXPLORER_BASE_URL } from "../config/config.api";
 
 export type BlockchainStatusKey =

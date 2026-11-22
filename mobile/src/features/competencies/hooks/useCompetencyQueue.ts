@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getMyClassCompetencyStatus } from "@/src/api/competency.api";
-import { getChildren } from "@/src/api/teacher.api";
+import { getMyClassCompetencyStatus } from "../services";
+import { getChildren } from "@/src/features/children";
 import { useAuth } from "@/src/hooks/use-auth";
 import { useOffline } from "@/src/offline/offline-context";
 import {
@@ -12,7 +12,7 @@ import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { listDraftsByType } from "@/src/offline/offline-store";
 import type { CompetencyDraftPayload } from "@/src/offline/offline.types";
 import { getManilaDateKey, toManilaDateKey } from "@/src/utils/manila-date";
-import type { Child } from "@/src/api/api.types";
+import type { Child } from "@/src/features/children";
 
 export type QueuePeriod = "quarterly" | "final";
 export type QueueFilter =

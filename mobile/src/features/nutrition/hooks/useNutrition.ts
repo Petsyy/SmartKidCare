@@ -3,18 +3,16 @@ import {
   getMyClassNutrition,
   evaluateNutrition,
   getChildNutritionHistory,
-} from "../../../api/nutrition.api";
-import type {
-  NutritionPeriod,
-  NutritionRecord,
-} from "../../../api/nutrition.api";
+  type NutritionPeriod,
+  type NutritionRecord,
+} from "../services";
 import { useAuth } from "@/src/hooks/use-auth";
 import { useOffline } from "@/src/offline/offline-context";
 import {
   onlineWithOfflineFallback,
   readOfflineResource,
 } from "@/src/offline/offline-read";
-import type { Child } from "@/src/api/api.types";
+import type { Child } from "@/src/features/children";
 import { getManilaDateKey } from "@/src/utils/manila-date";
 import { compareChildrenByName } from "@/src/utils/child-name";
 

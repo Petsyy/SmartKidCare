@@ -1,7 +1,7 @@
 import { View, ActivityIndicator } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/src/hooks/use-auth";
-import { getMyChildren } from "@/src/api/parent.api";
+import { getMyChildren } from "@/src/features/children";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 
 type Props = {

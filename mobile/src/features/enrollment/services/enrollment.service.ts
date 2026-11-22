@@ -6,14 +6,7 @@ import type {
   EnrollmentCenterOption,
   ChildEnrollmentSubmissionResponse,
   DocumentVerificationResponse,
-} from "@/src/api/api.types";
-
-export type {
-  ChildEnrollmentRequestPayload,
-  ChildEnrollmentRequestFiles,
-  EnrollmentCenterOption,
-  ChildEnrollmentSubmissionResponse,
-};
+} from "../types";
 
 export class EnrollmentService {
   async verifyEnrollmentDocument(

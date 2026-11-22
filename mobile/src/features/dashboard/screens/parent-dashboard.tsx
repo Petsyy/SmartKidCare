@@ -17,7 +17,7 @@ import {
 } from "@/src/components/ui";
 import { useSystemSettings } from "@/src/context/system-settings-context";
 import { getDaycareCenterDisplay } from "@/src/utils/daycare-center-format";
-import type { ParentNotificationFeedItem } from "@/src/api/notifications.api";
+import type { ParentNotificationFeedItem } from "@/src/features/notifications";
 
 function getChildRecordStatus(record: any, childId?: string): string | null {
   if (!childId || !Array.isArray(record?.records)) return null;

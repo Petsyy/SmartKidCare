@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { Alert } from "react-native";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { submitChildEnrollment } from "@/src/api/teacher.api";
+import { submitChildEnrollment } from "../services";
 import { inferMimeType } from "@/src/features/enrollment/utils/enrollment-utils";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { useAuth } from "@/src/hooks/use-auth";

@@ -1,16 +1,18 @@
 import { useCallback, useMemo, useState } from "react";
 import { useAuth } from "@/src/hooks/use-auth";
-import { getMyChildren, Child } from "@/src/api/parent.api";
+import { getMyChildren, type Child } from "@/src/features/children";
 import {
   getAttendanceHistory,
-  getFeedingHistory,
   getTodayAttendance,
+} from "@/src/features/attendance";
+import {
+  getFeedingHistory,
   getTodayFeeding,
-} from "@/src/api/records.api";
+} from "@/src/features/feeding";
 import {
   getParentNotificationsFeed,
   type ParentNotificationFeedItem,
-} from "@/src/api/notifications.api";
+} from "@/src/features/notifications";
 import { useQuery } from "@tanstack/react-query";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { useFocusEffect } from "expo-router";

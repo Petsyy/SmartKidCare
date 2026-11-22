@@ -1,6 +1,6 @@
 import { Image, Pressable, Text, View } from "react-native";
 import { CheckCircle2, XCircle } from "lucide-react-native";
-import type { Guardian } from "@/src/api/api.types";
+import type { Guardian } from "@/src/features/children";
 
 interface PickupGuardianIdCardProps {
   guardian: Guardian;

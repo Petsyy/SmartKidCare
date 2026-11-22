@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, ScrollView, Pressable } from "react-native";
-import type { Child } from "@/src/api/parent.api";
+import type { Child } from "../../types";
 import { getFullName } from "../../utils/parent-child-formatters";
 
 export interface ChildSelectorPillsProps {

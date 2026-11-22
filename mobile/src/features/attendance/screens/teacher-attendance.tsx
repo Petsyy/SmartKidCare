@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { FlatList, Text, View } from "react-native";
-import type { Child } from "@/src/api/api.types";
+import type { Child } from "@/src/features/children";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTeacherAttendance } from "@/src/features/attendance/hooks/useTeacherAttendance";
 import {

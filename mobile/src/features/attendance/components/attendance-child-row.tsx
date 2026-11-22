@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { Pressable, Text, View } from "react-native";
-import type { Child } from "@/src/api/api.types";
+import type { Child } from "@/src/features/children";
 import type { AttendanceSelection, AttendanceStatus } from "@/src/features/attendance/types";
 import { formatChildRosterName } from "@/src/utils/child-name";
 

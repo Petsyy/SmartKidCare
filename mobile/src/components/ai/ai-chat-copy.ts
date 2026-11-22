@@ -1,4 +1,4 @@
-import type { AIResponseLanguage, AIRiskLevel } from "../../api/api.types";
+import type { AIResponseLanguage, AIRiskLevel } from "@/src/features/ai";
 
 export const AI_CHAT_COPY = {
   en: {

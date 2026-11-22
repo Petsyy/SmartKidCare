@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { Alert } from "react-native";
-import { getChildParentCredentials, resetChildParentPassword } from "@/src/api/teacher.api";
+import {
+  getChildParentCredentials,
+  resetChildParentPassword,
+} from "../services";
 import { getUserFriendlyErrorMessage, reportHandledError } from "@/src/lib/error-reporting";
 
 export interface CredentialsModalState {

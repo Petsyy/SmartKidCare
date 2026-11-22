@@ -1,1 +1,6 @@
-export * from "./ai.service";
+export {
+  AiService,
+  aiService,
+  sendAIChat,
+  invalidateAIChatContext,
+} from "./ai.service";

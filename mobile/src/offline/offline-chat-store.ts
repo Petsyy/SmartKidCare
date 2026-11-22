@@ -1,5 +1,5 @@
 import { getOfflineDatabase } from "./offline-database";
-import type { AIResponseLanguage, AIRiskLevel } from "../api/api.types";
+import type { AIResponseLanguage, AIRiskLevel } from "@/src/features/ai";
 
 export type OfflineChatMessage = {
   id: string;

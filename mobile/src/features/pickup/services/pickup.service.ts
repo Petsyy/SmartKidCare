@@ -1,16 +1,16 @@
 import { apiClient, apiFormDataClient } from "@/src/api/client";
 import { File } from "expo-file-system";
 import { API_BASE_URL } from "@/src/config/config.api";
+import type { Guardian } from "@/src/features/children";
+import type { DocumentAccessResponse } from "@/src/features/enrollment";
 import type {
-  DocumentAccessResponse,
-  Guardian,
   PickupEligibleChild,
   RequestPickupCodeResponse,
   PickupRecordResponse,
   PickupStatusResponse,
   BulkPickupNotificationInput,
   BulkPickupNotificationResult,
-} from "@/src/api/api.types";
+} from "../types";
 
 const appendGuardianMultipartData = (
   formData: FormData,

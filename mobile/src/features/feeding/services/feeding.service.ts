@@ -4,17 +4,8 @@ import {
   getManilaIsoRangeForDateKey,
   toManilaDateKey,
 } from "@/src/utils/manila-date";
-import type {
-  SubmitResponse,
-  SubmitFeedingData,
-  FeedingRecord,
-} from "@/src/api/api.types";
-
-export type {
-  FeedingRecord,
-  SubmitResponse,
-  SubmitFeedingData,
-};
+import type { SubmitFeedingData } from "../types";
+import type { SubmitResponse } from "@/src/features/attendance";
 
 export class FeedingService {
   async submitFeeding(

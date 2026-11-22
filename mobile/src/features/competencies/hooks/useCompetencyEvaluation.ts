@@ -5,8 +5,8 @@ import {
   getCompetencyDefinitions,
   getCompetencyEvaluationByPeriod,
   submitCompetencyEvaluation,
-} from "../../../api/competency.api";
-import { getChildById } from "../../../api/parent.api";
+} from "../services";
+import { getChildById, type Child } from "@/src/features/children";
 import { mobileQueryKeys } from "../../../lib/query-keys";
 import {
   formatManilaDateLabel,
@@ -31,7 +31,7 @@ import {
   onlineWithOfflineFallback,
   readOfflineResource,
 } from "@/src/offline/offline-read";
-import type { Child } from "@/src/api/parent.api";
+
 import {
   getUserFriendlyErrorMessage,
   reportHandledError,

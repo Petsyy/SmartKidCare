@@ -1,7 +1,5 @@
-import type {
-  SubmitAttendanceData,
-  SubmitFeedingData,
-} from "@/src/api/api.types";
+import type { SubmitAttendanceData } from "@/src/features/attendance";
+import type { SubmitFeedingData } from "@/src/features/feeding";
 
 export type OfflineRecordType =
   "attendance" | "feeding" | "nutrition" | "competency";

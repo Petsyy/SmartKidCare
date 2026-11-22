@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { Text, View } from "react-native";
 import { CheckCircle2 } from "lucide-react-native";
-import type { Child } from "@/src/api/parent.api";
+import type { Child } from "@/src/features/children";
 import { formatChildRosterName } from "@/src/utils/child-name";
 
 interface FeedingChildRowProps {

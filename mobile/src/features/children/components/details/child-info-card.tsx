@@ -11,7 +11,7 @@ import {
   GraduationCap,
   Sparkles,
 } from "lucide-react-native";
-import type { Child } from "@/src/api/parent.api";
+import type { Child } from "../../types";
 
 interface ChildInfoCardProps {
   child: Child;

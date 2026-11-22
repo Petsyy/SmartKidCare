@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Alert } from "react-native";
 import { useMutation } from "@tanstack/react-query";
-import { changePassword } from "@/src/api/authentication.api";
+import { changePassword } from "@/src/features/auth";
 import {
   getPasswordStrengthFeedback,
   validatePasswordRules,

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 import { act, fireEvent, waitFor } from "@testing-library/react-native";
-import { login as apiLogin } from "@/src/api/authentication.api";
+import { login as apiLogin } from "../services";
 import { useAuth } from "@/src/hooks/use-auth";
 import { getMockSubmit, resetMockSubmit } from "@/src/test/gradient-button.mock";
 import { renderWithQueryClient } from "@/src/test/render";
@@ -31,7 +31,7 @@ jest.mock("expo-router", () => ({
   useFocusEffect: (callback: () => void | (() => void)) => callback(),
 }));
 
-jest.mock("@/src/api/authentication.api", () => ({
+jest.mock("../services", () => ({
   login: jest.fn(),
 }));
 

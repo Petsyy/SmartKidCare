@@ -6,10 +6,8 @@ import {
   BookOpenCheck,
 } from "lucide-react-native";
 import { useAuth } from "@/src/hooks/use-auth";
-import {
-  getParentNotificationsFeed,
-  type ParentNotificationFeedItem,
-} from "@/src/api/notifications.api";
+import { getParentNotificationsFeed } from "../services";
+import type { ParentNotificationFeedItem } from "../types";
 import { useNotificationsFeed } from "@/src/features/notifications/hooks";
 import { NotificationFeedScreen } from "@/src/features/notifications/screens/notification-feed";
 

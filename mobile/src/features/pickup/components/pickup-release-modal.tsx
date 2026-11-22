@@ -1,5 +1,5 @@
 import { Modal, Pressable, ScrollView, Text, View } from "react-native";
-import type { PickupEligibleChild } from "@/src/api/api.types";
+import type { PickupEligibleChild } from "../types";
 import { PickupChildInfoCard } from "./pickup-child-info-card";
 import { PickupCodeVerifier } from "./pickup-code-verifier";
 import { PickupManualOverridePanel } from "./pickup-manual-override-panel";

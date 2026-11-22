@@ -6,7 +6,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Lock } from "lucide-react-native";
 import { useAuth } from "@/src/hooks/use-auth";
 import type { User } from "@/src/context/auth-context";
-import { completeTeacherPasswordSetup } from "@/src/api/authentication.api";
+import { completeTeacherPasswordSetup } from "../services";
 import { getPasswordStrengthFeedback } from "@/src/features/auth/validations/password-validation";
 import { PasswordStrengthFeedback } from "@/src/features/auth/components";
 import { AuthLayout, PasswordInput, GradientButton } from "@/src/components/ui";

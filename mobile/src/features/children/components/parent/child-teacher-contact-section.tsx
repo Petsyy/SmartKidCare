@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, Pressable, Linking } from "react-native";
 import { Mail, Phone, User } from "lucide-react-native";
 import { ProfileSection } from "@/src/components/ui";
-import type { Child } from "@/src/api/parent.api";
+import type { Child } from "../../types";
 import { getTeacherFullName } from "../../utils/parent-child-formatters";
 
 export interface ChildTeacherContactSectionProps {

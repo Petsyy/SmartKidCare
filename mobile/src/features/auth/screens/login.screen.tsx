@@ -24,7 +24,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/src/hooks/use-auth";
 import type { User } from "@/src/context/auth-context";
-import { login as apiLogin } from "@/src/api/authentication.api";
+import { login as apiLogin } from "../services";
 import { PasswordInput, GradientButton } from "@/src/components/ui";
 import {
   getUserFriendlyErrorMessage,

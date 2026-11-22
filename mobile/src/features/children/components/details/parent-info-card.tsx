@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, Pressable } from "react-native";
 import { User, Mail, Phone, ShieldCheck } from "lucide-react-native";
 import { InfoRow } from "./info-row";
-import type { Child } from "@/src/api/parent.api";
+import type { Child } from "../../types";
 
 interface ParentInfoCardProps {
   child: Child;

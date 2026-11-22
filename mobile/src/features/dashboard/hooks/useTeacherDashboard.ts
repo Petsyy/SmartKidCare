@@ -1,14 +1,15 @@
 import { useCallback, useMemo, useState } from "react";
 import { useAuth } from "@/src/hooks/use-auth";
-import { getChildren } from "@/src/api/teacher.api";
-import { getProfile } from "@/src/api/authentication.api";
-import { getTodayAttendance, getTodayFeeding } from "@/src/api/records.api";
-import type { Child } from "@/src/api/api.types";
+import { getChildren, type Child } from "@/src/features/children";
+import { getProfile } from "@/src/features/auth";
+import { getTodayAttendance } from "@/src/features/attendance";
+import { getTodayFeeding } from "@/src/features/feeding";
+
 import {
   getTeacherNotificationsFeed,
   type TeacherNotificationFeedItem,
-} from "@/src/api/notifications.api";
-import { getPickupEligibleChildren } from "@/src/api/pickup.api";
+} from "@/src/features/notifications";
+import { getPickupEligibleChildren } from "@/src/features/pickup";
 import { useQuery } from "@tanstack/react-query";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { getManilaDateKey } from "@/src/utils/manila-date";

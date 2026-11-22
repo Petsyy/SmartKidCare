@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import type { TeacherNotificationFeedItem } from "@/src/api/notifications.api";
+import type { TeacherNotificationFeedItem } from "@/src/features/notifications";
 import {
   RefreshableScrollView,
   ScreenLoadingState,

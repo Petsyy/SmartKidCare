@@ -4,16 +4,19 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Crypto from "expo-crypto";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/src/hooks/use-auth";
-import { getChildren } from "@/src/api/teacher.api";
+import { getChildren } from "@/src/features/children";
 import {
   getAttendanceForDate,
   getAttendanceHistory,
+} from "@/src/features/attendance";
+import {
   getFeedingForDate,
   getFeedingHistory,
   submitFeeding,
-  type FeedingRecord,
-} from "@/src/api/records.api";
-import type { Child, SubmitAttendanceData } from "@/src/api/api.types";
+} from "../services";
+import type { FeedingRecord } from "../types";
+import type { Child } from "@/src/features/children";
+import type { SubmitAttendanceData } from "@/src/features/attendance";
 import {
   formatManilaDateLabel,
   getManilaDateKey,

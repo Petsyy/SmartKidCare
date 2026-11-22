@@ -14,14 +14,14 @@ import { useAuthContext } from "@/src/context/auth-context";
 import { ApiError } from "@/src/api/client";
 import {
   getAttendanceForDate,
-  getFeedingForDate,
   submitAttendance,
+} from "@/src/features/attendance";
+import {
+  getFeedingForDate,
   submitFeeding,
-} from "@/src/api/records.api";
-import type {
-  SubmitAttendanceData,
-  SubmitFeedingData,
-} from "@/src/api/api.types";
+} from "@/src/features/feeding";
+import type { SubmitAttendanceData } from "@/src/features/attendance";
+import type { SubmitFeedingData } from "@/src/features/feeding";
 import { getOfflineDatabase } from "./offline-database";
 import {
   hydrateAllowedQueries,

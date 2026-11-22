@@ -3,8 +3,10 @@ import { useBottomTabBarHeight } from "expo-router/js-tabs";
 import { useFocusEffect } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/src/hooks/use-auth";
-import { getMyChildren, type Child } from "@/src/api/parent.api";
-import { getTodayAttendance, getTodayFeeding } from "@/src/api/records.api";
+import { getMyChildren } from "../services";
+import type { Child } from "../types";
+import { getTodayAttendance } from "@/src/features/attendance";
+import { getTodayFeeding } from "@/src/features/feeding";
 import { mobileQueryKeys } from "@/src/lib/query-keys";
 import { useOffline } from "@/src/offline/offline-context";
 import {
