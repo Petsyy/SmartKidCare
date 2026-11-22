@@ -1,157 +1,26 @@
-import { apiClient, apiFormDataClient } from "./client";
-import { File } from "expo-file-system";
-import type {
-  Child,
-  ChildEnrollmentRequestPayload,
-  ChildEnrollmentRequestFiles,
-  EnrollmentCenterOption,
-  ChildEnrollmentSubmissionResponse,
-  DocumentVerificationResponse,
-} from "./api.types";
+import { enrollmentService } from "@/src/features/enrollment/services";
+import { childrenService } from "@/src/features/children/services";
 
-export type {
-  ChildEnrollmentRequestPayload,
-  ChildEnrollmentRequestFiles,
-  EnrollmentCenterOption,
-  ChildEnrollmentSubmissionResponse,
-};
+export * from "@/src/features/enrollment/services";
+export * from "@/src/features/children/services";
 
-export const verifyEnrollmentDocument = async (
-  file: { uri: string; name: string },
-  fields:
-    | {
-        documentType: "birthCertificate";
-        childFullName: string;
-        dateOfBirth: string;
-      }
-    | {
-        documentType: "parentId";
-        parentFirstName: string;
-        parentMiddleName?: string;
-        parentLastName: string;
-      }
-    | {
-        documentType: "guardianId";
-        guardianFirstName: string;
-        guardianLastName: string;
-      },
-): Promise<DocumentVerificationResponse> => {
-  const formData = new FormData();
-  Object.entries(fields).forEach(([key, value]) => formData.append(key, value));
-  formData.append("file", new File(file.uri), file.name);
-  return apiFormDataClient<DocumentVerificationResponse>(
-    "/api/enrollment/documents/verify",
-    formData,
-    "POST",
-    { timeoutMs: 45_000 },
-  );
-};
+export class TeacherApi {
+  verifyEnrollmentDocument =
+    enrollmentService.verifyEnrollmentDocument.bind(enrollmentService);
+  confirmEnrollmentDocument =
+    enrollmentService.confirmEnrollmentDocument.bind(enrollmentService);
+  getEnrollmentCenters =
+    enrollmentService.getEnrollmentCenters.bind(enrollmentService);
+  submitChildEnrollment =
+    enrollmentService.submitChildEnrollment.bind(enrollmentService);
+  getChildren = childrenService.getChildren.bind(childrenService);
+  getChildParentCredentials =
+    childrenService.getChildParentCredentials.bind(childrenService);
+  resetChildParentPassword =
+    childrenService.resetChildParentPassword.bind(childrenService);
+  updateChild = childrenService.updateChild.bind(childrenService);
+  archiveChild = childrenService.archiveChild.bind(childrenService);
+  restoreChild = childrenService.restoreChild.bind(childrenService);
+}
 
-export const confirmEnrollmentDocument = async (
-  verificationId: string,
-): Promise<DocumentVerificationResponse> =>
-  apiClient<DocumentVerificationResponse>(
-    `/api/enrollment/documents/${verificationId}/confirm`,
-    { method: "POST", body: { reviewAcknowledged: true } },
-  );
-
-export const getEnrollmentCenters = async (): Promise<
-  EnrollmentCenterOption[]
-> => {
-  const data = await apiClient<{ centers?: EnrollmentCenterOption[] }>(
-    "/api/enrollment/centers",
-  );
-  return Array.isArray(data.centers) ? data.centers : [];
-};
-
-export const submitChildEnrollment = async (
-  payload: ChildEnrollmentRequestPayload,
-  files?: ChildEnrollmentRequestFiles,
-): Promise<ChildEnrollmentSubmissionResponse> => {
-  const formData = new FormData();
-
-  (
-    Object.entries(payload) as [keyof ChildEnrollmentRequestPayload, any][]
-  ).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && String(value).length > 0) {
-      formData.append(key, String(value));
-    }
-  });
-
-  if (files?.birthCertificate?.uri) {
-    formData.append(
-      "birthCertificate",
-      new File(files.birthCertificate.uri),
-      files.birthCertificate.name,
-    );
-  }
-
-  if (files?.parentId?.uri) {
-    formData.append(
-      "parentId",
-      new File(files.parentId.uri),
-      files.parentId.name,
-    );
-  }
-
-  return apiFormDataClient<ChildEnrollmentSubmissionResponse>(
-    "/api/enrollment",
-    formData,
-  );
-};
-
-export const getChildren = async (status: "Active" | "Inactive" = "Active"): Promise<Child[]> => {
-  const data = await apiClient<Child[] | any>(`/api/children?status=${status}`);
-  return Array.isArray(data) ? data : [];
-};
-
-export const getChildParentCredentials = async (
-  childId: string,
-): Promise<{ email: string; tempPassword?: string | null }> => {
-  return apiClient<{ email: string; tempPassword?: string | null }>(
-    `/api/children/${childId}/parent-credentials`,
-    {
-      method: "GET",
-    },
-  );
-};
-
-export const resetChildParentPassword = async (
-  childId: string,
-): Promise<{ email: string; tempPassword?: string | null }> => {
-  return apiClient<{ email: string; tempPassword?: string | null }>(
-    `/api/children/${childId}/parent-credentials/reset`,
-    {
-      method: "POST",
-    },
-  );
-};
-
-export const updateChild = async (
-  childId: string,
-  payload: Partial<ChildEnrollmentRequestPayload> & {
-    weight?: number | null;
-    height?: number | null;
-  },
-): Promise<Child> => {
-  return apiClient<Child>(`/api/children/${childId}`, {
-    method: "PATCH",
-    body: payload,
-  });
-};
-
-export const archiveChild = async (
-  childId: string,
-  input: { reason: string; note?: string },
-): Promise<Child> => {
-  return apiClient<Child>(`/api/children/${childId}/archive`, {
-    method: "PATCH",
-    body: input,
-  });
-};
-
-export const restoreChild = async (childId: string): Promise<Child> => {
-  return apiClient<Child>(`/api/children/${childId}/restore`, {
-    method: "PATCH",
-  });
-};
+export const teacherApi = new TeacherApi();
