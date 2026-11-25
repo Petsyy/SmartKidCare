@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import OfflineSyncSnapshot from "../src/models/OfflineSyncSnapshot";
+import OfflineSyncSnapshot from "../src/modules/offline-sync/models/offline-sync-snapshot.model";
 import { OFFLINE_RESOURCES } from "../src/modules/offline-sync/types/offline-sync.types";
 
 describe("offline snapshot contract", () => {
