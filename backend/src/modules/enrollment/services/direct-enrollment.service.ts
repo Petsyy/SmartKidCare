@@ -40,7 +40,7 @@ import {
 } from "../repositories/enrollment.repository";
 import { authUserRepository } from "../../auth/repositories/auth.repository";
 import { childRepository } from "../../child/repositories/child.repository";
-import NutritionRecord from "../../../models/NutritionRecord";
+import NutritionRecord from "../../nutrition/models/nutrition-record.model";
 import { generateStudentId } from "../../../shared/utils/generate-child-id";
 import type {
   AuthUser,

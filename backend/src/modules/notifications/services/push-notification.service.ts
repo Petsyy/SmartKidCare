@@ -1,5 +1,5 @@
 import { Expo, ExpoPushMessage, ExpoPushTicket } from "expo-server-sdk";
-import Users from "../../../models/Users";
+import Users from "../../../shared/models/users.model";
 import type { SendExpoPushPayload, PushNotificationSendResult } from "../types/push-notification.types";
 
 const expo = new Expo({

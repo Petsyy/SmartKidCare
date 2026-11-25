@@ -2,7 +2,7 @@ import type { Response } from "express";
 import { createHash, randomInt } from "crypto";
 import jwt from "jsonwebtoken";
 import type { SignOptions } from "jsonwebtoken";
-import type { IUser } from "../../../models/Users";
+import type { IUser } from "../../../shared/models/users.model";
 import { sendEmail } from "../../notifications/services/email.service";
 
 const OTP_TTL_MS = 10 * 60 * 1000;

@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import { asyncHandler } from "../../../shared/utils/async-handler";
-import User from "../../../models/Users";
-import ChildDevelopmentCenter from "../../../models/ChildDevelopmentCenter";
+import User from "../../../shared/models/users.model";
+import ChildDevelopmentCenter from "../../../shared/models/child-development-center.model";
 
 export const globalSearch = asyncHandler(async (req: Request, res: Response) => {
   const query = (req.query.q as string) || "";

@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import { adminNotificationService } from "../../notifications/services/admin-notification.service";
 import jwt from "jsonwebtoken";
-import User from "../../../models/Users";
+import User from "../../../shared/models/users.model";
 import {
   CAPTAIN_PASSWORD_SETUP_PURPOSE,
   CHANGE_PASSWORD_OTP_PURPOSE,

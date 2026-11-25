@@ -1,13 +1,13 @@
-import Attendance from "../../../models/Attendance";
-import Child from "../../../models/Child";
-import CompetencyDefinition from "../../../models/CompetencyDefinition";
-import CompetencyEvaluation from "../../../models/CompetencyEvaluation";
-import Feeding from "../../../models/Feeding";
-import NutritionRecord from "../../../models/NutritionRecord";
-import OfflineSyncSnapshot from "../../../models/OfflineSyncSnapshot";
-import OfflineSyncSnapshotPage from "../../../models/OfflineSyncSnapshotPage";
-import PickupRecord from "../../../models/PickupRecord";
-import User from "../../../models/Users";
+import Attendance from "../../attendance/models/attendance.model";
+import Child from "../../../shared/models/child.model";
+import CompetencyDefinition from "../../competencies/models/competency-definition.model";
+import CompetencyEvaluation from "../../competencies/models/competency-evaluation.model";
+import Feeding from "../../feeding/models/feeding.model";
+import NutritionRecord from "../../nutrition/models/nutrition-record.model";
+import OfflineSyncSnapshot from "../models/offline-sync-snapshot.model";
+import OfflineSyncSnapshotPage from "../models/offline-sync-snapshot-page.model";
+import PickupRecord from "../../pickup/models/pickup-record.model";
+import User from "../../../shared/models/users.model";
 import type mongoose from "mongoose";
 
 export const offlineSyncRepository = {

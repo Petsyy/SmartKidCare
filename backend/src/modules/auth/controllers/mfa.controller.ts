@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import User from "../../../models/Users";
+import User from "../../../shared/models/users.model";
 import { signAuthToken } from "../services/password-otp.service";
 import {
   ADMIN_LOGIN_MFA_PURPOSE,

@@ -5,8 +5,8 @@ import {
   notificationsFeedingRepository,
   notificationsParentNotificationRepository,
 } from "../repositories/notifications.repository";
-import PickupCode from "../../../models/PickupCode";
-import PickupRecord from "../../../models/PickupRecord";
+import PickupCode from "../../pickup/models/pickup-code.model";
+import PickupRecord from "../../pickup/models/pickup-record.model";
 import { extractUserPushTokens } from "./push-notification.service";
 import type { ParentNotificationType, ParentFeedItem, ParentFeedResult } from "../types/parent-notification.types";
 import { toLocalDateKey, toLocalDayUtcRange } from "../../../shared/utils/date.utils";

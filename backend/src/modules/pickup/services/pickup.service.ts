@@ -8,9 +8,9 @@ import {
   pickupRecordRepository,
   pickupCodeRepository,
 } from "../repositories/pickup.repository";
-import Child from "../../../models/Child";
-import User from "../../../models/Users";
-import Attendance from "../../../models/Attendance";
+import Child from "../../../shared/models/child.model";
+import User from "../../../shared/models/users.model";
+import Attendance from "../../attendance/models/attendance.model";
 import {
   sendExpoPushNotifications,
   extractUserPushTokens,

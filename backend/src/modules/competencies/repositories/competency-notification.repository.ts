@@ -1,5 +1,5 @@
-import ParentNotification from "../../../models/ParentNotification";
-import Users from "../../../models/Users";
+import ParentNotification from "../../notifications/models/parent-notification.model";
+import Users from "../../../shared/models/users.model";
 import type {
   CompetencyNotificationParent,
   CompetencyNotificationRepositoryContract,

@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
-import Child from "../../../models/Child";
-import BlockchainWorkerLock from "../../../models/BlockchainWorkerLock";
+import Child from "../../../shared/models/child.model";
+import BlockchainWorkerLock from "../models/blockchain-worker-lock.model";
 import type {
   BlockchainAnchorStatus,
   BlockchainErrorCode,

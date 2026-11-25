@@ -1,6 +1,6 @@
-import PickupRecord from "../../../models/PickupRecord";
-import PickupCode from "../../../models/PickupCode";
-import Child from "../../../models/Child";
+import PickupRecord from "../models/pickup-record.model";
+import PickupCode from "../models/pickup-code.model";
+import Child from "../../../shared/models/child.model";
 import { BaseRepository } from "../../../shared/repositories/base.repository";
 
 export class PickupRecordRepository extends BaseRepository<any> {

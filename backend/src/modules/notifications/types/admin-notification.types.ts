@@ -2,7 +2,7 @@ import type {
   AdminNotificationCategory,
   AdminNotificationEventType,
   IAdminNotification,
-} from "../../../models/AdminNotification";
+} from "../models/admin-notification.model";
 
 export type AdminNotificationView = "inbox" | "unread" | "archived";
 

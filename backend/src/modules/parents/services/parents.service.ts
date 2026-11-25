@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { IUser } from "../../../models/Users";
+import { IUser } from "../../../shared/models/users.model";
 import { generateTempPassword } from "../../../shared/utils/generate-temp-password";
 import { parentRepository } from "../parents.repository";
 import type { ParentAccountInput } from "../types/parents.types";

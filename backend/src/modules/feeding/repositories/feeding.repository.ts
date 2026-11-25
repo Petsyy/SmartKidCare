@@ -1,5 +1,5 @@
-import Feeding from "../../../models/Feeding";
-import Child from "../../../models/Child";
+import Feeding from "../models/feeding.model";
+import Child from "../../../shared/models/child.model";
 import { BaseRepository } from "../../../shared/repositories/base.repository";
 
 export type DateRange = { start: Date; end: Date };

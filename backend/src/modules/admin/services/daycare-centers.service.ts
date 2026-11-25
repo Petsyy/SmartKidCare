@@ -1,7 +1,7 @@
 import { adminCenterRepository } from "../repositories/admin.repository";
-import User from "../../../models/Users";
-import Child from "../../../models/Child";
-import Attendance from "../../../models/Attendance";
+import User from "../../../shared/models/users.model";
+import Child from "../../../shared/models/child.model";
+import Attendance from "../../attendance/models/attendance.model";
 
 export class DaycareCenterService {
   async getEnrichedDaycareCenters(barangay?: string) {

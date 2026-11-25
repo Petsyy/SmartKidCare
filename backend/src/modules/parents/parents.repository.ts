@@ -1,4 +1,4 @@
-import User, { IUser } from "../../models/Users";
+import User, { IUser } from "../../shared/models/users.model";
 import { BaseRepository } from "../../shared/repositories/base.repository";
 
 const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

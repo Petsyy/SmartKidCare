@@ -1,6 +1,6 @@
 import { Types, type Model } from "mongoose";
-import CompetencyDefinition from "../../../models/CompetencyDefinition";
-import CompetencyEvaluation from "../../../models/CompetencyEvaluation";
+import CompetencyDefinition from "../models/competency-definition.model";
+import CompetencyEvaluation from "../models/competency-evaluation.model";
 import { BaseRepository } from "../../../shared/repositories/base.repository";
 
 export type CompetencySeed = {

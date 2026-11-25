@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import bcrypt from "bcryptjs";
-import User from "../src/models/Users";
+import User from "../src/shared/models/users.model";
 import {
   CAPTAIN_PASSWORD_SETUP_PURPOSE,
   buildPasswordSetupToken,
