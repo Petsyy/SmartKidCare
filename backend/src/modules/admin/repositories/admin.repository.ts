@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import User, { IUser } from "../../../shared/models/users.model";
 import Child from "../../../shared/models/child.model";
 
-import ChildDevelopmentCenter from "../../../shared/shared/models/child.model-development-center.model";
+import ChildDevelopmentCenter from "../../../shared/models/child-development-center.model";
 import SecurityAuditLog, {
   type SecurityAuditAction,
 } from "../../../shared/models/security-audit-log.model";

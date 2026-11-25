@@ -3,7 +3,7 @@ import Child from "../../../../shared/models/child.model";
 import Attendance from "../../../attendance/models/attendance.model";
 import Feeding from "../../../feeding/models/feeding.model";
 import User from "../../../../shared/models/users.model";
-import ChildDevelopmentCenter from "../../../../shared/shared/models/child.model-development-center.model";
+import ChildDevelopmentCenter from "../../../../shared/models/child-development-center.model";
 import type {
   AdminReportRange,
   AttendanceDailyAggregate,

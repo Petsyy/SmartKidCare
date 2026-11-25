@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import Child from "../../../shared/models/child.model";
-import ChildDevelopmentCenter from "../../../shared/shared/models/child.model-development-center.model";
+import ChildDevelopmentCenter from "../../../shared/models/child-development-center.model";
 import User from "../../../shared/models/users.model";
 import { BaseRepository } from "../../../shared/repositories/base.repository";
 
