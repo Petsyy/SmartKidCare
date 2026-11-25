@@ -1,7 +1,37 @@
 import mongoose from "mongoose";
-import { getManilaMeasurementDateKey } from "../shared/utils/nutrition.utils";
+import { getManilaMeasurementDateKey } from "../../../shared/utils/nutrition.utils";
 
-const NutritionRecordSchema = new mongoose.Schema(
+export type NutritionPeriod = "initial" | "quarterly" | "final";
+export type NutritionRecordStatus = "draft" | "submitted";
+export type NutritionalStatus =
+  | "Normal"
+  | "Underweight"
+  | "Severely Underweight"
+  | "Overweight"
+  | "Obese";
+
+export interface INutritionRecord {
+  childId: mongoose.Types.ObjectId;
+  schoolYear: string;
+  period?: NutritionPeriod;
+  recordedBy: mongoose.Types.ObjectId;
+  daycareCenter?: mongoose.Types.ObjectId | null;
+  status: NutritionRecordStatus;
+  weight: number;
+  height: number;
+  bmi: number;
+  nutritionalStatus: NutritionalStatus;
+  ageInMonths: number;
+  sex: "male" | "female";
+  measurementDate: Date;
+  measurementDateKey?: string;
+  singletonPeriodKey?: "initial" | "final";
+  submittedAt?: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const NutritionRecordSchema = new mongoose.Schema<INutritionRecord>(
   {
     childId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -102,4 +132,7 @@ NutritionRecordSchema.pre("validate", function () {
       : undefined;
 });
 
-export default mongoose.model("NutritionRecord", NutritionRecordSchema);
+export default mongoose.model<INutritionRecord>(
+  "NutritionRecord",
+  NutritionRecordSchema,
+);

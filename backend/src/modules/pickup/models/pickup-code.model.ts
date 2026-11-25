@@ -1,6 +1,17 @@
 import mongoose from "mongoose";
 
-const PickupCodeSchema = new mongoose.Schema(
+export interface IPickupCode {
+  child: mongoose.Types.ObjectId;
+  parent: mongoose.Types.ObjectId;
+  intendedGuardianIndex?: number | null;
+  codeHash: string;
+  expiresAt: Date;
+  used: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+const PickupCodeSchema = new mongoose.Schema<IPickupCode>(
   {
     child: {
       type: mongoose.Schema.Types.ObjectId,
@@ -39,4 +50,4 @@ const PickupCodeSchema = new mongoose.Schema(
 
 PickupCodeSchema.index({ child: 1, parent: 1, used: 1 });
 
-export default mongoose.model("PickupCode", PickupCodeSchema);
+export default mongoose.model<IPickupCode>("PickupCode", PickupCodeSchema);

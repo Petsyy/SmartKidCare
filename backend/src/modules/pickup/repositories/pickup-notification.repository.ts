@@ -1,7 +1,7 @@
-import Attendance from "../../../models/Attendance";
-import Child from "../../../models/Child";
-import ParentNotification from "../../../models/ParentNotification";
-import PickupRecord from "../../../models/PickupRecord";
+import Attendance from "../../attendance/models/attendance.model";
+import Child from "../../../shared/models/child.model";
+import ParentNotification from "../../notifications/models/parent-notification.model";
+import PickupRecord from "../models/pickup-record.model";
 import type {
   PickupNotificationChild,
   PickupNotificationRepositoryContract,

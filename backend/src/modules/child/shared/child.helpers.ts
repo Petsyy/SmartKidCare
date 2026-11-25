@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { Request } from "express";
-import User from "../../../models/Users";
+import User from "../../../shared/models/users.model";
 import { UploadResult } from "../../../shared/utils/upload-cloudinary";
 import { canAccessChild } from "../../../shared/services/child-access.service";
 

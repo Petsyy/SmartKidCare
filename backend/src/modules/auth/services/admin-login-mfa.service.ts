@@ -1,7 +1,7 @@
 import { createHash, randomInt } from "crypto";
 import jwt from "jsonwebtoken";
 import { Response } from "express";
-import { IUser } from "../../../models/Users";
+import { IUser } from "../../../shared/models/users.model";
 import { sendEmail } from "../../notifications/services/email.service";
 import { setCsrfCookie } from "../../../shared/lib/csrf";
 import { getAuthCookieOptions } from "../../../shared/lib/cookies";

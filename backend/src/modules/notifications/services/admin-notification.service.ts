@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import type { IAdminNotification } from "../../../models/AdminNotification";
+import type { IAdminNotification } from "../models/admin-notification.model";
 import {
   NotFoundError,
   ValidationError,

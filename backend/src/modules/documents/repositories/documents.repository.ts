@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
-import Child from "../../../models/Child";
-import DocumentAccessToken from "../../../models/DocumentAccessToken";
+import Child from "../../../shared/models/child.model";
+import DocumentAccessToken from "../models/document-access-token.model";
 import { BaseRepository } from "../../../shared/repositories/base.repository";
 import { logger } from "../../../shared/lib/logger";
 

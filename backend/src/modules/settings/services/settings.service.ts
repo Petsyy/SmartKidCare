@@ -1,4 +1,4 @@
-import SystemSettings from "../../../models/SystemSettings";
+import SystemSettings from "../../../shared/models/system-settings.model";
 
 export class SystemSettingsService {
 

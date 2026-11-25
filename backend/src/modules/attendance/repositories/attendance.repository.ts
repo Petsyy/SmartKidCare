@@ -1,6 +1,6 @@
-import Attendance from "../../../models/Attendance";
-import AttendanceRevision from "../../../models/AttendanceRevision";
-import Child from "../../../models/Child";
+import Attendance from "../models/attendance.model";
+import AttendanceRevision from "../models/attendance-revision.model";
+import Child from "../../../shared/models/child.model";
 import { BaseRepository } from "../../../shared/repositories/base.repository";
 
 export type DateRange = { start: Date; end: Date };

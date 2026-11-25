@@ -1,6 +1,31 @@
 import mongoose from "mongoose";
 
-const PickupRecordSchema = new mongoose.Schema(
+export type PickupActorType = "parent" | "guardian";
+export type PickupVerificationMethod = "pickup_code" | "manual_override";
+
+export interface IPickedUpBy {
+  type: PickupActorType;
+  userId?: mongoose.Types.ObjectId | null;
+  guardianIndex?: number | null;
+  name: string;
+  phone: string;
+  relationship: string;
+}
+
+export interface IPickupRecord {
+  child: mongoose.Types.ObjectId;
+  daycareCenter?: mongoose.Types.ObjectId;
+  pickedUpBy: IPickedUpBy;
+  verificationMethod: PickupVerificationMethod;
+  verifiedByTeacher: mongoose.Types.ObjectId;
+  pickupCode?: string | null;
+  pickedUpAt: Date;
+  notes?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+const PickupRecordSchema = new mongoose.Schema<IPickupRecord>(
   {
     child: {
       type: mongoose.Schema.Types.ObjectId,
@@ -62,4 +87,4 @@ const PickupRecordSchema = new mongoose.Schema(
 PickupRecordSchema.index({ child: 1, pickedUpAt: -1 });
 PickupRecordSchema.index({ daycareCenter: 1, pickedUpAt: -1 });
 
-export default mongoose.model("PickupRecord", PickupRecordSchema);
+export default mongoose.model<IPickupRecord>("PickupRecord", PickupRecordSchema);

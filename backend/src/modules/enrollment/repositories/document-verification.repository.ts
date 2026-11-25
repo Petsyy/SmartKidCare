@@ -1,4 +1,4 @@
-import DocumentVerification from "../../../models/DocumentVerification";
+import DocumentVerification from "../models/document-verification.model";
 
 export const documentVerificationRepository = {
   findReusable(query: Record<string, unknown>) {

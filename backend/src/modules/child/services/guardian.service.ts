@@ -1,4 +1,4 @@
-import Child from "../../../models/Child";
+import Child from "../../../shared/models/child.model";
 import {
   NotFoundError,
   ForbiddenError,

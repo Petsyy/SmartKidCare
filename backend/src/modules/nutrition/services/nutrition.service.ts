@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
-import NutritionRecord from "../../../models/NutritionRecord";
-import Child from "../../../models/Child";
+import NutritionRecord from "../models/nutrition-record.model";
+import Child from "../../../shared/models/child.model";
 import {
   NotFoundError,
   ValidationError,

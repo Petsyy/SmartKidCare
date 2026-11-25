@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import mongoose, { Types } from "mongoose";
-import AIChatRequest from "../../../models/AIChatRequest";
-import AIConversationState from "../../../models/AIConversationState";
+import AIChatRequest from "../models/ai-chat-request.model";
+import AIConversationState from "../models/ai-conversation-state.model";
 import type {
   AIChatSuccessBody,
   AIConversationStateRecord,

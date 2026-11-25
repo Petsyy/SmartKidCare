@@ -1,7 +1,7 @@
 import { getDateRangeFromPreset } from "../../../shared/utils/records.utils";
-import Attendance from "../../../models/Attendance";
-import Feeding from "../../../models/Feeding";
-import Child from "../../../models/Child";
+import Attendance from "../../attendance/models/attendance.model";
+import Feeding from "../../feeding/models/feeding.model";
+import Child from "../../../shared/models/child.model";
 import { NotFoundError } from "../../../shared/errors/app-error";
 import type { ReportDateRange, AdminReportRange } from "../types/reports.types";
 import { getAdminAnalyticsReport } from "./admin/reports-admin-analytics.service";

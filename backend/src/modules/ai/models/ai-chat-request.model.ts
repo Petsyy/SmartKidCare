@@ -28,13 +28,7 @@ const AIChatRequestSchema = new mongoose.Schema(
   { timestamps: true, versionKey: false },
 );
 
-AIChatRequestSchema.index(
-  { parent: 1, requestId: 1 },
-  { unique: true },
-);
-AIChatRequestSchema.index(
-  { retentionExpiresAt: 1 },
-  { expireAfterSeconds: 0 },
-);
+AIChatRequestSchema.index({ parent: 1, requestId: 1 }, { unique: true });
+AIChatRequestSchema.index({ retentionExpiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export default mongoose.model("AIChatRequest", AIChatRequestSchema);

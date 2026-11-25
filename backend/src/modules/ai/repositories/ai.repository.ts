@@ -1,7 +1,7 @@
 import { Types } from "mongoose";
-import Attendance from "../../../models/Attendance";
-import Feeding from "../../../models/Feeding";
-import Child from "../../../models/Child";
+import Attendance from "../../attendance/models/attendance.model";
+import Feeding from "../../feeding/models/feeding.model";
+import Child from "../../../shared/models/child.model";
 import { BaseRepository } from "../../../shared/repositories/base.repository";
 
 export type DateRange = {

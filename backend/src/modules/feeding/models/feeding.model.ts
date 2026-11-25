@@ -1,6 +1,26 @@
 import mongoose from "mongoose";
 
-const FeedingRecordSchema = new mongoose.Schema({
+export type FeedingStatus = "completed" | "missed";
+
+export interface IFeedingRecord {
+  child: mongoose.Types.ObjectId;
+  status: FeedingStatus;
+  notes?: string;
+}
+
+export interface IFeeding {
+  date: Date;
+  teacher: mongoose.Types.ObjectId;
+  daycareCenter?: mongoose.Types.ObjectId | null;
+  foodServed: string;
+  clientOperationId?: string;
+  payloadHash?: string;
+  records: IFeedingRecord[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const FeedingRecordSchema = new mongoose.Schema<IFeedingRecord>({
   child: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Child",
@@ -19,7 +39,7 @@ const FeedingRecordSchema = new mongoose.Schema({
   },
 });
 
-const FeedingSchema = new mongoose.Schema(
+const FeedingSchema = new mongoose.Schema<IFeeding>(
   {
     date: {
       type: Date,
@@ -64,4 +84,4 @@ FeedingSchema.index(
 );
 FeedingSchema.index({ daycareCenter: 1, date: -1, teacher: 1 });
 
-export default mongoose.model("Feeding", FeedingSchema);
+export default mongoose.model<IFeeding>("Feeding", FeedingSchema);

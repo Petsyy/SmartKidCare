@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import User from "../../models/Users";
+import User from "../../shared/models/users.model";
 import { AuthenticatedUser } from "../types/auth.types";
 import {CSRF_COOKIE_NAME,CSRF_HEADER_NAME,setCsrfCookie,verifyCsrfToken,
 } from "../lib/csrf";

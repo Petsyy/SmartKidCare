@@ -1,9 +1,9 @@
 import mongoose from "mongoose";
-import Child from "../../../../models/Child";
-import Attendance from "../../../../models/Attendance";
-import Feeding from "../../../../models/Feeding";
-import User from "../../../../models/Users";
-import ChildDevelopmentCenter from "../../../../models/ChildDevelopmentCenter";
+import Child from "../../../../shared/models/child.model";
+import Attendance from "../../../attendance/models/attendance.model";
+import Feeding from "../../../feeding/models/feeding.model";
+import User from "../../../../shared/models/users.model";
+import ChildDevelopmentCenter from "../../../../shared/shared/models/child.model-development-center.model";
 import type {
   AdminReportRange,
   AttendanceDailyAggregate,

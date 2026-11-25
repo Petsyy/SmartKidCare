@@ -1,4 +1,4 @@
-import ChildDevelopmentCenter from "../../models/ChildDevelopmentCenter";
+import ChildDevelopmentCenter from "../../shared/shared/models/child.model-development-center.model";
 import { NotFoundError } from "../errors/app-error";
 import { SINGLE_CENTER } from "../config/single-center";
 

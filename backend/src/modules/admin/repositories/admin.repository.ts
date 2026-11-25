@@ -1,11 +1,11 @@
 import mongoose from "mongoose";
-import User, { IUser } from "../../../models/Users";
-import Child from "../../../models/Child";
+import User, { IUser } from "../../../shared/models/users.model";
+import Child from "../../../shared/models/child.model";
 
-import ChildDevelopmentCenter from "../../../models/ChildDevelopmentCenter";
+import ChildDevelopmentCenter from "../../../shared/shared/models/child.model-development-center.model";
 import SecurityAuditLog, {
   type SecurityAuditAction,
-} from "../../../models/SecurityAuditLog";
+} from "../../../shared/models/security-audit-log.model";
 import { BaseRepository } from "../../../shared/repositories/base.repository";
 
 const escapeRegex = (value: string) =>

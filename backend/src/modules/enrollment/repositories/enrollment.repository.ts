@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
-import Child from "../../../models/Child";
-import ChildDevelopmentCenter from "../../../models/ChildDevelopmentCenter";
-import User from "../../../models/Users";
+import Child from "../../../shared/models/child.model";
+import ChildDevelopmentCenter from "../../../shared/shared/models/child.model-development-center.model";
+import User from "../../../shared/models/users.model";
 import { BaseRepository } from "../../../shared/repositories/base.repository";
 
 export class EnrollmentChildRepository extends BaseRepository<any> {

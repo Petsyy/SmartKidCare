@@ -1,12 +1,12 @@
 import mongoose from "mongoose";
-import User from "../../../models/Users";
-import Child from "../../../models/Child";
-import Attendance from "../../../models/Attendance";
-import Feeding from "../../../models/Feeding";
+import User from "../../../shared/models/users.model";
+import Child from "../../../shared/models/child.model";
+import Attendance from "../../attendance/models/attendance.model";
+import Feeding from "../../feeding/models/feeding.model";
 import AdminNotification, {
   type IAdminNotification,
-} from "../../../models/AdminNotification";
-import ParentNotification from "../../../models/ParentNotification";
+} from "../models/admin-notification.model";
+import ParentNotification from "../models/parent-notification.model";
 import { BaseRepository } from "../../../shared/repositories/base.repository";
 import type {
   AdminNotificationRepositoryContract,
